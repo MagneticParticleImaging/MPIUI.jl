@@ -96,7 +96,7 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
       #            fourierTransform=false, bgCorrection=false,
       #             tfCorrection=getproperty(m["cbCorrTF"], :active, Bool))
 
-      frames = 1:min(acqNumFrames(f),100)
+      frames = 1:min(acqNumFGFrames(f),100)
 
       u = getMeasurements(f, true, frames=frames,
                   bgCorrection=false,
@@ -187,6 +187,12 @@ function updateData(m::RawDataWidget, data::Array)
 
   updating[] = false
   showData(C_NULL,m)
+end
+
+function updateData(m::RawDataWidget, data::Array, timePoints, freq)
+  m.freq =  freq ./ 1000
+  m.timePoints = timePoints .* 1000
+  updateData(m, data)
 end
 
 function updateData(m::RawDataWidget, filename::String)
