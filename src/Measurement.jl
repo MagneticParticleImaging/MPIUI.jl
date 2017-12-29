@@ -109,6 +109,7 @@ function initCallbacks(m::MeasurementWidget)
     else
       close(timer)
       stopTx(daq)
+      disconnect(daq)
     end
   end
 
