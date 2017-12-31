@@ -108,7 +108,7 @@ function initCallbacks(m::MeasurementWidget)
     else
       close(timer)
       stopTx(daq)
-      disconnect(daq)
+      MPIMeasurements.disconnect(daq)
     end
   end
 

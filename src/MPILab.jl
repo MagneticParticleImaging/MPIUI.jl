@@ -29,6 +29,7 @@ type MPILabNew
   dataViewerWidget
   rawDataWidget
   recoWidget
+  currentAnatomRefFilename
 end
 
 getindex(m::MPILabNew, w::AbstractString) = G_.object(m.builder, w)
@@ -49,7 +50,7 @@ function MPILabNew()::MPILabNew
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, false, nothing, nothing, nothing, nothing,
-              nothing, nothing, nothing)
+              nothing, nothing, nothing, "")
 
   global mpilab = m
 
@@ -308,6 +309,14 @@ function initAnatomRefStore(m::MPILabNew)
     end
     false
   end
+
+  signal_connect(m.selectionAnatomicRefs, "changed") do widget
+    if hasselection(m.selectionAnatomicRefs)
+      currentIt = selected( m.selectionAnatomicRefs )
+
+      m.currentAnatomRefFilename = m.anatomRefStore[currentIt,2]
+    end
+  end
 end
 
 
@@ -521,17 +530,13 @@ function initReconstructionStore(m::MPILabNew)
   end
 
   signal_connect(m["tbOpenFusion"], "clicked") do widget
-    if hasselection(m.selectionReco) && hasselection(m.selectionAnatomicRefs)
+    if hasselection(m.selectionReco) && isfile(m.currentAnatomRefFilename)
 
       imFG = loaddata(m.currentReco.path)
 
       currentIt = selected( m.selectionAnatomicRefs )
 
-      file = m.anatomRefStore[currentIt,1]
-
-      filename = m.anatomRefStore[currentIt,2]
-
-      imBG = loaddata(filename)
+      imBG = loaddata(m.currentAnatomRefFilename)
       imBG_ = copyproperties(imBG,squeeze(data(imBG)))
 
       imBG_["filename"] = filename #last(splitdir(filename))
