@@ -72,16 +72,14 @@
           </packing>
         </child>
         <child>
-          <object class="GtkScale" id="scFrame">
+          <object class="GtkSpinButton">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
+            <property name="width_chars">3</property>
             <property name="adjustment">adjFrame</property>
-            <property name="round_digits">0</property>
-            <property name="digits">0</property>
-            <property name="value_pos">right</property>
           </object>
           <packing>
-            <property name="expand">True</property>
+            <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">1</property>
           </packing>
@@ -90,7 +88,7 @@
           <object class="GtkLabel">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Rx Channel</property>
+            <property name="label" translatable="yes">Chan</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -99,16 +97,14 @@
           </packing>
         </child>
         <child>
-          <object class="GtkScale" id="scRxChan">
+          <object class="GtkSpinButton">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
+            <property name="width_chars">3</property>
             <property name="adjustment">adjRxChan</property>
-            <property name="round_digits">0</property>
-            <property name="digits">0</property>
-            <property name="value_pos">right</property>
           </object>
           <packing>
-            <property name="expand">True</property>
+            <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">3</property>
           </packing>
@@ -126,16 +122,14 @@
           </packing>
         </child>
         <child>
-          <object class="GtkScale" id="scPatch">
+          <object class="GtkSpinButton">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
+            <property name="width_chars">2</property>
             <property name="adjustment">adjPatch</property>
-            <property name="round_digits">0</property>
-            <property name="digits">0</property>
-            <property name="value_pos">right</property>
           </object>
           <packing>
-            <property name="expand">True</property>
+            <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">5</property>
           </packing>
@@ -195,6 +189,20 @@
             <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">9</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkCheckButton" id="cbShowAllPatches">
+            <property name="label" translatable="yes">All Patches</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">False</property>
+            <property name="draw_indicator">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">10</property>
           </packing>
         </child>
       </object>

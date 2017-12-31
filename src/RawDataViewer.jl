@@ -8,8 +8,7 @@ type RawDataWidget <: Gtk.GtkBox
   params
   cTD
   cFD
-  freq
-  timePoints
+  deltaT
   filenameData
   loadingData
 end
@@ -24,7 +23,7 @@ function RawDataWidget(filenameConfig=nothing)
   mainBox = G_.object(b, "boxRawViewer")
 
   m = RawDataWidget( mainBox.handle, b,
-                  nothing, nothing, nothing, nothing, nothing, nothing,
+                  nothing, nothing, nothing, nothing, nothing,
                   nothing, nothing, false)
   Gtk.gobject_move_ref(m, mainBox)
 
@@ -60,7 +59,7 @@ function initCallbacks(m::RawDataWidget)
     #signal_connect(showData, m[sl], "value_changed", Void, (), false, m )
   end
 
-  @time for cb in ["cbShowBG", "cbAverage","cbSubtractBG"]
+  @time for cb in ["cbShowBG", "cbAverage","cbSubtractBG","cbShowAllPatches"]
     signal_connect(m[cb], :toggled) do w
       showData(C_NULL, m)
     end
@@ -102,10 +101,8 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
                   bgCorrection=false,
                   tfCorrection=getproperty(m["cbCorrTF"], :active, Bool))
 
-      #println(size(u))
-
-      m.freq = rxFrequencies(f) ./ 1000
-      m.timePoints = rxTimePoints(f) .* 1000
+      timePoints = rxTimePoints(f)
+      deltaT = timePoints[2] - timePoints[1]
 
       if acqNumBGFrames(f) > 0
         #m.dataBG = MPIFiles.measDataConv(f)[:,:,:,measBGFrameIdx(f)]
@@ -113,7 +110,7 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
               bgCorrection=false,
               tfCorrection=getproperty(m["cbCorrTF"], :active, Bool))
       end
-      updateData(m, u)
+      updateData(m, u, deltaT)
     end
     m.loadingData = false
   end
@@ -132,19 +129,36 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     minFr = getproperty(m["adjMinFre"], :value, Int64)
     maxFr = getproperty(m["adjMaxFre"], :value, Int64)
 
-    if getproperty(m["cbAverage"], :active, Bool)
-      data = vec(mean(m.data,4)[:,chan,patch,1])
+    if getproperty(m["cbShowAllPatches"], :active, Bool)
+      minTP = 1
+      maxTP = size(m.data,1)*size(m.data,3)
+      if getproperty(m["cbAverage"], :active, Bool)
+        data = vec(mean(m.data,4)[:,chan,:,1])
+      else
+        data = vec(m.data[:,chan,:,frame])
+      end
+      if m.dataBG != nothing && getproperty(m["cbSubtractBG"], :active, Bool)
+        data[:] .-=  vec(mean(m.dataBG[:,chan,:,:],3))
+      end
     else
-      data = vec(m.data[:,chan,patch,frame])
-    end
-    if m.dataBG != nothing && getproperty(m["cbSubtractBG"], :active, Bool)
-      data[:] .-=  vec(mean(m.dataBG[:,chan,patch,:],2))
+      if getproperty(m["cbAverage"], :active, Bool)
+        data = vec(mean(m.data,4)[:,chan,patch,1])
+      else
+        data = vec(m.data[:,chan,patch,frame])
+      end
+      if m.dataBG != nothing && getproperty(m["cbSubtractBG"], :active, Bool)
+        data[:] .-=  vec(mean(m.dataBG[:,chan,patch,:],2))
+      end
     end
 
-    p1 = Winston.plot(m.timePoints[minTP:maxTP],data[minTP:maxTP],"b-",linewidth=5)
+    timePoints = (0:(length(data)-1)).*m.deltaT
+    numFreq = floor(Int, length(data) ./ 2 .+ 1)
+    freq = collect(0:(numFreq-1))./(numFreq-1)./m.deltaT./2.0
+
+    p1 = Winston.plot(timePoints[minTP:maxTP],data[minTP:maxTP],"b-",linewidth=5)
     Winston.ylabel("u / V")
     Winston.xlabel("t / ms")
-    p2 = Winston.semilogy(m.freq[minFr:maxFr],abs.(rfft(data)[minFr:maxFr]),"b-o", linewidth=5)
+    p2 = Winston.semilogy(freq[minFr:maxFr],abs.(rfft(data)[minFr:maxFr]),"b-o", linewidth=5)
     #Winston.ylabel("u / V")
     Winston.xlabel("f / kHz")
     if m.dataBG != nothing && getproperty(m["cbShowBG"], :active, Bool)
@@ -152,8 +166,8 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       #dataBG = vec(m.dataBG[:,chan,patch,1] .- mean(m.dataBG[:,chan,patch,:],2))
       dataBG = vec( mean(m.dataBG[:,chan,patch,:],2))
 
-      Winston.plot(p1,m.timePoints[minTP:maxTP],dataBG[minTP:maxTP],"k--",linewidth=2)
-      Winston.plot(p2,m.freq[minFr:maxFr],abs.(rfft(dataBG)[minFr:maxFr]),"k-x",
+      Winston.plot(p1,timePoints[minTP:maxTP],dataBG[minTP:maxTP],"k--",linewidth=2)
+      Winston.plot(p2,freq[minFr:maxFr],abs.(rfft(dataBG)[minFr:maxFr]),"k-x",
                    linewidth=2, ylog=true)
     end
     display(m.cTD ,p1)
@@ -165,10 +179,11 @@ end
 
 global const updating = Ref{Bool}(false)
 
-function updateData(m::RawDataWidget, data::Array)
+function updateData(m::RawDataWidget, data::Array, deltaT=1.0)
   updating[] = true
 
   m.data = data
+  m.deltaT = deltaT .* 1000 # convert to ms and kHz
 
   Gtk.@sigatom setproperty!(m["adjFrame"],:upper,size(data,4))
   Gtk.@sigatom setproperty!(m["adjFrame"],:value,1)
@@ -187,12 +202,6 @@ function updateData(m::RawDataWidget, data::Array)
 
   updating[] = false
   showData(C_NULL,m)
-end
-
-function updateData(m::RawDataWidget, data::Array, timePoints, freq)
-  m.freq =  freq ./ 1000
-  m.timePoints = timePoints .* 1000
-  updateData(m, data)
 end
 
 function updateData(m::RawDataWidget, filename::String)

@@ -102,8 +102,7 @@ function initCallbacks(m::MeasurementWidget)
         #showDAQData(daq,vec(uMeas))
         amplitude, phase = MPIMeasurements.calcFieldFromRef(daq,uRef)
         println("reference amplitude=$amplitude phase=$phase")
-        timePoints = freq = 1:size(uMeas,1)
-        updateData(m.rawDataWidget, uMeas, timePoints, freq)
+        updateData(m.rawDataWidget, uMeas, 1.0)
       end
       timer = Timer(update_, 0.0, 0.2)
     else
