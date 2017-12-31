@@ -1,4 +1,4 @@
 datasetStores = ["/opt/data/MPS1", "/opt/data", "/opt/mpidata", "/Users/knopp/Forschung/mdfstore/"]
 brukerRecoStore = "/opt/data"
 exportMDFFreqSpace = false
-scanner = "HeadScanner.toml"
+scanner = "" #"HeadScanner.toml"

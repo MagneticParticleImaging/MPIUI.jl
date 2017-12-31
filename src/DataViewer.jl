@@ -561,7 +561,7 @@ function showData(m::DataViewerWidget)
       end
 
       if m.dataBG != nothing
-        slicesInRawData = indexFromBGToFG(m.dataBG, data_, params)
+        slicesInRawData = MPILib.indexFromBGToFG(m.dataBG, data_, params)
         @async println("Slices in raw data: ", slicesInRawData)
         data = interpolateToRefImage(m.dataBG, data_, params)
         dataBG = cacheBackGround(m, params)

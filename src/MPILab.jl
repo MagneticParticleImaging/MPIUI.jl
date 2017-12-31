@@ -539,7 +539,7 @@ function initReconstructionStore(m::MPILabNew)
       imBG = loaddata(m.currentAnatomRefFilename)
       imBG_ = copyproperties(imBG,squeeze(data(imBG)))
 
-      imBG_["filename"] = filename #last(splitdir(filename))
+      imBG_["filename"] = m.currentAnatomRefFilename #last(splitdir(filename))
 
       DataViewer(imFG, imBG_)
     end
