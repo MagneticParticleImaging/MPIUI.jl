@@ -541,7 +541,14 @@ function initReconstructionStore(m::MPILabNew)
 
       imBG_["filename"] = m.currentAnatomRefFilename #last(splitdir(filename))
 
-      DataViewer(imFG, imBG_)
+      #DataViewer(imFG, imBG_)
+
+      Gtk.@sigatom begin
+         updateData!(m.dataViewerWidget, imFG, imBG_)
+         G_.current_page(m["nbView"], 1)
+      end
+
+
     end
   end
 
