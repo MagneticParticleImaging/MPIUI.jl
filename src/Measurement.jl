@@ -18,6 +18,14 @@ end
 
 getindex(m::MeasurementWidget, w::AbstractString) = G_.object(m.builder, w)
 
+function isMeasurementStore(m::MeasurementWidget, d::DatasetStore)
+  if m.mdfstore == nothing
+    return false
+  else
+    return d.path == m.mdfstore.path
+  end
+end
+
 function MeasurementWidget(postMeasFunc::Function = ()->nothing, filenameConfig="")
   println("Starting MeasurementWidget")
   uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","measurementWidget.ui")
@@ -146,7 +154,7 @@ function setInfoParams(m::MeasurementWidget)
     freqStr = "$(round(m.daq.params.dfFreq[1],2)) Hz"
   end
   Gtk.@sigatom setproperty!(m["entDFFreq"],:text,freqStr)
-  Gtk.@sigatom setproperty!(m["entDFPeriod"],:text,"$(m.daq.params.dfPeriod*1000) ms")
+  Gtk.@sigatom setproperty!(m["entDFPeriod"],:text,"$(m.daq.params.dfCycle*1000) ms")
   Gtk.@sigatom setproperty!(m["entFramePeriod"],:text,"$(m.daq.params.acqFramePeriod) s")
 end
 

@@ -9,8 +9,7 @@ end
 
 
 const settingspath = joinpath(homedir(),".mpilab")
-#const settingsfile = joinpath(settingspath,"Settings.toml")
-const settingsfile = joinpath(Pkg.dir("MPIUI"),"src","Settings.toml")
+const settingsfile = joinpath(settingspath, "Settings.toml")
 
 getindex(m::Settings, w::AbstractString) = m.data[w] #G_.object(m.builder, w)
 
@@ -19,6 +18,12 @@ getindex(m::Settings, w::Symbol) = m.data[w]
 function Settings()
 
   uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","mpiLab.ui")
+
+  defaultSettingsFile = joinpath(Pkg.dir("MPIUI"),"src","Settings.toml")
+  mkpath(settingspath)
+  if !isfile(settingsfile)
+    cp(defaultSettingsFile, settingsfile)
+  end
 
   m = Settings( Builder(filename=uifile), nothing)
 

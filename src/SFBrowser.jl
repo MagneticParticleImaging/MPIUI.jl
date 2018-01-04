@@ -37,7 +37,9 @@ end
 function updateData!(m::SFBrowserWidget, d::DatasetStore)
   #generateSFDatabase(d)
   sysFuncs = loadSFDatabase(d)
-  updateData!(m, sysFuncs)
+  if sysFuncs != nothing
+    updateData!(m, sysFuncs)
+  end
 end
 
 function updateData!(m::SFBrowserWidget, sysFuncs)

@@ -58,7 +58,8 @@ function MPILabNew()::MPILabNew
 
   println("## Init Settings ...")
   initSettings(m)
-
+  println("## Init Measurement Tab ...")
+  initMeasurementTab(m)
   println("## Init Store switch ...")
   initStoreSwitch(m)
 
@@ -68,8 +69,6 @@ function MPILabNew()::MPILabNew
   initExperimentStore(m)
   println("## Init SFStore ...")
   initSFStore(m)
-  println("## Init Measurement Tab ...")
-  initMeasurementTab(m)
   println("## Init Image Tab ...")
   initImageTab(m)
   println("## Init Raw Data Tab ...")
@@ -86,7 +85,11 @@ function MPILabNew()::MPILabNew
   initViewSwitch(m)
 
 
+
   showall(w)
+  # ugly but necessary since showall unhides all widgets
+  Gtk.@sigatom visible(m["boxMeasTab"],
+      isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
 
   println("## finished ...")
 
@@ -104,14 +107,19 @@ function initStoreSwitch(m::MPILabNew)
     push!(m.datasetStores, store)
     push!(m["cbDatasetStores"], store_)
   end
+  m.activeStore = 1
   setproperty!(m["cbDatasetStores"],:active,0)
 
   m.brukerRecoStore = MDFDatasetStore( m.settings["brukerRecoStore"] )
 
   signal_connect(m["cbDatasetStores"], "changed") do widget...
+    println("changing dataset store")
     m.activeStore = getproperty(m["cbDatasetStores"], :active, Int64)+1
     Gtk.@sigatom scanDatasetDir(m)
-    Gtk.@sigatom updateData!(m.sfBrowser, activeDatasetStore(m))
+    Gtk.@sigatom updateData!(m.sfBrowser,activeDatasetStore(m))
+
+    Gtk.@sigatom visible(m["boxMeasTab"],
+        isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
     return nothing
   end
   return nothing
