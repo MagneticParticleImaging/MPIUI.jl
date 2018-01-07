@@ -405,8 +405,10 @@ function initExperimentStore(m::MPILabNew)
   signal_connect(m["tbReco"], "clicked") do widget
     if hasselection(m.selectionExp)
       Gtk.@sigatom begin
-        updateData!(m.recoWidget, m.currentExperiment.path )
-        G_.current_page(m["nbView"], 2)
+        if m.settings["enableRecoStore", true]
+          updateData!(m.recoWidget, m.currentExperiment.path )
+          G_.current_page(m["nbView"], 2)
+        end
       end
     end
   end
@@ -415,7 +417,7 @@ function initExperimentStore(m::MPILabNew)
   signal_connect(tv, "row-activated") do treeview, path, col, other...
     if hasselection(m.selectionExp)
       Gtk.@sigatom begin
-        updateData!(m.recoWidget, m.currentExperiment.path )
+        #updateData!(m.recoWidget, m.currentExperiment.path )
         updateData(m.rawDataWidget, m.currentExperiment.path)
         G_.current_page(m["nbView"], 0)
       end
@@ -444,12 +446,13 @@ function initExperimentStore(m::MPILabNew)
 
   signal_connect(m["tbRemoveExp"], "clicked") do widget
     if hasselection(m.selectionExp)
-      remove(m.currentExperiment)
+      if ask_dialog("Do you really want to delete the experiment $(m.currentExperiment.num)?")
+        remove(m.currentExperiment)
 
-      Gtk.@sigatom updateExperimentStore(m, m.currentStudy)
+        Gtk.@sigatom updateExperimentStore(m, m.currentStudy)
+      end
     end
   end
-
 
 end
 
