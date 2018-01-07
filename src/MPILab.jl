@@ -6,6 +6,7 @@ type MPILabNew
   datasetStores
   brukerRecoStore
   studyStore
+  studyStoreSorted
   experimentStore
   reconstructionStore
   visuStore
@@ -46,7 +47,7 @@ function MPILabNew()::MPILabNew
   uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","mpiLab.ui")
 
   m = MPILabNew( Builder(filename=uifile), 1, DatasetStore[],
-              nothing, nothing, nothing, nothing, nothing,
+              nothing, nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, false, nothing, nothing, nothing, nothing,
@@ -73,8 +74,10 @@ function MPILabNew()::MPILabNew
   initImageTab(m)
   println("## Init Raw Data Tab ...")
   initRawDataTab(m)
-  println("## Init Reco Tab ...")
-  initRecoTab(m)
+  if m.settings["enableRecoStore", true]
+    println("## Init Reco Tab ...")
+    initRecoTab(m)
+  end
   println("## Init Reco Store ...")
   initReconstructionStore(m)
   println("## Init Anatom Ref Store ...")
@@ -120,6 +123,14 @@ function initStoreSwitch(m::MPILabNew)
 
     Gtk.@sigatom visible(m["boxMeasTab"],
         isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
+
+    if length(m.studyStore) > 0
+      # select first study so that always measurements can be performed
+      iter = Gtk.mutable(Gtk.GtkTreeIter)
+      Gtk.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
+      Gtk.@sigatom select!(m.selectionStudy, iter)
+    end
+
     return nothing
   end
   return nothing
@@ -180,26 +191,34 @@ function initStudyStore(m::MPILabNew)
   push!(sw,tv)
 
 
-  m.selectionStudy = G_.selection(tv)
-
   scanDatasetDir(m)
 
   tmFiltered = TreeModelFilter(m.studyStore)
   G_.visible_column(tmFiltered,4)
-  tmSorted = TreeModelSort(tmFiltered)
-  G_.model(tv, tmSorted)
+  m.studyStoreSorted = TreeModelSort(tmFiltered)
+  G_.model(tv, m.studyStoreSorted)
+
+  m.selectionStudy = G_.selection(tv)
 
   #G_.sort_column_id(TreeSortable(m.studyStore),0,GtkSortType.ASCENDING)
-  G_.sort_column_id(TreeSortable(tmSorted),0,GtkSortType.ASCENDING)
+  G_.sort_column_id(TreeSortable(m.studyStoreSorted),0,GtkSortType.ASCENDING)
+
+
+  if length(m.studyStore) > 0
+    # select first study so that always measurements can be performed
+    iter = Gtk.mutable(Gtk.GtkTreeIter)
+    Gtk.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
+    Gtk.@sigatom select!(m.selectionStudy, iter)
+  end
 
   function selectionChanged( widget )
     if hasselection(m.selectionStudy) && !m.clearingStudyStore
       currentIt = selected( m.selectionStudy )
 
-      m.currentStudy = Study(TreeModel(tmSorted)[currentIt,4],
-                             TreeModel(tmSorted)[currentIt,2],
-                             TreeModel(tmSorted)[currentIt,3],
-                             TreeModel(tmSorted)[currentIt,1])
+      m.currentStudy = Study(TreeModel(m.studyStoreSorted)[currentIt,4],
+                             TreeModel(m.studyStoreSorted)[currentIt,2],
+                             TreeModel(m.studyStoreSorted)[currentIt,3],
+                             TreeModel(m.studyStoreSorted)[currentIt,1])
 
       Gtk.@sigatom updateExperimentStore(m, m.currentStudy)
 
@@ -358,7 +377,7 @@ function initExperimentStore(m::MPILabNew)
   tv = TreeView(TreeModel(m.experimentStore))
   r1 = CellRendererText()
 
-  cols = ["Num", "Description", "Frames", "DF FOV", "Gradient", "Averages", "Operator"]
+  cols = ["Num", "Name", "Frames", "DF FOV", "Gradient", "Averages", "Operator"]
 
   for (i,col) in enumerate(cols)
     c = TreeViewColumn(col, r1, Dict("text" => i-1))
@@ -441,7 +460,7 @@ function updateExperimentStore(m::MPILabNew, study::Study)
   experiments = getExperiments( activeDatasetStore(m), study)
 
   for exp in experiments
-    push!(m.experimentStore,(exp.num, exp.description, exp.numFrames,
+    push!(m.experimentStore,(exp.num, exp.name, exp.numFrames,
                 join(exp.dfFov,"x"),join(exp.sfGradient,"x"),
                 exp.numAverages, exp.operator, exp.path))
   end

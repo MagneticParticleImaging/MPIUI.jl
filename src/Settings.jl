@@ -15,6 +15,14 @@ getindex(m::Settings, w::AbstractString) = m.data[w] #G_.object(m.builder, w)
 
 getindex(m::Settings, w::Symbol) = m.data[w]
 
+function getindex(m::Settings, w, default)
+  if haskey(m.data,w)
+    return m.data[w]
+  else
+    return default
+  end
+end
+
 function Settings()
 
   uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","mpiLab.ui")

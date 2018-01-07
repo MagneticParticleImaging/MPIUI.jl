@@ -137,15 +137,6 @@ function invalidateBG(widgetptr::Ptr, m::MeasurementWidget)
   return nothing
 end
 
-#=function reinitDAQ(widgetptr::Ptr, m::MeasurementWidget)
-  if m.daq != nothing
-    m.daq.params.acqNumPeriods = getproperty(m["adjNumPeriods"], :value, Int64)
-    reinit(m.daq)
-    setInfoParams(m)
-  end
-  return nothing
-end=#
-
 function setInfoParams(m::MeasurementWidget)
 
   if length(m.daq.params.dfFreq) > 1
@@ -167,14 +158,6 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
 
   m.filenameExperiment = MPIMeasurements.measurement(m.daq, params, m.mdfstore,
                         controlPhase=true, bgdata=m.dataBGStore)
-
-  #updateStudies(C_NULL, m)
-  #updateExperiments(C_NULL, m)
-
-  #expNum = parse(Int64,splitext(splitdir(filename)[end])[1])
-  #idx=find([ e.num for e in m.experiments] .== expNum)[1]
-
-  #Gtk.@sigatom setproperty!(m["cbExpNum"],:active,idx-1)
 
   Gtk.@sigatom updateData(m.rawDataWidget, m.filenameExperiment)
 
@@ -206,7 +189,9 @@ function getParams(m::MeasurementWidget)
   params["acqNumBGFrames"] = getproperty(m["adjNumBGFrames"], :value, Int64)
   params["acqNumPeriods"] = getproperty(m["adjNumPeriods"], :value, Int64)
   params["studyName"] = m.currStudyName
-  params["studyDescription"] = getproperty(m["entExpDescr"], :text, String)
+  params["studyDescription"] = ""
+  params["experimentDescription"] = getproperty(m["entExpDescr"], :text, String)
+  params["experimentName"] = getproperty(m["entExpName"], :text, String)
   params["scannerOperator"] = getproperty(m["entOperator"], :text, String)
   params["tracerName"] = [getproperty(m["entTracerName"], :text, String)]
   params["tracerBatch"] = [getproperty(m["entTracerBatch"], :text, String)]
