@@ -1,6 +1,6 @@
-export MPILabNew
+export MPILab
 
-type MPILabNew
+type MPILab
   builder
   activeStore
   datasetStores
@@ -33,20 +33,20 @@ type MPILabNew
   currentAnatomRefFilename
 end
 
-getindex(m::MPILabNew, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::MPILab, w::AbstractString) = G_.object(m.builder, w)
 
 mpilab = nothing
 
-activeDatasetStore(m::MPILabNew) = m.datasetStores[m.activeStore]
-activeRecoStore(m::MPILabNew) = typeof(activeDatasetStore(m)) <: BrukerDatasetStore ?
+activeDatasetStore(m::MPILab) = m.datasetStores[m.activeStore]
+activeRecoStore(m::MPILab) = typeof(activeDatasetStore(m)) <: BrukerDatasetStore ?
                                       m.brukerRecoStore : activeDatasetStore(m)
 
-function MPILabNew()::MPILabNew
+function MPILab()::MPILab
   println("## Start ...")
 
   uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","mpiLab.ui")
 
-  m = MPILabNew( Builder(filename=uifile), 1, DatasetStore[],
+  m = MPILab( Builder(filename=uifile), 1, DatasetStore[],
               nothing, nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
@@ -99,7 +99,7 @@ function MPILabNew()::MPILabNew
   return m
 end
 
-function initStoreSwitch(m::MPILabNew)
+function initStoreSwitch(m::MPILab)
   empty!(m["cbDatasetStores"])
   for store_ in m.settings["datasetStores"]
     if store_ == "/opt/mpidata"
@@ -136,7 +136,7 @@ function initStoreSwitch(m::MPILabNew)
   return nothing
 end
 
-function initViewSwitch(m::MPILabNew)
+function initViewSwitch(m::MPILab)
   signal_connect(m["nbView"], "switch-page") do widget, page, page_num
     println("switched to tab $page_num")
     if page_num == 0
@@ -158,7 +158,7 @@ function initViewSwitch(m::MPILabNew)
   return nothing
 end
 
-function reinit(m::MPILabNew)
+function reinit(m::MPILab)
   #m.brukerStore = BrukerDatasetStore( m.settings["datasetDir"] )
   #m.mdfStore = MDFDatasetStore( m.settings["reconstructionDir"] )
 
@@ -166,7 +166,7 @@ function reinit(m::MPILabNew)
   scanDatasetDir(m)
 end
 
-function initStudyStore(m::MPILabNew)
+function initStudyStore(m::MPILab)
 
   m.studyStore = ListStore(String,String,String,String,Bool)
 
@@ -269,7 +269,7 @@ function initStudyStore(m::MPILabNew)
   end
 end
 
-function scanDatasetDir(m::MPILabNew)
+function scanDatasetDir(m::MPILab)
   #unselectall!(m.selectionStudy)
 
   m.clearingStudyStore = true # worst hack ever
@@ -286,7 +286,7 @@ end
 
 ### Anatomic Reference Store ###
 
-function initAnatomRefStore(m::MPILabNew)
+function initAnatomRefStore(m::MPILab)
 
   m.anatomRefStore = ListStore(String, String)
 
@@ -347,7 +347,7 @@ function initAnatomRefStore(m::MPILabNew)
 end
 
 
-function updateAnatomRefStore(m::MPILabNew)
+function updateAnatomRefStore(m::MPILab)
   empty!(m.anatomRefStore)
 
   currentPath = joinpath(activeRecoStore(m).path, "reconstructions", id(m.currentStudy), "anatomicReferences" )
@@ -368,7 +368,7 @@ end
 
 ### Experiment Store ###
 
-function initExperimentStore(m::MPILabNew)
+function initExperimentStore(m::MPILab)
 
   m.experimentStore = ListStore(Int64,String,Int64,String,
                                  String,Int64,String,String)
@@ -456,7 +456,7 @@ function initExperimentStore(m::MPILabNew)
 
 end
 
-function updateExperimentStore(m::MPILabNew, study::Study)
+function updateExperimentStore(m::MPILab, study::Study)
   empty!(m.experimentStore)
   empty!(m.reconstructionStore)
 
@@ -473,7 +473,7 @@ end
 ### Reconstruction Store ###
 
 
-function initReconstructionStore(m::MPILabNew)
+function initReconstructionStore(m::MPILab)
 
   m.reconstructionStore =
       ListStore(Int64,String,String,String,String,String,String,String, String)
@@ -609,7 +609,7 @@ function initReconstructionStore(m::MPILabNew)
 end
 
 
-function updateReconstructionStore(m::MPILabNew)
+function updateReconstructionStore(m::MPILab)
   empty!(m.reconstructionStore)
 
   recons = getRecons(activeRecoStore(m), m.currentStudy, m.currentExperiment)
@@ -622,14 +622,14 @@ function updateReconstructionStore(m::MPILabNew)
   end
 end
 
-function addReco(m::MPILabNew, image)
+function addReco(m::MPILab, image)
   addReco(activeRecoStore(m), m.currentStudy, m.currentExperiment, image)
   Gtk.@sigatom updateReconstructionStore(m)
 end
 
 ### Visualization Store ###
 
-function initVisuStore(m::MPILabNew)
+function initVisuStore(m::MPILab)
 
   m.visuStore = ListStore(Int64,String,String,String,String,String)
 
@@ -714,7 +714,7 @@ function initVisuStore(m::MPILabNew)
 end
 
 
-function updateVisuStore(m::MPILabNew)
+function updateVisuStore(m::MPILab)
   empty!(m.visuStore)
 
   if hasselection(m.selectionReco)
@@ -733,7 +733,7 @@ function updateVisuStore(m::MPILabNew)
   end
 end
 
-function addVisu(m::MPILabNew, visuParams)
+function addVisu(m::MPILab, visuParams)
   if hasselection(m.selectionReco)
     addVisu(activeRecoStore(m), m.currentStudy, m.currentExperiment, m.currentReco, visuParams)
     Gtk.@sigatom updateVisuStore(m)
@@ -744,7 +744,7 @@ end
 ### System Function Store ###
 
 
-function initSFStore(m::MPILabNew)
+function initSFStore(m::MPILab)
 
   m.sfBrowser = SFBrowserWidget(true)
 
@@ -756,7 +756,7 @@ end
 ### Measurement Tab ###
 
 
-function initMeasurementTab(m::MPILabNew)
+function initMeasurementTab(m::MPILab)
 
   function postMeasFunc()
     updateExperimentStore(m, m.currentStudy)
@@ -773,7 +773,7 @@ end
 ### Image Tab ###
 
 
-function initImageTab(m::MPILabNew)
+function initImageTab(m::MPILab)
 
   m.dataViewerWidget = DataViewerWidget()
 
@@ -784,7 +784,7 @@ end
 
 ### Raw Data Tab ###
 
-function initRawDataTab(m::MPILabNew)
+function initRawDataTab(m::MPILab)
 
   m.rawDataWidget = RawDataWidget()
 
@@ -795,7 +795,7 @@ end
 
 ### Raw Data Tab ###
 
-function initRecoTab(m::MPILabNew)
+function initRecoTab(m::MPILab)
 
   m.recoWidget = RecoWidget()
 
@@ -808,24 +808,24 @@ end
 
 ### Settings
 
-function initSettings(m::MPILabNew)
+function initSettings(m::MPILab)
   m.settings = Settings()
   #m["gridSettings_"][1,1] = m.settings["gridSettings"]
 end
 
 ### Robot
 
-function initBasicRobot(m::MPILabNew)
+function initBasicRobot(m::MPILab)
   m.basicRobot = BasicRobot()
   m["mw_basicRobotParentGrid"][1,1] = m.basicRobot["basicRobotChildGrid"]
 end
 
-function initRobotScanner(m::MPILabNew)
+function initRobotScanner(m::MPILab)
   m.robotScanner = RobotScanner()
   m["mw_robotScannerParentGrid"][1,1] = m.robotScanner["robotScannerChildGrid"]
 end
 
-function initMultiPatchRobot(m::MPILabNew)
+function initMultiPatchRobot(m::MPILab)
   m.multiPatchRobot = MultiPatchPlan()
   m["mw_multiPatchRobotParentGrid"][1,1] = m.multiPatchRobot["multiPatchPlanChildGrid"]
 end
