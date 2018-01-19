@@ -97,6 +97,7 @@ function initCallbacks(m::MeasurementWidget)
   end
 
   timer = nothing
+  timerActive = false
   @time signal_connect(m["tbContinous"], :toggled) do w
     daq = m.daq
     if getproperty(m["tbContinous"], :active, Bool)
@@ -104,17 +105,23 @@ function initCallbacks(m::MeasurementWidget)
       MPIMeasurements.updateParams!(daq, params)
       startTx(daq)
       MPIMeasurements.controlLoop(daq)
+      timerActive = true
 
       function update_(::Timer)
-        uMeas, uRef = readData(daq, 1, MPIMeasurements.currentFrame(daq))
-        #showDAQData(daq,vec(uMeas))
-        amplitude, phase = MPIMeasurements.calcFieldFromRef(daq,uRef)
-        println("reference amplitude=$amplitude phase=$phase")
-        updateData(m.rawDataWidget, uMeas, 1.0)
+        if timerActive
+          uMeas, uRef = readData(daq, 1, MPIMeasurements.currentFrame(daq))
+          #showDAQData(daq,vec(uMeas))
+          amplitude, phase = MPIMeasurements.calcFieldFromRef(daq,uRef)
+          println("reference amplitude=$amplitude phase=$phase")
+          updateData(m.rawDataWidget, uMeas, 1.0)
+        end
       end
       timer = Timer(update_, 0.0, 0.2)
     else
+      timerActive = false
+      sleep(0.4)
       close(timer)
+      sleep(0.2)
       stopTx(daq)
       MPIMeasurements.disconnect(daq)
     end
@@ -133,7 +140,7 @@ function invalidateBG(widgetptr::Ptr, m::MeasurementWidget)
   m.dataBGStore = nothing
   Gtk.@sigatom setproperty!(m["cbBGAvailable"],:active,false)
   Gtk.@sigatom setproperty!(m["lbInfo"],:label,
-        """<span foreground="red" font_weight="bold" size="x-large"> Warning: No Background Measurement Available!</span>""")
+        """<span foreground="red" font_weight="bold" size="x-large"> Warning: No BG Measurement Available!</span>""")
   return nothing
 end
 
