@@ -88,7 +88,7 @@ function MPILab()::MPILab
   println("## Init View switch ...")
   initViewSwitch(m)
 
-  setproperty!(m["cbDatasetStores"],:active,0)
+  Gtk.@sigatom setproperty!(m["cbDatasetStores"],:active,0)
 
   showall(w)
   # ugly but necessary since showall unhides all widgets
@@ -465,7 +465,7 @@ function updateExperimentStore(m::MPILab, study::Study)
   experiments = getExperiments( activeDatasetStore(m), study)
 
   for exp in experiments
-    push!(m.experimentStore,(exp.num, exp.name, exp.numFrames,
+    Gtk.@sigatom push!(m.experimentStore,(exp.num, exp.name, exp.numFrames,
                 join(exp.dfFov,"x"),join(exp.sfGradient,"x"),
                 exp.numAverages, exp.operator, exp.path))
   end
