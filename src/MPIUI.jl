@@ -20,7 +20,7 @@ import Base: getindex
 import MPIFiles: addReco, getVisu, id, addVisu
 import MPIMeasurements: measurement
 
-
+include("GtkUtils.jl")
 include("Measurement.jl")
 include("SpectrumViewer.jl")
 include("BaseViewer.jl")

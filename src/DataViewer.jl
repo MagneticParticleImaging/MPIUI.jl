@@ -1,4 +1,4 @@
-using Gtk, Gtk.ShortNames, Cairo, GtkUtilities
+using Gtk, Gtk.ShortNames, Cairo
 
 export DataViewer, DataViewer, DataViewerWidget, drawImageCairo, drawImage
 export getRegistrationBGParams, setRegistrationBGParams!

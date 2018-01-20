@@ -66,6 +66,7 @@ function MPILab()::MPILab
 
   println("## Init Study ...")
   initStudyStore(m)
+
   println("## Init Experiment Store ...")
   initExperimentStore(m)
   println("## Init SFStore ...")
@@ -87,7 +88,7 @@ function MPILab()::MPILab
   println("## Init View switch ...")
   initViewSwitch(m)
 
-
+  setproperty!(m["cbDatasetStores"],:active,0)
 
   showall(w)
   # ugly but necessary since showall unhides all widgets
@@ -111,7 +112,7 @@ function initStoreSwitch(m::MPILab)
     push!(m["cbDatasetStores"], store_)
   end
   m.activeStore = 1
-  setproperty!(m["cbDatasetStores"],:active,0)
+  #setproperty!(m["cbDatasetStores"],:active,0)
 
   m.brukerRecoStore = MDFDatasetStore( m.settings["brukerRecoStore"] )
 
@@ -133,6 +134,7 @@ function initStoreSwitch(m::MPILab)
 
     return nothing
   end
+
   return nothing
 end
 
