@@ -119,7 +119,7 @@ function initCallbacks(m::MeasurementWidget)
       timer = Timer(update_, 0.0, 0.2)
     else
       timerActive = false
-      sleep(0.4)
+      sleep(2.8)
       close(timer)
       sleep(0.2)
       stopTx(daq)
@@ -194,7 +194,7 @@ function getParams(m::MeasurementWidget)
   params["acqNumAverages"] = getproperty(m["adjNumAverages"], :value, Int64)
   params["acqNumFGFrames"] = getproperty(m["adjNumFGFrames"], :value, Int64)
   params["acqNumBGFrames"] = getproperty(m["adjNumBGFrames"], :value, Int64)
-  params["acqNumPeriods"] = getproperty(m["adjNumPeriods"], :value, Int64)
+  #params["acqNumPeriods"] = getproperty(m["adjNumPeriods"], :value, Int64)
   params["studyName"] = m.currStudyName
   params["studyDescription"] = ""
   params["experimentDescription"] = getproperty(m["entExpDescr"], :text, String)
@@ -211,6 +211,26 @@ function getParams(m::MeasurementWidget)
   params["dfStrength"] = parse.(Float64,split(dfString," x "))*1e-3
   println("DF strength = $(params["dfStrength"])")
 
+  textSeFo = getproperty(m["textBuffSeFo"],:text,String)
+  println(textSeFo)
+  try
+    numPatches = getproperty(m["adjNumPatches"], :value, Int64)
+    numPeriodsPerPatch = getproperty(m["adjNumPeriods"], :value, Int64)
+    txt = "t = (0:($numPatches-1))./($numPatches);"  * textSeFo
+    println(txt)
+    code = parse(txt)
+    println(code)
+    currents = eval(code)
+    #cat(1,x,reverse(x[2:end-1]))
+    println(currents)
+
+    params["acqFFValues"] = repeat(currents, inner=numPeriodsPerPatch)
+
+  catch
+    println("Could not parse text")
+    params["acqFFValues"] = [0.0]
+  end
+  params["acqNumPeriodsPerFrame"]=length(params["acqFFValues"])
 
   return params
 end
