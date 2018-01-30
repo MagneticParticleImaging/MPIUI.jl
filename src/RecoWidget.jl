@@ -289,20 +289,6 @@ function initBGSubtractionWidgets(m::RecoWidget)
 
     Gtk.@sigatom setproperty!(m["cbBGMeasurements"],:active, idxFG)
   end
-
-  #=if m.bMeas != nothing && typeof(m.bMeas) == BrukerFile
-
-    empty!(m["cbBGMeasurements"])
-    studypath = joinpath(splitdir(m.bMeas.path)[1:end-1]...)
-    files = findBrukerFiles(studypath) # make me fast
-
-    for file in files
-      push!(m["cbBGMeasurements"], last(splitdir(file)))
-    end
-
-    Gtk.@sigatom setproperty!(m["cbBGMeasurements"],:active,0)
-
-  end=#
 end
 
 function setSF(m::RecoWidget, filename)
@@ -336,6 +322,7 @@ function updateData!(m::RecoWidget, filenameMeas)
     catch
 
     end
+    initBGSubtractionWidgets(m)
   end
   nothing
 end
