@@ -11,6 +11,7 @@ type RawDataWidget <: Gtk.GtkBox
   deltaT
   filenameData
   loadingData
+  fileModus
 end
 
 getindex(m::RawDataWidget, w::AbstractString) = G_.object(m.builder, w)
@@ -24,7 +25,7 @@ function RawDataWidget(filenameConfig=nothing)
 
   m = RawDataWidget( mainBox.handle, b,
                   nothing, nothing, nothing, nothing, nothing,
-                  nothing, nothing, false)
+                  nothing, nothing, false, false)
   Gtk.gobject_move_ref(m, mainBox)
 
   println("Type constructed")
@@ -51,7 +52,7 @@ end
 
 function initCallbacks(m::RawDataWidget)
 
-  @time for sl in ["adjFrame", "adjPatch","adjRxChan","adjMinTP","adjMaxTP",
+  @time for sl in ["adjPatch","adjRxChan","adjMinTP","adjMaxTP",
                    "adjMinFre","adjMaxFre"]
     signal_connect(m[sl], "value_changed") do w
       showData(C_NULL, m)
@@ -66,8 +67,16 @@ function initCallbacks(m::RawDataWidget)
     #signal_connect(showData, m[cb], "toggled", Void, (), false, m)
   end
 
-  signal_connect(m["cbCorrTF"], :toggled) do w
-    loadData(C_NULL, m)
+  @time for cb in ["cbCorrTF"]
+    signal_connect(m[cb], :toggled) do w
+      loadData(C_NULL, m)
+    end
+  end
+
+  @time for cb in ["adjFrame"]
+    signal_connect(m[cb], "value_changed") do w
+      loadData(C_NULL, m)
+    end
   end
   #@time signal_connect(loadData, m["cbCorrTF"], "toggled", Void, (), false, m)
 
@@ -84,20 +93,26 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
     m.loadingData = true
     @Gtk.sigatom println("Loading Data ...")
 
+
     if m.filenameData != nothing && ispath(m.filenameData)
       f = MPIFile(m.filenameData)
       params = MPIFiles.loadMetadata(f)
       params["acqNumFGFrames"] = acqNumFGFrames(f)
       params["acqNumBGFrames"] = acqNumBGFrames(f)
+
+      Gtk.@sigatom setproperty!(m["adjFrame"], :upper, acqNumFGFrames(f))
+
+      frame = max( getproperty(m["adjFrame"], :value, Int64),1)
+
       #setParams(m, params)
 
       #u = getMeasurements(f, false, frames=measFGFrameIdx(f),
       #            fourierTransform=false, bgCorrection=false,
       #             tfCorrection=getproperty(m["cbCorrTF"], :active, Bool))
 
-      frames = 1:min(acqNumFGFrames(f),100)
+      #frames = 1:min(acqNumFGFrames(f),100)
 
-      u = getMeasurements(f, true, frames=frames,
+      u = getMeasurements(f, true, frames=frame,
                   bgCorrection=false,
                   tfCorrection=getproperty(m["cbCorrTF"], :active, Bool))
 
@@ -110,7 +125,7 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
               bgCorrection=false,
               tfCorrection=getproperty(m["cbCorrTF"], :active, Bool))
       end
-      updateData(m, u, deltaT)
+      updateData(m, u, deltaT, true)
     end
     m.loadingData = false
   end
@@ -121,7 +136,6 @@ end
 function showData(widgetptr::Ptr, m::RawDataWidget)
 
   if m.data != nothing && !updating[]
-    frame = getproperty(m["adjFrame"], :value, Int64)
     chan = getproperty(m["adjRxChan"], :value, Int64)
     patch = getproperty(m["adjPatch"], :value, Int64)
     minTP = getproperty(m["adjMinTP"], :value, Int64)
@@ -132,20 +146,13 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     if getproperty(m["cbShowAllPatches"], :active, Bool)
       minTP = 1
       maxTP = size(m.data,1)*size(m.data,3)
-      if getproperty(m["cbAverage"], :active, Bool)
-        data = vec(mean(m.data,4)[:,chan,:,1])
-      else
-        data = vec(m.data[:,chan,:,frame])
-      end
+
+      data = vec(m.data[:,chan,:,1])
       if m.dataBG != nothing && getproperty(m["cbSubtractBG"], :active, Bool)
         data[:] .-=  vec(mean(m.dataBG[:,chan,:,:],3))
       end
     else
-      if getproperty(m["cbAverage"], :active, Bool)
-        data = vec(mean(m.data,4)[:,chan,patch,1])
-      else
-        data = vec(m.data[:,chan,patch,frame])
-      end
+      data = vec(m.data[:,chan,patch,1])
       if m.dataBG != nothing && getproperty(m["cbSubtractBG"], :active, Bool)
         data[:] .-=  vec(mean(m.dataBG[:,chan,patch,:],2))
       end
@@ -179,14 +186,17 @@ end
 
 global const updating = Ref{Bool}(false)
 
-function updateData(m::RawDataWidget, data::Array, deltaT=1.0)
+function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   updating[] = true
 
   m.data = data
   m.deltaT = deltaT .* 1000 # convert to ms and kHz
+  m.fileModus = fileModus
 
-  Gtk.@sigatom setproperty!(m["adjFrame"],:upper,size(data,4))
-  Gtk.@sigatom setproperty!(m["adjFrame"],:value,1)
+  if !fileModus
+    Gtk.@sigatom setproperty!(m["adjFrame"],:upper,size(data,4))
+    Gtk.@sigatom setproperty!(m["adjFrame"],:value,1)
+  end
   Gtk.@sigatom setproperty!(m["adjRxChan"],:upper,size(data,2))
   Gtk.@sigatom setproperty!(m["adjRxChan"],:value,1)
   Gtk.@sigatom setproperty!(m["adjPatch"],:upper,size(data,3))
@@ -206,6 +216,8 @@ end
 
 function updateData(m::RawDataWidget, filename::String)
   m.filenameData = filename
+  Gtk.@sigatom setproperty!(m["adjFrame"],:upper,1)
+  Gtk.@sigatom setproperty!(m["adjFrame"],:value,1)
   loadData(C_NULL, m)
   return nothing
 end
