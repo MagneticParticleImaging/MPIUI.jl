@@ -164,24 +164,32 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
 
 
   function updateBGMeas( widget )
-    bgnum =  parse(Int64,Gtk.bytestring( G_.active_text(m["cbBGMeasurements"])) )
-    filenameBG = m.bgExperiments[bgnum]
-    println(filenameBG)
-    if isdir(filenameBG) || isfile(filenameBG)
-      m.bEmpty = MPIFile(filenameBG)
+    if getproperty(m["cbBGMeasurements"],"active", Int) >= 0
 
-      setproperty!(m["adjFirstFrameBG"],:upper, numScans(m.bEmpty))
-      setproperty!(m["adjLastFrameBG"],:upper, numScans(m.bEmpty))
+      bgstr =  Gtk.bytestring( G_.active_text(m["cbBGMeasurements"]))
+      if !isempty(bgstr)
+        bgnum =  parse(Int64, bgstr)
+        filenameBG = m.bgExperiments[bgnum]
+        println(filenameBG)
+        if isdir(filenameBG) || isfile(filenameBG)
+          m.bEmpty = MPIFile(filenameBG)
+
+          setproperty!(m["adjFirstFrameBG"],:upper, numScans(m.bEmpty))
+          setproperty!(m["adjLastFrameBG"],:upper, numScans(m.bEmpty))
+        end
+      end
     end
   end
 
 
   function loadRecoProfile( widget )
 
+    cache = loadcache()
+
     selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
     println(selectedProfileName)
-    if haskey(mpilab.settings["recoParams"],selectedProfileName)
-      Gtk.@sigatom setParams(m, mpilab.settings["recoParams"][selectedProfileName])
+    if haskey(cache["recoParams"],selectedProfileName)
+      Gtk.@sigatom setParams(m, cache["recoParams"][selectedProfileName])
     end
 
   end
@@ -191,8 +199,10 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
     currentRecoParams = getParams(m)
     key = getproperty(m["entRecoParamsName"], :text, String)
 
-    mpilab.settings["recoParams"][key] = currentRecoParams
-    Gtk.@sigatom save(mpilab.settings)
+    cache = loadcache()
+    cache["recoParams"][key] = currentRecoParams
+    savecache(cache)
+
     Gtk.@sigatom updateRecoProfiles()
   end
 
@@ -201,16 +211,20 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
 
     Gtk.@sigatom println("delete reco profile ", selectedProfileName)
 
-    Gtk.@sigatom delete!(mpilab.settings["recoParams"], selectedProfileName)
-    Gtk.@sigatom save(mpilab.settings)
+    cache = loadcache()
+    delete!(cache["recoParams"], selectedProfileName)
+    savecache(cache)
+
     Gtk.@sigatom updateRecoProfiles()
   end
 
   function updateRecoProfiles()
     signal_handler_block(m["cbRecoProfiles"], signalId_cbRecoProfiles)
 
+    cache = loadcache()
+
     empty!(m["cbRecoProfiles"])
-    for key in keys(mpilab.settings["recoParams"])
+    for key in keys(cache["recoParams"])
       push!(m["cbRecoProfiles"], key)
     end
     setproperty!(m["cbRecoProfiles"],:active,0)

@@ -10,6 +10,28 @@ end
 
 const settingspath = joinpath(homedir(),".mpilab")
 const settingsfile = joinpath(settingspath, "Settings.toml")
+const cachefile = joinpath(settingspath, "Cache.jld")
+
+function loadcache()
+  if isfile(cachefile)
+    cache = load(cachefile)
+  else
+    cache = Dict{String,Any}()
+  end
+
+  if !haskey(cache,"recoParams")
+    recoParams = Dict{String,Dict}()
+    recoParams["default"] = defaultRecoParams()
+    cache["recoParams"] = recoParams
+  end
+
+  return cache
+end
+
+function savecache(cache)
+  rm(cachefile, force=true)
+  save(cachefile, cache)
+end
 
 getindex(m::Settings, w::AbstractString) = m.data[w] #G_.object(m.builder, w)
 
