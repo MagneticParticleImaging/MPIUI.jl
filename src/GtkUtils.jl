@@ -4,7 +4,7 @@ using Graphics
 
 
 function Base.copy!{C<:Union{Colorant,Number}}(ctx::CairoContext, img::AbstractArray{C})
-    save(ctx)
+    Cairo.save(ctx)
     Cairo.reset_transform(ctx)
     image(ctx, image_surface(img), 0, 0, width(ctx), height(ctx))
     restore(ctx)
