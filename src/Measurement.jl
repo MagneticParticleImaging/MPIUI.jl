@@ -104,7 +104,14 @@ function initCallbacks(m::MeasurementWidget)
       params = merge!(m.generalParams,getParams(m))
       MPIMeasurements.updateParams!(daq, params)
       startTx(daq)
-      MPIMeasurements.controlLoop(daq)
+
+      if daq.params.controlPhase
+        MPIMeasurements.controlLoop(daq)
+      else
+        MPIMeasurements.setTxParams(daq, daq.params.calibFieldToVolt.*daq.params.dfStrength,
+                         zeros(numTxChannels(daq)))
+      end
+
       timerActive = true
 
       function update_(::Timer)
@@ -164,7 +171,7 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
   params["acqNumFrames"] = params["acqNumFGFrames"]
 
   m.filenameExperiment = MPIMeasurements.measurement(m.daq, params, m.mdfstore,
-                        controlPhase=true, bgdata=m.dataBGStore)
+                         bgdata=m.dataBGStore)
 
   Gtk.@sigatom updateData(m.rawDataWidget, m.filenameExperiment)
 
@@ -178,7 +185,7 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
   params = merge!(m.generalParams,getParams(m))
   params["acqNumFrames"] = params["acqNumBGFrames"]
 
-  u = MPIMeasurements.measurement(m.daq, params, controlPhase=true)
+  u = MPIMeasurements.measurement(m.daq, params)
   m.dataBGStore = u
   #updateData(m, u)
 
