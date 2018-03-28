@@ -95,6 +95,17 @@ function MPILab()::MPILab
   Gtk.@sigatom visible(m["boxMeasTab"],
       isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
 
+  signal_connect(w, "key-press-event") do widget, event
+    if event.keyval ==  Gtk.GConstants.GDK_KEY_c
+      if event.state & 0x04 != 0x00 # Control key is pressed
+        @async println("copy visu params to clipboard...")
+        str = string( getParams(m.dataViewerWidget) )
+        str_ = replace(str,",Pair",",\n  Pair")
+        clipboard( str_ )
+      end
+    end
+  end
+
   println("## finished ...")
 
   return m
