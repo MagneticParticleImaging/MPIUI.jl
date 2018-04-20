@@ -32,7 +32,6 @@ include("RecoWidget.jl")
 include("Settings.jl")
 include("MPILab.jl")
 include("RawDataViewer.jl")
-include("RecoParams.jl")
 include("LCRMeter.jl")
 
 end # module
