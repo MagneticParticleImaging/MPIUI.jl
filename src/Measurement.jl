@@ -119,18 +119,24 @@ function initCallbacks(m::MeasurementWidget)
           uMeas, uRef = readData(daq, 1, MPIMeasurements.currentFrame(daq))
           #showDAQData(daq,vec(uMeas))
           amplitude, phase = MPIMeasurements.calcFieldFromRef(daq,uRef)
-          println("reference amplitude=$amplitude phase=$phase")
-          updateData(m.rawDataWidget, uMeas, 1.0)
+          #println("reference amplitude=$amplitude phase=$phase")
+          Gtk.@sigatom updateData(m.rawDataWidget, uMeas, 1.0)
+        else
+          stopTx(daq)
+          MPIMeasurements.disconnect(daq)
+          close(timer)
         end
       end
       timer = Timer(update_, 0.0, 0.2)
     else
       timerActive = false
-      sleep(2.8)
-      close(timer)
-      sleep(0.2)
-      stopTx(daq)
-      MPIMeasurements.disconnect(daq)
+      #println("set timer inactive")
+      #sleep(3.8)
+      #println("close timer")
+      #close(timer)
+      #sleep(0.2)
+      #stopTx(daq)
+      #MPIMeasurements.disconnect(daq)
     end
   end
 
@@ -219,7 +225,8 @@ function getParams(m::MeasurementWidget)
   println("DF strength = $(params["dfStrength"])")
 
   textSeFo = getproperty(m["textBuffSeFo"],:text,String)
-  println(textSeFo)
+  #println(textSeFo)
+  #=
   try
     numPatches = getproperty(m["adjNumPatches"], :value, Int64)
     numPeriodsPerPatch = getproperty(m["adjNumPeriods"], :value, Int64)
@@ -236,8 +243,8 @@ function getParams(m::MeasurementWidget)
   catch
     println("Could not parse text")
     params["acqFFValues"] = [0.0]
-  end
-  params["acqNumPeriodsPerFrame"]=length(params["acqFFValues"])
+  end=#
+  #params["acqNumPeriodsPerFrame"]=length(params["acqFFValues"])
 
   return params
 end
