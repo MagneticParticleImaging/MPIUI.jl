@@ -195,20 +195,34 @@ function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
 
   if !fileModus
     Gtk.@sigatom setproperty!(m["adjFrame"],:upper,size(data,4))
-    Gtk.@sigatom setproperty!(m["adjFrame"],:value,1)
+    if !(1 <= getproperty(m["adjFrame"],:value,Int64) <= size(data,4))
+      Gtk.@sigatom setproperty!(m["adjFrame"],:value,1)
+    end
   end
   Gtk.@sigatom setproperty!(m["adjRxChan"],:upper,size(data,2))
-  Gtk.@sigatom setproperty!(m["adjRxChan"],:value,1)
+  if !(1 <= getproperty(m["adjRxChan"],:value,Int64) <= size(data,2))
+    Gtk.@sigatom setproperty!(m["adjRxChan"],:value,1)
+  end
   Gtk.@sigatom setproperty!(m["adjPatch"],:upper,size(data,3))
-  Gtk.@sigatom setproperty!(m["adjPatch"],:value,1)
+  if !(1 <= getproperty(m["adjPatch"],:value,Int64) <= size(data,3))
+    Gtk.@sigatom setproperty!(m["adjPatch"],:value,1)
+  end
   Gtk.@sigatom setproperty!(m["adjMinTP"],:upper,size(data,1))
-  Gtk.@sigatom setproperty!(m["adjMinTP"],:value,1)
+  if !(1 <= getproperty(m["adjMinTP"],:value,Int64) <= size(data,1))
+    Gtk.@sigatom setproperty!(m["adjMinTP"],:value,1)
+  end
   Gtk.@sigatom setproperty!(m["adjMaxTP"],:upper,size(data,1))
-  Gtk.@sigatom setproperty!(m["adjMaxTP"],:value,size(data,1))
+  if !(1 <= getproperty(m["adjMaxTP"],:value,Int64) <= size(data,1))
+    Gtk.@sigatom setproperty!(m["adjMaxTP"],:value,size(data,1))
+  end
   Gtk.@sigatom setproperty!(m["adjMinFre"],:upper,div(size(data,1),2)+1)
-  Gtk.@sigatom setproperty!(m["adjMinFre"],:value,1)
+  if !(1 <= getproperty(m["adjMinFre"],:value,Int64) <= div(size(data,1),2)+1)
+    Gtk.@sigatom setproperty!(m["adjMinFre"],:value,1)
+  end
   Gtk.@sigatom setproperty!(m["adjMaxFre"],:upper,div(size(data,1),2)+1)
-  Gtk.@sigatom setproperty!(m["adjMaxFre"],:value,div(size(data,1),2)+1)
+  if !(1 <= getproperty(m["adjMaxFre"],:value,Int64) <= div(size(data,1),2)+1)
+    Gtk.@sigatom setproperty!(m["adjMaxFre"],:value,div(size(data,1),2)+1)
+  end
 
   updating[] = false
   showData(C_NULL,m)
