@@ -14,6 +14,7 @@ type MeasurementWidget <: Gtk.GtkBox
   loadingData
   rawDataWidget
   postMeasFunc
+  sequences
 end
 
 getindex(m::MeasurementWidget, w::AbstractString) = G_.object(m.builder, w)
@@ -48,7 +49,7 @@ function MeasurementWidget(postMeasFunc::Function = ()->nothing, filenameConfig=
 
   m = MeasurementWidget( mainBox.handle, b,
                   daq, generalParams, nothing, mdfstore, nothing,
-                  nothing, nothing, false, false, false, RawDataWidget(), postMeasFunc)
+                  nothing, nothing, false, false, false, RawDataWidget(), postMeasFunc, nothing)
   Gtk.gobject_move_ref(m, mainBox)
 
   println("Type constructed")
@@ -61,6 +62,13 @@ function MeasurementWidget(postMeasFunc::Function = ()->nothing, filenameConfig=
 
   Gtk.@sigatom setproperty!(m["lbInfo"],:use_markup,true)
 
+  Gtk.@sigatom empty!(m["cbSeFo"])
+  m.sequences = [ splitext(seq)[1] for seq in
+            readdir(Pkg.dir("MPIMeasurements","src","Sequences"))]
+  for seq in m.sequences
+    Gtk.@sigatom push!(m["cbSeFo"], seq)
+  end
+  Gtk.@sigatom setproperty!(m["cbSeFo"],:active,0)
 
   if m.daq != nothing
     setInfoParams(m)
@@ -130,13 +138,6 @@ function initCallbacks(m::MeasurementWidget)
       timer = Timer(update_, 0.0, 0.2)
     else
       timerActive = false
-      #println("set timer inactive")
-      #sleep(3.8)
-      #println("close timer")
-      #close(timer)
-      #sleep(0.2)
-      #stopTx(daq)
-      #MPIMeasurements.disconnect(daq)
     end
   end
 
@@ -224,7 +225,8 @@ function getParams(m::MeasurementWidget)
   params["dfStrength"] = parse.(Float64,split(dfString," x "))*1e-3
   println("DF strength = $(params["dfStrength"])")
 
-  textSeFo = getproperty(m["textBuffSeFo"],:text,String)
+  params["acqFFSequence"] = m.sequences[getproperty(m["cbSeFo"], :active, Int)+1]
+
   #println(textSeFo)
   #=
   try
@@ -266,4 +268,12 @@ function setParams(m::MeasurementWidget, params)
   Gtk.@sigatom setproperty!(m["adjTracerVolume"], :value, params["tracerVolume"][1])
   Gtk.@sigatom setproperty!(m["adjTracerConcentration"], :value, params["tracerConcentration"][1])
   Gtk.@sigatom setproperty!(m["entTracerSolute"], :text, params["tracerSolute"][1])
+
+  if haskey(params,"acqFFSequence")
+    idx = findfirst(m.sequences, params["acqFFSequence"]*".csv")
+    if idx > 0
+      Gtk.@sigatom setproperty!(m["cbSeFo"], :active,idx-1)
+    end
+  end
+
 end
