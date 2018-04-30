@@ -100,9 +100,20 @@ function MPILab()::MPILab
       if event.state & 0x04 != 0x00 # Control key is pressed
         @async println("copy visu params to clipboard...")
         str = string( getParams(m.dataViewerWidget) )
-        str_ = replace(str,",Pair",",\n  Pair")
-        clipboard( str_ )
+        # str_ = replace(str,",Pair",",\n  Pair")
+        clipboard( str )
       end
+    elseif event.keyval == Gtk.GConstants.GDK_KEY_v
+        if event.state & 0x04 != 0x00 # Control key is pressed
+          @async println("copy visu params from clipboard to UI...")
+          str = clipboard()
+          try
+          dict= eval(parse(str))
+          setParams(m.dataViewerWidget, dict)
+        catch
+            @async println("not the right format for SetParams in clipboard...")
+        end
+        end
     end
   end
 
