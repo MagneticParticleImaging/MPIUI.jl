@@ -270,7 +270,7 @@ function setParams(m::MeasurementWidget, params)
   Gtk.@sigatom setproperty!(m["entTracerSolute"], :text, params["tracerSolute"][1])
 
   if haskey(params,"acqFFSequence")
-    idx = findfirst(m.sequences, params["acqFFSequence"]*".csv")
+    idx = findfirst(m.sequences, params["acqFFSequence"])
     if idx > 0
       Gtk.@sigatom setproperty!(m["cbSeFo"], :active,idx-1)
     end
