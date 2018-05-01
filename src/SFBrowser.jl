@@ -1,31 +1,5 @@
 using Gtk.ShortNames, Gtk.GConstants
 
-import Base: reload
-
-type SystemFunctionDatabase
-  path
-  database
-end
-
-function SystemFunctionDatabase()
-  path = "/opt/data/SF_Database.csv"
-  if isfile(path)
-    database = readcsv(path)
-    return SystemFunctionDatabase(path, database)
-  else
-    return SystemFunctionDatabase(nothing, Any[])
-  end
-end
-
-const sfDatabase = SystemFunctionDatabase()
-
-function reload(sfDB::SystemFunctionDatabase)
-  if sfDB.path != nothing
-    sfDB.database = readcsv(sfDB.path)
-  end
-end
-
-
 type SFBrowserWidget
   store
   tv
@@ -36,7 +10,9 @@ end
 
 function updateData!(m::SFBrowserWidget, d::DatasetStore)
   #generateSFDatabase(d)
+
   sysFuncs = loadSFDatabase(d)
+
   if sysFuncs != nothing
     updateData!(m, sysFuncs)
   end
@@ -103,9 +79,11 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 
       sffilename = TreeModel(tmSorted)[currentIt,9]
 
-      # TODO SFViewer has to updated => lazy load system function
-      # SFViewer(sffilename)
-      SFViewer2(sffilename)
+      Gtk.@sigatom begin
+        updateData!(mpilab.sfViewerWidget, sffilename)
+        G_.current_page(mpilab["nbView"], 3)
+      end
+
     end
     false
   end
@@ -217,7 +195,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 
   m = SFBrowserWidget(store,tv,vbox,tmSorted, nothing)
 
-  updateData!(m, sfDatabase.database)
+  #updateData!(m, sfDatabase.database)
 
   return m
 end

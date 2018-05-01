@@ -31,6 +31,7 @@ type MPILab
   rawDataWidget
   recoWidget
   currentAnatomRefFilename
+  sfViewerWidget
 end
 
 getindex(m::MPILab, w::AbstractString) = G_.object(m.builder, w)
@@ -51,7 +52,7 @@ function MPILab()::MPILab
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, false, nothing, nothing, nothing, nothing,
-              nothing, nothing, nothing, "")
+              nothing, nothing, nothing, "", nothing)
 
   global mpilab = m
 
@@ -71,6 +72,8 @@ function MPILab()::MPILab
   initExperimentStore(m)
   println("## Init SFStore ...")
   initSFStore(m)
+  println("## Init SF Viewer...")
+  initSFViewerTab(m)
   println("## Init Image Tab ...")
   initImageTab(m)
   println("## Init Raw Data Tab ...")
@@ -173,7 +176,7 @@ function initViewSwitch(m::MPILab)
       if m.currentExperiment != nothing
         Gtk.@sigatom updateData!(m.recoWidget, m.currentExperiment.path )
       end
-    elseif page_num == 3
+    elseif page_num == 4
       Gtk.@sigatom unselectall!(m.selectionExp)
       m.currentExperiment = nothing
     end
@@ -828,7 +831,16 @@ function initRecoTab(m::MPILab)
   setproperty!(boxRecoTab, :expand, m.recoWidget, true)
 end
 
+### Raw Data Tab ###
 
+function initSFViewerTab(m::MPILab)
+
+  m.sfViewerWidget = SFViewerWidget()
+
+  boxSFTab = m["boxSFTab"]
+  push!(boxSFTab,m.sfViewerWidget)
+  setproperty!(boxSFTab, :expand, m.sfViewerWidget, true)
+end
 
 ### Settings
 
