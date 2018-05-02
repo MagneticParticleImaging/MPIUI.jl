@@ -36,6 +36,7 @@ function MeasurementWidget(postMeasFunc::Function = ()->nothing, filenameConfig=
   generalParams = nothing
   if filenameConfig != ""
     scanner = MPIScanner(filenameConfig)
+    scanner.params["Robot"]["doReferenceCheck"] = false
     generalParams = getGeneralParams(scanner)
     mdfstore = MDFDatasetStore( generalParams["datasetStore"] )
   else
@@ -108,6 +109,11 @@ function initCallbacks(m::MeasurementWidget)
   end
 
   @time signal_connect(m["btnRobotMove"], :clicked) do w
+    if !isReferenced(getRobot(m.scanner))
+      info_dialog("Robot not referenced! Cannot proceed!", mpilab["mainWindow"])
+      return
+    end
+
     posString = getproperty(m["entCurrPos"], :text, String)
     pos_ = tryparse.(Float64,split(posString,"x"))
 
@@ -117,6 +123,25 @@ function initCallbacks(m::MeasurementWidget)
     pos = get.(pos_).*1u"mm"
     moveAbs(getRobot(m.scanner),getSafety(m.scanner), pos)
     #infoMessage(m, "move to $posString")
+  end
+
+  @time signal_connect(m["btnReferenceDrive"], :clicked) do w
+    robot = getRobot(m.scanner)
+    if !isReferenced(robot)
+      message = """IselRobot is NOT referenced and needs to be referenced! \n
+             Remove all attached devices from the robot before the robot will be referenced and move around!\n
+             Press \"Ok\" if you have done so """
+      if ask_dialog(message, "Cancle", "Ok", mpilab["mainWindow"])
+          message = """Are you sure you have removed everything and the robot can move
+            freely without damaging anything? Press \"Ok\" if you want to continue"""
+         if ask_dialog(message, "Cancle", "Ok", mpilab["mainWindow"])
+            prepareRobot(robot)
+            message = """The robot is now referenced.
+               You can mount your sample. Press \"Ok\" to proceed. """
+            info_dialog(message, mpilab["mainWindow"])
+         end
+      end
+    end
   end
 
   timer = nothing
@@ -163,6 +188,11 @@ function initCallbacks(m::MeasurementWidget)
   numPos = 0
   currPos = 0
   @time signal_connect(m["tbCalibration"], :toggled) do w
+    if !isReferenced(getRobot(m.scanner))
+      info_dialog("Robot not referenced! Cannot proceed!", mpilab["mainWindow"])
+      return
+    end
+
     daq = getDAQ(m.scanner)
     if getproperty(m["tbCalibration"], :active, Bool)
       if currPos == 0
