@@ -224,7 +224,7 @@
         <property name="can_focus">True</property>
         <property name="hexpand">False</property>
         <property name="shadow_type">in</property>
-        <property name="min_content_width">230</property>
+        <property name="min_content_width">240</property>
         <child>
           <object class="GtkViewport" id="viewport3">
             <property name="visible">True</property>

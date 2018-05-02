@@ -17,7 +17,7 @@ end
 getindex(m::SFViewerWidget, w::AbstractString) = G_.object(m.builder, w)
 
 function SFViewerWidget()
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","main.ui")
+  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","mpiLab.ui")
 
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxSFViewer")
@@ -144,10 +144,10 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   m.updating = true
   setproperty!(m["adjSFFreq"],:upper, m.maxFreq-1  )
   setproperty!(m["adjSFSignalOrdered"],:upper, m.maxFreq*3  )
-  setproperty!(m["adjSFFreq"],:value, 2097  )
-  setproperty!(m["adjSFMixX"],:upper, 16 )
-  setproperty!(m["adjSFMixY"],:upper, 16 )
-  setproperty!(m["adjSFMixZ"],:upper, 16 )
+  setproperty!(m["adjSFFreq"],:value, 2  )
+  #setproperty!(m["adjSFMixX"],:upper, 16 )
+  #setproperty!(m["adjSFMixY"],:upper, 16 )
+  #setproperty!(m["adjSFMixZ"],:upper, 16 )
   setproperty!(m["adjSFRecChan"],:upper, m.maxChan )
   setproperty!(m["adjSFPatch"],:upper, acqNumPeriodsPerFrame(m.bSF) )
 
