@@ -164,7 +164,11 @@ function initCallbacks(m::MeasurementWidget)
 
       function update_(::Timer)
         if timerActive
-          uMeas, uRef = readData(daq, 1, MPIMeasurements.currentFrame(daq))
+          currFr = MPIMeasurements.currentFrame(measObj.daq)
+          while currFr <=1
+            currFr = MPIMeasurements.currentFrame(measObj.daq)
+          end
+          uMeas, uRef = readData(daq, 1, currFr)
           #showDAQData(daq,vec(uMeas))
           amplitude, phase = MPIMeasurements.calcFieldFromRef(daq,uRef)
           #println("reference amplitude=$amplitude phase=$phase")
@@ -224,7 +228,8 @@ function initCallbacks(m::MeasurementWidget)
           positions = cartGrid
         else
           bgIdx = round.(Int64, linspace(1, length(cartGrid)+numBGMeas, numBGMeas ) )
-          positions = BreakpointGridPositions(cartGrid, bgIdx, [0.0,0.0,0.0]u"mm")
+          bgPos = getGeneralParams(m.scanner)["calibBGPos"]*1u"mm"
+          positions = BreakpointGridPositions(cartGrid, bgIdx, bgPos)
         end
 
         for pos in positions
