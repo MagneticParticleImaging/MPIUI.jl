@@ -219,7 +219,7 @@ function SFSelectionDialog(;gradient = nothing, driveField = nothing)
   box = G_.content_area(dialog)
 
   sfBrowser = SFBrowserWidget(gradient = gradient, driveField = driveField)
-  updateData!(sfBrowser, mpilab.activeStore)
+  updateData!(sfBrowser, activeDatasetStore(mpilab))
 
   push!(box, sfBrowser.box)
   setproperty!(box, :expand, sfBrowser.box, true)
