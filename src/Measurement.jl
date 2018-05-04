@@ -71,7 +71,7 @@ function MeasurementWidget(postMeasFunc::Function = ()->nothing, filenameConfig=
   end
   Gtk.@sigatom setproperty!(m["cbSeFo"],:active,0)
 
-  if getDAQ(m.scanner) != nothing
+  if m.scanner != nothing
     setInfoParams(m)
     setParams(m, merge!(m.generalParams,toDict(getDAQ(m.scanner).params)))
     Gtk.@sigatom setproperty!(m["entConfig"],:text,filenameConfig)

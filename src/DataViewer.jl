@@ -815,9 +815,10 @@ function showExtraWindow(m::DataViewerWidget, cdata_zy, cdata_zx, cdata_xy, isDr
   showData(m.simpleDataViewer, cdata_zy, cdata_zx, cdata_xy, isDrawSectionalLines, slices)
 end
 
-function drawImageCairo(c, image, isDrawSectionalLines, xsec, ysec,
+function drawImageCairo(c_, image, isDrawSectionalLines, xsec, ysec,
                         flipX, flipY, adjX, adjY, isDrawRectangle, xy, xyOffset)
  @guarded Gtk.draw(c) do widget
+  c = reshape(c_,size(c_,1), size(c_,2))
   ctx = getgc(c)
   h = height(ctx)
   w = width(ctx)
@@ -868,7 +869,8 @@ end
 
 function drawImage(slice)
   tmp = map(x->convert(RGB24,x), squeeze(slice))
-  csliceUint32 = reinterpret(UInt32, tmp)
+  csliceUint32_ = reinterpret(UInt32, tmp)
+  csliceUint32 = reshape(csliceUint32_, size(csliceUint32_,1), size(csliceUint32_,2))
 
   img = Winston.Image((1, size(csliceUint32,2)), (1, size(csliceUint32,1)), csliceUint32)
   p = Winston.FramedPlot()
