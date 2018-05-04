@@ -161,19 +161,19 @@ function initCallbacks(m::MeasurementWidget)
       end
 
       timerActive = true
+      MPIMeasurements.enableSlowDAC(daq, true)
 
       function update_(::Timer)
         if timerActive
-          currFr = MPIMeasurements.currentFrame(measObj.daq)
-          while currFr <=1
-            currFr = MPIMeasurements.currentFrame(measObj.daq)
-          end
-          uMeas, uRef = readData(daq, 1, currFr)
+          currFr = MPIMeasurements.currentFrame(daq)
+
+          uMeas, uRef = readData(daq, 1, currFr+1)
           #showDAQData(daq,vec(uMeas))
           amplitude, phase = MPIMeasurements.calcFieldFromRef(daq,uRef)
           #println("reference amplitude=$amplitude phase=$phase")
           Gtk.@sigatom updateData(m.rawDataWidget, uMeas, 1.0)
         else
+          MPIMeasurements.enableSlowDAC(daq, false)
           stopTx(daq)
           MPIMeasurements.disconnect(daq)
           close(timer)
