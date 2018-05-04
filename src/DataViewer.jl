@@ -597,12 +597,20 @@ function showData(m::DataViewerWidget)
         end
         G_.current_page(m["nb2D3D"], 0)
         m.currentlyShownImages = ImageMeta[cdata_xy, cdata_zx, cdata_zy]
-      else
+      elseif ndims(squeeze(data[1])) == 2
         cdata = colorize(data, m.coloring, minval, maxval, params)
         pZ = drawImage( convert(Array,cdata.data) )
         display(m.grid2D[1,1],pZ)
         G_.current_page(m["nb2D3D"], 1)
         m.currentlyShownImages = cdata
+      else
+        dat = vec(data_[1])
+        p = Winston.FramedPlot(xlabel="x", ylabel="y")
+        Winston.add(p, Winston.Curve(1:length(dat), dat, color="blue", linewidth=4))
+        display(m.grid2D[1,1],p)
+        G_.current_page(m["nb2D3D"], 1)
+
+        #m.currentlyShownImages = cdata
       end
     end
   catch ex
