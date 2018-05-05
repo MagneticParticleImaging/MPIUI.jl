@@ -12,6 +12,10 @@ type RawDataWidget <: Gtk.GtkBox
   filenameData
   loadingData
   fileModus
+  winHarmView
+  harmViewAdj
+  harmViewCanvas
+  harmBuff
 end
 
 getindex(m::RawDataWidget, w::AbstractString) = G_.object(m.builder, w)
@@ -25,7 +29,7 @@ function RawDataWidget(filenameConfig=nothing)
 
   m = RawDataWidget( mainBox.handle, b,
                   nothing, nothing, nothing, nothing, nothing,
-                  nothing, nothing, false, false)
+                  nothing, nothing, false, false, nothing, nothing, nothing, nothing)
   Gtk.gobject_move_ref(m, mainBox)
 
   println("Type constructed")
@@ -41,6 +45,8 @@ function RawDataWidget(filenameConfig=nothing)
 
   println("InitCallbacks")
 
+  initHarmView(m)
+
   initCallbacks(m)
 
   println("Finished")
@@ -48,7 +54,33 @@ function RawDataWidget(filenameConfig=nothing)
   return m
 end
 
+function initHarmView(m::RawDataWidget)
+  m.winHarmView = m["winHarmonicViewer"]
 
+
+
+  m.harmViewAdj = Adjustment[]
+  m.harmViewCanvas = Canvas[]
+  m.harmBuff = Any[]
+
+  for l=1:5
+    push!(m.harmViewAdj, m["adjHarm$l"] )
+    Gtk.@sigatom setproperty!(m["adjHarm$l"],:value,l+1)
+    c = Canvas()
+
+    push!(m["boxHarmView"],c)
+    setproperty!(m["boxHarmView"],:expand,c,true)
+    push!(m.harmViewCanvas, c)
+    push!(m.harmBuff, zeros(0))
+  end
+
+end
+
+function clearHarmBuff(m::RawDataWidget)
+  for l=1:5
+    m.harmBuff[l] = zeros(0)
+  end
+end
 
 function initCallbacks(m::RawDataWidget)
 
@@ -78,6 +110,22 @@ function initCallbacks(m::RawDataWidget)
       loadData(C_NULL, m)
     end
   end
+
+  signal_connect(m["cbHarmonicViewer"], :toggled) do w
+      harmViewOn = getproperty(m["cbHarmonicViewer"], :active, Bool)
+      if harmViewOn
+        clearHarmBuff(m)
+        @Gtk.sigatom setproperty!(m.winHarmView,:visible, true)
+        @Gtk.sigatom showall(m.winHarmView)
+      else
+        @Gtk.sigatom setproperty!(m.winHarmView,:visible, false)
+      end
+  end
+
+  signal_connect(m.winHarmView, "delete_event") do widget, args...
+    #@Gtk.sigatom setproperty!(m["cbHarmonicViewer"], :active, false)
+  end
+
   #@time signal_connect(loadData, m["cbCorrTF"], "toggled", Void, (), false, m)
 
   #signal_connect(m["cbExpNum"], :changed) do w
@@ -162,10 +210,12 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     numFreq = floor(Int, length(data) ./ 2 .+ 1)
     freq = collect(0:(numFreq-1))./(numFreq-1)./m.deltaT./2.0
 
+    freqdata = abs.(rfft(data))
+
     p1 = Winston.plot(timePoints[minTP:maxTP],data[minTP:maxTP],"b-",linewidth=5)
     Winston.ylabel("u / V")
     Winston.xlabel("t / ms")
-    p2 = Winston.semilogy(freq[minFr:maxFr],abs.(rfft(data)[minFr:maxFr]),"b-o", linewidth=5)
+    p2 = Winston.semilogy(freq[minFr:maxFr],freqdata[minFr:maxFr],"b-o", linewidth=5)
     #Winston.ylabel("u / V")
     Winston.xlabel("f / kHz")
     if m.dataBG != nothing && getproperty(m["cbShowBG"], :active, Bool)
@@ -180,6 +230,19 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     display(m.cTD ,p1)
     display(m.cFD ,p2)
 
+
+    ### Harmonic Viewer ###
+    if  getproperty(m["cbHarmonicViewer"], :active, Bool)
+      for l=1:5
+        f = getproperty(m.harmViewAdj[l], :value, Int64)
+        push!(m.harmBuff[l], freqdata[f])
+
+        p = Winston.semilogy(m.harmBuff[l],"b-o", linewidth=5)
+        Winston.ylabel("Harmonic $f")
+        Winston.xlabel("Time")
+        display(m.harmViewCanvas[l] ,p)
+      end
+    end
   end
   return nothing
 end
@@ -222,6 +285,10 @@ function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   Gtk.@sigatom setproperty!(m["adjMaxFre"],:upper,div(size(data,1),2)+1)
   if !(1 <= getproperty(m["adjMaxFre"],:value,Int64) <= div(size(data,1),2)+1)
     Gtk.@sigatom setproperty!(m["adjMaxFre"],:value,div(size(data,1),2)+1)
+  end
+
+  for l=1:5
+    Gtk.@sigatom setproperty!(m.harmViewAdj[l],:upper,div(size(data,1),2)+1)
   end
 
   updating[] = false
