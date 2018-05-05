@@ -122,8 +122,11 @@ function initCallbacks(m::RawDataWidget)
       end
   end
 
-  signal_connect(m.winHarmView, "delete_event") do widget, args...
-    #@Gtk.sigatom setproperty!(m["cbHarmonicViewer"], :active, false)
+
+  signal_connect(m.winHarmView, "delete-event") do widget, event
+    #typeof(event)
+    #@show event
+    @Gtk.sigatom setproperty!(m["cbHarmonicViewer"], :active, false)
   end
 
   #@time signal_connect(loadData, m["cbCorrTF"], "toggled", Void, (), false, m)
