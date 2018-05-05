@@ -206,6 +206,8 @@ function initStudyStore(m::MPILab)
   for (i,col) in enumerate(cols)
     c = TreeViewColumn(col, r1, Dict("text" => i-1))
     G_.sort_column_id(c,i-1)
+    G_.resizable(c,true)
+    G_.max_width(c,80)
     push!(tv,c)
   end
 
@@ -325,6 +327,8 @@ function initAnatomRefStore(m::MPILab)
   for (i,col) in enumerate(cols)
     c = TreeViewColumn(col, r1, Dict("text" => i-1))
     G_.sort_column_id(c,i-1)
+    G_.resizable(c,true)
+    G_.max_width(c,80)
     push!(tv,c)
   end
 
@@ -409,6 +413,8 @@ function initExperimentStore(m::MPILab)
   for (i,col) in enumerate(cols)
     c = TreeViewColumn(col, r1, Dict("text" => i-1))
     G_.sort_column_id(c,i-1)
+    G_.resizable(c,true)
+    G_.max_width(c,80)
     push!(tv,c)
   end
 
@@ -521,6 +527,7 @@ function initReconstructionStore(m::MPILab)
     end
 
     G_.max_width(c,100)
+    G_.resizable(c,true)
     G_.sort_column_id(c,i-1)
     push!(tv,c)
   end
