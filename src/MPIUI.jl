@@ -21,6 +21,7 @@ import MPIFiles: addReco, getVisu, id, addVisu
 import MPIMeasurements: measurement
 
 include("GtkUtils.jl")
+include("RawDataViewer.jl")
 include("Measurement.jl")
 include("SpectrumViewer.jl")
 include("BaseViewer.jl")
@@ -31,7 +32,6 @@ include("SFBrowser.jl")
 include("RecoWidget.jl")
 include("Settings.jl")
 include("MPILab.jl")
-include("RawDataViewer.jl")
 include("LCRMeter.jl")
 
 end # module

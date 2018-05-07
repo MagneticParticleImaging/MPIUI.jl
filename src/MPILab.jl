@@ -792,11 +792,11 @@ end
 
 function initMeasurementTab(m::MPILab)
 
-  function postMeasFunc()
-    updateExperimentStore(m, m.currentStudy)
-  end
+  #function postMeasFunc()
+  #  updateExperimentStore(m, m.currentStudy)
+  #end
 
-  m.measurementWidget = MeasurementWidget(postMeasFunc, m.settings["scanner"])
+  m.measurementWidget = MeasurementWidget(m.settings["scanner"])
   #m.measurementWidget = MeasurementWidget()
 
   boxMeasTab = m["boxMeasTab"]

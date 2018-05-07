@@ -1,23 +1,21 @@
 
-type MeasurementWidget <: Gtk.GtkBox
+mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
-  builder
-  scanner
-  generalParams
-  dataBGStore
-  mdfstore
-  currStudyName
-  currExpNum
-  filenameExperiment
-  updatingStudies
-  updatingExperiments
-  loadingData
-  rawDataWidget
-  postMeasFunc
-  sequences
+  builder::Builder
+  scanner::T
+  dataBGStore::Array{Float32,4}
+  mdfstore::MDFDatasetStore
+  currStudyName::String
+  filenameExperiment::String
+  rawDataWidget::RawDataWidget
+  sequences::Vector{String}
 end
 
-getindex(m::MeasurementWidget, w::AbstractString) = G_.object(m.builder, w)
+function object_(builder::Builder,name::AbstractString, T::Type)::T
+   return convert(T,ccall((:gtk_builder_get_object,Gtk.libgtk),Ptr{Gtk.GObject},(Ptr{Gtk.GObject},Ptr{UInt8}),builder,name))
+end
+
+getindex(m::MeasurementWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
 function isMeasurementStore(m::MeasurementWidget, d::DatasetStore)
   if m.mdfstore == nothing
@@ -27,30 +25,27 @@ function isMeasurementStore(m::MeasurementWidget, d::DatasetStore)
   end
 end
 
-function MeasurementWidget(postMeasFunc::Function = ()->nothing, filenameConfig="")
+function MeasurementWidget(filenameConfig="")
   println("Starting MeasurementWidget")
   uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","measurementWidget.ui")
 
   #filenameConfig=nothing
 
-  generalParams = nothing
   if filenameConfig != ""
     scanner = MPIScanner(filenameConfig)
     scanner.params["Robot"]["doReferenceCheck"] = false
-    generalParams = getGeneralParams(scanner)
-    mdfstore = MDFDatasetStore( generalParams["datasetStore"] )
+    mdfstore = MDFDatasetStore( getGeneralParams(scanner)["datasetStore"] )
   else
     scanner = nothing
-    generalParams = nothing
-    mdfstore = nothing #MDFDatasetStore( "/opt/data/MPS1" )
+    mdfstore = MDFDatasetStore( "Dummy" )
   end
 
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxMeasurement")
 
   m = MeasurementWidget( mainBox.handle, b,
-                  scanner, generalParams, nothing, mdfstore, nothing,
-                  nothing, nothing, false, false, false, RawDataWidget(), postMeasFunc, nothing)
+                  scanner, zeros(Float32,0,0,0,0), mdfstore, "",
+                  "", RawDataWidget(), String[])
   Gtk.gobject_move_ref(m, mainBox)
 
   println("Type constructed")
@@ -58,26 +53,28 @@ function MeasurementWidget(postMeasFunc::Function = ()->nothing, filenameConfig=
   println("InvalidateBG")
   invalidateBG(C_NULL, m)
 
-  push!(m["boxMeasTabVisu"],m.rawDataWidget)
-  setproperty!(m["boxMeasTabVisu"],:expand,m.rawDataWidget,true)
+  push!(m["boxMeasTabVisu",BoxLeaf],m.rawDataWidget)
+  setproperty!(m["boxMeasTabVisu",BoxLeaf],:expand,m.rawDataWidget,true)
 
-  Gtk.@sigatom setproperty!(m["lbInfo"],:use_markup,true)
+  Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:use_markup,true)
 
-  Gtk.@sigatom empty!(m["cbSeFo"])
-  m.sequences = [ splitext(seq)[1] for seq in
+  println("Read Sequences")
+  Gtk.@sigatom empty!(m["cbSeFo",ComboBoxTextLeaf])
+  m.sequences = String[ splitext(seq)[1] for seq in
             readdir(Pkg.dir("MPIMeasurements","src","Sequences"))]
   for seq in m.sequences
-    Gtk.@sigatom push!(m["cbSeFo"], seq)
+    Gtk.@sigatom push!(m["cbSeFo",ComboBoxTextLeaf], seq)
   end
-  Gtk.@sigatom setproperty!(m["cbSeFo"],:active,0)
+  Gtk.@sigatom setproperty!(m["cbSeFo",ComboBoxTextLeaf],:active,0)
 
+  println("Online / Offline")
   if m.scanner != nothing
     setInfoParams(m)
-    setParams(m, merge!(m.generalParams,toDict(getDAQ(m.scanner).params)))
-    Gtk.@sigatom setproperty!(m["entConfig"],:text,filenameConfig)
+    setParams(m, merge!(getGeneralParams(m.scanner),toDict(getDAQ(m.scanner).params)))
+    Gtk.@sigatom setproperty!(m["entConfig",EntryLeaf],:text,filenameConfig)
   else
-    Gtk.@sigatom setproperty!(m["tbMeasure"],:sensitive,false)
-    Gtk.@sigatom setproperty!(m["tbMeasureBG"],:sensitive,false)
+    Gtk.@sigatom setproperty!(m["tbMeasure",EntryLeaf],:sensitive,false)
+    Gtk.@sigatom setproperty!(m["tbMeasureBG",EntryLeaf],:sensitive,false)
   end
 
   println("InitCallbacks")
@@ -91,7 +88,7 @@ function MeasurementWidget(postMeasFunc::Function = ()->nothing, filenameConfig=
 end
 
 function infoMessage(m::MeasurementWidget, message::String)
-  Gtk.@sigatom setproperty!(m["lbInfo"],:label,
+  Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label,
       """<span foreground="green" font_weight="bold" size="x-large">$message</span>""")
 end
 
@@ -100,21 +97,21 @@ function initCallbacks(m::MeasurementWidget)
   #@time signal_connect(measurement, m["tbMeasure"], "clicked", Void, (), false, m )
   #@time signal_connect(measurementBG, m["tbMeasureBG"], "clicked", Void, (), false, m)
 
-  @time signal_connect(m["tbMeasure"], :clicked) do w
+  @time signal_connect(m["tbMeasure",ToolButtonLeaf], :clicked) do w
     measurement(C_NULL, m)
   end
 
-  @time signal_connect(m["tbMeasureBG"], :clicked) do w
+  @time signal_connect(m["tbMeasureBG",ToolButtonLeaf], :clicked) do w
     measurementBG(C_NULL, m)
   end
 
-  @time signal_connect(m["btnRobotMove"], :clicked) do w
+  @time signal_connect(m["btnRobotMove",ButtonLeaf], :clicked) do w
     if !isReferenced(getRobot(m.scanner))
       info_dialog("Robot not referenced! Cannot proceed!", mpilab["mainWindow"])
       return
     end
 
-    posString = getproperty(m["entCurrPos"], :text, String)
+    posString = getproperty(m["entCurrPos",EntryLeaf], :text, String)
     pos_ = tryparse.(Float64,split(posString,"x"))
 
     if any(isnull.(pos_)) || length(pos_) != 3
@@ -125,7 +122,7 @@ function initCallbacks(m::MeasurementWidget)
     #infoMessage(m, "move to $posString")
   end
 
-  @time signal_connect(m["btnReferenceDrive"], :clicked) do w
+  @time signal_connect(m["btnReferenceDrive",ButtonLeaf], :clicked) do w
     robot = getRobot(m.scanner)
     if !isReferenced(robot)
       message = """IselRobot is NOT referenced and needs to be referenced! \n
@@ -146,10 +143,10 @@ function initCallbacks(m::MeasurementWidget)
 
   timer = nothing
   timerActive = false
-  @time signal_connect(m["tbContinous"], :toggled) do w
+  @time signal_connect(m["tbContinous",ToggleToolButtonLeaf], :toggled) do w
     daq = getDAQ(m.scanner)
-    if getproperty(m["tbContinous"], :active, Bool)
-      params = merge!(m.generalParams,getParams(m))
+    if getproperty(m["tbContinous",ToggleToolButtonLeaf], :active, Bool)
+      params = merge!(getGeneralParams(m.scanner),getParams(m))
       MPIMeasurements.updateParams!(daq, params)
       startTx(daq)
 
@@ -191,28 +188,28 @@ function initCallbacks(m::MeasurementWidget)
   calibObj = nothing
   numPos = 0
   currPos = 0
-  @time signal_connect(m["tbCalibration"], :toggled) do w
+  @time signal_connect(m["tbCalibration",ToggleToolButtonLeaf], :toggled) do w
     if !isReferenced(getRobot(m.scanner))
       info_dialog("Robot not referenced! Cannot proceed!", mpilab["mainWindow"])
       return
     end
 
     daq = getDAQ(m.scanner)
-    if getproperty(m["tbCalibration"], :active, Bool)
+    if getproperty(m["tbCalibration",ToggleToolButtonLeaf], :active, Bool)
       if currPos == 0
 
-        shpString = getproperty(m["entGridShape"], :text, String)
+        shpString = getproperty(m["entGridShape",EntryLeaf], :text, String)
         shp_ = tryparse.(Int64,split(shpString,"x"))
-        fovString = getproperty(m["entFOV"], :text, String)
+        fovString = getproperty(m["entFOV",EntryLeaf], :text, String)
         fov_ = tryparse.(Float64,split(fovString,"x"))
-        centerString = getproperty(m["entCenter"], :text, String)
+        centerString = getproperty(m["entCenter",EntryLeaf], :text, String)
         center_ = tryparse.(Float64,split(centerString,"x"))
 
-        numBGMeas = getproperty(m["adjNumBGMeasurements"], :value, Int64)
+        numBGMeas = getproperty(m["adjNumBGMeasurements",AdjustmentLeaf], :value, Int64)
 
         if any(isnull.(shp_)) || any(isnull.(fov_)) || any(isnull.(center_)) ||
            length(shp_) != 3 || length(fov_) != 3 || length(center_) != 3
-          Gtk.@sigatom setproperty!(m["tbCalibration"], :active, false)
+          Gtk.@sigatom setproperty!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
           return
         end
 
@@ -236,7 +233,7 @@ function initCallbacks(m::MeasurementWidget)
           isValid = checkCoords(getSafety(m.scanner), pos)
         end
 
-        params = merge!(m.generalParams,getParams(m))
+        params = merge!(getGeneralParams(m.scanner),getParams(m))
         calibObj = SystemMatrixRobotMeas(m.scanner, positions, params)
 
         timerCalibrationActive = true
@@ -250,7 +247,7 @@ function initCallbacks(m::MeasurementWidget)
             if currPos <= numPos
               pos = Float64.(ustrip.(uconvert.(u"mm", positions[currPos])))
               posStr = @sprintf("%.2f x %.2f x %.2f", pos[1],pos[2],pos[3])
-              Gtk.@sigatom setproperty!(m["lbInfo"],:label,
+              Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label,
                     """<span foreground="green" font_weight="bold" size="x-large"> $currPos / $numPos ($posStr mm) </span>""")
 
               moveAbsUnsafe(getRobot(m.scanner), positions[currPos]) # comment for testing
@@ -267,9 +264,9 @@ function initCallbacks(m::MeasurementWidget)
               MPIMeasurements.disconnect(daq)
               moveCenter(getRobot(m.scanner))
               close(timerCalibration)
-              Gtk.@sigatom setproperty!(m["lbInfo"],:label, "")
+              Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label, "")
               currPos = 0
-              Gtk.@sigatom setproperty!(m["tbCalibration"], :active, false)
+              Gtk.@sigatom setproperty!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
 
               calibNum = getNewCalibNum(m.mdfstore)
               saveasMDF("/tmp/tmp.mdf",
@@ -293,24 +290,31 @@ function initCallbacks(m::MeasurementWidget)
   end
 
 
-  @time signal_connect(invalidateBG, m["adjDFStrength"], "value_changed", Void, (), false, m)
-  @time signal_connect(invalidateBG, m["adjNumPatches"], "value_changed", Void, (), false, m)
-  @time signal_connect(invalidateBG, m["adjNumPeriods"], "value_changed", Void, (), false, m)
+  #@time signal_connect(invalidateBG, m["adjDFStrength"], "value_changed", Void, (), false, m)
+  #@time signal_connect(invalidateBG, m["adjNumPatches"], "value_changed", Void, (), false, m)
+  #@time signal_connect(invalidateBG, m["adjNumPeriods"], , Void, (), false, m)
+
+  for adj in ["adjNumPeriods","adjDFStrength", "adjNumPatches"]
+    @time signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
+      invalidateBG(C_NULL, m)
+    end
+  end
+
 
   #@time signal_connect(reinitDAQ, m["adjNumPeriods"], "value_changed", Void, (), false, m)
-  @time signal_connect(m["cbSeFo"], :changed) do w
-    seq = m.sequences[getproperty(m["cbSeFo"], :active, Int)+1]
+  @time signal_connect(m["cbSeFo",ComboBoxTextLeaf], :changed) do w
+    seq = m.sequences[getproperty(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
     val = readcsv(Pkg.dir("MPIMeasurements","src","Sequences",
                                     seq*".csv"))
-    Gtk.@sigatom setproperty!(m["adjNumPeriods"], :value, size(val,2))
+    Gtk.@sigatom setproperty!(m["adjNumPeriods",AdjustmentLeaf], :value, size(val,2))
   end
 
 end
 
 function invalidateBG(widgetptr::Ptr, m::MeasurementWidget)
-  m.dataBGStore = nothing
-  Gtk.@sigatom setproperty!(m["cbBGAvailable"],:active,false)
-  Gtk.@sigatom setproperty!(m["lbInfo"],:label,
+  m.dataBGStore = zeros(Float32,0,0,0,0)
+  Gtk.@sigatom setproperty!(m["cbBGAvailable",CheckButtonLeaf],:active,false)
+  Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label,
         """<span foreground="red" font_weight="bold" size="x-large"> No BG Measurement Available!</span>""")
   return nothing
 end
@@ -322,39 +326,40 @@ function setInfoParams(m::MeasurementWidget)
   else
     freqStr = "$(round(daq.params.dfFreq[1],2)) Hz"
   end
-  Gtk.@sigatom setproperty!(m["entDFFreq"],:text,freqStr)
-  Gtk.@sigatom setproperty!(m["entDFPeriod"],:text,"$(daq.params.dfCycle*1000) ms")
-  Gtk.@sigatom setproperty!(m["entFramePeriod"],:text,"$(daq.params.acqFramePeriod) s")
+  Gtk.@sigatom setproperty!(m["entDFFreq",EntryLeaf],:text,freqStr)
+  Gtk.@sigatom setproperty!(m["entDFPeriod",EntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")
+  Gtk.@sigatom setproperty!(m["entFramePeriod",EntryLeaf],:text,"$(daq.params.acqFramePeriod) s")
 end
 
 
 function measurement(widgetptr::Ptr, m::MeasurementWidget)
   Gtk.@sigatom  println("Calling measurement")
 
-  params = merge!(m.generalParams,getParams(m))
+  params = merge!(getGeneralParams(m.scanner),getParams(m))
   params["acqNumFrames"] = params["acqNumFGFrames"]
 
+  bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
   m.filenameExperiment = MPIMeasurements.measurement(getDAQ(m.scanner), params, m.mdfstore,
-                         bgdata=m.dataBGStore)
+                         bgdata=bgdata)
 
   Gtk.@sigatom updateData(m.rawDataWidget, m.filenameExperiment)
 
-  Gtk.@sigatom m.postMeasFunc()
+  updateExperimentStore(mpilab, mpilab.currentStudy)
   return nothing
 end
 
 function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
   Gtk.@sigatom println("Calling BG measurement")
 
-  params = merge!(m.generalParams,getParams(m))
+  params = merge!(getGeneralParams(m.scanner),getParams(m))
   params["acqNumFrames"] = params["acqNumBGFrames"]
 
   u = MPIMeasurements.measurement(getDAQ(m.scanner), params)
   m.dataBGStore = u
   #updateData(m, u)
 
-  Gtk.@sigatom setproperty!(m["cbBGAvailable"],:active,true)
-  Gtk.@sigatom setproperty!(m["lbInfo"],:label,"")
+  Gtk.@sigatom setproperty!(m["cbBGAvailable",CheckButtonLeaf],:active,true)
+  Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label,"")
   return nothing
 end
 
@@ -362,28 +367,28 @@ end
 function getParams(m::MeasurementWidget)
   params = toDict(getDAQ(m.scanner).params)
 
-  params["acqNumAverages"] = getproperty(m["adjNumAverages"], :value, Int64)
-  params["acqNumFGFrames"] = getproperty(m["adjNumFGFrames"], :value, Int64)
-  params["acqNumBGFrames"] = getproperty(m["adjNumBGFrames"], :value, Int64)
+  params["acqNumAverages"] = getproperty(m["adjNumAverages",AdjustmentLeaf], :value, Int64)
+  params["acqNumFGFrames"] = getproperty(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64)
+  params["acqNumBGFrames"] = getproperty(m["adjNumBGFrames",AdjustmentLeaf], :value, Int64)
   #params["acqNumPeriods"] = getproperty(m["adjNumPeriods"], :value, Int64)
   params["studyName"] = m.currStudyName
   params["studyDescription"] = ""
-  params["experimentDescription"] = getproperty(m["entExpDescr"], :text, String)
-  params["experimentName"] = getproperty(m["entExpName"], :text, String)
-  params["scannerOperator"] = getproperty(m["entOperator"], :text, String)
-  params["tracerName"] = [getproperty(m["entTracerName"], :text, String)]
-  params["tracerBatch"] = [getproperty(m["entTracerBatch"], :text, String)]
-  params["tracerVendor"] = [getproperty(m["entTracerVendor"], :text, String)]
-  params["tracerVolume"] = [getproperty(m["adjTracerVolume"], :value, Float64)]
-  params["tracerConcentration"] = [getproperty(m["adjTracerConcentration"], :value, Float64)]
-  params["tracerSolute"] = [getproperty(m["entTracerSolute"], :text, String)]
+  params["experimentDescription"] = getproperty(m["entExpDescr",EntryLeaf], :text, String)
+  params["experimentName"] = getproperty(m["entExpName",EntryLeaf], :text, String)
+  params["scannerOperator"] = getproperty(m["entOperator",EntryLeaf], :text, String)
+  params["tracerName"] = [getproperty(m["entTracerName",EntryLeaf], :text, String)]
+  params["tracerBatch"] = [getproperty(m["entTracerBatch",EntryLeaf], :text, String)]
+  params["tracerVendor"] = [getproperty(m["entTracerVendor",EntryLeaf], :text, String)]
+  params["tracerVolume"] = [getproperty(m["adjTracerVolume",AdjustmentLeaf], :value, Float64)]
+  params["tracerConcentration"] = [getproperty(m["adjTracerConcentration",AdjustmentLeaf], :value, Float64)]
+  params["tracerSolute"] = [getproperty(m["entTracerSolute",EntryLeaf], :text, String)]
 
-  dfString = getproperty(m["entDFStrength"], :text, String)
+  dfString = getproperty(m["entDFStrength",EntryLeaf], :text, String)
   params["dfStrength"] = parse.(Float64,split(dfString," x "))*1e-3
   println("DF strength = $(params["dfStrength"])")
 
-  params["acqFFSequence"] = m.sequences[getproperty(m["cbSeFo"], :active, Int)+1]
-  params["acqFFLinear"] = getproperty(m["cbFFInterpolation"], :active, Bool)
+  params["acqFFSequence"] = m.sequences[getproperty(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
+  params["acqFFLinear"] = getproperty(m["cbFFInterpolation",CheckButtonLeaf], :active, Bool)
 
 
   #println(textSeFo)
@@ -411,46 +416,46 @@ function getParams(m::MeasurementWidget)
 end
 
 function setParams(m::MeasurementWidget, params)
-  Gtk.@sigatom setproperty!(m["adjNumAverages"], :value, params["acqNumAverages"])
-  Gtk.@sigatom setproperty!(m["adjNumFGFrames"], :value, params["acqNumFrames"])
-  Gtk.@sigatom setproperty!(m["adjNumBGFrames"], :value, params["acqNumFrames"])
+  Gtk.@sigatom setproperty!(m["adjNumAverages",AdjustmentLeaf], :value, params["acqNumAverages"])
+  Gtk.@sigatom setproperty!(m["adjNumFGFrames",AdjustmentLeaf], :value, params["acqNumFrames"])
+  Gtk.@sigatom setproperty!(m["adjNumBGFrames",AdjustmentLeaf], :value, params["acqNumFrames"])
   #Gtk.@sigatom setproperty!(m["entStudy"], :text, params["studyName"])
-  Gtk.@sigatom setproperty!(m["entExpDescr"], :text, params["studyDescription"] )
-  Gtk.@sigatom setproperty!(m["entOperator"], :text, params["scannerOperator"])
+  Gtk.@sigatom setproperty!(m["entExpDescr",EntryLeaf], :text, params["studyDescription"] )
+  Gtk.@sigatom setproperty!(m["entOperator",EntryLeaf], :text, params["scannerOperator"])
   dfString = *([ string(x*1e3," x ") for x in params["dfStrength"] ]...)[1:end-3]
-  Gtk.@sigatom setproperty!(m["entDFStrength"], :text, dfString)
+  Gtk.@sigatom setproperty!(m["entDFStrength",EntryLeaf], :text, dfString)
 
-  Gtk.@sigatom setproperty!(m["entTracerName"], :text, params["tracerName"][1])
-  Gtk.@sigatom setproperty!(m["entTracerBatch"], :text, params["tracerBatch"][1])
-  Gtk.@sigatom setproperty!(m["entTracerVendor"], :text, params["tracerVendor"][1])
-  Gtk.@sigatom setproperty!(m["adjTracerVolume"], :value, params["tracerVolume"][1])
-  Gtk.@sigatom setproperty!(m["adjTracerConcentration"], :value, params["tracerConcentration"][1])
-  Gtk.@sigatom setproperty!(m["entTracerSolute"], :text, params["tracerSolute"][1])
+  Gtk.@sigatom setproperty!(m["entTracerName",EntryLeaf], :text, params["tracerName"][1])
+  Gtk.@sigatom setproperty!(m["entTracerBatch",EntryLeaf], :text, params["tracerBatch"][1])
+  Gtk.@sigatom setproperty!(m["entTracerVendor",EntryLeaf], :text, params["tracerVendor"][1])
+  Gtk.@sigatom setproperty!(m["adjTracerVolume",AdjustmentLeaf], :value, params["tracerVolume"][1])
+  Gtk.@sigatom setproperty!(m["adjTracerConcentration",AdjustmentLeaf], :value, params["tracerConcentration"][1])
+  Gtk.@sigatom setproperty!(m["entTracerSolute",EntryLeaf], :text, params["tracerSolute"][1])
 
   if haskey(params,"acqFFSequence")
     idx = findfirst(m.sequences, params["acqFFSequence"])
     if idx > 0
-      Gtk.@sigatom setproperty!(m["cbSeFo"], :active,idx-1)
+      Gtk.@sigatom setproperty!(m["cbSeFo",ComboBoxTextLeaf], :active,idx-1)
     end
   else
-      Gtk.@sigatom setproperty!(m["adjNumPeriods"], :value, params["acqNumPeriodsPerFrame"])
+      Gtk.@sigatom setproperty!(m["adjNumPeriods",AdjustmentLeaf], :value, params["acqNumPeriodsPerFrame"])
   end
 
-  Gtk.@sigatom setproperty!(m["cbFFInterpolation"], :active, params["acqFFLinear"])
+  Gtk.@sigatom setproperty!(m["cbFFInterpolation",CheckButtonLeaf], :active, params["acqFFLinear"])
 
   p = getGeneralParams(m.scanner)
   if haskey(p, "calibGridShape") && haskey(p, "calibGridFOV") && haskey(p, "calibGridCenter") &&
      haskey(p, "calibNumBGMeasurements")
     shp = p["calibGridShape"]
     shpStr = @sprintf("%d x %d x %d", shp[1],shp[2],shp[3])
-    fov = p["calibGridFOV"]
+    fov = p["calibGridFOV"]*1000 # convert to mm
     fovStr = @sprintf("%.2f x %.2f x %.2f", fov[1],fov[2],fov[3])
-    ctr = p["calibGridCenter"]
+    ctr = p["calibGridCenter"]*1000 # convert to mm
     ctrStr = @sprintf("%.2f x %.2f x %.2f", ctr[1],ctr[2],ctr[3])
-    Gtk.@sigatom setproperty!(m["entGridShape"], :text, shpStr)
-    Gtk.@sigatom setproperty!(m["entFOV"], :text, fovStr)
-    Gtk.@sigatom setproperty!(m["entCenter"], :text, ctrStr)
-    Gtk.@sigatom setproperty!(m["adjNumBGMeasurements"], :value, p["calibNumBGMeasurements"])
+    Gtk.@sigatom setproperty!(m["entGridShape",EntryLeaf], :text, shpStr)
+    Gtk.@sigatom setproperty!(m["entFOV",EntryLeaf], :text, fovStr)
+    Gtk.@sigatom setproperty!(m["entCenter",EntryLeaf], :text, ctrStr)
+    Gtk.@sigatom setproperty!(m["adjNumBGMeasurements",AdjustmentLeaf], :value, p["calibNumBGMeasurements"])
   end
-  Gtk.@sigatom setproperty!(m["entCurrPos"], :text, "0.0 x 0.0 x 0.0")
+  Gtk.@sigatom setproperty!(m["entCurrPos",EntryLeaf], :text, "0.0 x 0.0 x 0.0")
 end
