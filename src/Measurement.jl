@@ -73,8 +73,10 @@ function MeasurementWidget(filenameConfig="")
     setParams(m, merge!(getGeneralParams(m.scanner),toDict(getDAQ(m.scanner).params)))
     Gtk.@sigatom setproperty!(m["entConfig",EntryLeaf],:text,filenameConfig)
   else
-    Gtk.@sigatom setproperty!(m["tbMeasure",EntryLeaf],:sensitive,false)
-    Gtk.@sigatom setproperty!(m["tbMeasureBG",EntryLeaf],:sensitive,false)
+    Gtk.@sigatom setproperty!(m["tbMeasure",ToolButtonLeaf],:sensitive,false)
+    Gtk.@sigatom setproperty!(m["tbMeasureBG",ToolButtonLeaf],:sensitive,false)
+    Gtk.@sigatom setproperty!(m["tbContinous",ToggleToolButtonLeaf],:sensitive,false)
+    Gtk.@sigatom setproperty!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
   end
 
   println("InitCallbacks")
@@ -158,17 +160,37 @@ function initCallbacks(m::MeasurementWidget)
       end
 
       timerActive = true
-      MPIMeasurements.enableSlowDAC(daq, true)
+      #MPIMeasurements.enableSlowDAC(daq, true)
 
       function update_(::Timer)
         if timerActive
-          currFr = MPIMeasurements.currentFrame(daq)
+
+          if daq.params.controlPhase
+            MPIMeasurements.controlLoop(daq)
+          else
+            MPIMeasurements.setTxParams(daq, daq.params.currTxAmp, daq.params.currTxPhase)
+          end
+
+          curr1 = daq.params.acqFFValues[1,2]
+          curr2 = daq.params.acqFFValues[1,1]
+          println("C1=$curr1")
+          println("C2=$curr2")
+          setSlowDAC(daq, curr1, 0)
+          setSlowDAC(daq, curr2, 1)
+          sleep(0.2)
+
+          currFr = enableSlowDAC(daq, true)
 
           uMeas, uRef = readData(daq, 1, currFr+1)
-          #showDAQData(daq,vec(uMeas))
-          amplitude, phase = MPIMeasurements.calcFieldFromRef(daq,uRef)
-          #println("reference amplitude=$amplitude phase=$phase")
+          MPIMeasurements.enableSlowDAC(daq, false)
+          MPIMeasurements.setTxParams(daq, daq.params.currTxAmp*0.0, daq.params.currTxPhase*0.0)
+
+          #currFr = MPIMeasurements.currentFrame(daq)
+          #uMeas, uRef = readData(daq, 1, currFr+1)
+
           Gtk.@sigatom updateData(m.rawDataWidget, uMeas, 1.0)
+
+          sleep(getproperty(m["adjPause",AdjustmentLeaf],:value,Float64))
         else
           MPIMeasurements.enableSlowDAC(daq, false)
           stopTx(daq)
@@ -258,6 +280,7 @@ function initCallbacks(m::MeasurementWidget)
               Gtk.@sigatom updateData(m.rawDataWidget, uMeas, 1.0)
 
               currPos +=1
+              sleep(getproperty(m["adjPause",AdjustmentLeaf],:value,Float64))
             end
             if currPos > numPos
               stopTx(daq)
@@ -294,7 +317,7 @@ function initCallbacks(m::MeasurementWidget)
   #@time signal_connect(invalidateBG, m["adjNumPatches"], "value_changed", Void, (), false, m)
   #@time signal_connect(invalidateBG, m["adjNumPeriods"], , Void, (), false, m)
 
-  for adj in ["adjNumPeriods","adjDFStrength", "adjNumPatches"]
+  for adj in ["adjNumPeriods","adjDFStrength", "adjNumSubperiods"]
     @time signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
       invalidateBG(C_NULL, m)
     end
@@ -368,6 +391,8 @@ function getParams(m::MeasurementWidget)
   params = toDict(getDAQ(m.scanner).params)
 
   params["acqNumAverages"] = getproperty(m["adjNumAverages",AdjustmentLeaf], :value, Int64)
+  params["acqNumSubperiods"] = getproperty(m["adjNumSubperiods",AdjustmentLeaf], :value, Int64)
+
   params["acqNumFGFrames"] = getproperty(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64)
   params["acqNumBGFrames"] = getproperty(m["adjNumBGFrames",AdjustmentLeaf], :value, Int64)
   #params["acqNumPeriods"] = getproperty(m["adjNumPeriods"], :value, Int64)
@@ -417,6 +442,7 @@ end
 
 function setParams(m::MeasurementWidget, params)
   Gtk.@sigatom setproperty!(m["adjNumAverages",AdjustmentLeaf], :value, params["acqNumAverages"])
+  Gtk.@sigatom setproperty!(m["adjNumSubperiods",AdjustmentLeaf], :value, get(params,"acqNumSubperiods",1))
   Gtk.@sigatom setproperty!(m["adjNumFGFrames",AdjustmentLeaf], :value, params["acqNumFrames"])
   Gtk.@sigatom setproperty!(m["adjNumBGFrames",AdjustmentLeaf], :value, params["acqNumFrames"])
   #Gtk.@sigatom setproperty!(m["entStudy"], :text, params["studyName"])
