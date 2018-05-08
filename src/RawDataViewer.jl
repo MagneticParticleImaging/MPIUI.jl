@@ -19,6 +19,7 @@ type RawDataWidget <: Gtk.GtkBox
 end
 
 getindex(m::RawDataWidget, w::AbstractString) = G_.object(m.builder, w)
+#getindex(m::RawDataWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
 function RawDataWidget(filenameConfig=nothing)
   println("Starting RawDataWidget")

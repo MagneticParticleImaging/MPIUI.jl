@@ -11,10 +11,6 @@ mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   sequences::Vector{String}
 end
 
-function object_(builder::Builder,name::AbstractString, T::Type)::T
-   return convert(T,ccall((:gtk_builder_get_object,Gtk.libgtk),Ptr{Gtk.GObject},(Ptr{Gtk.GObject},Ptr{UInt8}),builder,name))
-end
-
 getindex(m::MeasurementWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
 function isMeasurementStore(m::MeasurementWidget, d::DatasetStore)
@@ -72,6 +68,8 @@ function MeasurementWidget(filenameConfig="")
     setInfoParams(m)
     setParams(m, merge!(getGeneralParams(m.scanner),toDict(getDAQ(m.scanner).params)))
     Gtk.@sigatom setproperty!(m["entConfig",EntryLeaf],:text,filenameConfig)
+    Gtk.@sigatom setproperty!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isReferenced(getRobot(m.scanner)))
+
   else
     Gtk.@sigatom setproperty!(m["tbMeasure",ToolButtonLeaf],:sensitive,false)
     Gtk.@sigatom setproperty!(m["tbMeasureBG",ToolButtonLeaf],:sensitive,false)
@@ -161,6 +159,7 @@ function initCallbacks(m::MeasurementWidget)
 
       timerActive = true
       #MPIMeasurements.enableSlowDAC(daq, true)
+      Gtk.@sigatom setproperty!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
 
       function update_(::Timer)
         if timerActive
@@ -195,6 +194,7 @@ function initCallbacks(m::MeasurementWidget)
           MPIMeasurements.enableSlowDAC(daq, false)
           stopTx(daq)
           MPIMeasurements.disconnect(daq)
+          Gtk.@sigatom setproperty!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
           close(timer)
         end
       end
