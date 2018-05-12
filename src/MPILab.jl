@@ -446,6 +446,14 @@ function initExperimentStore(m::MPILab)
     end
   end
 
+  signal_connect(m["tbOpenExperimentFolder"], "clicked") do widget
+    if hasselection(m.selectionStudy)
+      Gtk.@sigatom begin
+        openFileBrowser(m.currentStudy.path)
+      end
+    end
+  end
+
 
   signal_connect(tv, "row-activated") do treeview, path, col, other...
     if hasselection(m.selectionExp)

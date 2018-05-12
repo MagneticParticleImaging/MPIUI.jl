@@ -37,7 +37,7 @@ function MeasurementWidget(filenameConfig="")
   end
 
   b = Builder(filename=uifile)
-  mainBox = G_.object(b, "boxMeasurement")
+  mainBox = object_(b, "boxMeasurement",BoxLeaf)
 
   m = MeasurementWidget( mainBox.handle, b,
                   scanner, zeros(Float32,0,0,0,0), mdfstore, "",
@@ -94,8 +94,9 @@ end
 
 function initCallbacks(m::MeasurementWidget)
 
-  #@time signal_connect(measurement, m["tbMeasure"], "clicked", Void, (), false, m )
-  #@time signal_connect(measurementBG, m["tbMeasureBG"], "clicked", Void, (), false, m)
+  println("CAAALLLLBACK")
+  #@time signal_connect(measurement, m["tbMeasure",ToolButtonLeaf], "clicked", Void, (), false, m )
+  #@time signal_connect(measurementBG, m["tbMeasureBG",ToolButtonLeaf], "clicked", Void, (), false, m)
 
   @time signal_connect(m["tbMeasure",ToolButtonLeaf], :clicked) do w
     measurement(C_NULL, m)
@@ -364,6 +365,7 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
   bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
   m.filenameExperiment = MPIMeasurements.measurement(getDAQ(m.scanner), params, m.mdfstore,
                          bgdata=bgdata)
+
 
   Gtk.@sigatom updateData(m.rawDataWidget, m.filenameExperiment)
 
