@@ -823,10 +823,10 @@ function showExtraWindow(m::DataViewerWidget, cdata_zy, cdata_zx, cdata_xy, isDr
   showData(m.simpleDataViewer, cdata_zy, cdata_zx, cdata_xy, isDrawSectionalLines, slices)
 end
 
-function drawImageCairo(c_, image, isDrawSectionalLines, xsec, ysec,
+function drawImageCairo(c, image, isDrawSectionalLines, xsec, ysec,
                         flipX, flipY, adjX, adjY, isDrawRectangle, xy, xyOffset)
  @guarded Gtk.draw(c) do widget
-  c = reshape(c_,size(c_,1), size(c_,2))
+  c = reshape(c,size(c,1), size(c,2))
   ctx = getgc(c)
   h = height(ctx)
   w = width(ctx)
