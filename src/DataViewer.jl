@@ -826,7 +826,7 @@ end
 function drawImageCairo(c, image, isDrawSectionalLines, xsec, ysec,
                         flipX, flipY, adjX, adjY, isDrawRectangle, xy, xyOffset)
  @guarded Gtk.draw(c) do widget
-  c = reshape(c,size(c,1), size(c,2))
+  #c = reshape(c,size(c,1), size(c,2))
   ctx = getgc(c)
   h = height(ctx)
   w = width(ctx)
