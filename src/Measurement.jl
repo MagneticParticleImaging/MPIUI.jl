@@ -287,7 +287,7 @@ function initCallbacks(m::MeasurementWidget)
               stopTx(daq)
               MPIMeasurements.disconnect(daq)
               moveCenter(getRobot(m.scanner))
-              close(timerCalibration)
+
               Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label, "")
               currPos = 0
               Gtk.@sigatom setproperty!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
@@ -298,7 +298,7 @@ function initCallbacks(m::MeasurementWidget)
               saveasMDF(joinpath(calibdir(m.mdfstore),string(calibNum)*".mdf"),
                         MPIFile("/tmp/tmp.mdf"), applyCalibPostprocessing=true)
               updateData!(mpilab.sfBrowser, m.mdfstore)
-
+              close(timerCalibration)
             end
           else
 
