@@ -30,7 +30,7 @@ function openFileBrowser(dir::String)
     if is_apple()
       run(`open $dir`)
     elseif is_linux()
-      run(`xdg_open $dir`)
+      run(`xdg-open $dir`)
     else
       println("openFileBrowser not supported on thos OS!")
     end
