@@ -241,9 +241,9 @@ function initCallbacks(m::MeasurementWidget)
         ctr = get.(center_) .*1u"mm"
 
         #positions = BreakpointGridPositions(
-        #        MeanderingGridPositions( CartesianGridPositions(shp,fov,ctr) ),
+        #        MeanderingGridPositions( RegularGridPositions(shp,fov,ctr) ),
         #        [1,11], [0.0,0.0,0.0]u"mm" )
-        cartGrid = CartesianGridPositions(shp,fov,ctr)
+        cartGrid = RegularGridPositions(shp,fov,ctr)
         if numBGMeas == 0
           positions = cartGrid
         else
