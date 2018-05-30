@@ -31,6 +31,7 @@ type RecoWidget<: Gtk.GtkGrid
   bEmpty
   selectedSF
   bgExperiments
+  recoGrid
 end
 
 getindex(m::RecoWidget, w::AbstractString) = G_.object(m.builder, w)
@@ -46,7 +47,7 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
                   nothing,
                   nothing, true,
                   nothing, nothing, nothing, nothing, 1,
-                  Dict{Int64,String}())
+                  Dict{Int64,String}(),nothing)
   Gtk.gobject_move_ref(m, mainGrid)
 
   spReco = m["spReco"]
@@ -359,7 +360,9 @@ function updateSF(m::RecoWidget)
 #     else
 
   println("Reloading SF")
-  m.sysMatrix = getSF(m.bSF, m.freq, params[:sparseTrafo], params[:solver], bgcorrection=bgcorrection, loadasreal = params[:loadasreal], loadas32bit = params[:loadas32bit], redFactor =  params[:redFactor])
+  m.sysMatrix, m.recoGrid = getSF(m.bSF, m.freq, params[:sparseTrafo], params[:solver], bgcorrection=bgcorrection, 
+                      loadasreal = params[:loadasreal], loadas32bit = params[:loadas32bit], 
+                      redFactor = params[:redFactor])
 
   m.sfParamsChanged = false
 end
@@ -376,7 +379,7 @@ function performReco(widgetptr::Ptr, m::RecoWidget)
     params[:bEmpty] = MPIFile( params[:emptyMeasPath] )
   end
 
-  global conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas,m.freq; params...)
+  global conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
 
   m.recoResult = conc
   m.recoResult["recoParams"] = getParams(m)
