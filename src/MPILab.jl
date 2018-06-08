@@ -348,6 +348,7 @@ function initAnatomRefStore(m::MPILab)
     else
       targetPath = joinpath(activeRecoStore(m).path, "reconstructions", id(m.currentStudy), "anatomicReferences", last(splitdir(filename)) )
       mkpath(targetPath)
+      chmod(targetPath, 0o777, recursive=true)
       cp(filename, targetPath, remove_destination=true)
       Gtk.@sigatom updateAnatomRefStore(m)
     end
