@@ -11,10 +11,6 @@ mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   sequences::Vector{String}
 end
 
-function object_(builder::Builder,name::AbstractString, T::Type)::T
-   return convert(T,ccall((:gtk_builder_get_object,Gtk.libgtk),Ptr{Gtk.GObject},(Ptr{Gtk.GObject},Ptr{UInt8}),builder,name))
-end
-
 getindex(m::MeasurementWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
 function isMeasurementStore(m::MeasurementWidget, d::DatasetStore)
@@ -41,7 +37,7 @@ function MeasurementWidget(filenameConfig="")
   end
 
   b = Builder(filename=uifile)
-  mainBox = G_.object(b, "boxMeasurement")
+  mainBox = object_(b, "boxMeasurement",BoxLeaf)
 
   m = MeasurementWidget( mainBox.handle, b,
                   scanner, zeros(Float32,0,0,0,0), mdfstore, "",
@@ -72,9 +68,13 @@ function MeasurementWidget(filenameConfig="")
     setInfoParams(m)
     setParams(m, merge!(getGeneralParams(m.scanner),toDict(getDAQ(m.scanner).params)))
     Gtk.@sigatom setproperty!(m["entConfig",EntryLeaf],:text,filenameConfig)
+    Gtk.@sigatom setproperty!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isReferenced(getRobot(m.scanner)))
+
   else
-    Gtk.@sigatom setproperty!(m["tbMeasure",EntryLeaf],:sensitive,false)
-    Gtk.@sigatom setproperty!(m["tbMeasureBG",EntryLeaf],:sensitive,false)
+    Gtk.@sigatom setproperty!(m["tbMeasure",ToolButtonLeaf],:sensitive,false)
+    Gtk.@sigatom setproperty!(m["tbMeasureBG",ToolButtonLeaf],:sensitive,false)
+    Gtk.@sigatom setproperty!(m["tbContinous",ToggleToolButtonLeaf],:sensitive,false)
+    Gtk.@sigatom setproperty!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
   end
 
   println("InitCallbacks")
@@ -94,8 +94,9 @@ end
 
 function initCallbacks(m::MeasurementWidget)
 
-  #@time signal_connect(measurement, m["tbMeasure"], "clicked", Void, (), false, m )
-  #@time signal_connect(measurementBG, m["tbMeasureBG"], "clicked", Void, (), false, m)
+  println("CAAALLLLBACK")
+  #@time signal_connect(measurement, m["tbMeasure",ToolButtonLeaf], "clicked", Void, (), false, m )
+  #@time signal_connect(measurementBG, m["tbMeasureBG",ToolButtonLeaf], "clicked", Void, (), false, m)
 
   @time signal_connect(m["tbMeasure",ToolButtonLeaf], :clicked) do w
     measurement(C_NULL, m)
@@ -158,21 +159,43 @@ function initCallbacks(m::MeasurementWidget)
       end
 
       timerActive = true
-      MPIMeasurements.enableSlowDAC(daq, true)
+      #MPIMeasurements.enableSlowDAC(daq, true)
+      Gtk.@sigatom setproperty!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
 
       function update_(::Timer)
         if timerActive
-          currFr = MPIMeasurements.currentFrame(daq)
+
+          if daq.params.controlPhase
+            MPIMeasurements.controlLoop(daq)
+          else
+            MPIMeasurements.setTxParams(daq, daq.params.currTxAmp, daq.params.currTxPhase)
+          end
+
+          curr1 = daq.params.acqFFValues[1,2]
+          curr2 = daq.params.acqFFValues[1,1]
+          println("C1=$curr1")
+          println("C2=$curr2")
+          setSlowDAC(daq, curr1, 0)
+          setSlowDAC(daq, curr2, 1)
+          sleep(0.2)
+
+          currFr = enableSlowDAC(daq, true)
 
           uMeas, uRef = readData(daq, 1, currFr+1)
-          #showDAQData(daq,vec(uMeas))
-          amplitude, phase = MPIMeasurements.calcFieldFromRef(daq,uRef)
-          #println("reference amplitude=$amplitude phase=$phase")
+          MPIMeasurements.enableSlowDAC(daq, false)
+          MPIMeasurements.setTxParams(daq, daq.params.currTxAmp*0.0, daq.params.currTxPhase*0.0)
+
+          #currFr = MPIMeasurements.currentFrame(daq)
+          #uMeas, uRef = readData(daq, 1, currFr+1)
+
           Gtk.@sigatom updateData(m.rawDataWidget, uMeas, 1.0)
+
+          sleep(getproperty(m["adjPause",AdjustmentLeaf],:value,Float64))
         else
           MPIMeasurements.enableSlowDAC(daq, false)
           stopTx(daq)
           MPIMeasurements.disconnect(daq)
+          Gtk.@sigatom setproperty!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
           close(timer)
         end
       end
@@ -218,9 +241,9 @@ function initCallbacks(m::MeasurementWidget)
         ctr = get.(center_) .*1u"mm"
 
         #positions = BreakpointGridPositions(
-        #        MeanderingGridPositions( CartesianGridPositions(shp,fov,ctr) ),
+        #        MeanderingGridPositions( RegularGridPositions(shp,fov,ctr) ),
         #        [1,11], [0.0,0.0,0.0]u"mm" )
-        cartGrid = CartesianGridPositions(shp,fov,ctr)
+        cartGrid = RegularGridPositions(shp,fov,ctr)
         if numBGMeas == 0
           positions = cartGrid
         else
@@ -258,12 +281,13 @@ function initCallbacks(m::MeasurementWidget)
               Gtk.@sigatom updateData(m.rawDataWidget, uMeas, 1.0)
 
               currPos +=1
+              sleep(getproperty(m["adjPause",AdjustmentLeaf],:value,Float64))
             end
             if currPos > numPos
               stopTx(daq)
               MPIMeasurements.disconnect(daq)
               moveCenter(getRobot(m.scanner))
-              close(timerCalibration)
+
               Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label, "")
               currPos = 0
               Gtk.@sigatom setproperty!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
@@ -274,7 +298,7 @@ function initCallbacks(m::MeasurementWidget)
               saveasMDF(joinpath(calibdir(m.mdfstore),string(calibNum)*".mdf"),
                         MPIFile("/tmp/tmp.mdf"), applyCalibPostprocessing=true)
               updateData!(mpilab.sfBrowser, m.mdfstore)
-
+              close(timerCalibration)
             end
           else
 
@@ -294,7 +318,7 @@ function initCallbacks(m::MeasurementWidget)
   #@time signal_connect(invalidateBG, m["adjNumPatches"], "value_changed", Void, (), false, m)
   #@time signal_connect(invalidateBG, m["adjNumPeriods"], , Void, (), false, m)
 
-  for adj in ["adjNumPeriods","adjDFStrength", "adjNumPatches"]
+  for adj in ["adjNumPeriods","adjDFStrength", "adjNumSubperiods"]
     @time signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
       invalidateBG(C_NULL, m)
     end
@@ -342,6 +366,7 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
   m.filenameExperiment = MPIMeasurements.measurement(getDAQ(m.scanner), params, m.mdfstore,
                          bgdata=bgdata)
 
+
   Gtk.@sigatom updateData(m.rawDataWidget, m.filenameExperiment)
 
   updateExperimentStore(mpilab, mpilab.currentStudy)
@@ -368,6 +393,8 @@ function getParams(m::MeasurementWidget)
   params = toDict(getDAQ(m.scanner).params)
 
   params["acqNumAverages"] = getproperty(m["adjNumAverages",AdjustmentLeaf], :value, Int64)
+  params["acqNumSubperiods"] = getproperty(m["adjNumSubperiods",AdjustmentLeaf], :value, Int64)
+
   params["acqNumFGFrames"] = getproperty(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64)
   params["acqNumBGFrames"] = getproperty(m["adjNumBGFrames",AdjustmentLeaf], :value, Int64)
   #params["acqNumPeriods"] = getproperty(m["adjNumPeriods"], :value, Int64)
@@ -417,6 +444,7 @@ end
 
 function setParams(m::MeasurementWidget, params)
   Gtk.@sigatom setproperty!(m["adjNumAverages",AdjustmentLeaf], :value, params["acqNumAverages"])
+  Gtk.@sigatom setproperty!(m["adjNumSubperiods",AdjustmentLeaf], :value, get(params,"acqNumSubperiods",1))
   Gtk.@sigatom setproperty!(m["adjNumFGFrames",AdjustmentLeaf], :value, params["acqNumFrames"])
   Gtk.@sigatom setproperty!(m["adjNumBGFrames",AdjustmentLeaf], :value, params["acqNumFrames"])
   #Gtk.@sigatom setproperty!(m["entStudy"], :text, params["studyName"])

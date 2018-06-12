@@ -348,6 +348,7 @@ function initAnatomRefStore(m::MPILab)
     else
       targetPath = joinpath(activeRecoStore(m).path, "reconstructions", id(m.currentStudy), "anatomicReferences", last(splitdir(filename)) )
       mkpath(targetPath)
+      try_chmod(targetPath, 0o777, recursive=true)
       cp(filename, targetPath, remove_destination=true)
       Gtk.@sigatom updateAnatomRefStore(m)
     end
@@ -442,6 +443,14 @@ function initExperimentStore(m::MPILab)
           updateData!(m.recoWidget, m.currentExperiment.path )
           G_.current_page(m["nbView"], 2)
         end
+      end
+    end
+  end
+
+  signal_connect(m["tbOpenExperimentFolder"], "clicked") do widget
+    if hasselection(m.selectionStudy)
+      Gtk.@sigatom begin
+        openFileBrowser(m.currentStudy.path)
       end
     end
   end

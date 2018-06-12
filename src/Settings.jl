@@ -51,6 +51,7 @@ function Settings()
 
   defaultSettingsFile = joinpath(Pkg.dir("MPIUI"),"src","Settings.toml")
   mkpath(settingspath)
+  try_chmod(settingspath, 0o777, recursive=true)
   if !isfile(settingsfile)
     cp(defaultSettingsFile, settingsfile)
   end

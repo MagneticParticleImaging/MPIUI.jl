@@ -27,7 +27,7 @@ function updateData!(m::SFBrowserWidget, sysFuncs)
   println(sysFuncs)
 
   for l = 2:size(sysFuncs,1)
-    push!(m.store,( l-1, sysFuncs[l,15],
+    push!(m.store,( sysFuncs[l,15],
             sysFuncs[l,1],round(sysFuncs[l,2],2),
            "$(round((sysFuncs[l,3]),2)) x $(round((sysFuncs[l,4]),2)) x $(round((sysFuncs[l,5]),2))",
                               "$(sysFuncs[l,6]) x $(sysFuncs[l,7]) x $(sysFuncs[l,8])",
@@ -41,24 +41,23 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
  #Name,Gradient,DFx,DFy,DFz,Size x,Size y,Size z,Bandwidth,Tracer,TracerBatch,DeltaSampleConcentration,DeltaSampleVolume,Path
 
 
-  store = ListStore(Int64,String,String,Float64,String,String,
+  store = ListStore(String,String,Float64,String,String,
                      String,String,String,String, Bool)
 
   tv = TreeView(TreeModel(store))
   r1 = CellRendererText()
   r2 = CellRendererToggle()
-  c0 = TreeViewColumn("Num", r1, Dict("text" => 0))
-  c1 = TreeViewColumn("Date", r1, Dict("text" => 1))
-  c2 = TreeViewColumn("Name", r1, Dict("text" => 2))
-  c3 = TreeViewColumn("Gradient", r1, Dict("text" => 3))
-  c4 = TreeViewColumn("DF", r1, Dict("text" => 4))
-  c5 = TreeViewColumn("Size", r1, Dict("text" => 5))
-  c6 = TreeViewColumn("Tracer", r1, Dict("text" => 6))
-  c7 = TreeViewColumn("Batch", r1, Dict("text" => 7))
-  c8 = TreeViewColumn("Conc.", r1, Dict("text" => 8))
-  c9 = TreeViewColumn("Path", r1, Dict("text" => 9))
+  c1 = TreeViewColumn("Date", r1, Dict("text" => 0))
+  c2 = TreeViewColumn("Name", r1, Dict("text" => 1))
+  c3 = TreeViewColumn("Gradient", r1, Dict("text" => 2))
+  c4 = TreeViewColumn("DF", r1, Dict("text" => 3))
+  c5 = TreeViewColumn("Size", r1, Dict("text" => 4))
+  c6 = TreeViewColumn("Tracer", r1, Dict("text" => 5))
+  c7 = TreeViewColumn("Batch", r1, Dict("text" => 6))
+  c8 = TreeViewColumn("Conc.", r1, Dict("text" => 7))
+  c9 = TreeViewColumn("Path", r1, Dict("text" => 8))
 
-  for (i,c) in enumerate((c0,c1,c2,c3,c4,c5,c6,c7,c8,c9))
+  for (i,c) in enumerate((c1,c2,c3,c4,c5,c6,c7,c8,c9))
     G_.sort_column_id(c,i-1)
     G_.resizable(c,true)
     G_.max_width(c,80)
@@ -66,13 +65,12 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   end
 
   G_.max_width(c0,20)
-  G_.max_width(c1,170)
-
+  G_.max_width(c1,200)
 
   selection = G_.selection(tv)
 
   tmFiltered = TreeModelFilter(store)
-  G_.visible_column(tmFiltered,10)
+  G_.visible_column(tmFiltered,9)
   tmSorted = TreeModelSort(tmFiltered)
   G_.model(tv, tmSorted)
 
@@ -85,7 +83,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     if hasselection(selection)
       currentIt = selected(selection)
 
-      sffilename = TreeModel(tmSorted)[currentIt,10]
+      sffilename = TreeModel(tmSorted)[currentIt,9]
 
       Gtk.@sigatom begin
         updateData!(mpilab.sfViewerWidget, sffilename)
@@ -112,10 +110,10 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     grid[2,1] = entGradient
     grid[1,2] = Label("DF Str.")
     grid[2,2] = entDF
-    grid[1,3] = Label("Size")
-    grid[2,3] = entSize
-    grid[1,4] = Label("Tracer")
-    grid[2,4] = entTracer
+    grid[3,1] = Label("Size")
+    grid[4,1] = entSize
+    grid[3,2] = Label("Tracer")
+    grid[4,2] = entTracer
   else
     hbox = Box(:h)
     push!(vbox, hbox)
@@ -170,19 +168,19 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     for l=1:length(store)
       showMe = true
       if !isnull(G)
-        showMe = showMe && (get(G) == store[l,4])
+        showMe = showMe && (get(G) == store[l,3])
       end
       if length(df_) == 3
-        showMe = showMe && ([parse(Float64,dv) for dv in split(store[l,5],"x")] == df_ )
+        showMe = showMe && ([parse(Float64,dv) for dv in split(store[l,4],"x")] == df_ )
       end
       if length(s_) == 3
-        showMe = showMe && ([parse(Int64,sv) for sv in split(store[l,6],"x")] == s_ )
+        showMe = showMe && ([parse(Int64,sv) for sv in split(store[l,5],"x")] == s_ )
       end
       if length(tracer) > 0
-        showMe = showMe && contains(lowercase(store[l,7]),lowercase(tracer))
+        showMe = showMe && contains(lowercase(store[l,6]),lowercase(tracer))
       end
 
-      store[l,11] = showMe
+      store[l,10] = showMe
     end
   end
 
