@@ -24,6 +24,8 @@ function updateData!(m::SFBrowserWidget, sysFuncs)
 
   Gtk.@sigatom empty!(m.store)
 
+  println(sysFuncs)
+
   for l = 2:size(sysFuncs,1)
     push!(m.store,( l-1, sysFuncs[l,15],
             sysFuncs[l,1],round(sysFuncs[l,2],2),
@@ -64,6 +66,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   end
 
   G_.max_width(c0,20)
+  G_.max_width(c1,170)
 
 
   selection = G_.selection(tv)
