@@ -499,8 +499,8 @@ function initExperimentStore(m::MPILab)
 end
 
 function updateExperimentStore(m::MPILab, study::Study)
-  empty!(m.experimentStore)
-  empty!(m.reconstructionStore)
+  Gtk.@sigatom empty!(m.experimentStore)
+  Gtk.@sigatom empty!(m.reconstructionStore)
 
   experiments = getExperiments( activeDatasetStore(m), study)
 

@@ -168,7 +168,8 @@ function initCallbacks(m::MeasurementWidget)
           if daq.params.controlPhase
             MPIMeasurements.controlLoop(daq)
           else
-            MPIMeasurements.setTxParams(daq, daq.params.currTxAmp, daq.params.currTxPhase)
+            MPIMeasurements.setTxParams(daq, daq.params.calibFieldToVolt.*daq.params.dfStrength,
+                             zeros(numTxChannels(daq)))
           end
 
           curr1 = daq.params.acqFFValues[1,2]
