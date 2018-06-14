@@ -121,6 +121,13 @@ function initCallbacks(m::RawDataWidget)
       end
   end
 
+  @time for sl in ["entTDMinVal","entTDMaxVal","entFDMinVal","entFDMaxVal"]
+    signal_connect(m[sl,EntryLeaf], "changed") do w
+      showData(C_NULL, m)
+    end
+    #signal_connect(showData, m[sl], "value_changed", Void, (), false, m )
+  end
+
 
   signal_connect(m.winHarmView, "delete-event") do widget, event
     #typeof(event)
@@ -186,6 +193,26 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     minFr = getproperty(m["adjMinFre",AdjustmentLeaf], :value, Int64)
     maxFr = getproperty(m["adjMaxFre",AdjustmentLeaf], :value, Int64)
 
+    autoRangingTD = true
+    autoRangingFD = true
+    minValTD_ = tryparse(Float64,getproperty( m["entTDMinVal",EntryLeaf] ,:text,String))
+    maxValTD_ = tryparse(Float64,getproperty( m["entTDMaxVal",EntryLeaf] ,:text,String))
+    minValFD_ = tryparse(Float64,getproperty( m["entFDMinVal",EntryLeaf] ,:text,String))
+    maxValFD_ = tryparse(Float64,getproperty( m["entFDMaxVal",EntryLeaf] ,:text,String))
+
+    if !isnull(minValTD_) && !isnull(maxValTD_)
+      minValTD = get(minValTD_)
+      maxValTD = get(maxValTD_)
+      autoRangingTD = false
+    end
+
+    if !isnull(minValFD_) && !isnull(maxValFD_)
+      minValFD = get(minValFD_)
+      maxValFD = get(maxValFD_)
+      autoRangingFD = false
+    end
+
+
     if getproperty(m["cbShowAllPatches",CheckButtonLeaf], :active, Bool)
       minTP = 1
       maxTP = size(m.data,1)*size(m.data,3)
@@ -205,22 +232,31 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     numFreq = floor(Int, length(data) ./ 2 .+ 1)
     freq = collect(0:(numFreq-1))./(numFreq-1)./m.deltaT./2.0
 
-    freqdata = abs.(rfft(data))
+    freqdata = abs.(rfft(data)) / length(data)
 
     p1 = Winston.plot(timePoints[minTP:maxTP],data[minTP:maxTP],"b-",linewidth=5)
     Winston.ylabel("u / V")
     Winston.xlabel("t / ms")
+    if !autoRangingTD
+      Winston.ylim(minValTD, maxValTD)
+    end
     p2 = Winston.semilogy(freq[minFr:maxFr],freqdata[minFr:maxFr],"b-o", linewidth=5)
     #Winston.ylabel("u / V")
     Winston.xlabel("f / kHz")
+    if !autoRangingFD
+        Winston.ylim(minValFD, maxValFD)
+    end
+
+
+
     if length(m.dataBG) > 0 && getproperty(m["cbShowBG",CheckButtonLeaf], :active, Bool)
       mid = div(size(m.dataBG,4),2)
       #dataBG = vec(m.dataBG[:,chan,patch,1] .- mean(m.dataBG[:,chan,patch,:],2))
       dataBG = vec( mean(m.dataBG[:,chan,patch,:],2))
 
       Winston.plot(p1,timePoints[minTP:maxTP],dataBG[minTP:maxTP],"k--",linewidth=2)
-      Winston.plot(p2,freq[minFr:maxFr],abs.(rfft(dataBG)[minFr:maxFr]),"k-x",
-                   linewidth=2, ylog=true)
+      Winston.plot(p2,freq[minFr:maxFr],abs.(rfft(dataBG)[minFr:maxFr]) / length(dataBG),
+                  "k-x", linewidth=2, ylog=true)
     end
     display(m.cTD ,p1)
     display(m.cFD ,p2)

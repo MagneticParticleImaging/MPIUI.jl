@@ -172,12 +172,14 @@ function initCallbacks(m::MeasurementWidget)
                              zeros(numTxChannels(daq)))
           end
 
-          curr1 = daq.params.acqFFValues[1,2]
-          curr2 = daq.params.acqFFValues[1,1]
-          println("C1=$curr1")
-          println("C2=$curr2")
-          setSlowDAC(daq, curr1, 0)
-          setSlowDAC(daq, curr2, 1)
+          if length(daq.params.acqFFValues) > 0
+            curr1 = daq.params.acqFFValues[1,2]
+            curr2 = daq.params.acqFFValues[1,1]
+            println("C1=$curr1")
+            println("C2=$curr2")
+            setSlowDAC(daq, curr1, 0)
+            setSlowDAC(daq, curr2, 1)
+          end
           sleep(0.2)
 
           currFr = enableSlowDAC(daq, true)
@@ -189,7 +191,9 @@ function initCallbacks(m::MeasurementWidget)
           #currFr = MPIMeasurements.currentFrame(daq)
           #uMeas, uRef = readData(daq, 1, currFr+1)
 
-          Gtk.@sigatom updateData(m.rawDataWidget, uMeas, 1.0)
+          deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
+
+          Gtk.@sigatom updateData(m.rawDataWidget, uMeas, deltaT)
 
           sleep(getproperty(m["adjPause",AdjustmentLeaf],:value,Float64))
         else
