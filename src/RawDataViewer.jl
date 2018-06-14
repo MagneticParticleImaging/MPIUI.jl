@@ -205,7 +205,7 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     numFreq = floor(Int, length(data) ./ 2 .+ 1)
     freq = collect(0:(numFreq-1))./(numFreq-1)./m.deltaT./2.0
 
-    freqdata = abs.(rfft(data))
+    freqdata = abs.(rfft(data)) / sqrt(length(data))
 
     p1 = Winston.plot(timePoints[minTP:maxTP],data[minTP:maxTP],"b-",linewidth=5)
     Winston.ylabel("u / V")
@@ -219,8 +219,8 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       dataBG = vec( mean(m.dataBG[:,chan,patch,:],2))
 
       Winston.plot(p1,timePoints[minTP:maxTP],dataBG[minTP:maxTP],"k--",linewidth=2)
-      Winston.plot(p2,freq[minFr:maxFr],abs.(rfft(dataBG)[minFr:maxFr]),"k-x",
-                   linewidth=2, ylog=true)
+      Winston.plot(p2,freq[minFr:maxFr],abs.(rfft(dataBG)[minFr:maxFr]) / sqrt(length(dataBG)),
+                  "k-x", linewidth=2, ylog=true)
     end
     display(m.cTD ,p1)
     display(m.cFD ,p2)
