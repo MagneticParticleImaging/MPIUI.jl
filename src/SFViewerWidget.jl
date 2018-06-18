@@ -121,14 +121,14 @@ function updateSF(m::SFViewerWidget)
       #updatingSOWidget = false
     end
 
-    c = reshape(abs.(sfData), 1, size(sfData,1), size(sfData,2), size(sfData,3), 1)
-
-    im = AxisArray(c, (:color,:x,:y,:z,:time),
+    c = reshape(sfData, 1, size(sfData,1), size(sfData,2), size(sfData,3), 1)
+    c_ = cat(1,abs.(c),angle.(c))
+    im = AxisArray(c_, (:color,:x,:y,:z,:time),
                         tuple(1.0, 1.0, 1.0, 1.0, 1.0),
                         tuple(0.0, 0.0, 0.0, 0.0, 0.0))
 
     imMeta = ImageMeta(im, Dict{String,Any}())
-
+    
     updateData!(m.dv, imMeta)
     m.updating = false
   end
