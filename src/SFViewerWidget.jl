@@ -43,7 +43,11 @@ function SFViewerWidget()
       my = getproperty(m["adjSFMixY"],:value, Int64)
       mz = getproperty(m["adjSFMixZ"],:value, Int64)
 
-      freq = (mx*m.mxyz[1]+my*m.mxyz[2]+mz*m.mxyz[3])
+      freq = 0
+      m_ = [mx,my,mz]
+      for d=1:length(m.mxyz)
+       freq += m_[d]*m.mxyz[d]
+      end
 
       freq = clamp(freq,0,m.maxFreq-1)
 

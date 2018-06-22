@@ -18,7 +18,7 @@ using Colors
 
 import Base: getindex
 import MPIFiles: addReco, getVisu, id, addVisu
-import MPIMeasurements: measurement
+import MPIMeasurements #: measurement
 export openFileBrowser
 
 function object_(builder::Builder,name::AbstractString, T::Type)::T
@@ -51,5 +51,5 @@ include("RecoWidget.jl")
 include("Settings.jl")
 include("MPILab.jl")
 include("LCRMeter.jl")
-
+include("ArduinoDataLogger.jl")
 end # module

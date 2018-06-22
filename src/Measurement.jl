@@ -149,6 +149,7 @@ function initCallbacks(m::MeasurementWidget)
     if getproperty(m["tbContinous",ToggleToolButtonLeaf], :active, Bool)
       params = merge!(getGeneralParams(m.scanner),getParams(m))
       MPIMeasurements.updateParams!(daq, params)
+
       startTx(daq)
 
       if daq.params.controlPhase
@@ -283,7 +284,9 @@ function initCallbacks(m::MeasurementWidget)
 
               uMeas, uRef = postMoveAction(calibObj, positions[currPos], currPos)
 
-              Gtk.@sigatom updateData(m.rawDataWidget, uMeas, 1.0)
+              deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
+
+              Gtk.@sigatom updateData(m.rawDataWidget, uMeas, deltaT)
 
               currPos +=1
               sleep(getproperty(m["adjPause",AdjustmentLeaf],:value,Float64))
