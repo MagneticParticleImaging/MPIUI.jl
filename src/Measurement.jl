@@ -77,6 +77,8 @@ function MeasurementWidget(filenameConfig="")
     Gtk.@sigatom setproperty!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
   end
 
+  Gtk.@sigatom setproperty!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
+
   println("InitCallbacks")
 
   @time initCallbacks(m)
@@ -149,7 +151,7 @@ function initCallbacks(m::MeasurementWidget)
     if getproperty(m["tbContinous",ToggleToolButtonLeaf], :active, Bool)
       params = merge!(getGeneralParams(m.scanner),getParams(m))
       MPIMeasurements.updateParams!(daq, params)
-
+      enableACPower(getSurveillanceUnit(m.scanner))
       startTx(daq)
 
       if daq.params.controlPhase
@@ -200,6 +202,7 @@ function initCallbacks(m::MeasurementWidget)
         else
           MPIMeasurements.enableSlowDAC(daq, false)
           stopTx(daq)
+          disableACPower(getSurveillanceUnit(m.scanner))
           MPIMeasurements.disconnect(daq)
           Gtk.@sigatom setproperty!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
           close(timer)
@@ -217,6 +220,13 @@ function initCallbacks(m::MeasurementWidget)
   calibObj = nothing
   numPos = 0
   currPos = 0
+  cancelled = false
+  @time signal_connect(m["tbCancel",ToolButtonLeaf], :clicked) do w
+    cancelled = true
+    currPos = numPos
+    timerCalibrationActive = true
+  end
+
   @time signal_connect(m["tbCalibration",ToggleToolButtonLeaf], :toggled) do w
     if !isReferenced(getRobot(m.scanner))
       info_dialog("Robot not referenced! Cannot proceed!", mpilab["mainWindow"])
@@ -269,6 +279,7 @@ function initCallbacks(m::MeasurementWidget)
         currPos = 1
         numPos = length(positions)
 
+        Gtk.@sigatom setproperty!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
 
         function update_(::Timer)
           println("Timer active $currPos / $numPos")
@@ -293,6 +304,7 @@ function initCallbacks(m::MeasurementWidget)
             end
             if currPos > numPos
               stopTx(daq)
+              disableACPower(getSurveillanceUnit(m.scanner))
               MPIMeasurements.disconnect(daq)
               moveCenter(getRobot(m.scanner))
 
@@ -300,13 +312,17 @@ function initCallbacks(m::MeasurementWidget)
               currPos = 0
               Gtk.@sigatom setproperty!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
 
-              calibNum = getNewCalibNum(m.mdfstore)
-              saveasMDF("/tmp/tmp.mdf",
+              if !cancelled
+                cancelled = false
+                calibNum = getNewCalibNum(m.mdfstore)
+                saveasMDF("/tmp/tmp.mdf",
                         calibObj, params)
-              saveasMDF(joinpath(calibdir(m.mdfstore),string(calibNum)*".mdf"),
+                saveasMDF(joinpath(calibdir(m.mdfstore),string(calibNum)*".mdf"),
                         MPIFile("/tmp/tmp.mdf"), applyCalibPostprocessing=true)
-              updateData!(mpilab.sfBrowser, m.mdfstore)
+                updateData!(mpilab.sfBrowser, m.mdfstore)
+              end
               close(timerCalibration)
+              Gtk.@sigatom setproperty!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
             end
           else
 
@@ -371,9 +387,10 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
   params["acqNumFrames"] = params["acqNumFGFrames"]
 
   bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
+  enableACPower(getSurveillanceUnit(m.scanner))
   m.filenameExperiment = MPIMeasurements.measurement(getDAQ(m.scanner), params, m.mdfstore,
                          bgdata=bgdata)
-
+  disableACPower(getSurveillanceUnit(m.scanner))
 
   Gtk.@sigatom updateData(m.rawDataWidget, m.filenameExperiment)
 
@@ -387,7 +404,10 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
   params = merge!(getGeneralParams(m.scanner),getParams(m))
   params["acqNumFrames"] = params["acqNumBGFrames"]
 
+  enableACPower(getSurveillanceUnit(m.scanner))
   u = MPIMeasurements.measurement(getDAQ(m.scanner), params)
+  disableACPower(getSurveillanceUnit(m.scanner))
+
   m.dataBGStore = u
   #updateData(m, u)
 

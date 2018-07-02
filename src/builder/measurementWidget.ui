@@ -139,8 +139,9 @@
                   <object class="GtkToolButton" id="tbMeasure">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Measurement</property>
                     <property name="is_important">True</property>
-                    <property name="label" translatable="yes">Measure</property>
+                    <property name="label" translatable="yes">Meas</property>
                     <property name="use_underline">True</property>
                     <property name="stock_id">gtk-yes</property>
                   </object>
@@ -153,6 +154,7 @@
                   <object class="GtkToolButton" id="tbMeasureBG">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Background</property>
                     <property name="is_important">True</property>
                     <property name="label" translatable="yes">BG</property>
                     <property name="use_underline">True</property>
@@ -167,10 +169,10 @@
                   <object class="GtkToggleToolButton" id="tbContinous">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="is_important">True</property>
+                    <property name="tooltip_text" translatable="yes">Continuous</property>
                     <property name="label" translatable="yes">Cont.</property>
                     <property name="use_underline">True</property>
-                    <property name="stock_id">gtk-yes</property>
+                    <property name="stock_id">gtk-refresh</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -181,10 +183,22 @@
                   <object class="GtkToggleToolButton" id="tbCalibration">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="is_important">True</property>
+                    <property name="tooltip_text" translatable="yes">Calibration</property>
                     <property name="label" translatable="yes">Calib.</property>
                     <property name="use_underline">True</property>
-                    <property name="stock_id">gtk-yes</property>
+                    <property name="stock_id">gtk-justify-fill</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="homogeneous">True</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkToolButton" id="tbCancel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Cancel</property>
+                    <property name="stock_id">gtk-cancel</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
