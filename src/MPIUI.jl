@@ -51,5 +51,5 @@ include("RecoWidget.jl")
 include("Settings.jl")
 include("MPILab.jl")
 include("LCRMeter.jl")
-#include("ArduinoDataLogger.jl")
+include("ArduinoDataLogger.jl")
 end # module
