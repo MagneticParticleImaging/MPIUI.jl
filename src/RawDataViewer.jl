@@ -91,14 +91,14 @@ function initCallbacks(m::RawDataWidget)
     #signal_connect(showData, m[sl], "value_changed", Void, (), false, m )
   end
 
-  @time for cb in ["cbShowBG", "cbAverage","cbSubtractBG","cbShowAllPatches"]
+  @time for cb in ["cbShowBG","cbSubtractBG","cbShowAllPatches"]
     signal_connect(m[cb,CheckButtonLeaf], :toggled) do w
       showData(C_NULL, m)
     end
     #signal_connect(showData, m[cb], "toggled", Void, (), false, m)
   end
 
-  @time for cb in ["cbCorrTF"]
+  @time for cb in ["cbCorrTF","cbSLCorr"]
     signal_connect(m[cb,CheckButtonLeaf], :toggled) do w
       loadData(C_NULL, m)
     end
@@ -164,7 +164,7 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
       #setParams(m, params)
 
       u = getMeasurements(f, true, frames=frame,
-                  bgCorrection=false,
+                  bgCorrection=false, spectralLeakageCorrection = getproperty(m["cbSLCorr",CheckButtonLeaf], :active, Bool),
                   tfCorrection=getproperty(m["cbCorrTF",CheckButtonLeaf], :active, Bool))
 
       timePoints = rxTimePoints(f)
@@ -172,7 +172,7 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
 
       if acqNumBGFrames(f) > 0
         m.dataBG = getMeasurements(f, false, frames=measBGFrameIdx(f),
-              bgCorrection=false,
+              bgCorrection=false, spectralLeakageCorrection = getproperty(m["cbSLCorr",CheckButtonLeaf], :active, Bool),
               tfCorrection=getproperty(m["cbCorrTF",CheckButtonLeaf], :active, Bool))
       end
       updateData(m, u, deltaT, true)

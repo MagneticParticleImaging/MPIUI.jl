@@ -183,7 +183,7 @@ function initCallbacks(m::MeasurementWidget)
             setSlowDAC(daq, curr1, 0)
             setSlowDAC(daq, curr2, 1)
           end
-          sleep(0.2)
+          sleep(0.5)
 
           currFr = enableSlowDAC(daq, true)
 
@@ -280,7 +280,7 @@ function initCallbacks(m::MeasurementWidget)
         numPos = length(positions)
 
         Gtk.@sigatom setproperty!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
-
+        cancelled = false
         function update_(::Timer)
           println("Timer active $currPos / $numPos")
           if timerCalibrationActive

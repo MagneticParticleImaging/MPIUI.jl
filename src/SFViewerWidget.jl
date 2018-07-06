@@ -120,9 +120,11 @@ function updateSF(m::SFViewerWidget)
     end
 
     Gtk.@sigatom begin
+      m.updatingSOWidget = true
       #updatingSOWidget = true # avoid circular signals
       setproperty!(m["adjSFSignalOrdered"],:value, m.SNRSortedIndicesInverse[k] )
       #updatingSOWidget = false
+      m.updatingSOWidget = false
     end
 
     c = reshape(sfData, 1, size(sfData,1), size(sfData,2), size(sfData,3), 1)
@@ -132,7 +134,7 @@ function updateSF(m::SFViewerWidget)
                         tuple(0.0, 0.0, 0.0, 0.0, 0.0))
 
     imMeta = ImageMeta(im, Dict{String,Any}())
-    
+
     updateData!(m.dv, imMeta)
     m.updating = false
   end

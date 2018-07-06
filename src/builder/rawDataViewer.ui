@@ -292,8 +292,8 @@
               </packing>
             </child>
             <child>
-              <object class="GtkCheckButton" id="cbAverage">
-                <property name="label" translatable="yes">Average</property>
+              <object class="GtkCheckButton" id="cbSLCorr">
+                <property name="label" translatable="yes">Leak Corr</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">False</property>
