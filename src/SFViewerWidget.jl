@@ -37,7 +37,7 @@ function SFViewerWidget()
   setproperty!(m["boxSFViewer"], :expand, m.dv, true)
 
   function updateSFMixO( widget )
-    if !m.updatingMOWidgets
+    if !m.updatingMOWidgets && !m.updating
       m.updatingMOWidgets = true
       mx = getproperty(m["adjSFMixX"],:value, Int64)
       my = getproperty(m["adjSFMixY"],:value, Int64)
@@ -59,7 +59,7 @@ function SFViewerWidget()
   end
 
   function updateSFSignalOrdered( widget )
-    if !m.updatingSOWidget
+    if !m.updatingSOWidget && !m.updating
       m.updatingSOWidget = true
       k = m.SNRSortedIndices[getproperty(m["adjSFSignalOrdered"],:value, Int64)]
 
@@ -146,13 +146,19 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   m.maxChan = rxNumChannels(m.bSF)
 
   m.updating = true
-  setproperty!(m["adjSFFreq"],:upper, m.maxFreq-1  )
-  setproperty!(m["adjSFSignalOrdered"],:upper, m.maxFreq*3  )
   setproperty!(m["adjSFFreq"],:value, 2  )
+  setproperty!(m["adjSFFreq"],:upper, m.maxFreq-1  )
+  setproperty!(m["adjSFSignalOrdered"],:value, 1  )
+  setproperty!(m["adjSFSignalOrdered"],:upper, m.maxFreq*m.maxChan  )
+  setproperty!(m["adjSFMixX"],:value, 0 )
+  setproperty!(m["adjSFMixY"],:value, 0 )
+  setproperty!(m["adjSFMixZ"],:value, 0 )
   #setproperty!(m["adjSFMixX"],:upper, 16 )
   #setproperty!(m["adjSFMixY"],:upper, 16 )
   #setproperty!(m["adjSFMixZ"],:upper, 16 )
+  setproperty!(m["adjSFRecChan"],:value, 1 )
   setproperty!(m["adjSFRecChan"],:upper, m.maxChan )
+  setproperty!(m["adjSFPatch"],:value, 1 )
   setproperty!(m["adjSFPatch"],:upper, acqNumPeriodsPerFrame(m.bSF) )
 
   m.SNR = calibSNR(m.bSF)[:,:,:]

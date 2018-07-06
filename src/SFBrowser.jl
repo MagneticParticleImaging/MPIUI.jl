@@ -66,6 +66,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 
   #G_.max_width(c0,20)
   G_.max_width(c1,200)
+  G_.max_width(c2,200)
 
   selection = G_.selection(tv)
 
