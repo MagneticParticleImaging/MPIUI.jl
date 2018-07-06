@@ -42,7 +42,7 @@ activeDatasetStore(m::MPILab) = m.datasetStores[m.activeStore]
 activeRecoStore(m::MPILab) = typeof(activeDatasetStore(m)) <: BrukerDatasetStore ?
                                       m.brukerRecoStore : activeDatasetStore(m)
 
-function MPILab()::MPILab
+function MPILab(offlineMode=false)::MPILab
   println("## Start ...")
 
   uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","mpiLab.ui")
@@ -61,7 +61,7 @@ function MPILab()::MPILab
   println("## Init Settings ...")
   initSettings(m)
   println("## Init Measurement Tab ...")
-  initMeasurementTab(m)
+  initMeasurementTab(m, offlineMode)
   println("## Init Store switch ...")
   initStoreSwitch(m)
 
@@ -415,7 +415,7 @@ function initExperimentStore(m::MPILab)
     c = TreeViewColumn(col, r1, Dict("text" => i-1))
     G_.sort_column_id(c,i-1)
     G_.resizable(c,true)
-    G_.max_width(c,80)
+    G_.max_width(c,300)
     push!(tv,c)
   end
 
@@ -799,14 +799,10 @@ end
 ### Measurement Tab ###
 
 
-function initMeasurementTab(m::MPILab)
+function initMeasurementTab(m::MPILab, offlineMode)
 
-  #function postMeasFunc()
-  #  updateExperimentStore(m, m.currentStudy)
-  #end
-
-  m.measurementWidget = MeasurementWidget(m.settings["scanner"])
-  #m.measurementWidget = MeasurementWidget()
+  settings = offlineMode ? "" : m.settings["scanner"]
+  m.measurementWidget = MeasurementWidget(settings)
 
   boxMeasTab = m["boxMeasTab"]
   push!(boxMeasTab,m.measurementWidget)
