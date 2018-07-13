@@ -244,6 +244,9 @@ function initCallbacks(m::MeasurementWidget)
         centerString = getproperty(m["entCenter",EntryLeaf], :text, String)
         center_ = tryparse.(Float64,split(centerString,"x"))
 
+        velRobString = getproperty(m["velRob",EntryLeaf], :text, String)
+        velRob_ = tryparse.(Float64,split(velRobString,"x"))
+
         numBGMeas = getproperty(m["adjNumBGMeasurements",AdjustmentLeaf], :value, Int64)
 
         if any(isnull.(shp_)) || any(isnull.(fov_)) || any(isnull.(center_)) ||
@@ -255,6 +258,7 @@ function initCallbacks(m::MeasurementWidget)
         shp = get.(shp_)
         fov = get.(fov_) .*1u"mm"
         ctr = get.(center_) .*1u"mm"
+        velRob =get.(velRob_)
 
         #positions = BreakpointGridPositions(
         #        MeanderingGridPositions( RegularGridPositions(shp,fov,ctr) ),
@@ -271,6 +275,8 @@ function initCallbacks(m::MeasurementWidget)
         for pos in positions
           isValid = checkCoords(getSafety(m.scanner), pos)
         end
+
+        setVelocity(getRobot(m.scanner), velRob)
 
         params = merge!(getGeneralParams(m.scanner),getParams(m))
         calibObj = SystemMatrixRobotMeas(m.scanner, positions, params)
@@ -306,6 +312,7 @@ function initCallbacks(m::MeasurementWidget)
               stopTx(daq)
               disableACPower(getSurveillanceUnit(m.scanner))
               MPIMeasurements.disconnect(daq)
+              setVelocity(getRobot(m.scanner), getDefaultVelocity(getRobot(m.scanner)))
               moveCenter(getRobot(m.scanner))
 
               Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label, "")
@@ -513,5 +520,8 @@ function setParams(m::MeasurementWidget, params)
     Gtk.@sigatom setproperty!(m["entCenter",EntryLeaf], :text, ctrStr)
     Gtk.@sigatom setproperty!(m["adjNumBGMeasurements",AdjustmentLeaf], :value, p["calibNumBGMeasurements"])
   end
+  velRob = getDefaultVelocity(getRobot(m.scanner))
+  velRobStr = @sprintf("%.d x %.d x %.d", velRob[1],velRob[2],velRob[3])
+  Gtk.@sigatom setproperty!(m["velRob",EntryLeaf], :text, velRobStr)
   Gtk.@sigatom setproperty!(m["entCurrPos",EntryLeaf], :text, "0.0 x 0.0 x 0.0")
 end
