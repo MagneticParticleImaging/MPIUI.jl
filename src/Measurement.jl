@@ -306,7 +306,8 @@ function initCallbacks(m::MeasurementWidget)
               stopTx(daq)
               disableACPower(getSurveillanceUnit(m.scanner))
               MPIMeasurements.disconnect(daq)
-              moveCenter(getRobot(m.scanner))
+              #moveCenter(getRobot(m.scanner))
+              moveAbsUnsafe(getRobot(m.scanner), bgPos)
 
               Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label, "")
               currPos = 0
