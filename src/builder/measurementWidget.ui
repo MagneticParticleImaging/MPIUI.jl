@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.20.0 -->
+<!-- Generated with glade 3.22.1 -->
 <interface>
   <requires lib="gtk+" version="3.12"/>
   <object class="GtkAdjustment" id="adjDFStrength">
@@ -409,7 +409,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="halign">start</property>
-                            <property name="label" translatable="yes">Volume [L]</property>
+                            <property name="label" translatable="yes">Volume [mL]</property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -421,7 +421,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="halign">start</property>
-                            <property name="label" translatable="yes">Conc [mol/L]</property>
+                            <property name="label" translatable="yes">Conc [mmol/L]</property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -456,7 +456,6 @@
                           <object class="GtkEntry" id="entTracerBatch">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="editable">False</property>
                             <property name="width_chars">3</property>
                           </object>
                           <packing>
@@ -481,7 +480,7 @@
                             <property name="can_focus">True</property>
                             <property name="text" translatable="yes">0,000</property>
                             <property name="adjustment">adjTracerVolume</property>
-                            <property name="digits">3</property>
+                            <property name="digits">7</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
@@ -495,7 +494,7 @@
                             <property name="width_chars">0</property>
                             <property name="text" translatable="yes">0,000</property>
                             <property name="adjustment">adjTracerConcentration</property>
-                            <property name="digits">3</property>
+                            <property name="digits">7</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
@@ -920,18 +919,6 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkLabel" id="label19">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="halign">start</property>
-                            <property name="label" translatable="yes"># BG Meas</property>
-                          </object>
-                          <packing>
-                            <property name="left_attach">0</property>
-                            <property name="top_attach">3</property>
-                          </packing>
-                        </child>
-                        <child>
                           <object class="GtkEntry" id="entFOV">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
@@ -952,19 +939,6 @@
                           <packing>
                             <property name="left_attach">0</property>
                             <property name="top_attach">1</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkSpinButton">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="width_chars">0</property>
-                            <property name="text" translatable="yes">0</property>
-                            <property name="adjustment">adjNumBGMeasurements</property>
-                          </object>
-                          <packing>
-                            <property name="left_attach">1</property>
-                            <property name="top_attach">3</property>
                           </packing>
                         </child>
                         <child>
@@ -991,14 +965,40 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEntry" id="entCurrPos">
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="halign">start</property>
+                            <property name="label" translatable="yes">Pause</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">7</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSpinButton">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="width_chars">1</property>
+                            <property name="adjustment">adjPause</property>
+                            <property name="digits">1</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
-                            <property name="top_attach">4</property>
+                            <property name="top_attach">7</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="btnReferenceDrive">
+                            <property name="label" translatable="yes">Reference Drive</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">6</property>
+                            <property name="width">2</property>
                           </packing>
                         </child>
                         <child>
@@ -1012,20 +1012,43 @@
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
+                            <property name="top_attach">5</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkEntry" id="entCurrPos">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="width_chars">1</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">1</property>
+                            <property name="top_attach">5</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="label19">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="halign">start</property>
+                            <property name="label" translatable="yes"># BG Meas</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
                             <property name="top_attach">4</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkButton" id="btnReferenceDrive">
-                            <property name="label" translatable="yes">Reference Drive</property>
+                          <object class="GtkSpinButton">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="receives_default">True</property>
+                            <property name="width_chars">0</property>
+                            <property name="text" translatable="yes">0</property>
+                            <property name="adjustment">adjNumBGMeasurements</property>
                           </object>
                           <packing>
-                            <property name="left_attach">0</property>
-                            <property name="top_attach">5</property>
-                            <property name="width">2</property>
+                            <property name="left_attach">1</property>
+                            <property name="top_attach">4</property>
                           </packing>
                         </child>
                         <child>
@@ -1033,23 +1056,22 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="halign">start</property>
-                            <property name="label" translatable="yes">Pause</property>
+                            <property name="label" translatable="yes">Velo</property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
-                            <property name="top_attach">6</property>
+                            <property name="top_attach">3</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkSpinButton">
+                          <object class="GtkEntry" id="velRob">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="adjustment">adjPause</property>
-                            <property name="digits">1</property>
+                            <property name="width_chars">1</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
-                            <property name="top_attach">6</property>
+                            <property name="top_attach">3</property>
                           </packing>
                         </child>
                       </object>
