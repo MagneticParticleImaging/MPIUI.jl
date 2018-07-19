@@ -441,8 +441,8 @@ function getParams(m::MeasurementWidget)
   params["tracerName"] = [getproperty(m["entTracerName",EntryLeaf], :text, String)]
   params["tracerBatch"] = [getproperty(m["entTracerBatch",EntryLeaf], :text, String)]
   params["tracerVendor"] = [getproperty(m["entTracerVendor",EntryLeaf], :text, String)]
-  params["tracerVolume"] = [getproperty(m["adjTracerVolume",AdjustmentLeaf], :value, Float64)]
-  params["tracerConcentration"] = [getproperty(m["adjTracerConcentration",AdjustmentLeaf], :value, Float64)]
+  params["tracerVolume"] = [1e-3*getproperty(m["adjTracerVolume",AdjustmentLeaf], :value, Float64)]
+  params["tracerConcentration"] = [1e-3*getproperty(m["adjTracerConcentration",AdjustmentLeaf], :value, Float64)]
   params["tracerSolute"] = [getproperty(m["entTracerSolute",EntryLeaf], :text, String)]
 
   dfString = getproperty(m["entDFStrength",EntryLeaf], :text, String)
@@ -491,8 +491,8 @@ function setParams(m::MeasurementWidget, params)
   Gtk.@sigatom setproperty!(m["entTracerName",EntryLeaf], :text, params["tracerName"][1])
   Gtk.@sigatom setproperty!(m["entTracerBatch",EntryLeaf], :text, params["tracerBatch"][1])
   Gtk.@sigatom setproperty!(m["entTracerVendor",EntryLeaf], :text, params["tracerVendor"][1])
-  Gtk.@sigatom setproperty!(m["adjTracerVolume",AdjustmentLeaf], :value, params["tracerVolume"][1])
-  Gtk.@sigatom setproperty!(m["adjTracerConcentration",AdjustmentLeaf], :value, params["tracerConcentration"][1])
+  Gtk.@sigatom setproperty!(m["adjTracerVolume",AdjustmentLeaf], :value, 1000*params["tracerVolume"][1])
+  Gtk.@sigatom setproperty!(m["adjTracerConcentration",AdjustmentLeaf], :value, 1000*params["tracerConcentration"][1])
   Gtk.@sigatom setproperty!(m["entTracerSolute",EntryLeaf], :text, params["tracerSolute"][1])
 
   if haskey(params,"acqFFSequence")
