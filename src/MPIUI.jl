@@ -11,6 +11,7 @@ ENV["MPILIB_UI"] = "Nothing"
 using Gtk, Gtk.ShortNames
 using Cairo
 using Images
+using HDF5
 
 ENV["WINSTON_OUTPUT"] = :gtk
 import Winston

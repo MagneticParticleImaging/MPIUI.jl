@@ -207,7 +207,7 @@ function initStudyStore(m::MPILab)
     c = TreeViewColumn(col, r1, Dict("text" => i-1))
     G_.sort_column_id(c,i-1)
     G_.resizable(c,true)
-    G_.max_width(c,80)
+    G_.max_width(c,300)
     push!(tv,c)
   end
 
@@ -328,7 +328,7 @@ function initAnatomRefStore(m::MPILab)
     c = TreeViewColumn(col, r1, Dict("text" => i-1))
     G_.sort_column_id(c,i-1)
     G_.resizable(c,true)
-    G_.max_width(c,80)
+    G_.max_width(c,300)
     push!(tv,c)
   end
 
@@ -408,11 +408,19 @@ function initExperimentStore(m::MPILab)
 
   tv = TreeView(TreeModel(m.experimentStore))
   r1 = CellRendererText()
+  r2 = CellRendererText()
+  setproperty!(r2, :editable, true)
 
   cols = ["Num", "Name", "Frames", "DF FOV", "Gradient", "Averages", "Operator"]
 
   for (i,col) in enumerate(cols)
-    c = TreeViewColumn(col, r1, Dict("text" => i-1))
+
+    if i==2 #magic number
+      c = TreeViewColumn(col, r2, Dict("text" => i-1))
+    else
+      c = TreeViewColumn(col, r1, Dict("text" => i-1))
+    end
+
     G_.sort_column_id(c,i-1)
     G_.resizable(c,true)
     G_.max_width(c,300)
@@ -493,6 +501,24 @@ function initExperimentStore(m::MPILab)
 
         Gtk.@sigatom updateExperimentStore(m, m.currentStudy)
       end
+    end
+  end
+
+  signal_connect(r2, "edited") do widget, path, text
+    if hasselection(m.selectionExp)
+      currentIt = selected( m.selectionExp )
+
+      if splitext(m.currentExperiment.path)[2] == ".mdf"
+        Gtk.@sigatom m.experimentStore[currentIt,2] = string(text)
+        h5open(m.currentExperiment.path, "r+") do file
+          if exists(file, "/experiment/name")
+            o_delete(file, "/experiment/name")
+          end
+          write(file, "/experiment/name", string(text) )
+        end
+      end
+      #m.currentVisu.params[:description] = string(text)
+      #Gtk.@sigatom save(m.currentVisu)
     end
   end
 
