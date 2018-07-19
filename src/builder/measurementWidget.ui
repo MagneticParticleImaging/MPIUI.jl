@@ -456,7 +456,6 @@
                           <object class="GtkEntry" id="entTracerBatch">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="editable">False</property>
                             <property name="width_chars">3</property>
                           </object>
                           <packing>
