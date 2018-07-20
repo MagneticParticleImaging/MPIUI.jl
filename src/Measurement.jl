@@ -149,6 +149,14 @@ function initCallbacks(m::MeasurementWidget)
     #infoMessage(m, "move to $posString")
   end
 
+  @time signal_connect(m["bt_MovePark",ButtonLeaf], :clicked) do w
+      if !isReferenced(getRobot(m.scanner))
+        info_dialog("Robot not referenced! Cannot proceed!", mpilab["mainWindow"])
+        return
+      end
+      movePark(getRobot(m.scanner))
+  end
+
   @time signal_connect(m["btnReferenceDrive",ButtonLeaf], :clicked) do w
     robot = getRobot(m.scanner)
     if !isReferenced(robot)
