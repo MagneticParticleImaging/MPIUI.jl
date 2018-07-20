@@ -254,6 +254,7 @@ function initCallbacks(m::MeasurementWidget)
   @time signal_connect(m["tbCalibration",ToggleToolButtonLeaf], :toggled) do w
     if !isReferenced(getRobot(m.scanner))
       info_dialog("Robot not referenced! Cannot proceed!", mpilab["mainWindow"])
+      Gtk.@sigatom setproperty!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
       return
     end
 
@@ -269,12 +270,12 @@ function initCallbacks(m::MeasurementWidget)
         center_ = tryparse.(Float64,split(centerString,"x"))
 
         velRobString = getproperty(m["velRob",EntryLeaf], :text, String)
-        velRob_ = tryparse.(Float64,split(velRobString,"x"))
+        velRob_ = tryparse.(Int64,split(velRobString,"x"))
 
         numBGMeas = getproperty(m["adjNumBGMeasurements",AdjustmentLeaf], :value, Int64)
 
-        if any(isnull.(shp_)) || any(isnull.(fov_)) || any(isnull.(center_)) ||
-           length(shp_) != 3 || length(fov_) != 3 || length(center_) != 3
+        if any(isnull.(shp_)) || any(isnull.(fov_)) || any(isnull.(center_)) || any(isnull.(velRob_)) ||
+           length(shp_) != 3 || length(fov_) != 3 || length(center_) != 3 || length(velRob_) != 3
           Gtk.@sigatom setproperty!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
           return
         end
@@ -282,7 +283,7 @@ function initCallbacks(m::MeasurementWidget)
         shp = get.(shp_)
         fov = get.(fov_) .*1u"mm"
         ctr = get.(center_) .*1u"mm"
-        velRob =get.(velRob_)
+        velRob = get.(velRob_)
 
         #positions = BreakpointGridPositions(
         #        MeanderingGridPositions( RegularGridPositions(shp,fov,ctr) ),
@@ -337,8 +338,7 @@ function initCallbacks(m::MeasurementWidget)
               disableACPower(getSurveillanceUnit(m.scanner))
               MPIMeasurements.disconnect(daq)
 
-              setVelocity(getRobot(m.scanner), getDefaultVelocity(getRobot(m.scanner)))
-              #moveCenter(getRobot(m.scanner))
+              setVelocity(getRobot(m.scanner), round.(Int64,getDefaultVelocity(getRobot(m.scanner))))
               moveAbsUnsafe(getRobot(m.scanner), bgPos)
 
               Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label, "")
@@ -348,11 +348,30 @@ function initCallbacks(m::MeasurementWidget)
               if !cancelled
                 cancelled = false
                 calibNum = getNewCalibNum(m.mdfstore)
-                saveasMDF("/tmp/tmp.mdf",
+                if getproperty(m["cbStoreAsSystemMatrix",CheckButtonLeaf],:active, Bool)
+                  saveasMDF("/tmp/tmp.mdf",
                         calibObj, params)
-                saveasMDF(joinpath(calibdir(m.mdfstore),string(calibNum)*".mdf"),
+                  saveasMDF(joinpath(calibdir(m.mdfstore),string(calibNum)*".mdf"),
                         MPIFile("/tmp/tmp.mdf"), applyCalibPostprocessing=true)
-                updateData!(mpilab.sfBrowser, m.mdfstore)
+                  updateData!(mpilab.sfBrowser, m.mdfstore)
+                else
+
+                  name = params["studyName"]
+                  path = joinpath( studydir(m.mdfstore), name)
+                  subject = ""
+                  date = ""
+
+                  newStudy = Study(path,name,subject,date)
+
+                  addStudy(m.mdfstore, newStudy)
+                  expNum = getNewExperimentNum(m.mdfstore, newStudy)
+                  params["experimentNumber"] = expNum
+
+                  filename = joinpath(studydir(m.mdfstore),newStudy.name,string(expNum)*".mdf")
+
+                  saveasMDF(filename, calibObj, params)
+                  updateExperimentStore(mpilab, mpilab.currentStudy)
+                end
               end
               close(timerCalibration)
               Gtk.@sigatom setproperty!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
