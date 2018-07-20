@@ -292,7 +292,7 @@ function initCallbacks(m::MeasurementWidget)
           positions = cartGrid
         else
           bgIdx = round.(Int64, linspace(1, length(cartGrid)+numBGMeas, numBGMeas ) )
-          bgPos = getGeneralParams(m.scanner)["calibBGPos"]*1u"mm"*1000
+          bgPos = getRobot(m.scanner).defParkPos*1u"mm"*1000
           positions = BreakpointGridPositions(cartGrid, bgIdx, bgPos)
         end
 
