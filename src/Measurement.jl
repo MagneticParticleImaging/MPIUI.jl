@@ -194,7 +194,6 @@ function initCallbacks(m::MeasurementWidget)
       end
 
       timerActive = true
-      #MPIMeasurements.enableSlowDAC(daq, true)
       Gtk.@sigatom setproperty!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
 
       function update_(::Timer)
@@ -217,14 +216,10 @@ function initCallbacks(m::MeasurementWidget)
           end
           sleep(0.5)
 
-          currFr = enableSlowDAC(daq, true)
+          currFr = enableSlowDAC(daq, true, 1)
 
           uMeas, uRef = readData(daq, 1, currFr+1)
-          MPIMeasurements.enableSlowDAC(daq, false)
           MPIMeasurements.setTxParams(daq, daq.params.currTxAmp*0.0, daq.params.currTxPhase*0.0)
-
-          #currFr = MPIMeasurements.currentFrame(daq)
-          #uMeas, uRef = readData(daq, 1, currFr+1)
 
           deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
 
