@@ -63,6 +63,30 @@ function MeasurementWidget(filenameConfig="")
   end
   Gtk.@sigatom setproperty!(m["cbSeFo",ComboBoxTextLeaf],:active,0)
 
+  println("Read safety parameters")
+  Gtk.@sigatom empty!(m["cbSafeCoil", ComboBoxTextLeaf])
+  for coil in getValidHeadScannerGeos()
+      Gtk.@sigatom push!(m["cbSafeCoil",ComboBoxTextLeaf], coil.name)
+  end
+  Gtk.@sigatom setproperty!(m["cbSafeCoil",ComboBoxTextLeaf], :active, 0)
+  Gtk.@sigatom empty!(m["cbSafeObject", ComboBoxTextLeaf])
+  for obj in getValidHeadObjects()
+      Gtk.@sigatom push!(m["cbSafeObject",ComboBoxTextLeaf], name(obj))
+  end
+  Gtk.@sigatom setproperty!(m["cbSafeObject",ComboBoxTextLeaf], :active, 0)
+
+  Gtk.@sigatom signal_connect(m["cbSafeObject",ComboBoxTextLeaf], :changed) do w
+      ind = getproperty(m["cbSafeObject",ComboBoxTextLeaf],:active,Int)+1
+      if getValidHeadObjects()[ind].name==customPhantom.name
+          sObjStr = @sprintf("%.2f x %.2f", ustrip(customPhantom.width),ustrip(customPhantom.height))
+          Gtk.@sigatom setproperty!(m["entSafetyObj", EntryLeaf],:text, sObjStr)
+          Gtk.@sigatom setproperty!(m["entSafetyObj", EntryLeaf],:sensitive,true)
+      else
+          Gtk.@sigatom setproperty!(m["entSafetyObj", EntryLeaf],:sensitive,false)
+      end
+  end
+
+
   println("Online / Offline")
   if m.scanner != nothing
     setInfoParams(m)
@@ -121,7 +145,7 @@ function initCallbacks(m::MeasurementWidget)
       return
     end
     pos = get.(pos_).*1u"mm"
-    moveAbs(getRobot(m.scanner),getSafety(m.scanner), pos)
+    moveAbs(getRobot(m.scanner),getRobotSetupUI(m), pos)
     #infoMessage(m, "move to $posString")
   end
 
@@ -273,13 +297,13 @@ function initCallbacks(m::MeasurementWidget)
         end
 
         for pos in positions
-          isValid = checkCoords(getSafety(m.scanner), pos)
+          isValid = checkCoords(getRobotSetupUI(m), pos)
         end
 
         setVelocity(getRobot(m.scanner), velRob)
 
         params = merge!(getGeneralParams(m.scanner),getParams(m))
-        calibObj = SystemMatrixRobotMeas(m.scanner, positions, params)
+        calibObj = SystemMatrixRobotMeas(m.scanner, getRobotSetupUI(m), positions, params)
 
         timerCalibrationActive = true
         currPos = 1
@@ -312,7 +336,7 @@ function initCallbacks(m::MeasurementWidget)
               stopTx(daq)
               disableACPower(getSurveillanceUnit(m.scanner))
               MPIMeasurements.disconnect(daq)
-              
+
               setVelocity(getRobot(m.scanner), getDefaultVelocity(getRobot(m.scanner)))
               #moveCenter(getRobot(m.scanner))
               moveAbsUnsafe(getRobot(m.scanner), bgPos)
@@ -526,4 +550,21 @@ function setParams(m::MeasurementWidget, params)
   velRobStr = @sprintf("%.d x %.d x %.d", velRob[1],velRob[2],velRob[3])
   Gtk.@sigatom setproperty!(m["velRob",EntryLeaf], :text, velRobStr)
   Gtk.@sigatom setproperty!(m["entCurrPos",EntryLeaf], :text, "0.0 x 0.0 x 0.0")
+end
+
+function getRobotSetupUI(m::MeasurementWidget)
+    coil = getValidHeadScannerGeos()[getproperty(m["cbSafeCoil",ComboBoxTextLeaf], :active, Int)+1]
+    obj = getValidHeadObjects()[getproperty(m["cbSafeObject",ComboBoxTextLeaf], :active, Int)+1]
+    if obj.name == customPhantom.name
+        obj = getCustomPhatom(m)
+    end
+    setup = RobotSetup("UIRobotSetup",obj,coil,clearance)
+    return setup
+end
+
+function getCustomPhatom(m::MeasurementWidget)
+    cPStr = getproperty(m["entSafetyObj",EntryLeaf],:text,String)
+    cP_ = tryparse.(Float64,split(cPStr,"x"))
+    cP= get.(cP_) .*1u"mm"
+    return Rectangle(cP[1],cP[2], "UI Custom Phantom")
 end
