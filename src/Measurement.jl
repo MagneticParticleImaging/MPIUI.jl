@@ -301,7 +301,7 @@ function initCallbacks(m::MeasurementWidget)
           positions = cartGrid
         else
           bgIdx = round.(Int64, linspace(1, length(cartGrid)+numBGMeas, numBGMeas ) )
-          bgPos = getRobot(m.scanner).defParkPos*1u"mm"*1000
+          bgPos = getRobot(m.scanner).defParkPos
           positions = BreakpointGridPositions(cartGrid, bgIdx, bgPos)
         end
 
@@ -347,7 +347,7 @@ function initCallbacks(m::MeasurementWidget)
               MPIMeasurements.disconnect(daq)
 
               setVelocity(getRobot(m.scanner), round.(Int64,getDefaultVelocity(getRobot(m.scanner))))
-              moveAbsUnsafe(getRobot(m.scanner), bgPos)
+              movePark(getRobot(m.scanner))
 
               Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label, "")
               currPos = 0
