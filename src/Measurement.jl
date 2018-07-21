@@ -107,6 +107,8 @@ function MeasurementWidget(filenameConfig="")
 
   @time initCallbacks(m)
 
+  Gtk.@sigatom updateCalibTime(C_NULL, m)
+
   println("Finished")
 
 
@@ -206,16 +208,6 @@ function initCallbacks(m::MeasurementWidget)
                              zeros(numTxChannels(daq)))
           end
 
-          #=if length(daq.params.acqFFValues) > 0
-            curr1 = daq.params.acqFFValues[1,2]
-            curr2 = daq.params.acqFFValues[1,1]
-            println("C1=$curr1")
-            println("C2=$curr2")
-            setSlowDAC(daq, curr1, 0)
-            setSlowDAC(daq, curr2, 1)
-          end
-          sleep(0.5)=#
-
           currFr = enableSlowDAC(daq, true, 1)
 
           uMeas, uRef = readData(daq, 1, currFr+1)
@@ -288,9 +280,6 @@ function initCallbacks(m::MeasurementWidget)
         ctr = get.(center_) .*1u"mm"
         velRob = get.(velRob_)
 
-        #positions = BreakpointGridPositions(
-        #        MeanderingGridPositions( RegularGridPositions(shp,fov,ctr) ),
-        #        [1,11], [0.0,0.0,0.0]u"mm" )
         cartGrid = RegularGridPositions(shp,fov,ctr)
         if numBGMeas == 0
           positions = cartGrid
@@ -403,6 +392,16 @@ function initCallbacks(m::MeasurementWidget)
     end
   end
 
+  for adj in ["adjNumBGMeasurements","adjPause","adjNumPeriods","adjNumAverages"]
+    @time signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
+      updateCalibTime(C_NULL, m)
+      setInfoParams(m)
+    end
+  end
+  @time signal_connect(m["entGridShape",EntryLeaf], "changed") do w
+    updateCalibTime(C_NULL, m)
+  end
+
 
   #@time signal_connect(reinitDAQ, m["adjNumPeriods"], "value_changed", Void, (), false, m)
   @time signal_connect(m["cbSeFo",ComboBoxTextLeaf], :changed) do w
@@ -415,8 +414,34 @@ function initCallbacks(m::MeasurementWidget)
 end
 
 function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
-  #
-  Gtk.@sigatom setproperty!(m["entCalibTime",EntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")
+  daq = getDAQ(m.scanner)
+
+  shpString = getproperty(m["entGridShape",EntryLeaf], :text, String)
+  shp_ = tryparse.(Int64,split(shpString,"x"))
+  numBGMeas = getproperty(m["adjNumBGMeasurements",AdjustmentLeaf], :value, Int64)
+
+  if any(isnull.(shp_)) length(shp_) != 3
+    return
+  end
+
+  shp = get.(shp_)
+
+  calibTime = (getproperty(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
+              getproperty(m["adjNumPeriods",AdjustmentLeaf], :value, Int64) *
+              daq.params.dfCycle + getproperty(m["adjPause",AdjustmentLeaf],:value,Float64)) *
+              (prod(shp) + numBGMeas)
+
+  calibTimeMin = calibTime/60
+
+  calibStr = ""
+  if calibTimeMin > 60
+    calibStr = "$(round(Int,calibTimeMin/60)) h "
+    calibTimeMin = rem(calibTimeMin, 60)
+  end
+  calibStr = string(calibStr,@sprintf("%.1f",calibTime/60)," min")
+
+  Gtk.@sigatom setproperty!(m["entCalibTime",EntryLeaf],:text, calibStr)
+  return
 end
 
 
@@ -437,7 +462,10 @@ function setInfoParams(m::MeasurementWidget)
   end
   Gtk.@sigatom setproperty!(m["entDFFreq",EntryLeaf],:text,freqStr)
   Gtk.@sigatom setproperty!(m["entDFPeriod",EntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")
-  Gtk.@sigatom setproperty!(m["entFramePeriod",EntryLeaf],:text,"$(daq.params.acqFramePeriod) s")
+  framePeriod = getproperty(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
+              getproperty(m["adjNumPeriods",AdjustmentLeaf], :value, Int64) *
+              daq.params.dfCycle
+  Gtk.@sigatom setproperty!(m["entFramePeriod",EntryLeaf],:text,"$(@sprintf("%.5f",framePeriod)) s")
 end
 
 
@@ -506,28 +534,6 @@ function getParams(m::MeasurementWidget)
   params["acqFFSequence"] = m.sequences[getproperty(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
   params["acqFFLinear"] = getproperty(m["cbFFInterpolation",CheckButtonLeaf], :active, Bool)
 
-
-  #println(textSeFo)
-  #=
-  try
-    numPatches = getproperty(m["adjNumPatches"], :value, Int64)
-    numPeriodsPerPatch = getproperty(m["adjNumPeriods"], :value, Int64)
-    txt = "t = (0:($numPatches-1))./($numPatches);"  * textSeFo
-    println(txt)
-    code = parse(txt)
-    println(code)
-    currents = eval(code)
-    #cat(1,x,reverse(x[2:end-1]))
-    println(currents)
-
-    params["acqFFValues"] = repeat(currents, inner=numPeriodsPerPatch)
-
-  catch
-    println("Could not parse text")
-    params["acqFFValues"] = [0.0]
-  end=#
-  #params["acqNumPeriodsPerFrame"]=length(params["acqFFValues"])
-
   return params
 end
 
@@ -578,6 +584,8 @@ function setParams(m::MeasurementWidget, params)
   velRobStr = @sprintf("%.d x %.d x %.d", velRob[1],velRob[2],velRob[3])
   Gtk.@sigatom setproperty!(m["velRob",EntryLeaf], :text, velRobStr)
   Gtk.@sigatom setproperty!(m["entCurrPos",EntryLeaf], :text, "0.0 x 0.0 x 0.0")
+
+  Gtk.@sigatom setproperty!(m["adjPause",AdjustmentLeaf], :value, 2.0)
 end
 
 function getRobotSetupUI(m::MeasurementWidget)
