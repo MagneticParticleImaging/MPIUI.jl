@@ -9,6 +9,7 @@ mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   filenameExperiment::String
   rawDataWidget::RawDataWidget
   sequences::Vector{String}
+  expanded::Bool
 end
 
 getindex(m::MeasurementWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
@@ -41,7 +42,7 @@ function MeasurementWidget(filenameConfig="")
 
   m = MeasurementWidget( mainBox.handle, b,
                   scanner, zeros(Float32,0,0,0,0), mdfstore, "",
-                  "", RawDataWidget(), String[])
+                  "", RawDataWidget(), String[], false)
   Gtk.gobject_move_ref(m, mainBox)
 
   println("Type constructed")
@@ -111,9 +112,47 @@ function MeasurementWidget(filenameConfig="")
 
   println("Finished")
 
-
   return m
 end
+
+function initSurveillance(m::MeasurementWidget)
+  if !m.expanded
+    su = getSurveillanceUnit(m.scanner)
+    cTemp = Canvas()
+    box = m["boxSurveillance",BoxLeaf]
+    push!(box,cTemp)
+    setproperty!(box,:expand,cTemp,true)
+
+    showall(box)
+
+    temp1 = zeros(0)
+    temp2 = zeros(0)
+
+    function update_(::Timer)
+      temp = getTemperatures(su)
+      str = join([ @sprintf("%.2f C ",t) for t in temp ])
+      Gtk.@sigatom setproperty!(m["entTemperatures",EntryLeaf], :text, str)
+
+      push!(temp1, temp[1])
+      push!(temp2, temp[2])
+
+      if length(temp1) > 100
+        temp1 = temp1[2:end]
+        temp2 = temp2[2:end]
+      end
+
+      p = Winston.plot(temp1,"b-", linewidth=10)
+      Winston.plot(p,temp2,"r-",linewidth=10)
+      #Winston.ylabel("Harmonic $f")
+      #Winston.xlabel("Time")
+      display(cTemp ,p)
+      #
+    end
+    timer = Timer(update_, 0.0, 0.9)
+    m.expanded = true
+  end
+end
+
 
 function infoMessage(m::MeasurementWidget, message::String)
   Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label,
@@ -123,8 +162,14 @@ end
 function initCallbacks(m::MeasurementWidget)
 
   println("CAAALLLLBACK")
+
+  @time signal_connect(m["expSurveillance",ExpanderLeaf], :activate) do w
+    initSurveillance(m)
+  end
+
   #@time signal_connect(measurement, m["tbMeasure",ToolButtonLeaf], "clicked", Void, (), false, m )
   #@time signal_connect(measurementBG, m["tbMeasureBG",ToolButtonLeaf], "clicked", Void, (), false, m)
+
 
   @time signal_connect(m["tbMeasure",ToolButtonLeaf], :clicked) do w
     measurement(C_NULL, m)
