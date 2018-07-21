@@ -292,6 +292,8 @@ function initCallbacks(m::MeasurementWidget)
   end
 
   @time signal_connect(m["tbCalibration",ToggleToolButtonLeaf], :toggled) do w
+    su = getSurveillanceUnit(m.scanner)
+
     if !isReferenced(getRobot(m.scanner))
       info_dialog("Robot not referenced! Cannot proceed!", mpilab["mainWindow"])
       Gtk.@sigatom setproperty!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
@@ -330,7 +332,7 @@ function initCallbacks(m::MeasurementWidget)
           positions = cartGrid
         else
           bgIdx = round.(Int64, linspace(1, length(cartGrid)+numBGMeas, numBGMeas ) )
-          bgPos = getRobot(m.scanner).defParkPos
+          bgPos = parkPos(getRobot(m.scanner))
           positions = BreakpointGridPositions(cartGrid, bgIdx, bgPos)
         end
 
@@ -369,6 +371,14 @@ function initCallbacks(m::MeasurementWidget)
 
               currPos +=1
               sleep(getproperty(m["adjPause",AdjustmentLeaf],:value,Float64))
+
+              temp = getTemperatures(su)
+              while maximum(temp) > 45.0
+                Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label,
+                      """<span foreground="red" font_weight="bold" size="x-large"> System Cooling Down! </span>""")
+                sleep(60)
+                temp[:] = getTemperatures(su)
+              end
             end
             if currPos > numPos
               stopTx(daq)
