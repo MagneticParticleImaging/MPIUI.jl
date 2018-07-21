@@ -206,7 +206,7 @@ function initCallbacks(m::MeasurementWidget)
                              zeros(numTxChannels(daq)))
           end
 
-          if length(daq.params.acqFFValues) > 0
+          #=if length(daq.params.acqFFValues) > 0
             curr1 = daq.params.acqFFValues[1,2]
             curr2 = daq.params.acqFFValues[1,1]
             println("C1=$curr1")
@@ -214,7 +214,7 @@ function initCallbacks(m::MeasurementWidget)
             setSlowDAC(daq, curr1, 0)
             setSlowDAC(daq, curr2, 1)
           end
-          sleep(0.5)
+          sleep(0.5)=#
 
           currFr = enableSlowDAC(daq, true, 1)
 
@@ -413,6 +413,12 @@ function initCallbacks(m::MeasurementWidget)
   end
 
 end
+
+function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
+  #
+  Gtk.@sigatom setproperty!(m["entCalibTime",EntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")
+end
+
 
 function invalidateBG(widgetptr::Ptr, m::MeasurementWidget)
   m.dataBGStore = zeros(Float32,0,0,0,0)
