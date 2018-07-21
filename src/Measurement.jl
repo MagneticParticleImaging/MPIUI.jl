@@ -191,7 +191,7 @@ function initCallbacks(m::MeasurementWidget)
     if any(isnull.(pos_)) || length(pos_) != 3
       return
     end
-    pos = get.(pos_).*1u"mm"
+    pos = get.(pos_).*1Unitful.mm
     moveAbs(getRobot(m.scanner),getRobotSetupUI(m), pos)
     #infoMessage(m, "move to $posString")
   end
@@ -323,8 +323,8 @@ function initCallbacks(m::MeasurementWidget)
         end
 
         shp = get.(shp_)
-        fov = get.(fov_) .*1u"mm"
-        ctr = get.(center_) .*1u"mm"
+        fov = get.(fov_) .*1Unitful.mm
+        ctr = get.(center_) .*1Unitful.mm
         velRob = get.(velRob_)
 
         cartGrid = RegularGridPositions(shp,fov,ctr)
@@ -355,7 +355,7 @@ function initCallbacks(m::MeasurementWidget)
           println("Timer active $currPos / $numPos")
           if timerCalibrationActive
             if currPos <= numPos
-              pos = Float64.(ustrip.(uconvert.(u"mm", positions[currPos])))
+              pos = Float64.(ustrip.(uconvert.(Unitful.mm, positions[currPos])))
               posStr = @sprintf("%.2f x %.2f x %.2f", pos[1],pos[2],pos[3])
               Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label,
                     """<span foreground="green" font_weight="bold" size="x-large"> $currPos / $numPos ($posStr mm) </span>""")
@@ -656,6 +656,6 @@ end
 function getCustomPhatom(m::MeasurementWidget)
     cPStr = getproperty(m["entSafetyObj",EntryLeaf],:text,String)
     cP_ = tryparse.(Float64,split(cPStr,"x"))
-    cP= get.(cP_) .*1u"mm"
+    cP= get.(cP_) .*1Unitful.mm
     return Rectangle(cP[1],cP[2], "UI Custom Phantom")
 end
