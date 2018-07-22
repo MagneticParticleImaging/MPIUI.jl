@@ -360,8 +360,8 @@ function updateSF(m::RecoWidget)
 #     else
 
   println("Reloading SF")
-  m.sysMatrix, m.recoGrid = getSF(m.bSF, m.freq, params[:sparseTrafo], params[:solver], bgcorrection=bgcorrection, 
-                      loadasreal = params[:loadasreal], loadas32bit = params[:loadas32bit], 
+  m.sysMatrix, m.recoGrid = getSF(m.bSF, m.freq, params[:sparseTrafo], params[:solver], bgcorrection=bgcorrection,
+                      loadasreal = params[:loadasreal], loadas32bit = params[:loadas32bit],
                       redFactor = params[:redFactor])
 
   m.sfParamsChanged = false
@@ -446,7 +446,7 @@ function getParams(m::RecoWidget)
 
   params[:redFactor] = getproperty(m["adjRedFactor"], :value, Float64)
 
-  params[:SFPath] = String[ b.path for b in m.bSF]
+  params[:SFPath] = String[ filepath(b) for b in m.bSF]
 
   return params
 end

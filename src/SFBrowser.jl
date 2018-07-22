@@ -102,6 +102,10 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   entSize = Entry()
   entTracer = Entry()
 
+  for ent in [entGradient,entDF,entSize,entTracer]
+    setproperty!(ent,:width_chars,11)
+  end
+
   if smallWidth
     grid = Grid()
     push!(vbox, grid)
@@ -196,7 +200,8 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 
   if driveField != nothing
     driveField[:].*=1000
-    Gtk.@sigatom setproperty!(entDF,:text,"$(driveField[1]) x $(driveField[2]) x $(driveField[3])")
+    str = join([string(df," x ") for df in driveField])[1:end-2]
+    Gtk.@sigatom setproperty!(entDF, :text, str)
   end
 
 
