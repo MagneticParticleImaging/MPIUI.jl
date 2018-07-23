@@ -379,7 +379,7 @@ function performReco(widgetptr::Ptr, m::RecoWidget)
     params[:bEmpty] = MPIFile( params[:emptyMeasPath] )
   end
 
-  global conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
+  conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
 
   m.recoResult = conc
   m.recoResult["recoParams"] = getParams(m)
