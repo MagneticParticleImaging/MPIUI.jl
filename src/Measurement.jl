@@ -94,7 +94,7 @@ function MeasurementWidget(filenameConfig="")
     setParams(m, merge!(getGeneralParams(m.scanner),toDict(getDAQ(m.scanner).params)))
     Gtk.@sigatom setproperty!(m["entConfig",EntryLeaf],:text,filenameConfig)
     Gtk.@sigatom setproperty!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isReferenced(getRobot(m.scanner)))
-
+    Gtk.@sigatom updateCalibTime(C_NULL, m)
   else
     Gtk.@sigatom setproperty!(m["tbMeasure",ToolButtonLeaf],:sensitive,false)
     Gtk.@sigatom setproperty!(m["tbMeasureBG",ToolButtonLeaf],:sensitive,false)
@@ -107,8 +107,6 @@ function MeasurementWidget(filenameConfig="")
   println("InitCallbacks")
 
   @time initCallbacks(m)
-
-  Gtk.@sigatom updateCalibTime(C_NULL, m)
 
   println("Finished")
 
