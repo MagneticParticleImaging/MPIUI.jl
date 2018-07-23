@@ -251,9 +251,10 @@ function initCallbacks(m::MeasurementWidget)
                              zeros(numTxChannels(daq)))
           end
 
-          currFr = enableSlowDAC(daq, true, 1)
+          currFr = enableSlowDAC(daq, true, 1,
+                  daq.params.ffRampUpTime, daq.params.ffRampUpFraction)
 
-          uMeas, uRef = readData(daq, 1, currFr+1)
+          uMeas, uRef = readData(daq, 1, currFr)
           MPIMeasurements.setTxParams(daq, daq.params.currTxAmp*0.0, daq.params.currTxPhase*0.0)
 
           deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
@@ -371,10 +372,10 @@ function initCallbacks(m::MeasurementWidget)
               sleep(getproperty(m["adjPause",AdjustmentLeaf],:value,Float64))
 
               temp = getTemperatures(su)
-              while maximum(temp) > 45.0
+              while maximum(temp) > params["maxTemperature"]
                 Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label,
                       """<span foreground="red" font_weight="bold" size="x-large"> System Cooling Down! </span>""")
-                sleep(60)
+                sleep(20)
                 temp[:] = getTemperatures(su)
               end
             end

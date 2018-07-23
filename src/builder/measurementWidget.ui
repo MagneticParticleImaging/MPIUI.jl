@@ -1040,7 +1040,7 @@
                         </child>
                         <child>
                           <object class="GtkCheckButton" id="cbStoreAsSystemMatrix">
-                            <property name="label" translatable="yes">Store as System Matrix</property>
+                            <property name="label" translatable="yes">	</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">False</property>
@@ -1057,7 +1057,7 @@
                           <object class="GtkEntry" id="entCalibTime">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="width_chars">0</property>
+                            <property name="width_chars">2</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
@@ -1258,7 +1258,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="hexpand">True</property>
-                            <property name="width_chars">0</property>
+                            <property name="width_chars">3</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
