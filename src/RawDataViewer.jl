@@ -161,20 +161,29 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
 
       frame = max( getproperty(m["adjFrame",AdjustmentLeaf], :value, Int64),1)
 
-      #setParams(m, params)
 
-      u = getMeasurements(f, true, frames=frame,
-                  bgCorrection=false, spectralLeakageCorrection = getproperty(m["cbSLCorr",CheckButtonLeaf], :active, Bool),
-                  tfCorrection=getproperty(m["cbCorrTF",CheckButtonLeaf], :active, Bool))
 
       timePoints = rxTimePoints(f)
       deltaT = timePoints[2] - timePoints[1]
 
-      if acqNumBGFrames(f) > 0
-        m.dataBG = getMeasurements(f, false, frames=measBGFrameIdx(f),
-              bgCorrection=false, spectralLeakageCorrection = getproperty(m["cbSLCorr",CheckButtonLeaf], :active, Bool),
-              tfCorrection=getproperty(m["cbCorrTF",CheckButtonLeaf], :active, Bool))
+      if !measIsFourierTransformed(f)
+        u = getMeasurements(f, true, frames=frame,
+                    bgCorrection=false, spectralLeakageCorrection = getproperty(m["cbSLCorr",CheckButtonLeaf], :active, Bool),
+                    tfCorrection=getproperty(m["cbCorrTF",CheckButtonLeaf], :active, Bool))
+
+        if acqNumBGFrames(f) > 0
+          m.dataBG = getMeasurements(f, false, frames=measBGFrameIdx(f),
+                bgCorrection=false, spectralLeakageCorrection = getproperty(m["cbSLCorr",CheckButtonLeaf], :active, Bool),
+                tfCorrection=getproperty(m["cbCorrTF",CheckButtonLeaf], :active, Bool))
+        end
+      else
+        dataFD = permutedims( measData(f), invperm([4,1,2,3]))
+        data = irfft(dataFD,2*size(dataFD,1)-1, 1)
+        fr = measFGFrameIdx(f)[frame]
+        u = data[:,:,:,fr:fr]
+        m.dataBG = data[:,:,:,measBGFrameIdx(f)]
       end
+
       updateData(m, u, deltaT, true)
     end
     m.loadingData = false

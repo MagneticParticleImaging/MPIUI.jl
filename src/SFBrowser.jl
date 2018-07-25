@@ -78,6 +78,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   G_.sort_column_id(TreeSortable(tmSorted),0,GtkSortType.ASCENDING)
 
 
+  cbOpenMeas = CheckButton("Open as Meas")
 
 
   signal_connect(tv, "row-activated") do treeview, path, col, other...
@@ -87,8 +88,14 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
       sffilename = TreeModel(tmSorted)[currentIt,9]
 
       Gtk.@sigatom begin
-        updateData!(mpilab.sfViewerWidget, sffilename)
-        G_.current_page(mpilab["nbView"], 3)
+        if !getproperty(cbOpenMeas,:active,Bool)
+          updateData!(mpilab.sfViewerWidget, sffilename)
+          G_.current_page(mpilab["nbView"], 3)
+        else
+          updateData(mpilab.rawDataWidget, sffilename)
+          G_.current_page(mpilab["nbView"], 0)
+        end
+
       end
 
     end
@@ -106,6 +113,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     setproperty!(ent,:width_chars,11)
   end
 
+
   if smallWidth
     grid = Grid()
     push!(vbox, grid)
@@ -119,6 +127,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     grid[4,1] = entSize
     grid[3,2] = Label("Tracer")
     grid[4,2] = entTracer
+    grid[1:4,3] = cbOpenMeas
   else
     hbox = Box(:h)
     push!(vbox, hbox)
