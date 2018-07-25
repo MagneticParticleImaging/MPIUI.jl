@@ -105,9 +105,10 @@ function updateSF(m::SFViewerWidget)
 
     bgcorrection = getproperty(m["cbSFBGCorr"],:active, Bool)
 
-    k = freq + m.maxFreq*((recChan-1) + m.maxChan*(period-1))
+    k = freq + m.maxFreq*((recChan-1))
+    #  + m.maxChan*(period-1)
 
-    sfData = getSF(m.bSF, Int64[k], returnasmatrix = false, bgcorrection=bgcorrection)[1]
+    sfData = getSF(m.bSF, Int64[k], returnasmatrix = false, bgcorrection=bgcorrection)[1][:,:,:,period]
 
     Gtk.@sigatom setproperty!(m["entSFSNR"],:text,string(round(m.SNR[freq,recChan,period],2)))
 

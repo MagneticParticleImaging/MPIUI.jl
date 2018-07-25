@@ -161,9 +161,10 @@ function initCallbacks(m::MeasurementWidget)
 
   println("CAAALLLLBACK")
 
-  @time signal_connect(m["expSurveillance",ExpanderLeaf], :activate) do w
-    initSurveillance(m)
-  end
+  # TODO This currently does not work!
+  #@time signal_connect(m["expSurveillance",ExpanderLeaf], :activate) do w
+  #  initSurveillance(m)
+  #end
 
   #@time signal_connect(measurement, m["tbMeasure",ToolButtonLeaf], "clicked", Void, (), false, m )
   #@time signal_connect(measurementBG, m["tbMeasureBG",ToolButtonLeaf], "clicked", Void, (), false, m)
@@ -480,9 +481,12 @@ function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
 
   shp = get.(shp_)
 
+  robotMoveTime = 1.8
+
   calibTime = (getproperty(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
+              (getproperty(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64)+1) *
               getproperty(m["adjNumPeriods",AdjustmentLeaf], :value, Int64) *
-              daq.params.dfCycle + getproperty(m["adjPause",AdjustmentLeaf],:value,Float64)) *
+              daq.params.dfCycle + getproperty(m["adjPause",AdjustmentLeaf],:value,Float64) + robotMoveTime) *
               (prod(shp) + numBGMeas)
 
   calibTimeMin = calibTime/60
@@ -564,6 +568,7 @@ function getParams(m::MeasurementWidget)
   params = toDict(getDAQ(m.scanner).params)
 
   params["acqNumAverages"] = getproperty(m["adjNumAverages",AdjustmentLeaf], :value, Int64)
+  params["acqNumFrameAverages"] = getproperty(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64)
   params["acqNumSubperiods"] = getproperty(m["adjNumSubperiods",AdjustmentLeaf], :value, Int64)
 
   params["acqNumFGFrames"] = getproperty(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64)
@@ -593,6 +598,7 @@ end
 
 function setParams(m::MeasurementWidget, params)
   Gtk.@sigatom setproperty!(m["adjNumAverages",AdjustmentLeaf], :value, params["acqNumAverages"])
+  Gtk.@sigatom setproperty!(m["adjNumFrameAverages",AdjustmentLeaf], :value, params["acqNumFrameAverages"])
   Gtk.@sigatom setproperty!(m["adjNumSubperiods",AdjustmentLeaf], :value, get(params,"acqNumSubperiods",1))
   Gtk.@sigatom setproperty!(m["adjNumFGFrames",AdjustmentLeaf], :value, params["acqNumFrames"])
   Gtk.@sigatom setproperty!(m["adjNumBGFrames",AdjustmentLeaf], :value, params["acqNumFrames"])
