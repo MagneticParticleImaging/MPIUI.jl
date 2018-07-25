@@ -179,6 +179,17 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
       else
         dataFD = permutedims( measData(f), invperm([4,1,2,3]))
         data = irfft(dataFD,2*size(dataFD,1)-1, 1)
+
+        # Handle buggy files
+        a = rxDataConversionFactor(f)
+        if a!=nothing
+          for d=1:size(data,2)
+            slice = view(data,:,d,:,:)
+            slice .-= a[2,d]
+            scale!(slice, 1/a[1,d])
+          end
+        end
+
         fr = measFGFrameIdx(f)[frame]
         u = data[:,:,:,fr:fr]
         m.dataBG = data[:,:,:,measBGFrameIdx(f)]
