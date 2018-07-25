@@ -403,7 +403,7 @@ end
 function initExperimentStore(m::MPILab)
 
   m.experimentStore = ListStore(Int64,String,Int64,String,
-                                 String,Int64,String,String)
+                                 Float64,Int64,String,String,String)
   tmFiltered = nothing
 
   tv = TreeView(TreeModel(m.experimentStore))
@@ -411,7 +411,7 @@ function initExperimentStore(m::MPILab)
   r2 = CellRendererText()
   setproperty!(r2, :editable, true)
 
-  cols = ["Num", "Name", "Frames", "DF FOV", "Gradient", "Averages", "Operator"]
+  cols = ["Num", "Name", "Frames", "DF", "Grad", "Averages", "Operator", "Time"]
 
   for (i,col) in enumerate(cols)
 
@@ -479,12 +479,12 @@ function initExperimentStore(m::MPILab)
     if hasselection(m.selectionExp)
       currentIt = selected( m.selectionExp )
 
-      m.currentExperiment = Experiment( string(m.experimentStore[currentIt,8]),
+      m.currentExperiment = Experiment( string(m.experimentStore[currentIt,9]),
         m.experimentStore[currentIt,1], m.experimentStore[currentIt,2],
         m.experimentStore[currentIt,3],
         [parse(Float64,s) for s in split( string(m.experimentStore[currentIt,4]),"x") ],
-        [parse(Float64,s) for s in split( string(m.experimentStore[currentIt,5]),"x") ],
-        m.experimentStore[currentIt,6], m.experimentStore[currentIt,7])
+        m.experimentStore[currentIt,5],
+        m.experimentStore[currentIt,6], m.experimentStore[currentIt,7], m.experimentStore[currentIt,8])
 
 
        Gtk.@sigatom updateReconstructionStore(m)
@@ -532,8 +532,8 @@ function updateExperimentStore(m::MPILab, study::Study)
 
   for exp in experiments
     Gtk.@sigatom push!(m.experimentStore,(exp.num, exp.name, exp.numFrames,
-                join(exp.dfFov,"x"),join(exp.sfGradient,"x"),
-                exp.numAverages, exp.operator, exp.path))
+                join(exp.df,"x"),exp.sfGradient,
+                exp.numAverages, exp.operator, exp.time, exp.path))
   end
 end
 

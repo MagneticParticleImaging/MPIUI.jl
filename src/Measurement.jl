@@ -127,26 +127,27 @@ function initSurveillance(m::MeasurementWidget)
     temp2 = zeros(0)
 
     function update_(::Timer)
-      temp = getTemperatures(su)
-      str = join([ @sprintf("%.2f C ",t) for t in temp ])
-      Gtk.@sigatom setproperty!(m["entTemperatures",EntryLeaf], :text, str)
+      Gtk.@sigatom begin
+        temp = getTemperatures(su)
+        str = join([ @sprintf("%.2f C ",t) for t in temp ])
+        setproperty!(m["entTemperatures",EntryLeaf], :text, str)
 
-      push!(temp1, temp[1])
-      push!(temp2, temp[2])
+        push!(temp1, temp[1])
+        push!(temp2, temp[2])
 
-      if length(temp1) > 100
-        temp1 = temp1[2:end]
-        temp2 = temp2[2:end]
+        if length(temp1) > 100
+          temp1 = temp1[2:end]
+          temp2 = temp2[2:end]
+        end
+
+        p = Winston.plot(temp1,"b-", linewidth=10)
+        Winston.plot(p,temp2,"r-",linewidth=10)
+        #Winston.ylabel("Harmonic $f")
+        #Winston.xlabel("Time")
+        display(cTemp ,p)
       end
-
-      p = Winston.plot(temp1,"b-", linewidth=10)
-      Winston.plot(p,temp2,"r-",linewidth=10)
-      #Winston.ylabel("Harmonic $f")
-      #Winston.xlabel("Time")
-      display(cTemp ,p)
-      #
     end
-    timer = Timer(update_, 0.0, 0.9)
+    timer = Timer(update_, 0.0, 1.5)
     m.expanded = true
   end
 end
