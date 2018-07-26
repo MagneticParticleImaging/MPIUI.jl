@@ -358,8 +358,6 @@ function initCallbacks(m::MeasurementWidget)
           isValid = checkCoords(getRobotSetupUI(m), pos)
         end
 
-        setVelocity(getRobot(m.scanner), velRob)
-
         params = merge!(getGeneralParams(m.scanner),getParams(m))
         calibObj = SystemMatrixRobotMeas(m.scanner, getRobotSetupUI(m), positions, params)
 
@@ -403,7 +401,6 @@ function initCallbacks(m::MeasurementWidget)
               disableACPower(getSurveillanceUnit(m.scanner))
               MPIMeasurements.disconnect(daq)
 
-              setVelocity(getRobot(m.scanner), round.(Int64,getDefaultVelocity(getRobot(m.scanner))))
               movePark(getRobot(m.scanner))
 
               Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label, "")
