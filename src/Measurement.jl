@@ -196,6 +196,12 @@ function initCallbacks(m::MeasurementWidget)
     #infoMessage(m, "move to $posString")
   end
 
+  @time signal_connect(m["btLoadArbPos",ButtonLeaf],:clicked) do w
+      filter = Gtk.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
+      filename = open_dialog("Select Arbitrary Position File", GtkNullContainer(), (filter, ))
+      Gtk.@sigatom setproperty!(m["entArbitraryPos",EntryLeaf],:text,filename)
+  end
+
   @time signal_connect(m["bt_MovePark",ButtonLeaf], :clicked) do w
       if !isReferenced(getRobot(m.scanner))
         info_dialog("Robot not referenced! Cannot proceed!", mpilab["mainWindow"])
@@ -312,7 +318,7 @@ function initCallbacks(m::MeasurementWidget)
         centerString = getproperty(m["entCenter",EntryLeaf], :text, String)
         center_ = tryparse.(Float64,split(centerString,"x"))
 
-        velRobString = getproperty(m["velRob",EntryLeaf], :text, String)
+        velRobString = getproperty(m["entVelRob",EntryLeaf], :text, String)
         velRob_ = tryparse.(Int64,split(velRobString,"x"))
 
         numBGMeas = getproperty(m["adjNumBGMeasurements",AdjustmentLeaf], :value, Int64)
@@ -328,7 +334,18 @@ function initCallbacks(m::MeasurementWidget)
         ctr = get.(center_) .*1Unitful.mm
         velRob = get.(velRob_)
 
-        cartGrid = RegularGridPositions(shp,fov,ctr)
+        if getproperty(m["cbUseArbitraryPos",CheckButtonLeaf], :active, Bool) == false
+            cartGrid = RegularGridPositions(shp,fov,ctr)#
+        else
+            filename = getproperty(m["entArbitraryPos"],EntryLeaf,:text,String)
+            if filename != ""
+                cartGrid = h5open(filename, "r") do file
+                    positions = Positions(file)
+                end
+            else
+              error("Filename Arbitrary Positions empty!")
+            end
+        end
         if numBGMeas == 0
           positions = cartGrid
         else
@@ -643,7 +660,7 @@ function setParams(m::MeasurementWidget, params)
   end
   velRob = getDefaultVelocity(getRobot(m.scanner))
   velRobStr = @sprintf("%.d x %.d x %.d", velRob[1],velRob[2],velRob[3])
-  Gtk.@sigatom setproperty!(m["velRob",EntryLeaf], :text, velRobStr)
+  Gtk.@sigatom setproperty!(m["entVelRob",EntryLeaf], :text, velRobStr)
   Gtk.@sigatom setproperty!(m["entCurrPos",EntryLeaf], :text, "0.0 x 0.0 x 0.0")
 
   Gtk.@sigatom setproperty!(m["adjPause",AdjustmentLeaf], :value, 2.0)
