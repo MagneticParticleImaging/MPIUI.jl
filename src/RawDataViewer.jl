@@ -260,7 +260,8 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     if !autoRangingTD
       Winston.ylim(minValTD, maxValTD)
     end
-    p2 = Winston.semilogy(freq[minFr:maxFr],freqdata[minFr:maxFr],"b-o", linewidth=5)
+    ls = length(minFr:maxFr) > 200 ? "b-" : "b-o"
+    p2 = Winston.semilogy(freq[minFr:maxFr],freqdata[minFr:maxFr],ls,linewidth=5)
     #Winston.ylabel("u / V")
     Winston.xlabel("f / kHz")
     if !autoRangingFD
@@ -275,8 +276,9 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       dataBG = vec( mean(m.dataBG[:,chan,patch,:],2))
 
       Winston.plot(p1,timePoints[minTP:maxTP],dataBG[minTP:maxTP],"k--",linewidth=2)
+      ls = length(minFr:maxFr) > 200 ? "k-" : "k-x"
       Winston.plot(p2,freq[minFr:maxFr],abs.(rfft(dataBG)[minFr:maxFr]) / length(dataBG),
-                  "k-x", linewidth=2, ylog=true)
+                  ls, linewidth=2, ylog=true)
     end
     display(m.cTD ,p1)
     display(m.cFD ,p2)

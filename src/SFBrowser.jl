@@ -75,7 +75,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   tmSorted = TreeModelSort(tmFiltered)
   G_.model(tv, tmSorted)
 
-  G_.sort_column_id(TreeSortable(tmSorted),0,GtkSortType.ASCENDING)
+  G_.sort_column_id(TreeSortable(tmSorted),0,GtkSortType.DESCENDING)
 
 
   cbOpenMeas = CheckButton("Open as Meas")

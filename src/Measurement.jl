@@ -588,7 +588,7 @@ function getParams(m::MeasurementWidget)
 
   params["acqNumFGFrames"] = getproperty(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64)
   params["acqNumBGFrames"] = getproperty(m["adjNumBGFrames",AdjustmentLeaf], :value, Int64)
-  #params["acqNumPeriods"] = getproperty(m["adjNumPeriods"], :value, Int64)
+  params["acqNumPeriodsPerFrame"] = getproperty(m["adjNumPeriods",AdjustmentLeaf], :value, Int64)
   params["studyName"] = m.currStudyName
   params["studyDescription"] = ""
   params["experimentDescription"] = getproperty(m["entExpDescr",EntryLeaf], :text, String)
