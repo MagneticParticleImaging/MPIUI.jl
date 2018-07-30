@@ -1290,7 +1290,7 @@
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">width x height</property>
+                            <property name="label" translatable="yes">l x w x h</property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>

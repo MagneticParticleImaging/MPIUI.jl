@@ -78,8 +78,8 @@ function MeasurementWidget(filenameConfig="")
 
   Gtk.@sigatom signal_connect(m["cbSafeObject",ComboBoxTextLeaf], :changed) do w
       ind = getproperty(m["cbSafeObject",ComboBoxTextLeaf],:active,Int)+1
-      if getValidHeadObjects()[ind].name==customPhantom.name
-          sObjStr = @sprintf("%.2f x %.2f", ustrip(customPhantom.width),ustrip(customPhantom.height))
+      if getValidHeadObjects()[ind].name==customPhantom3D.name
+          sObjStr = @sprintf("%.2f x %.2f x %.2f", ustrip(customPhantom3D.length), ustrip(crosssection(customPhantom3D).width),ustrip(crosssection(customPhantom3D).height))
           Gtk.@sigatom setproperty!(m["entSafetyObj", EntryLeaf],:text, sObjStr)
           Gtk.@sigatom setproperty!(m["entSafetyObj", EntryLeaf],:sensitive,true)
       else
@@ -355,7 +355,7 @@ function initCallbacks(m::MeasurementWidget)
         end
 
         for pos in positions
-          isValid = checkCoords(getRobotSetupUI(m), pos)
+          isValid = checkCoords(getRobotSetupUI(m), pos, getMinMaxPosX(getRobot(m.scanner)))
         end
 
         params = merge!(getGeneralParams(m.scanner),getParams(m))
@@ -666,7 +666,7 @@ end
 function getRobotSetupUI(m::MeasurementWidget)
     coil = getValidHeadScannerGeos()[getproperty(m["cbSafeCoil",ComboBoxTextLeaf], :active, Int)+1]
     obj = getValidHeadObjects()[getproperty(m["cbSafeObject",ComboBoxTextLeaf], :active, Int)+1]
-    if obj.name == customPhantom.name
+    if obj.name == customPhantom3D.name
         obj = getCustomPhatom(m)
     end
     setup = RobotSetup("UIRobotSetup",obj,coil,clearance)
@@ -677,5 +677,5 @@ function getCustomPhatom(m::MeasurementWidget)
     cPStr = getproperty(m["entSafetyObj",EntryLeaf],:text,String)
     cP_ = tryparse.(Float64,split(cPStr,"x"))
     cP= get.(cP_) .*1Unitful.mm
-    return Rectangle(cP[1],cP[2], "UI Custom Phantom")
+    return Cuboid(Rectangle(cP[2],cP[3], "UI Custom Phantom"),cP[1],"UI Custom Phantom 3D")
 end
