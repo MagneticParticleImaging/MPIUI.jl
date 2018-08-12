@@ -90,5 +90,5 @@ function save(m::Settings)
   end
 
   load(m)
-  reinit(mpilab)
+  reinit(mpilab[])
 end

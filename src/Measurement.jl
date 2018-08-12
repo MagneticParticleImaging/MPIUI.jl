@@ -181,7 +181,7 @@ function initCallbacks(m::MeasurementWidget)
 
   @time signal_connect(m["btnRobotMove",ButtonLeaf], :clicked) do w
     if !isReferenced(getRobot(m.scanner))
-      info_dialog("Robot not referenced! Cannot proceed!", mpilab["mainWindow"])
+      info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
       return
     end
 
@@ -204,7 +204,7 @@ function initCallbacks(m::MeasurementWidget)
 
   @time signal_connect(m["bt_MovePark",ButtonLeaf], :clicked) do w
       if !isReferenced(getRobot(m.scanner))
-        info_dialog("Robot not referenced! Cannot proceed!", mpilab["mainWindow"])
+        info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
         return
       end
       movePark(getRobot(m.scanner))
@@ -216,14 +216,14 @@ function initCallbacks(m::MeasurementWidget)
       message = """IselRobot is NOT referenced and needs to be referenced! \n
              Remove all attached devices from the robot before the robot will be referenced and move around!\n
              Press \"Ok\" if you have done so """
-      if ask_dialog(message, "Cancle", "Ok", mpilab["mainWindow"])
+      if ask_dialog(message, "Cancle", "Ok", mpilab[]["mainWindow"])
           message = """Are you sure you have removed everything and the robot can move
             freely without damaging anything? Press \"Ok\" if you want to continue"""
-         if ask_dialog(message, "Cancle", "Ok", mpilab["mainWindow"])
+         if ask_dialog(message, "Cancle", "Ok", mpilab[]["mainWindow"])
             prepareRobot(robot)
             message = """The robot is now referenced.
                You can mount your sample. Press \"Ok\" to proceed. """
-            info_dialog(message, mpilab["mainWindow"])
+            info_dialog(message, mpilab[]["mainWindow"])
          end
       end
     end
@@ -302,7 +302,7 @@ function initCallbacks(m::MeasurementWidget)
     su = getSurveillanceUnit(m.scanner)
 
     if !isReferenced(getRobot(m.scanner))
-      info_dialog("Robot not referenced! Cannot proceed!", mpilab["mainWindow"])
+      info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
       Gtk.@sigatom setproperty!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
       return
     end
@@ -415,7 +415,7 @@ function initCallbacks(m::MeasurementWidget)
                         calibObj, params)
                   saveasMDF(joinpath(calibdir(m.mdfstore),string(calibNum)*".mdf"),
                         MPIFile("/tmp/tmp.mdf"), applyCalibPostprocessing=true)
-                  updateData!(mpilab.sfBrowser, m.mdfstore)
+                  updateData!(mpilab[].sfBrowser, m.mdfstore)
                 else
 
                   name = params["studyName"]
@@ -432,7 +432,7 @@ function initCallbacks(m::MeasurementWidget)
                   filename = joinpath(studydir(m.mdfstore),newStudy.name,string(expNum)*".mdf")
 
                   saveasMDF(filename, calibObj, params)
-                  updateExperimentStore(mpilab, mpilab.currentStudy)
+                  updateExperimentStore(mpilab[], mpilab.currentStudy)
                 end
               end
               close(timerCalibration)
@@ -556,7 +556,7 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
 
   Gtk.@sigatom updateData(m.rawDataWidget, m.filenameExperiment)
 
-  updateExperimentStore(mpilab, mpilab.currentStudy)
+  updateExperimentStore(mpilab[], mpilab.currentStudy)
   return nothing
 end
 

@@ -5,7 +5,6 @@ type RawDataWidget <: Gtk.GtkBox
   builder::Builder
   data::Array{Float32,4}
   dataBG::Array{Float32,4}
-  #params
   cTD::Canvas
   cFD::Canvas
   deltaT::Float64
@@ -81,8 +80,8 @@ function clearHarmBuff(m::RawDataWidget)
   end
 end
 
-function initCallbacks(m::RawDataWidget)
-
+function initCallbacks(m_::RawDataWidget)
+ let m=m_
   @time for sl in ["adjPatch","adjRxChan","adjMinTP","adjMaxTP",
                    "adjMinFre","adjMaxFre"]
     signal_connect(m[sl,AdjustmentLeaf], "value_changed") do w
@@ -136,11 +135,7 @@ function initCallbacks(m::RawDataWidget)
   end
 
   #@time signal_connect(loadData, m["cbCorrTF"], "toggled", Void, (), false, m)
-
-  #signal_connect(m["cbExpNum"], :changed) do w
-  #  loadExperiment(C_NULL, m)
-  #end
-
+ end
 end
 
 
@@ -166,33 +161,16 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
       timePoints = rxTimePoints(f)
       deltaT = timePoints[2] - timePoints[1]
 
-      if !measIsFourierTransformed(f)
-        u = getMeasurements(f, true, frames=frame,
-                    bgCorrection=false, spectralLeakageCorrection = getproperty(m["cbSLCorr",CheckButtonLeaf], :active, Bool),
-                    tfCorrection=getproperty(m["cbCorrTF",CheckButtonLeaf], :active, Bool))
+      u = getMeasurements(f, true, frames=frame,
+                  bgCorrection=false, spectralLeakageCorrection = getproperty(m["cbSLCorr",CheckButtonLeaf], :active, Bool),
+                  tfCorrection=getproperty(m["cbCorrTF",CheckButtonLeaf], :active, Bool))
 
-        if acqNumBGFrames(f) > 0
-          m.dataBG = getMeasurements(f, false, frames=measBGFrameIdx(f),
-                bgCorrection=false, spectralLeakageCorrection = getproperty(m["cbSLCorr",CheckButtonLeaf], :active, Bool),
-                tfCorrection=getproperty(m["cbCorrTF",CheckButtonLeaf], :active, Bool))
-        end
+      if acqNumBGFrames(f) > 0
+        m.dataBG = getMeasurements(f, false, frames=measBGFrameIdx(f),
+              bgCorrection=false, spectralLeakageCorrection = getproperty(m["cbSLCorr",CheckButtonLeaf], :active, Bool),
+              tfCorrection=getproperty(m["cbCorrTF",CheckButtonLeaf], :active, Bool))
       else
-        dataFD = permutedims( measData(f), invperm([4,1,2,3]))
-        data = irfft(dataFD,2*size(dataFD,1)-1, 1)
-
-        # Handle buggy files
-        a = rxDataConversionFactor(f)
-        if a!=nothing
-          for d=1:size(data,2)
-            slice = view(data,:,d,:,:)
-            slice .-= a[2,d]
-            scale!(slice, 1/a[1,d])
-          end
-        end
-
-        fr = measFGFrameIdx(f)[frame]
-        u = data[:,:,:,fr:fr]
-        m.dataBG = data[:,:,:,measBGFrameIdx(f)]
+        m.dataBG = zeros(Float32,0,0,0,0)
       end
 
       updateData(m, u, deltaT, true)
@@ -271,8 +249,6 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     if !autoRangingFD
         Winston.ylim(minValFD, maxValFD)
     end
-
-
 
     if length(m.dataBG) > 0 && getproperty(m["cbShowBG",CheckButtonLeaf], :active, Bool)
       mid = div(size(m.dataBG,4),2)
