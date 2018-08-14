@@ -73,6 +73,7 @@ type DataViewerWidget <: Gtk.GtkBox
   cacheStudyNameExpNumber::String
   cacheSelectedFovXYZ::Array{Float64,1}
   cacheSelectedMovePos::Array{Float64,1}
+  stopPlayingMovie
 end
 
 getindex(m::DataViewerWidget, w::AbstractString) = G_.object(m.builder, w)
@@ -87,7 +88,8 @@ function DataViewerWidget(offlineMode = true)
   m = DataViewerWidget( mainBox.handle, b, nothing, nothing, nothing, nothing,
                          nothing, nothing, false, nothing, nothing, nothing, offlineMode,
                         nothing, nothing, nothing, nothing, nothing , nothing, nothing,
-                        nothing, nothing, zeros(Float32,10000), 1, string(), [0.0,0.0,0.0], [0.0,0.0,0.0])
+                        nothing, nothing, zeros(Float32,10000), 1, string(),
+                        [0.0,0.0,0.0], [0.0,0.0,0.0], false)
   Gtk.gobject_move_ref(m, mainBox)
 
   initSimpleDataViewer(m)
@@ -100,6 +102,8 @@ function DataViewerWidget(offlineMode = true)
   m.grid3D[2,2] = Canvas()
   m.grid3D[1,2] = Canvas()
   m.grid2D[1,1] = Canvas()
+
+  showall(m)
 
   choices = existing_cmaps()
   for c in choices
@@ -127,7 +131,9 @@ function DataViewerWidget(offlineMode = true)
   end
   setproperty!(m["cbFrameProj"],:active,0)
 
-  visible(m["expAnatomicRef"], false)
+  visible(m["mbFusion"], false)
+  visible(m["lbFusion"], false)
+  visible(m["sepFusion"], false)
   if !m.offlineMode
     visible(m["expExport"], false)
     visible(m["expFrameProjection"], false)
@@ -136,220 +142,14 @@ function DataViewerWidget(offlineMode = true)
   end
 
 
-  function update( widget )
-    if !m.upgradeColoringWInProgress
-      updateColoring( m )
-      Gtk.@sigatom showData( m )
-    end
-  end
-
-  function updateChan( widget )
-     updateColoringWidgets( m )
-     update( m )
-  end
-
-  widgets = ["cbSpatialMIP", "cbShowSlices", "cbHideFG", "cbHideBG",
-             "cbBlendChannels", "cbShowSFFOV", "cbTranslucentBlending",
-              "cbSpatialBGMIP", "cbShowDFFOV"]
-  for w in widgets
-    signal_connect(update, m[w], "toggled")
-  end
-
-  widgets = ["adjFrames", "adjSliceX", "adjSliceY","adjSliceZ",
-             "adjCMin", "adjCMax", "adjCMinBG", "adjCMaxBG",
-             "adjTransX", "adjTransY", "adjTransZ",
-             "adjRotX", "adjRotY", "adjRotZ",
-             "adjTransBGX", "adjTransBGY", "adjTransBGZ",
-             "adjRotBGX", "adjRotBGY", "adjRotBGZ",
-             "adjTTPThresh"]
-  for w in widgets
-    signal_connect(update, m[w], "value_changed")
-  end
-
-  widgets = ["cbCMaps", "cbCMapsBG", "cbFrameProj"]
-  for w in widgets
-    signal_connect(update, m[w], "changed")
-  end
-
-  signal_connect(updateChan, m["cbChannel"], "changed")
-
-  signal_connect(m["cbPermutes"], "changed") do widget
-    permuteBGData(m)
-    updateSliceWidgets(m)
-    update(m)
-  end
-
-  signal_connect(m["cbFlips"], "changed") do widget
-    permuteBGData(m)
-    updateSliceWidgets(m)
-    update(m)
-  end
-
-  signal_connect(m["cbShowExtraWindow"], "toggled") do widget
-    if !getproperty(m["cbShowExtraWindow"], :active, Bool)
-      Gtk.destroy(m.extraWindow)
-      m.extraWindow = nothing
-    end
-  end
-
-  signal_connect(m["btnExportImages"], "clicked") do widget
-    if m.currentlyShownImages != nothing
-      filter = Gtk.GtkFileFilter(pattern=String("*.png"), mimetype=String("image/png"))
-      filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
-      if filenameImageData != ""
-        pixelResizeFactor = getproperty(m["adjPixelResizeFactor"],:value,Int64)
-        @async println("Export Image as ", filenameImageData)
-        exportImage(filenameImageData, m.currentlyShownImages, pixelResizeFactor=pixelResizeFactor)
-      end
-    end
-  end
-
-  signal_connect(m["btnExportTikz"], "clicked") do widget
-    if m.currentlyShownImages != nothing
-      filter = Gtk.GtkFileFilter(pattern=String("*.tikz*"), mimetype=String("image/tikz"))
-      filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
-      if filenameImageData != ""
-        pixelResizeFactor = getproperty(m["adjPixelResizeFactor"],:value,Int64)
-        @async println("Export Tikz as ", filenameImageData)
-        props = m.currentlyShownData[1].properties
-        SFPath=props["recoParams"][:SFPath]
-        bSF = MPIFile(SFPath)
-        exportTikz(filenameImageData, m.currentlyShownImages, collect(size(m.dataBG)),
-         collect(pixelspacing(m.dataBG)),fov(bSF),getParams(m); pixelResizeFactor=pixelResizeFactor)
-      end
-    end
-  end
-
-  signal_connect(m["btnExportMovi"], "clicked") do widget
-    filter = Gtk.GtkFileFilter(pattern=String("*.gif"), mimetype=String("image/gif"))
-    filenameMovi = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
-    if filenameMovi != ""
-      params = getParams(m)
-      sliceMovies = getColoredSlicesMovie(m.data, m.dataBG, m.coloring, params)
-      pixelResizeFactor = getproperty(m["adjPixelResizeFactor"],:value, Int64)
-      @async println("Export Movi as ", filenameMovi)
-      exportMovies(filenameMovi, sliceMovies, pixelResizeFactor=pixelResizeFactor)
-    end
-  end
-
-  signal_connect(m["btnExportAllData"], "clicked") do widget
-    if m.data != nothing
-      filter = Gtk.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
-      filenameData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
-      if filenameData != ""
-
-        params = getParams(m)
-
-        maxval = [maximum(d) for d in m.data]
-        minval = [minimum(d) for d in m.data]
-
-        if m.dataBG != nothing
-          data_ = interpolateToRefImage(m.dataBG, m.data, params)
-          dataBG = interpolateToRefImage(m.dataBG, params)
-
-          data__ = [data(d) for d in data_]
-
-          cdataFG = colorize(data__, m.coloring, minval, maxval, params)
-
-          minval,maxval = extrema(dataBG)
-          cdataBG = colorize(dataBG,params[:coloringBG],minval,maxval)
-
-          blendF = get(params, :translucentBlending, false) ? blend : dogyDoge
-          cdata = blendF(cdataBG, cdataFG)
-        else
-          data_ = [data(d) for d in m.data]
-          cdata = colorize(data_, m.coloring, minval, maxval, params)
-        end
-
-        prop = properties(m.data[1])
-        cdata_ = similar(cdata, RGB{N0f8})
-        cdata_[:] = convert(ImageMeta{RGB},cdata)[:] #TK: ugly hack
-
-        file, ext = splitext(filenameData)
-        savedata(string(file,".nii"), ImageMeta(cdata_,prop), permRGBData=true)
-      end
-    end
-  end
-
-  signal_connect(m["btnExportRealDataAllFr"], "clicked") do widget
-    if m.data != nothing && m.dataBG != nothing
-      filter = Gtk.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
-      filenameData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
-      if filenameData != ""
-        params = getParams(m)
-
-        data = interpolateToRefImageAllFr(m.dataBG, m.data, params)
-        dataBG = interpolateToRefImage(m.dataBG, params)
-
-        #dataBG_ = applyPermutionsRev(m, dataBG)
-
-        file, ext = splitext(filenameData)
-        savedata(string(file,".nii"), data)
-        savedata(string(file,"_BG.nii"), dataBG)
-      end
-    end
-  end
-
-  signal_connect(m["btnExportData"], "clicked") do widget
-    if m.currentlyShownData != nothing
-      filter = Gtk.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
-      filenameData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
-      if filenameData != ""
-
-        params = getParams(m)
-
-        maxval = [maximum(d) for d in m.data]
-        minval = [minimum(d) for d in m.data]
-
-        data_ = [data(d) for d in m.currentlyShownData]
-
-        cdata = colorize(data_,m.coloring,minval,maxval,params)
-
-        if m.dataBG != nothing
-          minval,maxval = extrema(m.dataBG)
-          cdataBG = colorize(m.dataBG,params[:coloringBG],minval,maxval)
-
-          blendF = get(params, :translucentBlending, false) ? blend : dogyDoge
-          cdata = blendF(cdataBG, cdata)
-        end
-
-        prop = properties(m.currentlyShownData[1])
-        cdata_ = similar(cdata, RGB{N0f8})
-        cdata_[:] = convert(ImageMeta{RGB},cdata)[:] #TK: ugly hack
-
-        file, ext = splitext(filenameData)
-        savedata(string(file,".nii"), ImageMeta(cdata_,prop), permRGBData=true)
-      end
-    end
-  end
-
-
-
-  signal_connect(m["btnExportProfile"], "clicked") do widget
-    if m.currentlyShownData != nothing
-      filter = Gtk.GtkFileFilter(pattern=String("*.csv"), mimetype=String("text/comma-separated-values"))
-      filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
-      if filenameImageData != "" && m.currentProfile != nothing
-        @async println("Export Image as ", filenameImageData)
-
-        writecsv(filenameImageData, m.currentProfile )
-      end
-    end
-  end
-
-  signal_connect(m["btnSaveVisu"], "clicked") do widget
-    addVisu(mpilab, getParams(m))
-  end
-
-  stopPlayingMovie = false
 
   signal_connect(m["btnPlayMovie"], "toggled") do widget
     isActive = getproperty(m["btnPlayMovie"], :active, Bool)
     if isActive
-      stopPlayingMovie = false
+      m.stopPlayingMovie = false
       Gtk.@sigatom playMovie()
     else
-      stopPlayingMovie = true
+      m.stopPlayingMovie = true
     end
   end
 
@@ -357,21 +157,117 @@ function DataViewerWidget(offlineMode = true)
     @async begin
     L = getproperty(m["adjFrames"],:upper, Int64)
     curFrame = getproperty(m["adjFrames"],:value, Int64)
-    while !stopPlayingMovie
+    while !m.stopPlayingMovie
       Gtk.@sigatom setproperty!(m["adjFrames"],:value, curFrame)
       yield()
       sleep(0.01)
       curFrame = mod1(curFrame+1,L)
     end
-    stopPlayingMovie = false
+    m.stopPlayingMovie = false
     end
   end
 
-  signal_connect(m["btnAutoRegistration"], "clicked") do widget
-    println("auto reigister")
-  end
+  initCallbacks(m)
 
   return m
+end
+
+function initCallbacks(m_::DataViewerWidget)
+  let m=m_
+
+    function update( widget )
+      if !m.upgradeColoringWInProgress
+        updateColoring( m )
+        Gtk.@sigatom showData( m )
+      end
+    end
+
+    function updateChan( widget )
+       updateColoringWidgets( m )
+       update( m )
+    end
+
+    widgets = ["cbSpatialMIP", "cbShowSlices", "cbHideFG", "cbHideBG",
+               "cbBlendChannels", "cbShowSFFOV", "cbTranslucentBlending",
+                "cbSpatialBGMIP", "cbShowDFFOV"]
+    for w in widgets
+      signal_connect(update, m[w], "toggled")
+    end
+
+    widgets = ["adjFrames", "adjSliceX", "adjSliceY","adjSliceZ",
+               "adjCMin", "adjCMax", "adjCMinBG", "adjCMaxBG",
+               "adjTransX", "adjTransY", "adjTransZ",
+               "adjRotX", "adjRotY", "adjRotZ",
+               "adjTransBGX", "adjTransBGY", "adjTransBGZ",
+               "adjRotBGX", "adjRotBGY", "adjRotBGZ",
+               "adjTTPThresh"]
+    for w in widgets
+      signal_connect(update, m[w], "value_changed")
+    end
+
+    widgets = ["cbCMaps", "cbCMapsBG", "cbFrameProj"]
+    for w in widgets
+      signal_connect(update, m[w], "changed")
+    end
+
+    signal_connect(updateChan, m["cbChannel"], "changed")
+
+    signal_connect(m["cbPermutes"], "changed") do widget
+      permuteBGData(m)
+      updateSliceWidgets(m)
+      update(m)
+    end
+
+    signal_connect(m["cbFlips"], "changed") do widget
+      permuteBGData(m)
+      updateSliceWidgets(m)
+      update(m)
+    end
+
+    signal_connect(m["cbShowExtraWindow"], "toggled") do widget
+      if !getproperty(m["cbShowExtraWindow"], :active, Bool)
+        Gtk.destroy(m.extraWindow)
+        m.extraWindow = nothing
+      end
+    end
+
+    signal_connect(m["btnExportImages"], "clicked") do widget
+      exportImages(m)
+    end
+
+    signal_connect(m["btnExportTikz"], "clicked") do widget
+      exportTikz(m)
+    end
+
+    signal_connect(m["btnExportMovi"], "clicked") do widget
+      exportMovi(m)
+    end
+
+    signal_connect(m["btnExportAllData"], "clicked") do widget
+      exportAllData(m)
+    end
+
+    signal_connect(m["btnExportRealDataAllFr"], "clicked") do widget
+      exportRealDataAllFr(m)
+    end
+
+    signal_connect(m["btnExportData"], "clicked") do widget
+      exportData(m)
+    end
+
+    signal_connect(m["btnExportProfile"], "clicked") do widget
+      exportProfile(m)
+    end
+
+    signal_connect(m["btnSaveVisu"], "clicked") do widget
+      addVisu(mpilab[], getParams(m))
+    end
+
+    signal_connect(m["btnAutoRegistration"], "clicked") do widget
+      println("auto register")
+    end
+
+  end
 end
 
 function permuteBGData(m::DataViewerWidget)
@@ -447,7 +343,9 @@ end
 
 function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=nothing)
   try
-    visible(m["expAnatomicRef"], dataBG != nothing)
+    visible(m["mbFusion"], dataBG != nothing)
+    visible(m["lbFusion"], dataBG != nothing)
+    visible(m["sepFusion"], dataBG != nothing)
     if !m.offlineMode
       visible(m["expExport"], false)
       visible(m["labelFrames"], false)
@@ -468,7 +366,7 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
 
       Gtk.@sigatom empty!(m["cbChannel"])
       for i=1:length(data)
-        push!(m["cbChannel"], "Channel $i")
+        push!(m["cbChannel"], "$i")
       end
       Gtk.@sigatom setproperty!(m["cbChannel"],:active,0)
 
@@ -546,11 +444,6 @@ function showData(m::DataViewerWidget)
         else
           proj = slices
         end
-      #data = squeeze(data)
-
-      # The following would be for per frame windowing
-      #maxval = [maximum(d) for d in data_]
-      #minval = [minimum(d) for d in data_]
 
       # global windowing
       maxval = [maximum(d) for d in m.data]
@@ -574,7 +467,7 @@ function showData(m::DataViewerWidget)
 
       m.currentlyShownData = data
 
-      if ndims(squeeze(data[1])) == 3
+      if ndims(squeeze(data[1])) >= 2
         cdata_zx, cdata_zy, cdata_xy = getColoredSlices(data, dataBG, edgeMask, m.coloring, minval, maxval, params)
         isDrawSectionalLines = params[:showSlices] && proj != "MIP"
         isDrawRectangle = params[:showDFFOV]
@@ -597,12 +490,12 @@ function showData(m::DataViewerWidget)
         end
         G_.current_page(m["nb2D3D"], 0)
         m.currentlyShownImages = ImageMeta[cdata_xy, cdata_zx, cdata_zy]
-      elseif ndims(squeeze(data[1])) == 2
-        cdata = colorize(data, m.coloring, minval, maxval, params)
-        pZ = drawImage( convert(Array,cdata.data) )
-        display(m.grid2D[1,1],pZ)
-        G_.current_page(m["nb2D3D"], 1)
-        m.currentlyShownImages = cdata
+      #elseif ndims(squeeze(data[1])) == 2
+      #  cdata = colorize(data, m.coloring, minval, maxval, params)
+      #  pZ = drawImage( convert(Array,cdata.data) )
+      #  display(m.grid2D[1,1],pZ)
+      #  G_.current_page(m["nb2D3D"], 1)
+      #  m.currentlyShownImages = cdata
       else
         dat = vec(data_[1])
         p = Winston.FramedPlot(xlabel="x", ylabel="y")
@@ -744,7 +637,7 @@ function getDFFov(im::ImageMeta)
     dfFov = abs.(2*(dfS./acqGrad))
   else
     dfFov = [0.05,0.05,0.025] # use better default...
-    warn("using default dfFov: ",dfFov)
+    #warn("using default dfFov: ",dfFov)
   end
   return dfFov
 end
@@ -1050,11 +943,6 @@ function setParams(m::DataViewerWidget, params)
   Gtk.@sigatom setproperty!(m["cbBlendChannels"], :active, get(params,:blendChannels, false))
 
   Gtk.@sigatom setproperty!(m["cbProfile"], :active, get(params,:profile, 0))
-  #for (i,solver) in enumerate(linearSolverList())
-  #  if solver == params[:solver]
-  #    Gtk.@sigatom setproperty!(m["cbSolver"],:active, i-1)
-  #  end
-  #end
 
   showData(m)
 end
@@ -1089,5 +977,158 @@ function setRegistrationFGParams!(m::DataViewerWidget, rotBG, transBG)
     setproperty!(m["adjRotX"], :value, rotBG[1])
     setproperty!(m["adjRotY"], :value, rotBG[2])
     setproperty!(m["adjRotZ"], :value, rotBG[3])
+  end
+end
+
+
+
+
+
+
+
+### Export Functions ###
+
+function exportImages(m::DataViewerWidget)
+  if m.currentlyShownImages != nothing
+    filter = Gtk.GtkFileFilter(pattern=String("*.png"), mimetype=String("image/png"))
+    filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
+    if filenameImageData != ""
+      pixelResizeFactor = getproperty(m["adjPixelResizeFactor"],:value,Int64)
+      @async println("Export Image as ", filenameImageData)
+      exportImage(filenameImageData, m.currentlyShownImages, pixelResizeFactor=pixelResizeFactor)
+    end
+  end
+end
+
+function exportTikz(m::DataViewerWidget)
+  if m.currentlyShownImages != nothing
+    filter = Gtk.GtkFileFilter(pattern=String("*.tikz*"), mimetype=String("image/tikz"))
+    filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
+    if filenameImageData != ""
+      pixelResizeFactor = getproperty(m["adjPixelResizeFactor"],:value,Int64)
+      @async println("Export Tikz as ", filenameImageData)
+      props = m.currentlyShownData[1].properties
+      SFPath=props["recoParams"][:SFPath]
+      bSF = MPIFile(SFPath)
+      exportTikz(filenameImageData, m.currentlyShownImages, collect(size(m.dataBG)),
+       collect(pixelspacing(m.dataBG)),fov(bSF),getParams(m); pixelResizeFactor=pixelResizeFactor)
+    end
+  end
+end
+
+function exportMovi(m::DataViewerWidget)
+  filter = Gtk.GtkFileFilter(pattern=String("*.gif"), mimetype=String("image/gif"))
+  filenameMovi = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
+  if filenameMovi != ""
+    params = getParams(m)
+    sliceMovies = getColoredSlicesMovie(m.data, m.dataBG, m.coloring, params)
+    pixelResizeFactor = getproperty(m["adjPixelResizeFactor"],:value, Int64)
+    @async println("Export Movi as ", filenameMovi)
+    exportMovies(filenameMovi, sliceMovies, pixelResizeFactor=pixelResizeFactor)
+  end
+end
+
+function exportAllData(m::DataViewerWidget)
+  if m.data != nothing
+    filter = Gtk.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
+    filenameData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
+    if filenameData != ""
+
+      params = getParams(m)
+
+      maxval = [maximum(d) for d in m.data]
+      minval = [minimum(d) for d in m.data]
+
+      if m.dataBG != nothing
+        data_ = interpolateToRefImage(m.dataBG, m.data, params)
+        dataBG = interpolateToRefImage(m.dataBG, params)
+
+        data__ = [data(d) for d in data_]
+
+        cdataFG = colorize(data__, m.coloring, minval, maxval, params)
+
+        minval,maxval = extrema(dataBG)
+        cdataBG = colorize(dataBG,params[:coloringBG],minval,maxval)
+
+        blendF = get(params, :translucentBlending, false) ? blend : dogyDoge
+        cdata = blendF(cdataBG, cdataFG)
+      else
+        data_ = [data(d) for d in m.data]
+        cdata = colorize(data_, m.coloring, minval, maxval, params)
+      end
+
+      prop = properties(m.data[1])
+      cdata_ = similar(cdata, RGB{N0f8})
+      cdata_[:] = convert(ImageMeta{RGB},cdata)[:] #TK: ugly hack
+
+      file, ext = splitext(filenameData)
+      savedata(string(file,".nii"), ImageMeta(cdata_,prop), permRGBData=true)
+    end
+  end
+end
+
+function exportRealDataAllFr(m::DataViewerWidget)
+  if m.data != nothing && m.dataBG != nothing
+    filter = Gtk.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
+    filenameData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
+    if filenameData != ""
+      params = getParams(m)
+
+      data = interpolateToRefImageAllFr(m.dataBG, m.data, params)
+      dataBG = interpolateToRefImage(m.dataBG, params)
+
+      #dataBG_ = applyPermutionsRev(m, dataBG)
+
+      file, ext = splitext(filenameData)
+      savedata(string(file,".nii"), data)
+      savedata(string(file,"_BG.nii"), dataBG)
+    end
+  end
+end
+
+function exportData(m::DataViewerWidget)
+  if m.currentlyShownData != nothing
+    filter = Gtk.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
+    filenameData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
+    if filenameData != ""
+
+      params = getParams(m)
+
+      maxval = [maximum(d) for d in m.data]
+      minval = [minimum(d) for d in m.data]
+
+      data_ = [data(d) for d in m.currentlyShownData]
+
+      cdata = colorize(data_,m.coloring,minval,maxval,params)
+
+      if m.dataBG != nothing
+        minval,maxval = extrema(m.dataBG)
+        cdataBG = colorize(m.dataBG,params[:coloringBG],minval,maxval)
+
+        blendF = get(params, :translucentBlending, false) ? blend : dogyDoge
+        cdata = blendF(cdataBG, cdata)
+      end
+
+      prop = properties(m.currentlyShownData[1])
+      cdata_ = similar(cdata, RGB{N0f8})
+      cdata_[:] = convert(ImageMeta{RGB},cdata)[:] #TK: ugly hack
+
+      file, ext = splitext(filenameData)
+      savedata(string(file,".nii"), ImageMeta(cdata_,prop), permRGBData=true)
+    end
+  end
+end
+
+
+
+function exportProfile(m::DataViewerWidget)
+  if m.currentlyShownData != nothing
+    filter = Gtk.GtkFileFilter(pattern=String("*.csv"), mimetype=String("text/comma-separated-values"))
+    filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
+    if filenameImageData != "" && m.currentProfile != nothing
+      @async println("Export Image as ", filenameImageData)
+
+      writecsv(filenameImageData, m.currentProfile )
+    end
   end
 end

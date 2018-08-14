@@ -1,6 +1,6 @@
 export MPILab
 
-type MPILab
+mutable struct MPILab
   builder
   activeStore
   datasetStores
@@ -23,6 +23,7 @@ type MPILab
   sfBrowser
   settings
   clearingStudyStore
+  clearingExpStore
   basicRobot
   robotScanner
   multiPatchRobot
@@ -36,7 +37,7 @@ end
 
 getindex(m::MPILab, w::AbstractString) = G_.object(m.builder, w)
 
-mpilab = nothing
+mpilab = Ref{MPILab}()
 
 activeDatasetStore(m::MPILab) = m.datasetStores[m.activeStore]
 activeRecoStore(m::MPILab) = typeof(activeDatasetStore(m)) <: BrukerDatasetStore ?
@@ -47,21 +48,23 @@ function MPILab(offlineMode=false)::MPILab
 
   uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","mpiLab.ui")
 
-  m = MPILab( Builder(filename=uifile), 1, DatasetStore[],
+  m_ = MPILab( Builder(filename=uifile), 1, DatasetStore[],
               nothing, nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
-              nothing, nothing, false, nothing, nothing, nothing, nothing,
+              nothing, nothing, false, false, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, "", nothing)
 
-  global mpilab = m
+  let m=m_
+
+  mpilab[] = m
 
   w = m["mainWindow"]
 
   println("## Init Settings ...")
   initSettings(m)
   println("## Init Measurement Tab ...")
-  initMeasurementTab(m, offlineMode)
+  @time initMeasurementTab(m, offlineMode)
   println("## Init Store switch ...")
   initStoreSwitch(m)
 
@@ -80,7 +83,7 @@ function MPILab(offlineMode=false)::MPILab
   initRawDataTab(m)
   if m.settings["enableRecoStore", true]
     println("## Init Reco Tab ...")
-    initRecoTab(m)
+    @time initRecoTab(m)
   end
   println("## Init Reco Store ...")
   initReconstructionStore(m)
@@ -93,10 +96,14 @@ function MPILab(offlineMode=false)::MPILab
 
   Gtk.@sigatom setproperty!(m["cbDatasetStores"],:active,0)
 
-  showall(w)
   # ugly but necessary since showall unhides all widgets
-  Gtk.@sigatom visible(m["boxMeasTab"],
-      isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
+  #Gtk.@sigatom visible(m["boxMeasTab"],
+  #    isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
+  #Gtk.@sigatom visible(m["tbOpenMeasurementTab"],
+  #        isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
+
+
+  show(w)
 
   signal_connect(w, "key-press-event") do widget, event
     if event.keyval ==  Gtk.GConstants.GDK_KEY_c
@@ -122,7 +129,9 @@ function MPILab(offlineMode=false)::MPILab
 
   println("## finished ...")
 
-  return m
+  end
+
+  return m_
 end
 
 function initStoreSwitch(m::MPILab)
@@ -144,19 +153,22 @@ function initStoreSwitch(m::MPILab)
   signal_connect(m["cbDatasetStores"], "changed") do widget...
     println("changing dataset store")
     m.activeStore = getproperty(m["cbDatasetStores"], :active, Int64)+1
-    Gtk.@sigatom scanDatasetDir(m)
-    Gtk.@sigatom updateData!(m.sfBrowser,activeDatasetStore(m))
+    Gtk.@sigatom begin
+      scanDatasetDir(m)
+      updateData!(m.sfBrowser,activeDatasetStore(m))
 
-    Gtk.@sigatom visible(m["boxMeasTab"],
+      #Gtk.@sigatom visible(m["boxMeasTab"],
+      #    isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
+      visible(m["tbOpenMeasurementTab"],
         isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
 
-    if length(m.studyStore) > 0
-      # select first study so that always measurements can be performed
-      iter = Gtk.mutable(Gtk.GtkTreeIter)
-      Gtk.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
-      Gtk.@sigatom select!(m.selectionStudy, iter)
+      if length(m.studyStore) > 0
+        # select first study so that always measurements can be performed
+        iter = Gtk.mutable(Gtk.GtkTreeIter)
+        Gtk.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
+        select!(m.selectionStudy, iter)
+      end
     end
-
     return nothing
   end
 
@@ -218,6 +230,7 @@ function initStudyStore(m::MPILab)
 
   sw = m["swStudy"]
   push!(sw,tv)
+  showall(sw)
 
 
   scanDatasetDir(m)
@@ -281,8 +294,12 @@ function initStudyStore(m::MPILab)
 
   signal_connect(m["tbRemoveStudy"], "clicked") do widget
     if hasselection(m.selectionStudy)
-      if ask_dialog("Do you really want to delete the study $(m.currentStudy.name)?")
+      if ask_dialog("Do you really want to delete the study $(m.currentStudy.name)?", mpilab[]["mainWindow"])
         remove(m.currentStudy)
+
+        # TODO
+        #currentIt = selected( m.selectionStudy )
+        #Gtk.@sigatom delete!(TreeModel(m.studyStoreSorted), currentIt)
 
         Gtk.@sigatom scanDatasetDir(m)
       end
@@ -295,7 +312,24 @@ function initStudyStore(m::MPILab)
     study = Study("", name, "", "")
     addStudy(activeDatasetStore(m), study)
     Gtk.@sigatom scanDatasetDir(m)
+
+    iter = Gtk.mutable(Gtk.GtkTreeIter)
+    Gtk.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
+    for l=1:length(m.studyStore)
+      if TreeModel(m.studyStoreSorted)[iter,2] == name
+        break
+      else
+        Gtk.get_iter_next( TreeModel(m.studyStoreSorted) , iter)
+      end
+    end
+
+    Gtk.@sigatom select!(m.selectionStudy, iter)
   end
+
+  signal_connect(m["tbOpenMeasurementTab"], "clicked") do widget
+    Gtk.@sigatom G_.current_page(m["nbView"], 4)
+  end
+
 end
 
 function scanDatasetDir(m::MPILab)
@@ -303,6 +337,8 @@ function scanDatasetDir(m::MPILab)
 
   m.clearingStudyStore = true # worst hack ever
   empty!(m.studyStore)
+  m.currentStudy = nothing
+  m.currentExperiment = nothing
   m.clearingStudyStore = false
 
   studies = getStudies( activeDatasetStore(m) )
@@ -335,6 +371,7 @@ function initAnatomRefStore(m::MPILab)
 
   sw = m["swAnatomData"]
   push!(sw,tv)
+  showall(sw)
 
   G_.sort_column_id(TreeSortable(m.anatomRefStore),0,GtkSortType.ASCENDING)
 
@@ -342,7 +379,7 @@ function initAnatomRefStore(m::MPILab)
   m.selectionAnatomicRefs = selection
 
   signal_connect(m["tbAddAnatomicalData"], "clicked") do widget
-    filename = open_dialog("Select Anatomic Reference", mpilab["mainWindow"], action=GtkFileChooserAction.OPEN)
+    filename = open_dialog("Select Anatomic Reference", mpilab[]["mainWindow"], action=GtkFileChooserAction.OPEN)
     if !isfile(filename)
       println(filename * " is not a file")
     else
@@ -403,7 +440,7 @@ end
 function initExperimentStore(m::MPILab)
 
   m.experimentStore = ListStore(Int64,String,Int64,String,
-                                 Float64,Int64,String,String,String)
+                                 Float64,String)
   tmFiltered = nothing
 
   tv = TreeView(TreeModel(m.experimentStore))
@@ -411,7 +448,7 @@ function initExperimentStore(m::MPILab)
   r2 = CellRendererText()
   setproperty!(r2, :editable, true)
 
-  cols = ["Num", "Name", "Frames", "DF", "Grad", "Averages", "Operator", "Time"]
+  cols = ["Num", "Name", "Frames", "DF", "Grad"]
 
   for (i,col) in enumerate(cols)
 
@@ -429,6 +466,7 @@ function initExperimentStore(m::MPILab)
 
   sw = m["swExp"]
   push!(sw,tv)
+  showall(sw)
 
   G_.sort_column_id(TreeSortable(m.experimentStore),0,GtkSortType.ASCENDING)
 
@@ -476,20 +514,39 @@ function initExperimentStore(m::MPILab)
   end
 
   signal_connect(m.selectionExp, "changed") do widget
-    if hasselection(m.selectionExp)
+    if hasselection(m.selectionExp) && !m.clearingStudyStore &&
+      m.currentStudy != nothing && !m.clearingExpStore
+
       currentIt = selected( m.selectionExp )
 
-      m.currentExperiment = Experiment( string(m.experimentStore[currentIt,9]),
-        m.experimentStore[currentIt,1], m.experimentStore[currentIt,2],
-        m.experimentStore[currentIt,3],
-        [parse(Float64,s) for s in split( string(m.experimentStore[currentIt,4]),"x") ],
-        m.experimentStore[currentIt,5],
-        m.experimentStore[currentIt,6], m.experimentStore[currentIt,7], m.experimentStore[currentIt,8])
+      exp = getExperiment(m.currentStudy, m.experimentStore[currentIt,1])
+      println(exp.path)
+      if exp != nothing && ispath(exp.path)
+        m.currentExperiment = exp
+        #Experiment( string(m.experimentStore[currentIt,length(cols)+1]),
+        #  m.experimentStore[currentIt,1], m.experimentStore[currentIt,2],
+        #  m.experimentStore[currentIt,3],
+        #  [parse(Float64,s) for s in split( string(m.experimentStore[currentIt,4]),"x") ],
+        #  m.experimentStore[currentIt,5])
 
 
-       Gtk.@sigatom updateReconstructionStore(m)
-       #Gtk.@sigatom updateAnatomRefStore(m)
+         Gtk.@sigatom updateReconstructionStore(m)
+         #Gtk.@sigatom updateAnatomRefStore(m)
 
+         Gtk.@sigatom begin
+           exp = m.currentExperiment
+           setproperty!(tv, :tooltip_text,
+             """Num: $(exp.num)\n
+                Name: $(exp.name)\n
+                NumFrames: $(exp.numFrames)\n
+                DF: $(join(exp.df,"x"))\n
+                Gradient: $(exp.sfGradient)\n
+                Averages: $(exp.numAverages)\n
+                Operator: $(exp.operator)\n
+                Time: $(exp.time)""")
+
+         end
+      end
     end
   end
 
@@ -525,6 +582,9 @@ function initExperimentStore(m::MPILab)
 end
 
 function updateExperimentStore(m::MPILab, study::Study)
+  m.clearingExpStore = true
+  Gtk.@sigatom unselectall!(m.selectionExp)
+
   Gtk.@sigatom empty!(m.experimentStore)
   Gtk.@sigatom empty!(m.reconstructionStore)
 
@@ -532,9 +592,9 @@ function updateExperimentStore(m::MPILab, study::Study)
 
   for exp in experiments
     Gtk.@sigatom push!(m.experimentStore,(exp.num, exp.name, exp.numFrames,
-                join(exp.df,"x"),exp.sfGradient,
-                exp.numAverages, exp.operator, exp.time, exp.path))
+                join(exp.df,"x"),exp.sfGradient, exp.path))
   end
+  m.clearingExpStore = false
 end
 
 
@@ -569,6 +629,7 @@ function initReconstructionStore(m::MPILab)
 
   sw = m["swReco"]
   push!(sw,tv)
+  showall(sw)
 
   G_.sort_column_id(TreeSortable(m.reconstructionStore),0,GtkSortType.ASCENDING)
 
@@ -599,7 +660,9 @@ function initReconstructionStore(m::MPILab)
   end
 
   signal_connect(m.selectionReco, "changed") do widget
-    if hasselection(m.selectionReco)
+    if hasselection(m.selectionReco) && m.currentStudy != nothing &&
+       m.currentExperiment != nothing
+
       currentIt = selected( m.selectionReco )
 
       recoNum = m.reconstructionStore[currentIt,1]
@@ -722,6 +785,7 @@ function initVisuStore(m::MPILab)
 
   sw = m["swVisu"]
   push!(sw,tv)
+  showall(sw)
 
   G_.sort_column_id(TreeSortable(m.visuStore),0,GtkSortType.ASCENDING)
 
@@ -786,7 +850,8 @@ end
 function updateVisuStore(m::MPILab)
   empty!(m.visuStore)
 
-  if hasselection(m.selectionReco)
+  if hasselection(m.selectionReco) && m.currentStudy != nothing &&
+     m.currentExperiment != nothing
 
     visus = getVisus(activeRecoStore(m), m.currentStudy, m.currentExperiment, m.currentReco)
     filename = getVisuPath( m.currentReco )
@@ -820,6 +885,7 @@ function initSFStore(m::MPILab)
   boxSFPane = m["boxSF"]
   push!(boxSFPane,m.sfBrowser.box)
   setproperty!(boxSFPane, :expand, m.sfBrowser.box, true)
+  showall(boxSFPane)
 end
 
 ### Measurement Tab ###
@@ -833,6 +899,7 @@ function initMeasurementTab(m::MPILab, offlineMode)
   boxMeasTab = m["boxMeasTab"]
   push!(boxMeasTab,m.measurementWidget)
   setproperty!(boxMeasTab, :expand, m.measurementWidget, true)
+  showall(boxMeasTab)
 end
 
 ### Image Tab ###
@@ -856,9 +923,10 @@ function initRawDataTab(m::MPILab)
   boxRawViewer = m["boxRawViewer"]
   push!(boxRawViewer,m.rawDataWidget)
   setproperty!(boxRawViewer, :expand, m.rawDataWidget, true)
+  showall(boxRawViewer)
 end
 
-### Raw Data Tab ###
+### Reco Data Tab ###
 
 function initRecoTab(m::MPILab)
 
@@ -878,6 +946,7 @@ function initSFViewerTab(m::MPILab)
   boxSFTab = m["boxSFTab"]
   push!(boxSFTab,m.sfViewerWidget)
   setproperty!(boxSFTab, :expand, m.sfViewerWidget, true)
+  showall(boxSFTab)
 end
 
 ### Settings
@@ -885,21 +954,4 @@ end
 function initSettings(m::MPILab)
   m.settings = Settings()
   #m["gridSettings_"][1,1] = m.settings["gridSettings"]
-end
-
-### Robot
-
-function initBasicRobot(m::MPILab)
-  m.basicRobot = BasicRobot()
-  m["mw_basicRobotParentGrid"][1,1] = m.basicRobot["basicRobotChildGrid"]
-end
-
-function initRobotScanner(m::MPILab)
-  m.robotScanner = RobotScanner()
-  m["mw_robotScannerParentGrid"][1,1] = m.robotScanner["robotScannerChildGrid"]
-end
-
-function initMultiPatchRobot(m::MPILab)
-  m.multiPatchRobot = MultiPatchPlan()
-  m["mw_multiPatchRobotParentGrid"][1,1] = m.multiPatchRobot["multiPatchPlanChildGrid"]
 end

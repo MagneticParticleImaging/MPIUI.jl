@@ -15,6 +15,7 @@ type SFViewerWidget <: Gtk.GtkBox
   mxyz
   updatingMOWidgets
   updatingSOWidget
+  grid
 end
 
 
@@ -24,17 +25,24 @@ function SFViewerWidget()
   uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","mpiLab.ui")
 
   b = Builder(filename=uifile)
-  mainBox = G_.object(b, "boxSFViewer")
+  mainBox = Box(:h) #G_.object(b, "boxSFViewer")
 
   m = SFViewerWidget(mainBox.handle, b,
                   nothing, nothing, false, nothing,nothing, nothing,
-                  nothing, nothing, zeros(0,0,0,0), zeros(0), false, false)
+                  nothing, nothing, zeros(0,0,0,0), zeros(0), false, false, nothing)
   Gtk.gobject_move_ref(m, mainBox)
 
+  m.grid = Grid()
   m.dv = DataViewerWidget()
-  push!(m["boxSFViewer"], m.dv)
-  setproperty!(m["boxSFViewer"], :fill, m.dv, true)
-  setproperty!(m["boxSFViewer"], :expand, m.dv, true)
+  m.grid[1,1] = m.dv
+  m.grid[1,2] = Canvas()
+  setproperty!(m.grid[1,2], :height_request, 200)
+  #setproperty!(m.grid, :row_homogeneous, true)
+  #setproperty!(m.grid, :column_homogeneous, true)
+  push!(m, m.grid)
+  setproperty!(m, :fill, m.grid, true)
+  setproperty!(m, :expand, m.grid, true)
+  push!(m, m["swSFViewer"])
 
   function updateSFMixO( widget )
     if !m.updatingMOWidgets && !m.updating
@@ -111,6 +119,16 @@ function updateSF(m::SFViewerWidget)
     sfData = getSF(m.bSF, Int64[k], returnasmatrix = false, bgcorrection=bgcorrection)[1][:,:,:,period]
 
     Gtk.@sigatom setproperty!(m["entSFSNR"],:text,string(round(m.SNR[freq,recChan,period],2)))
+
+    Gtk.@sigatom begin
+      p = Winston.semilogy(vec(m.SNR[:,recChan,period]),"b-",linewidth=5)
+      Winston.plot(p,[freq],[m.SNR[freq,recChan,period]],"rx",linewidth=5,ylog=true)
+      #Winston.ylabel("u / V")
+      #Winston.xlabel("f / kHz")
+      Winston.title("SNR")
+      display(m.grid[1,2] ,p)
+      showall(m)
+    end
 
     Gtk.@sigatom begin
       #updatingMOWidgets = true # avoid circular signals

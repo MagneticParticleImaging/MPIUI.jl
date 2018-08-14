@@ -243,20 +243,6 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkToolButton" id="tbPerformMultipleProcess">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="is_important">True</property>
-                        <property name="label" translatable="yes">Perform Multiple Process Reco</property>
-                        <property name="use_underline">True</property>
-                        <property name="stock_id">gtk-execute</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="homogeneous">True</property>
-                      </packing>
-                    </child>
-                    <child>
                       <object class="GtkToolButton" id="tbSaveReco">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -308,7 +294,7 @@
             <property name="can_focus">True</property>
             <property name="hexpand">False</property>
             <property name="shadow_type">in</property>
-            <property name="min_content_width">240</property>
+            <property name="min_content_width">203</property>
             <child>
               <object class="GtkViewport" id="viewport3">
                 <property name="visible">True</property>
@@ -319,6 +305,8 @@
                   <object class="GtkBox" id="boxRecoParams">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="margin_left">4</property>
+                    <property name="margin_right">4</property>
                     <property name="orientation">vertical</property>
                     <property name="spacing">6</property>
                     <child>
@@ -330,6 +318,7 @@
                           <object class="GtkEntry" id="entRecoDescrip">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="width_chars">0</property>
                           </object>
                         </child>
                         <child type="label">
@@ -459,6 +448,8 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="editable">False</property>
+                                <property name="width_chars">0</property>
+                                <property name="max_width_chars">10</property>
                               </object>
                               <packing>
                                 <property name="left_attach">0</property>
@@ -482,6 +473,7 @@
                               <object class="GtkLabel" id="label52">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">Selected SF</property>
                               </object>
                               <packing>
@@ -537,6 +529,7 @@
                               <object class="GtkLabel" id="label13">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">Min Freq</property>
                               </object>
                               <packing>
@@ -548,6 +541,7 @@
                               <object class="GtkLabel" id="label14">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">Max Freq</property>
                               </object>
                               <packing>
@@ -559,6 +553,7 @@
                               <object class="GtkLabel" id="label15">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">SNR Thresh</property>
                               </object>
                               <packing>
@@ -570,6 +565,7 @@
                               <object class="GtkLabel" id="label16">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">Num Freq</property>
                               </object>
                               <packing>
@@ -582,6 +578,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="hexpand">True</property>
+                                <property name="width_chars">0</property>
                                 <property name="text" translatable="yes">80,0</property>
                                 <property name="input_purpose">alpha</property>
                                 <property name="adjustment">adjMinFreq</property>
@@ -597,6 +594,7 @@
                               <object class="GtkSpinButton" id="spinbutton2">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
+                                <property name="width_chars">0</property>
                                 <property name="text" translatable="yes">1250,0</property>
                                 <property name="adjustment">adjMaxFreq</property>
                                 <property name="digits">1</property>
@@ -611,6 +609,7 @@
                               <object class="GtkSpinButton" id="spinbutton3">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
+                                <property name="width_chars">0</property>
                                 <property name="text" translatable="yes">2,00</property>
                                 <property name="adjustment">adjSNRThresh</property>
                                 <property name="digits">2</property>
@@ -626,6 +625,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="editable">False</property>
+                                <property name="width_chars">0</property>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -730,6 +730,7 @@
                               <object class="GtkLabel" id="label6">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">First Frame</property>
                               </object>
                               <packing>
@@ -755,6 +756,7 @@
                               <object class="GtkLabel" id="label19">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">Averages</property>
                               </object>
                               <packing>
@@ -766,6 +768,7 @@
                               <object class="GtkLabel" id="label21">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">Last Frame</property>
                               </object>
                               <packing>
@@ -948,6 +951,7 @@
                               <object class="GtkLabel" id="label18">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">Lambda L2</property>
                               </object>
                               <packing>
@@ -960,6 +964,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="hexpand">True</property>
+                                <property name="width_chars">0</property>
                                 <property name="text" translatable="yes">0,000000</property>
                                 <property name="input_purpose">alpha</property>
                                 <property name="adjustment">adjLambdaL2</property>
@@ -974,6 +979,7 @@
                               <object class="GtkLabel" id="label17">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">Iterations</property>
                               </object>
                               <packing>
@@ -999,6 +1005,7 @@
                               <object class="GtkLabel" id="label5">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">Solver</property>
                               </object>
                               <packing>
@@ -1020,6 +1027,7 @@
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">Lambda L1</property>
                               </object>
                               <packing>
@@ -1031,6 +1039,7 @@
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">Lambda TV</property>
                               </object>
                               <packing>
@@ -1042,6 +1051,7 @@
                               <object class="GtkSpinButton">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
+                                <property name="width_chars">0</property>
                                 <property name="text" translatable="yes">0,000000</property>
                                 <property name="adjustment">adjLambdaL1</property>
                                 <property name="digits">6</property>
@@ -1055,6 +1065,7 @@
                               <object class="GtkSpinButton">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
+                                <property name="width_chars">0</property>
                                 <property name="text" translatable="yes">0,000000</property>
                                 <property name="adjustment">adjLambdaTV</property>
                                 <property name="digits">6</property>
@@ -1174,6 +1185,7 @@
                               <object class="GtkLabel" id="label70">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">Sparsity Trafo</property>
                               </object>
                               <packing>
@@ -1185,6 +1197,7 @@
                               <object class="GtkLabel" id="label71">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="halign">start</property>
                                 <property name="label" translatable="yes">Reduction Factor</property>
                               </object>
                               <packing>
@@ -1196,6 +1209,7 @@
                               <object class="GtkSpinButton" id="spinbutton36">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
+                                <property name="width_chars">0</property>
                                 <property name="text" translatable="yes">0,01000</property>
                                 <property name="adjustment">adjRedFactor</property>
                                 <property name="digits">5</property>

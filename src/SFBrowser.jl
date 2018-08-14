@@ -23,8 +23,7 @@ function updateData!(m::SFBrowserWidget, sysFuncs)
   m.sysFuncs = sysFuncs
 
   Gtk.@sigatom empty!(m.store)
-
-  println(sysFuncs)
+  #println(sysFuncs)
 
   for l = 2:size(sysFuncs,1)
     push!(m.store,( sysFuncs[l,15],
@@ -89,11 +88,11 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 
       Gtk.@sigatom begin
         if !getproperty(cbOpenMeas,:active,Bool)
-          updateData!(mpilab.sfViewerWidget, sffilename)
-          G_.current_page(mpilab["nbView"], 3)
+          updateData!(mpilab[].sfViewerWidget, sffilename)
+          G_.current_page(mpilab[]["nbView"], 3)
         else
-          updateData(mpilab.rawDataWidget, sffilename)
-          G_.current_page(mpilab["nbView"], 0)
+          updateData(mpilab[].rawDataWidget, sffilename)
+          G_.current_page(mpilab[]["nbView"], 0)
         end
 
       end
@@ -231,7 +230,7 @@ end
 
 function SFSelectionDialog(;gradient = nothing, driveField = nothing)
 
-  dialog = Dialog("Select System Function", mpilab["mainWindow"], GtkDialogFlags.MODAL,
+  dialog = Dialog("Select System Function", mpilab[]["mainWindow"], GtkDialogFlags.MODAL,
                         Dict("gtk-cancel" => GtkResponseType.CANCEL,
                              "gtk-ok"=> GtkResponseType.ACCEPT) )
 
@@ -240,7 +239,7 @@ function SFSelectionDialog(;gradient = nothing, driveField = nothing)
   box = G_.content_area(dialog)
 
   sfBrowser = SFBrowserWidget(gradient = gradient, driveField = driveField)
-  updateData!(sfBrowser, activeDatasetStore(mpilab))
+  updateData!(sfBrowser, activeDatasetStore(mpilab[]))
 
   push!(box, sfBrowser.box)
   setproperty!(box, :expand, sfBrowser.box, true)
