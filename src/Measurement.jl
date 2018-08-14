@@ -388,13 +388,13 @@ function initCallbacks(m::MeasurementWidget)
               currPos +=1
               sleep(getproperty(m["adjPause",AdjustmentLeaf],:value,Float64))
               #Lauft nicht
-              #temp = getTemperatures(su)
-              #while maximum(temp) > params["maxTemperature"]
-              #  Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label,
-              #        """<span foreground="red" font_weight="bold" size="x-large"> System Cooling Down! </span>""")
-              #  sleep(20)
-              #  temp[:] = getTemperatures(su)
-              #end
+              temp = getTemperatures(su)
+              while maximum(temp[1:2]) > params["maxTemperature"]
+               Gtk.@sigatom setproperty!(m["lbInfo",LabelLeaf],:label,
+                    """<span foreground="red" font_weight="bold" size="x-large"> System Cooling Down! </span>""")
+               sleep(20)
+               temp[:] = getTemperatures(su)
+              end
             end
             if currPos > numPos
               stopTx(daq)
