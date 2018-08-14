@@ -97,7 +97,7 @@ function initCallbacks(m_::RawDataWidget)
     #signal_connect(showData, m[cb], "toggled", Void, (), false, m)
   end
 
-  @time for cb in ["cbCorrTF","cbSLCorr"]
+  @time for cb in ["cbCorrTF","cbSLCorr","cbAbsFrameAverage"]
     signal_connect(m[cb,CheckButtonLeaf], :toggled) do w
       loadData(C_NULL, m)
     end
@@ -154,9 +154,11 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
 
       Gtk.@sigatom setproperty!(m["adjFrame",AdjustmentLeaf], :upper, acqNumFGFrames(f))
 
-      frame = max( getproperty(m["adjFrame",AdjustmentLeaf], :value, Int64),1)
-
-
+      if getproperty(m["cbAbsFrameAverage",CheckButtonLeaf], :active, Bool)
+        frame = 1:acqNumFGFrames(f)
+      else
+        frame = max( getproperty(m["adjFrame",AdjustmentLeaf], :value, Int64),1)
+      end
 
       timePoints = rxTimePoints(f)
       deltaT = timePoints[2] - timePoints[1]
@@ -224,9 +226,28 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
         data[:] .-=  vec(mean(m.dataBG[:,chan,:,:],3))
       end
     else
-      data = vec(m.data[:,chan,patch,1])
-      if length(m.dataBG) > 0 && getproperty(m["cbSubtractBG",CheckButtonLeaf], :active, Bool)
-        data[:] .-=  vec(mean(m.dataBG[:,chan,patch,:],2))
+      if getproperty(m["cbAbsFrameAverage",CheckButtonLeaf], :active, Bool)
+        dataFD = rfft(m.data[:,chan,patch,:],1)
+        dataFD_ = vec(mean(abs.(dataFD), 2))
+        data = irfft(dataFD_, 2*size(dataFD_, 1) -2)
+
+        if length(m.dataBG) > 0
+          dataBGFD = rfft(m.dataBG[:,chan,patch,:],1)
+          dataBGFD_ = vec(mean(abs.(dataBGFD), 2))
+          dataBG = irfft(dataBGFD_, 2*size(dataBGFD_, 1) -2)
+          if getproperty(m["cbSubtractBG",CheckButtonLeaf], :active, Bool)
+            data[:] .-=  dataBG
+          end
+        end
+      else
+        data = vec(m.data[:,chan,patch,1])
+        if length(m.dataBG) > 0
+          #dataBG = vec(m.dataBG[:,chan,patch,1] .- mean(m.dataBG[:,chan,patch,:],2))
+          dataBG = vec( mean(m.dataBG[:,chan,patch,:],2))
+          if getproperty(m["cbSubtractBG",CheckButtonLeaf], :active, Bool)
+            data[:] .-=  dataBG
+          end
+        end
       end
     end
 
@@ -242,7 +263,7 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     if !autoRangingTD
       Winston.ylim(minValTD, maxValTD)
     end
-    ls = length(minFr:maxFr) > 150 ? "b-" : "b-o"
+    ls = "b-" #length(minFr:maxFr) > 150 ? "b-" : "b-o"
     p2 = Winston.semilogy(freq[minFr:maxFr],freqdata[minFr:maxFr],ls,linewidth=5)
     #Winston.ylabel("u / V")
     Winston.xlabel("f / kHz")
@@ -251,10 +272,6 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     end
 
     if length(m.dataBG) > 0 && getproperty(m["cbShowBG",CheckButtonLeaf], :active, Bool)
-      mid = div(size(m.dataBG,4),2)
-      #dataBG = vec(m.dataBG[:,chan,patch,1] .- mean(m.dataBG[:,chan,patch,:],2))
-      dataBG = vec( mean(m.dataBG[:,chan,patch,:],2))
-
       Winston.plot(p1,timePoints[minTP:maxTP],dataBG[minTP:maxTP],"k--",linewidth=2)
       ls = length(minFr:maxFr) > 150 ? "k-" : "k-x"
       Winston.plot(p2,freq[minFr:maxFr],abs.(rfft(dataBG)[minFr:maxFr]) / length(dataBG),

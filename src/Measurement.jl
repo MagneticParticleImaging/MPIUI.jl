@@ -556,7 +556,7 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
 
   Gtk.@sigatom updateData(m.rawDataWidget, m.filenameExperiment)
 
-  updateExperimentStore(mpilab[], mpilab.currentStudy)
+  updateExperimentStore(mpilab[], mpilab[].currentStudy)
   return nothing
 end
 
