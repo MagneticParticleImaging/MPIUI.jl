@@ -294,7 +294,7 @@ function initCallbacks(m::MeasurementWidget)
   cancelled = false
   @time signal_connect(m["tbCancel",ToolButtonLeaf], :clicked) do w
     cancelled = true
-    currPos = numPos
+    currPos = numPos+1
     timerCalibrationActive = true
   end
 
