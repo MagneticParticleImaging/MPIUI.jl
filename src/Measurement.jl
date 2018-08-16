@@ -378,13 +378,8 @@ function initCallbacks(m::MeasurementWidget)
 
               moveAbsUnsafe(getRobot(m.scanner), positions[currPos]) # comment for testing
 
-              # Disable robot during measurements
-              setEnabled(getRobot(m.scanner), false)
               sleep(0.5)
               uMeas, uRef = postMoveAction(calibObj, positions[currPos], currPos)
-
-              # Enable robot again
-              setEnabled(getRobot(m.scanner), true)
 
               deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
 
@@ -555,12 +550,10 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
 
   bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
 
-  setEnabled(getRobot(m.scanner), false)
   enableACPower(getSurveillanceUnit(m.scanner))
   m.filenameExperiment = MPIMeasurements.measurement(getDAQ(m.scanner), params, m.mdfstore,
                          bgdata=bgdata)
   disableACPower(getSurveillanceUnit(m.scanner))
-  setEnabled(getRobot(m.scanner), true)
 
   Gtk.@sigatom updateData(m.rawDataWidget, m.filenameExperiment)
 
@@ -574,11 +567,9 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
   params = merge!(getGeneralParams(m.scanner),getParams(m))
   params["acqNumFrames"] = params["acqNumBGFrames"]
 
-  setEnabled(getRobot(m.scanner), false)
   enableACPower(getSurveillanceUnit(m.scanner))
   u = MPIMeasurements.measurement(getDAQ(m.scanner), params)
   disableACPower(getSurveillanceUnit(m.scanner))
-  setEnabled(getRobot(m.scanner), true)
 
   m.dataBGStore = u
   #updateData(m, u)
