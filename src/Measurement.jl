@@ -237,6 +237,7 @@ function initCallbacks(m::MeasurementWidget)
       params = merge!(getGeneralParams(m.scanner),getParams(m))
       MPIMeasurements.updateParams!(daq, params)
       enableACPower(getSurveillanceUnit(m.scanner))
+      setEnabled(getRobot(m.scanner), false)
       startTx(daq)
 
       if daq.params.controlPhase
@@ -272,6 +273,7 @@ function initCallbacks(m::MeasurementWidget)
           sleep(getproperty(m["adjPause",AdjustmentLeaf],:value,Float64))
         else
           MPIMeasurements.enableSlowDAC(daq, false)
+          setEnabled(getRobot(m.scanner), true)
           stopTx(daq)
           disableACPower(getSurveillanceUnit(m.scanner))
           MPIMeasurements.disconnect(daq)
@@ -378,8 +380,10 @@ function initCallbacks(m::MeasurementWidget)
 
               moveAbsUnsafe(getRobot(m.scanner), positions[currPos]) # comment for testing
 
+              setEnabled(getRobot(m.scanner), false)
               sleep(0.5)
               uMeas, uRef = postMoveAction(calibObj, positions[currPos], currPos)
+              setEnabled(getRobot(m.scanner), true)
 
               deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
 
@@ -550,10 +554,12 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
 
   bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
 
+  setEnabled(getRobot(m.scanner), false)
   enableACPower(getSurveillanceUnit(m.scanner))
   m.filenameExperiment = MPIMeasurements.measurement(getDAQ(m.scanner), params, m.mdfstore,
                          bgdata=bgdata)
   disableACPower(getSurveillanceUnit(m.scanner))
+  setEnabled(getRobot(m.scanner), true)
 
   Gtk.@sigatom updateData(m.rawDataWidget, m.filenameExperiment)
 
@@ -567,9 +573,11 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
   params = merge!(getGeneralParams(m.scanner),getParams(m))
   params["acqNumFrames"] = params["acqNumBGFrames"]
 
+  setEnabled(getRobot(m.scanner), false)
   enableACPower(getSurveillanceUnit(m.scanner))
   u = MPIMeasurements.measurement(getDAQ(m.scanner), params)
   disableACPower(getSurveillanceUnit(m.scanner))
+  setEnabled(getRobot(m.scanner), true)
 
   m.dataBGStore = u
   #updateData(m, u)
