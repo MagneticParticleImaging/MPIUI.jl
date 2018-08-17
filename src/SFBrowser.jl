@@ -6,12 +6,15 @@ type SFBrowserWidget
   box
   tmSorted
   sysFuncs
+  datasetStore
 end
 
 function updateData!(m::SFBrowserWidget, d::DatasetStore)
   #generateSFDatabase(d)
 
   sysFuncs = loadSFDatabase(d)
+
+  m.datasetStore = d
 
   if sysFuncs != nothing
     updateData!(m, sysFuncs)
@@ -112,6 +115,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     setproperty!(ent,:width_chars,11)
   end
 
+  btnSFUpdate = Button("Update")
 
   if smallWidth
     grid = Grid()
@@ -126,7 +130,8 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     grid[4,1] = entSize
     grid[3,2] = Label("Tracer")
     grid[4,2] = entTracer
-    grid[1:4,3] = cbOpenMeas
+    grid[1:2,3] = cbOpenMeas
+    grid[3:4,3] = btnSFUpdate
   else
     hbox = Box(:h)
     push!(vbox, hbox)
@@ -144,6 +149,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     push!(hbox, entSize)
     push!(hbox, Label("Tracer"))
     push!(hbox, entTracer)
+    push!(hbox, btnSFUpdate)
   end
 
 
@@ -153,6 +159,15 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   setproperty!(vbox, :expand, sw, true)
   showall(tv)
   showall(vbox)
+
+  function updateSFDB( widget )
+    if m.datasetStore != nothing
+      MPIFiles.generateSFDatabase(m.datasetStore)
+      updateData!(m, m.datasetStore)
+    end
+  end
+
+  signal_connect(updateSFDB, btnSFUpdate, "clicked")
 
   function updateShownSF( widget )
     G = tryparse(Float64,getproperty(entGradient,:text,String))
@@ -213,7 +228,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   end
 
 
-  m = SFBrowserWidget(store,tv,vbox,tmSorted, nothing)
+  m = SFBrowserWidget(store,tv,vbox,tmSorted, nothing, nothing)
 
   #updateData!(m, sfDatabase.database)
 
