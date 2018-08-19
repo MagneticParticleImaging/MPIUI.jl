@@ -1,4 +1,4 @@
-julia 0.7
+julia 0.6
 Reexport
 Cairo
 Gtk
@@ -8,3 +8,4 @@ MPIFiles
 Colors
 FileIO
 ImageMetadata
+FFTW
