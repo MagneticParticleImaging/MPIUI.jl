@@ -45,7 +45,7 @@ end
 ########### DataViewerWidget #################
 
 
-type DataViewerWidget <: Gtk.GtkBox
+mutable struct DataViewerWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder
   data
@@ -376,7 +376,7 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
       for i=1:nd
         push!(m["cbProfile"], strProfile[i])
       end
-      Gtk.@sigatom set_gtk_property!(m["cbProfile"],:active,nd==4?3:0)
+      Gtk.@sigatom set_gtk_property!(m["cbProfile"],:active,nd==4 ? 3 : 0)
 
       updateColoringWidgets( m )
     end
@@ -390,7 +390,7 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
     permuteBGData(m)
     updateSliceWidgets(m)
     showData(m)
-    Gtk.@sigatom set_gtk_property!(m["adjPixelResizeFactor"],:value, (dataBG==nothing)?5:1  )
+    Gtk.@sigatom set_gtk_property!(m["adjPixelResizeFactor"],:value, (dataBG==nothing) ? 5 : 1  )
 
     if params!=nothing
       setParams(m,params)
@@ -1128,7 +1128,7 @@ function exportProfile(m::DataViewerWidget)
     if filenameImageData != "" && m.currentProfile != nothing
       @async println("Export Image as ", filenameImageData)
 
-      writecsv(filenameImageData, m.currentProfile )
+      writedlm(filenameImageData, m.currentProfile )
     end
   end
 end

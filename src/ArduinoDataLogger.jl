@@ -1,6 +1,6 @@
 import Base: getindex
 using MPIMeasurements
-type ArduinoDataLoggerUI
+mutable struct ArduinoDataLoggerUI
     builder
     data
     freq

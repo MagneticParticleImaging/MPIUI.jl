@@ -2,7 +2,7 @@ using Gtk, Gtk.ShortNames, Cairo
 
 export baseViewer, baseViewerStandAlone, updateView, drawMIP
 
-type BaseViewerWidget
+mutable struct BaseViewerWidget
   builder
   zxSliceGrid
   zySliceGrid

@@ -18,7 +18,7 @@ function RecoWindow(filenameMeas=nothing; params = defaultRecoParams())
   dw
 end
 
-type RecoWidget<: Gtk.GtkGrid
+mutable struct RecoWidget<: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
   builder
   dv

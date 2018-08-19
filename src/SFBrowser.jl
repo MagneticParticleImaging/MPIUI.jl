@@ -1,6 +1,6 @@
 using Gtk.ShortNames, Gtk.GConstants
 
-type SFBrowserWidget
+mutable struct SFBrowserWidget
   store
   tv
   box
@@ -30,8 +30,8 @@ function updateData!(m::SFBrowserWidget, sysFuncs)
 
   for l = 2:size(sysFuncs,1)
     push!(m.store,( sysFuncs[l,15],
-            sysFuncs[l,1],round(sysFuncs[l,2],2),
-           "$(round((sysFuncs[l,3]),2)) x $(round((sysFuncs[l,4]),2)) x $(round((sysFuncs[l,5]),2))",
+            sysFuncs[l,1],round(sysFuncs[l,2], digits=2),
+           "$(round((sysFuncs[l,3]), digits=2)) x $(round((sysFuncs[l,4]), digits=2)) x $(round((sysFuncs[l,5]), digits=2))",
                               "$(sysFuncs[l,6]) x $(sysFuncs[l,7]) x $(sysFuncs[l,8])",
                               sysFuncs[l,10],sysFuncs[l,11],sysFuncs[l,12],sysFuncs[l,14], true))
   end
@@ -236,7 +236,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 end
 
 
-type SFSelectionDialog <: Gtk.GtkDialog
+mutable struct SFSelectionDialog <: Gtk.GtkDialog
   handle::Ptr{Gtk.GObject}
   selection
   store

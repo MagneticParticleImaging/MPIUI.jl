@@ -1,6 +1,6 @@
 
 
-type FileBrowser <: Gtk.GtkBox
+mutable struct FileBrowser <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   path::String
   store::ListStore

@@ -2,7 +2,7 @@ using Gtk, Gtk.ShortNames
 
 export SpectrumViewer, SpectrumViewerWidget
 
-type SpectrumViewerWidget <: Gtk.GtkBox
+mutable struct SpectrumViewerWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   file
   freq

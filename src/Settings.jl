@@ -1,7 +1,7 @@
 
 import FileIO: load, save
 
-type Settings
+mutable struct Settings
   builder
   data
 

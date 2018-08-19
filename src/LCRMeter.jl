@@ -1,6 +1,6 @@
 import Base: getindex
 
-type LCRMeterUI
+mutable struct LCRMeterUI
   builder
   data
   freq
@@ -43,7 +43,7 @@ function sweepAndShow(m::LCRMeterUI)
   numSamp = get_gtk_property(m["adjNumSamples"], :value, Int64)
   ip = get_gtk_property(m["entIP"], :text, String)
 
-  freq = linspace(minFreq,maxFreq,numSamp)
+  freq = range(minFreq, stop=maxFreq, length=numSamp)
 
   data = rand(numSamp)+im*rand(numSamp) #TODO
 

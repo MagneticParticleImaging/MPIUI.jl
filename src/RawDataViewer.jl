@@ -1,6 +1,6 @@
 import Base: getindex
 
-type RawDataWidget <: Gtk.GtkBox
+mutable struct RawDataWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder::Builder
   data::Array{Float32,4}

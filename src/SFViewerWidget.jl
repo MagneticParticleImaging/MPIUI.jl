@@ -1,6 +1,6 @@
 import Base: getindex
 
-type SFViewerWidget <: Gtk.GtkBox
+mutable struct SFViewerWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder
   dv

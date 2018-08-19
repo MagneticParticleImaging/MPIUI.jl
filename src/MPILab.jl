@@ -118,7 +118,7 @@ function MPILab(offlineMode=false)::MPILab
           @async println("copy visu params from clipboard to UI...")
           str = clipboard()
           try
-          dict= eval(parse(str))
+          dict= eval(Meta.parse(str))
           setParams(m.dataViewerWidget, dict)
         catch
             @async println("not the right format for SetParams in clipboard...")
@@ -386,7 +386,7 @@ function initAnatomRefStore(m::MPILab)
       targetPath = joinpath(activeRecoStore(m).path, "reconstructions", id(m.currentStudy), "anatomicReferences", last(splitdir(filename)) )
       mkpath(targetPath)
       try_chmod(targetPath, 0o777, recursive=true)
-      cp(filename, targetPath, remove_destination=true)
+      cp(filename, targetPath, force=true)
       Gtk.@sigatom updateAnatomRefStore(m)
     end
 

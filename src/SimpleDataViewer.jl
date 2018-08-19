@@ -13,7 +13,7 @@ end
 ########### SimpleDataViewerWidget #################
 
 
-type SimpleDataViewerWidget <: Gtk.GtkBox
+mutable struct SimpleDataViewerWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder
   grid3D
