@@ -18,9 +18,9 @@ function Base.fill!(c::Canvas, color::Colorant)
     fill(ctx)
 end
 
-image_surface(img::Matrix{Gray24}) = CairoImageSurface(reinterpret(UInt32, img), Cairo.FORMAT_RGB24)
-image_surface(img::Matrix{RGB24})  = CairoImageSurface(reinterpret(UInt32, img), Cairo.FORMAT_RGB24)
-image_surface(img::Matrix{ARGB32}) = CairoImageSurface(reinterpret(UInt32, img), Cairo.FORMAT_ARGB32)
+image_surface(img::Matrix{Gray24}) = CairoImageSurface(copy(reinterpret(UInt32, img)), Cairo.FORMAT_RGB24)
+image_surface(img::Matrix{RGB24})  = CairoImageSurface(copy(reinterpret(UInt32, img)), Cairo.FORMAT_RGB24)
+image_surface(img::Matrix{ARGB32}) = CairoImageSurface(copy(reinterpret(UInt32, img)), Cairo.FORMAT_ARGB32)
 
 image_surface(img::AbstractArray{T}) where {T<:Number} = image_surface(convert(Matrix{Gray24}, img))
 image_surface(img::AbstractArray{C}) where {C<:Color} = image_surface(convert(Matrix{RGB24}, img))

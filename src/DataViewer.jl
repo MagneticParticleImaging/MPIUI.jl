@@ -359,7 +359,7 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
     visible(m["lbChannel"], multiChannel)
 
     if m.data == nothing || (length(m.data) != length(data))
-      m.coloring = Array{ColoringParams}(length(data))
+      m.coloring = Array{ColoringParams}(undef,length(data))
       for l=1:length(data)
         m.coloring[l] = ColoringParams(0.0,1.0,0)
       end
@@ -724,7 +724,7 @@ function drawImageCairo(c, image, isDrawSectionalLines, xsec, ysec,
   h = height(ctx)
   w = width(ctx)
 
-  im = reverse(convert(ImageMeta{RGB{N0f8}},image).data,dims=1)
+  im = copy(reverse(convert(ImageMeta{RGB{N0f8}},image).data,dims=1))
   xsec_ = !flipX ? xsec : (size(im,2)-xsec+1)
   ysec_ = !flipY ? ysec : (size(im,1)-ysec+1)
   xx = w*(xsec_-0.5)/size(im,2)

@@ -147,7 +147,7 @@ function updateSF(m::SFViewerWidget)
     end
 
     c = reshape(sfData, 1, size(sfData,1), size(sfData,2), size(sfData,3), 1)
-    c_ = cat(1,abs.(c),angle.(c))
+    c_ = cat(abs.(c),angle.(c), dims=1)
     im = AxisArray(c_, (:color,:x,:y,:z,:time),
                         tuple(1.0, 1.0, 1.0, 1.0, 1.0),
                         tuple(0.0, 0.0, 0.0, 0.0, 0.0))
