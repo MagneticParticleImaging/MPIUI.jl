@@ -60,7 +60,7 @@ function FileBrowser()
   end
 
   signal_connect(btnPkgDir, "clicked") do widget
-    cd(Pkg.dir())
+    cd(first(DEPOT_PATH))
     changedir!(browser,pwd())
   end
 

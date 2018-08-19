@@ -1,4 +1,4 @@
-julia 0.6
+julia 0.7
 Reexport
 Cairo
 Gtk
@@ -9,3 +9,7 @@ Colors
 FileIO
 ImageMetadata
 FFTW
+Images
+HDF5
+Winston
+Graphics

@@ -7,6 +7,7 @@ using Reexport
 using Printf
 using DelimitedFiles
 using FFTW
+using Pkg
 
 ENV["MPILIB_UI"] = "Nothing"
 

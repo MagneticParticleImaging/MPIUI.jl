@@ -57,8 +57,7 @@ function MeasurementWidget(filenameConfig="")
 
   println("Read Sequences")
   Gtk.@sigatom empty!(m["cbSeFo",ComboBoxTextLeaf])
-  m.sequences = String[ splitext(seq)[1] for seq in
-            readdir(Pkg.dir("MPIMeasurements","src","Sequences"))]
+  m.sequences = String[ splitext(seq)[1] for seq in readdir(sequenceDir())]
   for seq in m.sequences
     Gtk.@sigatom push!(m["cbSeFo",ComboBoxTextLeaf], seq)
   end
@@ -480,8 +479,7 @@ function initCallbacks(m::MeasurementWidget)
   #@time signal_connect(reinitDAQ, m["adjNumPeriods"], "value_changed", Nothing, (), false, m)
   @time signal_connect(m["cbSeFo",ComboBoxTextLeaf], :changed) do w
     seq = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
-    val = readcsv(Pkg.dir("MPIMeasurements","src","Sequences",
-                                    seq*".csv"))
+    val = readdlm(joinpath(sequenceDir(), seq*".csv"),',')
     Gtk.@sigatom set_gtk_property!(m["adjNumPeriods",AdjustmentLeaf], :value, size(val,2))
   end
 
@@ -640,7 +638,7 @@ function setParams(m::MeasurementWidget, params)
   Gtk.@sigatom set_gtk_property!(m["entTracerSolute",EntryLeaf], :text, params["tracerSolute"][1])
 
   if haskey(params,"acqFFSequence")
-    idx = findfirst(m.sequences, params["acqFFSequence"])
+    idx = findfirst_(m.sequences, params["acqFFSequence"])
     if idx > 0
       Gtk.@sigatom set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf], :active,idx-1)
     end

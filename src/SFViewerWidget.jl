@@ -118,7 +118,7 @@ function updateSF(m::SFViewerWidget)
 
     sfData = getSF(m.bSF, Int64[k], returnasmatrix = false, bgcorrection=bgcorrection)[1][:,:,:,period]
 
-    Gtk.@sigatom set_gtk_property!(m["entSFSNR"],:text,string(round(m.SNR[freq,recChan,period],2)))
+    Gtk.@sigatom set_gtk_property!(m["entSFSNR"],:text,string(round(m.SNR[freq,recChan,period],digits=2)))
 
     Gtk.@sigatom begin
       p = Winston.semilogy(vec(m.SNR[:,recChan,period]),"b-",linewidth=5)
