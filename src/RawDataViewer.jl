@@ -1,6 +1,6 @@
 import Base: getindex
 
-mutable struct RawDataWidget <: Gtk.GtkBox
+type RawDataWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder::Builder
   data::Array{Float32,4}
@@ -23,7 +23,7 @@ getindex(m::RawDataWidget, w::AbstractString, T::Type) = object_(m.builder, w, T
 
 function RawDataWidget(filenameConfig=nothing)
   println("Starting RawDataWidget")
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","rawDataViewer.ui")
+  uifile = joinpath(@__DIR__,"builder","rawDataViewer.ui")
 
   b = Builder(filename=uifile)
   mainBox = object_(b, "boxRawViewer", BoxLeaf)

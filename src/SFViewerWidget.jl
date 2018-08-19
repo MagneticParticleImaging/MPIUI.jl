@@ -22,7 +22,7 @@ end
 getindex(m::SFViewerWidget, w::AbstractString) = G_.object(m.builder, w)
 
 function SFViewerWidget()
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","mpiLab.ui")
+  uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
   b = Builder(filename=uifile)
   mainBox = Box(:h) #G_.object(b, "boxSFViewer")

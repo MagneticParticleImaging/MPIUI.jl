@@ -81,7 +81,7 @@ getindex(m::DataViewerWidget, w::AbstractString) = G_.object(m.builder, w)
 
 function DataViewerWidget(offlineMode = true)
 
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","dataviewer.ui")
+  uifile = joinpath(@__DIR__,"builder","dataviewer.ui")
 
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxDataViewer")

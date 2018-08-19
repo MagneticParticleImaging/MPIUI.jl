@@ -4,6 +4,8 @@ using Statistics
 using Random
 using LinearAlgebra
 using Reexport
+using Printf
+using DelimitedFiles
 
 ENV["MPILIB_UI"] = "Nothing"
 
@@ -30,9 +32,9 @@ end
 
 function openFileBrowser(dir::String)
   if isdir(dir)
-    if Sys.isapple()
+    if is_apple()
       run(`open $dir`)
-    elseif Sys.islinux()
+    elseif is_linux()
       run(`xdg-open $dir`)
     else
       println("openFileBrowser not supported on thos OS!")

@@ -23,7 +23,7 @@ end
 getindex(m::BaseViewerWidget, w::AbstractString) = G_.object(m.builder, w)
 
 function baseViewer()
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","baseViewer.ui")
+  uifile = joinpath(@__DIR__,"builder","baseViewer.ui")
   b = Builder(filename=uifile)
   m = BaseViewerWidget(b, nothing,nothing,nothing)
   w = m["parentGrid"]

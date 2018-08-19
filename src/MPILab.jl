@@ -46,7 +46,7 @@ activeRecoStore(m::MPILab) = typeof(activeDatasetStore(m)) <: BrukerDatasetStore
 function MPILab(offlineMode=false)::MPILab
   println("## Start ...")
 
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","mpiLab.ui")
+  uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
   m_ = MPILab( Builder(filename=uifile), 1, DatasetStore[],
               nothing, nothing, nothing, nothing, nothing, nothing,

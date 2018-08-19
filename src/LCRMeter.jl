@@ -12,7 +12,7 @@ getindex(m::LCRMeterUI, w::AbstractString) = G_.object(m.builder, w)
 
 function LCRMeterUI()
   println("Starting LCRMeterUI")
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","lcrMeter.ui")
+  uifile = joinpath(@__DIR__,"builder","lcrMeter.ui")
 
   b = Builder(filename=uifile)
 

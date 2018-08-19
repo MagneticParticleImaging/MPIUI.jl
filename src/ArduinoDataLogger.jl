@@ -24,7 +24,7 @@ getindex(m::ArduinoDataLoggerUI, w::AbstractString)= G_.object(m.builder,w)
 
 function ArduinoDataLoggerUI()
         println("Starting ArduinoDataLoggerUI")
-        uifile= joinpath(Pkg.dir("MPIUI"),"src","builder","ArduinoDataLogger.ui")
+        uifile= joinpath(@__DIR__,"builder","ArduinoDataLogger.ui")
         b= Builder(filename=uifile)
 
         m= ArduinoDataLoggerUI(b,nothing, nothing,nothing, nothing, nothing,nothing,nothing,nothing,nothing,nothing)

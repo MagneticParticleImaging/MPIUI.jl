@@ -38,7 +38,7 @@ getindex(m::RecoWidget, w::AbstractString) = G_.object(m.builder, w)
 
 function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
 
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","reconstructionWidget.ui")
+  uifile = joinpath(@__DIR__,"builder","reconstructionWidget.ui")
 
   b = Builder(filename=uifile)
   mainGrid = G_.object(b, "gridReco")

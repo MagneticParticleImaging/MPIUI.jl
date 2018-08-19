@@ -24,7 +24,7 @@ end
 
 function MeasurementWidget(filenameConfig="")
   println("Starting MeasurementWidget")
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","measurementWidget.ui")
+  uifile = joinpath(@__DIR__,"builder","measurementWidget.ui")
 
   #filenameConfig=nothing
 
@@ -147,7 +147,7 @@ function initSurveillance(m::MeasurementWidget)
         display(cTemp ,p)
       end
     end
-    timer = Timer(update_, 0.0, interval=1.5)
+    timer = Timer(update_, 0.0, 1.5)
     m.expanded = true
   end
 end
@@ -533,9 +533,9 @@ end
 function setInfoParams(m::MeasurementWidget)
   daq = getDAQ(m.scanner)
   if length(daq.params.dfFreq) > 1
-    freqStr = "$(join([ " $(round(x, digits=2)) x" for x in daq.params.dfFreq ])[2:end-2]) Hz"
+    freqStr = "$(join([ " $(round(x,2)) x" for x in daq.params.dfFreq ])[2:end-2]) Hz"
   else
-    freqStr = "$(round(daq.params.dfFreq[1], digits=2)) Hz"
+    freqStr = "$(round(daq.params.dfFreq[1],2)) Hz"
   end
   Gtk.@sigatom set_gtk_property!(m["entDFFreq",EntryLeaf],:text,freqStr)
   Gtk.@sigatom set_gtk_property!(m["entDFPeriod",EntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")

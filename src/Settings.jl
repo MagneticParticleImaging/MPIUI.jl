@@ -47,9 +47,9 @@ end
 
 function Settings()
 
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","mpiLab.ui")
+  uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
-  defaultSettingsFile = joinpath(Pkg.dir("MPIUI"),"src","Settings.toml")
+  defaultSettingsFile = joinpath(@__DIR__,"Settings.toml")
   mkpath(settingspath)
   try_chmod(settingspath, 0o777, recursive=true)
   if !isfile(settingsfile)
