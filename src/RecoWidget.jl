@@ -146,7 +146,7 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
 end
 
 function initCallbacks(m_::RecoWidget)
-  #@time signal_connect(performReco, m["tbPerformReco"], "clicked", Void, (), false, m)
+  #@time signal_connect(performReco, m["tbPerformReco"], "clicked", Nothing, (), false, m)
   let m = m_
     signal_connect((w)->performReco(m), m["tbPerformReco"], "clicked")
     signal_connect((w)->selectSF(m), m["btBrowseSF"], "clicked")

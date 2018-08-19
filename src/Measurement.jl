@@ -167,8 +167,8 @@ function initCallbacks(m::MeasurementWidget)
   #  initSurveillance(m)
   #end
 
-  #@time signal_connect(measurement, m["tbMeasure",ToolButtonLeaf], "clicked", Void, (), false, m )
-  #@time signal_connect(measurementBG, m["tbMeasureBG",ToolButtonLeaf], "clicked", Void, (), false, m)
+  #@time signal_connect(measurement, m["tbMeasure",ToolButtonLeaf], "clicked", Nothing, (), false, m )
+  #@time signal_connect(measurementBG, m["tbMeasureBG",ToolButtonLeaf], "clicked", Nothing, (), false, m)
 
 
   @time signal_connect(m["tbMeasure",ToolButtonLeaf], :clicked) do w
@@ -456,9 +456,9 @@ function initCallbacks(m::MeasurementWidget)
   end
 
 
-  #@time signal_connect(invalidateBG, m["adjDFStrength"], "value_changed", Void, (), false, m)
-  #@time signal_connect(invalidateBG, m["adjNumPatches"], "value_changed", Void, (), false, m)
-  #@time signal_connect(invalidateBG, m["adjNumPeriods"], , Void, (), false, m)
+  #@time signal_connect(invalidateBG, m["adjDFStrength"], "value_changed", Nothing, (), false, m)
+  #@time signal_connect(invalidateBG, m["adjNumPatches"], "value_changed", Nothing, (), false, m)
+  #@time signal_connect(invalidateBG, m["adjNumPeriods"], , Nothing, (), false, m)
 
   for adj in ["adjNumPeriods","adjDFStrength", "adjNumSubperiods"]
     @time signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
@@ -477,7 +477,7 @@ function initCallbacks(m::MeasurementWidget)
   end
 
 
-  #@time signal_connect(reinitDAQ, m["adjNumPeriods"], "value_changed", Void, (), false, m)
+  #@time signal_connect(reinitDAQ, m["adjNumPeriods"], "value_changed", Nothing, (), false, m)
   @time signal_connect(m["cbSeFo",ComboBoxTextLeaf], :changed) do w
     seq = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
     val = readcsv(Pkg.dir("MPIMeasurements","src","Sequences",

@@ -87,14 +87,14 @@ function initCallbacks(m_::RawDataWidget)
     signal_connect(m[sl,AdjustmentLeaf], "value_changed") do w
       showData(C_NULL, m)
     end
-    #signal_connect(showData, m[sl], "value_changed", Void, (), false, m )
+    #signal_connect(showData, m[sl], "value_changed", Nothing, (), false, m )
   end
 
   @time for cb in ["cbShowBG","cbSubtractBG","cbShowAllPatches"]
     signal_connect(m[cb,CheckButtonLeaf], :toggled) do w
       showData(C_NULL, m)
     end
-    #signal_connect(showData, m[cb], "toggled", Void, (), false, m)
+    #signal_connect(showData, m[cb], "toggled", Nothing, (), false, m)
   end
 
   @time for cb in ["cbCorrTF","cbSLCorr","cbAbsFrameAverage"]
@@ -124,7 +124,7 @@ function initCallbacks(m_::RawDataWidget)
     signal_connect(m[sl,EntryLeaf], "changed") do w
       showData(C_NULL, m)
     end
-    #signal_connect(showData, m[sl], "value_changed", Void, (), false, m )
+    #signal_connect(showData, m[sl], "value_changed", Nothing, (), false, m )
   end
 
 
@@ -134,7 +134,7 @@ function initCallbacks(m_::RawDataWidget)
     @Gtk.sigatom set_gtk_property!(m["cbHarmonicViewer",CheckButtonLeaf], :active, false)
   end
 
-  #@time signal_connect(loadData, m["cbCorrTF"], "toggled", Void, (), false, m)
+  #@time signal_connect(loadData, m["cbCorrTF"], "toggled", Nothing, (), false, m)
  end
 end
 
