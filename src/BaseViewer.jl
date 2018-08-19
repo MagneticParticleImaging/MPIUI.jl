@@ -12,8 +12,8 @@ end
 
 function baseViewerStandAlone()
   w = Window("Base Viewer",800,600)
-  setproperty!(w,:hexpand,true)
-  setproperty!(w,:vexpand,true)
+  set_gtk_property!(w,:hexpand,true)
+  set_gtk_property!(w,:vexpand,true)
   m, bv = baseViewer()
   push!(w, bv)
   showall(w)

@@ -1,1 +1,10 @@
-julia 0.6
+julia 0.7
+Reexport
+Cairo
+Gtk
+MPILib
+MPIMeasurements
+MPIFiles
+Colors
+FileIO
+ImageMetadata

@@ -22,9 +22,9 @@ function LCRMeterUI()
   m.c2 = Canvas()
 
   push!(m["boxMain"],m.c1)
-  setproperty!(m["boxMain"],:expand,m.c1,true)
+  set_gtk_property!(m["boxMain"],:expand,m.c1,true)
   push!(m["boxMain"],m.c2)
-  setproperty!(m["boxMain"],:expand,m.c2,true)
+  set_gtk_property!(m["boxMain"],:expand,m.c2,true)
 
   @time signal_connect(m["btnSweep"], :clicked) do w
     sweepAndShow(m)
@@ -38,10 +38,10 @@ end
 
 
 function sweepAndShow(m::LCRMeterUI)
-  minFreq = getproperty(m["adjMinFreq"], :value, Float64)
-  maxFreq = getproperty(m["adjMaxFreq"], :value, Float64)
-  numSamp = getproperty(m["adjNumSamples"], :value, Int64)
-  ip = getproperty(m["entIP"], :text, String)
+  minFreq = get_gtk_property(m["adjMinFreq"], :value, Float64)
+  maxFreq = get_gtk_property(m["adjMaxFreq"], :value, Float64)
+  numSamp = get_gtk_property(m["adjNumSamples"], :value, Int64)
+  ip = get_gtk_property(m["entIP"], :text, String)
 
   freq = linspace(minFreq,maxFreq,numSamp)
 

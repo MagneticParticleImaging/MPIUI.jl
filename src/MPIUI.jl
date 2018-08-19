@@ -1,6 +1,8 @@
-__precompile__()
 module MPIUI
 
+using Statistics
+using Random
+using LinearAlgebra
 using Reexport
 
 ENV["MPILIB_UI"] = "Nothing"
