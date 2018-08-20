@@ -906,11 +906,11 @@ function setParams(m::DataViewerWidget, params)
   # where instead of permuteBG and flipBG we stored permutionBG
   if haskey(params, :permutionBG)
     perm, flip = convertMode2PermFlip(params[:permutionBG])
-    Gtk.@sigatom set_gtk_property!(m["cbPermutes"], :active, find(x->x==perm,permuteCombinations())[1] - 1)
-    Gtk.@sigatom set_gtk_property!(m["cbFlips"], :active, find(x->x==flip,flippings())[1] - 1)
+    Gtk.@sigatom set_gtk_property!(m["cbPermutes"], :active, findall(x->x==perm,permuteCombinations())[1] - 1)
+    Gtk.@sigatom set_gtk_property!(m["cbFlips"], :active, findall(x->x==flip,flippings())[1] - 1)
   else
-    Gtk.@sigatom set_gtk_property!(m["cbPermutes"], :active, find(x->x==params[:permuteBG],permuteCombinations())[1] - 1)
-    Gtk.@sigatom set_gtk_property!(m["cbFlips"], :active, find(x->x==params[:flipBG],flippings())[1] - 1)
+    Gtk.@sigatom set_gtk_property!(m["cbPermutes"], :active, findall(x->x==params[:permuteBG],permuteCombinations())[1] - 1)
+    Gtk.@sigatom set_gtk_property!(m["cbFlips"], :active, findall(x->x==params[:flipBG],flippings())[1] - 1)
   end
 
   Gtk.@sigatom set_gtk_property!(m["adjTransX"], :value, params[:transX]*1000)

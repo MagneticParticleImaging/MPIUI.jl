@@ -280,7 +280,7 @@ function initCallbacks(m::MeasurementWidget)
           close(timer)
         end
       end
-      timer = Timer(update_, 0.0, 0.2)
+      timer = Timer(update_, 0.0, interval=0.2)
     else
       timerActive = false
     end
@@ -324,7 +324,7 @@ function initCallbacks(m::MeasurementWidget)
 
         numBGMeas = get_gtk_property(m["adjNumBGMeasurements",AdjustmentLeaf], :value, Int64)
 
-        if any(ishp_ .== nothing) || any(fov_ .== nothing) || any(center_ .== nothing) || any(velRob_ .== nothing) ||
+        if any(shp_ .== nothing) || any(fov_ .== nothing) || any(center_ .== nothing) || any(velRob_ .== nothing) ||
            length(shp_) != 3 || length(fov_) != 3 || length(center_) != 3 || length(velRob_) != 3
           Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
           return
@@ -350,7 +350,7 @@ function initCallbacks(m::MeasurementWidget)
         if numBGMeas == 0
           positions = cartGrid
         else
-          bgIdx = round.(Int64, linspace(1, length(cartGrid)+numBGMeas, numBGMeas ) )
+          bgIdx = round.(Int64, range(1, stop=length(cartGrid)+numBGMeas, length=numBGMeas ) )
           bgPos = parkPos(getRobot(m.scanner))
           positions = BreakpointGridPositions(cartGrid, bgIdx, bgPos)
         end
@@ -445,7 +445,7 @@ function initCallbacks(m::MeasurementWidget)
 
           end
         end
-        timerCalibration = Timer(update_, 0.0, 0.001)
+        timerCalibration = Timer(update_, 0.0, interval=0.001)
       else
         timerCalibrationActive = true
       end
