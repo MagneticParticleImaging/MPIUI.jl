@@ -283,7 +283,7 @@ function initStudyStore(m::MPILab)
       showMe = true
 
       if length(studySearchText) > 0
-        showMe = showMe && contains(lowercase(m.studyStore[l,2]),lowercase(studySearchText))
+        showMe = showMe && occursin(lowercase(studySearchText), lowercase(m.studyStore[l,2]))
       end
 
       Gtk.@sigatom m.studyStore[l,5] = showMe
