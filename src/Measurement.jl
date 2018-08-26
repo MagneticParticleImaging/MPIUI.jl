@@ -435,7 +435,7 @@ function initCallbacks(m::MeasurementWidget)
                   filename = joinpath(studydir(m.mdfstore),newStudy.name,string(expNum)*".mdf")
 
                   saveasMDF(filename, calibObj, params)
-                  updateExperimentStore(mpilab[], mpilab.currentStudy)
+                  updateExperimentStore(mpilab[], mpilab[].currentStudy)
                 end
               end
               close(timerCalibration)

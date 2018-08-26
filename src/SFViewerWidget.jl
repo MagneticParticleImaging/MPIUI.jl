@@ -117,6 +117,7 @@ function updateSF(m::SFViewerWidget)
     #  + m.maxChan*(period-1)
 
     sfData = getSF(m.bSF, Int64[k], returnasmatrix = false, bgcorrection=bgcorrection)[1][:,:,:,period]
+    sfData[:] ./= rxNumSamplingPoints(m.bSF)
 
     Gtk.@sigatom set_gtk_property!(m["entSFSNR"],:text,string(round(m.SNR[freq,recChan,period],digits=2)))
 
