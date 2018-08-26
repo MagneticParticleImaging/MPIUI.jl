@@ -2,7 +2,7 @@ using Gtk, Gtk.ShortNames, Cairo
 
 export baseViewer, baseViewerStandAlone, updateView, drawMIP
 
-type BaseViewerWidget
+mutable struct BaseViewerWidget
   builder
   zxSliceGrid
   zySliceGrid
@@ -12,8 +12,8 @@ end
 
 function baseViewerStandAlone()
   w = Window("Base Viewer",800,600)
-  setproperty!(w,:hexpand,true)
-  setproperty!(w,:vexpand,true)
+  set_gtk_property!(w,:hexpand,true)
+  set_gtk_property!(w,:vexpand,true)
   m, bv = baseViewer()
   push!(w, bv)
   showall(w)
@@ -23,7 +23,7 @@ end
 getindex(m::BaseViewerWidget, w::AbstractString) = G_.object(m.builder, w)
 
 function baseViewer()
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","baseViewer.ui")
+  uifile = joinpath(@__DIR__,"builder","baseViewer.ui")
   b = Builder(filename=uifile)
   m = BaseViewerWidget(b, nothing,nothing,nothing)
   w = m["parentGrid"]

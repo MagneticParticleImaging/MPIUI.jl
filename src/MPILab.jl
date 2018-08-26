@@ -46,7 +46,7 @@ activeRecoStore(m::MPILab) = typeof(activeDatasetStore(m)) <: BrukerDatasetStore
 function MPILab(offlineMode=false)::MPILab
   println("## Start ...")
 
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","mpiLab.ui")
+  uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
   m_ = MPILab( Builder(filename=uifile), 1, DatasetStore[],
               nothing, nothing, nothing, nothing, nothing, nothing,
@@ -94,7 +94,7 @@ function MPILab(offlineMode=false)::MPILab
   println("## Init View switch ...")
   initViewSwitch(m)
 
-  Gtk.@sigatom setproperty!(m["cbDatasetStores"],:active,0)
+  Gtk.@sigatom set_gtk_property!(m["cbDatasetStores"],:active,0)
 
   # ugly but necessary since showall unhides all widgets
   #Gtk.@sigatom visible(m["boxMeasTab"],
@@ -118,7 +118,7 @@ function MPILab(offlineMode=false)::MPILab
           @async println("copy visu params from clipboard to UI...")
           str = clipboard()
           try
-          dict= eval(parse(str))
+          dict= eval(Meta.parse(str))
           setParams(m.dataViewerWidget, dict)
         catch
             @async println("not the right format for SetParams in clipboard...")
@@ -146,13 +146,13 @@ function initStoreSwitch(m::MPILab)
     push!(m["cbDatasetStores"], store_)
   end
   m.activeStore = 1
-  #setproperty!(m["cbDatasetStores"],:active,0)
+  #set_gtk_property!(m["cbDatasetStores"],:active,0)
 
   m.brukerRecoStore = MDFDatasetStore( m.settings["brukerRecoStore"] )
 
   signal_connect(m["cbDatasetStores"], "changed") do widget...
     println("changing dataset store")
-    m.activeStore = getproperty(m["cbDatasetStores"], :active, Int64)+1
+    m.activeStore = get_gtk_property(m["cbDatasetStores"], :active, Int64)+1
     Gtk.@sigatom begin
       scanDatasetDir(m)
       updateData!(m.sfBrowser,activeDatasetStore(m))
@@ -277,13 +277,13 @@ function initStudyStore(m::MPILab)
 
   function updateShownStudies( widget )
 
-    studySearchText = getproperty(m["entSearchStudies"], :text, String)
+    studySearchText = get_gtk_property(m["entSearchStudies"], :text, String)
 
     for l=1:length(m.studyStore)
       showMe = true
 
       if length(studySearchText) > 0
-        showMe = showMe && contains(lowercase(m.studyStore[l,2]),lowercase(studySearchText))
+        showMe = showMe && occursin(lowercase(studySearchText), lowercase(m.studyStore[l,2]))
       end
 
       Gtk.@sigatom m.studyStore[l,5] = showMe
@@ -308,7 +308,7 @@ function initStudyStore(m::MPILab)
 
 
   signal_connect(m["tbAddStudy"], "clicked") do widget
-    name = getproperty(m["entSearchStudies"], :text, String)
+    name = get_gtk_property(m["entSearchStudies"], :text, String)
     study = Study("", name, "", "")
     addStudy(activeDatasetStore(m), study)
     Gtk.@sigatom scanDatasetDir(m)
@@ -386,7 +386,7 @@ function initAnatomRefStore(m::MPILab)
       targetPath = joinpath(activeRecoStore(m).path, "reconstructions", id(m.currentStudy), "anatomicReferences", last(splitdir(filename)) )
       mkpath(targetPath)
       try_chmod(targetPath, 0o777, recursive=true)
-      cp(filename, targetPath, remove_destination=true)
+      cp(filename, targetPath, force=true)
       Gtk.@sigatom updateAnatomRefStore(m)
     end
 
@@ -446,7 +446,7 @@ function initExperimentStore(m::MPILab)
   tv = TreeView(TreeModel(m.experimentStore))
   r1 = CellRendererText()
   r2 = CellRendererText()
-  setproperty!(r2, :editable, true)
+  set_gtk_property!(r2, :editable, true)
 
   cols = ["Num", "Name", "Frames", "DF", "Grad"]
 
@@ -535,7 +535,7 @@ function initExperimentStore(m::MPILab)
 
          Gtk.@sigatom begin
            exp = m.currentExperiment
-           setproperty!(tv, :tooltip_text,
+           set_gtk_property!(tv, :tooltip_text,
              """Num: $(exp.num)\n
                 Name: $(exp.name)\n
                 NumFrames: $(exp.numFrames)\n
@@ -609,7 +609,7 @@ function initReconstructionStore(m::MPILab)
   tv = TreeView(TreeModel(m.reconstructionStore))
   r1 = CellRendererText()
   r2 = CellRendererText()
-  setproperty!(r2, :editable, true)
+  set_gtk_property!(r2, :editable, true)
 
   cols = ["Num","Frames","Description","Solver","Iter", "Lambda", "Averages", "SNRThresh", "User"]
 
@@ -768,7 +768,7 @@ function initVisuStore(m::MPILab)
   tv = TreeView(TreeModel(m.visuStore))
   r1 = CellRendererText()
   r2 = CellRendererText()
-  setproperty!(r2, :editable, true)
+  set_gtk_property!(r2, :editable, true)
 
   cols = ["Num","Description","Spatial MIP","Frame Proj", "Cmap", "Fusion"]
 
@@ -884,7 +884,7 @@ function initSFStore(m::MPILab)
 
   boxSFPane = m["boxSF"]
   push!(boxSFPane,m.sfBrowser.box)
-  setproperty!(boxSFPane, :expand, m.sfBrowser.box, true)
+  set_gtk_property!(boxSFPane, :expand, m.sfBrowser.box, true)
   showall(boxSFPane)
 end
 
@@ -898,7 +898,7 @@ function initMeasurementTab(m::MPILab, offlineMode)
 
   boxMeasTab = m["boxMeasTab"]
   push!(boxMeasTab,m.measurementWidget)
-  setproperty!(boxMeasTab, :expand, m.measurementWidget, true)
+  set_gtk_property!(boxMeasTab, :expand, m.measurementWidget, true)
   showall(boxMeasTab)
 end
 
@@ -911,7 +911,7 @@ function initImageTab(m::MPILab)
 
   boxImageTab = m["boxImageTab"]
   push!(boxImageTab,m.dataViewerWidget)
-  setproperty!(boxImageTab, :expand, m.dataViewerWidget, true)
+  set_gtk_property!(boxImageTab, :expand, m.dataViewerWidget, true)
 end
 
 ### Raw Data Tab ###
@@ -922,7 +922,7 @@ function initRawDataTab(m::MPILab)
 
   boxRawViewer = m["boxRawViewer"]
   push!(boxRawViewer,m.rawDataWidget)
-  setproperty!(boxRawViewer, :expand, m.rawDataWidget, true)
+  set_gtk_property!(boxRawViewer, :expand, m.rawDataWidget, true)
   showall(boxRawViewer)
 end
 
@@ -934,7 +934,7 @@ function initRecoTab(m::MPILab)
 
   boxRecoTab = m["boxRecoTab"]
   push!(boxRecoTab,m.recoWidget)
-  setproperty!(boxRecoTab, :expand, m.recoWidget, true)
+  set_gtk_property!(boxRecoTab, :expand, m.recoWidget, true)
 end
 
 ### Raw Data Tab ###
@@ -945,7 +945,7 @@ function initSFViewerTab(m::MPILab)
 
   boxSFTab = m["boxSFTab"]
   push!(boxSFTab,m.sfViewerWidget)
-  setproperty!(boxSFTab, :expand, m.sfViewerWidget, true)
+  set_gtk_property!(boxSFTab, :expand, m.sfViewerWidget, true)
   showall(boxSFTab)
 end
 

@@ -13,7 +13,7 @@ end
 ########### SimpleDataViewerWidget #################
 
 
-type SimpleDataViewerWidget <: Gtk.GtkBox
+mutable struct SimpleDataViewerWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder
   grid3D
@@ -24,7 +24,7 @@ getindex(m::SimpleDataViewerWidget, w::AbstractString) = G_.object(m.builder, w)
 
 
 function SimpleDataViewerWidget()
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","simpleDataViewer.ui")
+  uifile = joinpath(@__DIR__,"builder","simpleDataViewer.ui")
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxSimpleDataViewer")
   m = SimpleDataViewerWidget( mainBox.handle, b, nothing, nothing)
@@ -82,7 +82,7 @@ function simpleDrawImageCairo(c, image, drawSectionalLines, xsec, ysec,
   h = height(ctx)
   w = width(ctx)
 
-  im = flipdim(convert(ImageMeta{RGB{N0f8}},image).data,1)
+  im = reverse(convert(ImageMeta{RGB{N0f8}},image).data,dims=1)
   xsec_ = !flipX ? xsec : (size(im,2)-xsec+1)
   ysec_ = !flipY ? ysec : (size(im,1)-ysec+1)
   xx = w*(xsec_-0.5)/size(im,2)

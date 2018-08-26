@@ -1,6 +1,6 @@
 import Base: getindex
 
-type SFViewerWidget <: Gtk.GtkBox
+mutable struct SFViewerWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder
   dv
@@ -22,7 +22,7 @@ end
 getindex(m::SFViewerWidget, w::AbstractString) = G_.object(m.builder, w)
 
 function SFViewerWidget()
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","mpiLab.ui")
+  uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
   b = Builder(filename=uifile)
   mainBox = Box(:h) #G_.object(b, "boxSFViewer")
@@ -36,20 +36,20 @@ function SFViewerWidget()
   m.dv = DataViewerWidget()
   m.grid[1,1] = m.dv
   m.grid[1,2] = Canvas()
-  setproperty!(m.grid[1,2], :height_request, 200)
-  #setproperty!(m.grid, :row_homogeneous, true)
-  #setproperty!(m.grid, :column_homogeneous, true)
+  set_gtk_property!(m.grid[1,2], :height_request, 200)
+  #set_gtk_property!(m.grid, :row_homogeneous, true)
+  #set_gtk_property!(m.grid, :column_homogeneous, true)
   push!(m, m.grid)
-  setproperty!(m, :fill, m.grid, true)
-  setproperty!(m, :expand, m.grid, true)
+  set_gtk_property!(m, :fill, m.grid, true)
+  set_gtk_property!(m, :expand, m.grid, true)
   push!(m, m["swSFViewer"])
 
   function updateSFMixO( widget )
     if !m.updatingMOWidgets && !m.updating
       m.updatingMOWidgets = true
-      mx = getproperty(m["adjSFMixX"],:value, Int64)
-      my = getproperty(m["adjSFMixY"],:value, Int64)
-      mz = getproperty(m["adjSFMixZ"],:value, Int64)
+      mx = get_gtk_property(m["adjSFMixX"],:value, Int64)
+      my = get_gtk_property(m["adjSFMixY"],:value, Int64)
+      mz = get_gtk_property(m["adjSFMixZ"],:value, Int64)
 
       freq = 0
       m_ = [mx,my,mz]
@@ -60,7 +60,7 @@ function SFViewerWidget()
       freq = clamp(freq,0,m.maxFreq-1)
 
       Gtk.@sigatom begin
-        setproperty!(m["adjSFFreq"],:value, freq)
+        set_gtk_property!(m["adjSFFreq"],:value, freq)
         m.updatingMOWidgets = false
       end
     end
@@ -69,14 +69,14 @@ function SFViewerWidget()
   function updateSFSignalOrdered( widget )
     if !m.updatingSOWidget && !m.updating
       m.updatingSOWidget = true
-      k = m.SNRSortedIndices[getproperty(m["adjSFSignalOrdered"],:value, Int64)]
+      k = m.SNRSortedIndices[get_gtk_property(m["adjSFSignalOrdered"],:value, Int64)]
 
       recChan = clamp(div(k,m.maxFreq)+1,1,3)
       freq = clamp(mod1(k-1,m.maxFreq),0,m.maxFreq-1)
 
       Gtk.@sigatom begin
-        setproperty!(m["adjSFRecChan"],:value, recChan)
-        setproperty!(m["adjSFFreq"],:value, freq)
+        set_gtk_property!(m["adjSFRecChan"],:value, recChan)
+        set_gtk_property!(m["adjSFFreq"],:value, freq)
         m.updatingSOWidget = false
       end
     end
@@ -107,18 +107,19 @@ end
 function updateSF(m::SFViewerWidget)
   if !m.updating
     m.updating = true
-    freq = getproperty(m["adjSFFreq"],:value, Int64)+1
-    recChan = getproperty(m["adjSFRecChan"],:value, Int64)
-    period = getproperty(m["adjSFPatch"],:value, Int64)
+    freq = get_gtk_property(m["adjSFFreq"],:value, Int64)+1
+    recChan = get_gtk_property(m["adjSFRecChan"],:value, Int64)
+    period = get_gtk_property(m["adjSFPatch"],:value, Int64)
 
-    bgcorrection = getproperty(m["cbSFBGCorr"],:active, Bool)
+    bgcorrection = get_gtk_property(m["cbSFBGCorr"],:active, Bool)
 
     k = freq + m.maxFreq*((recChan-1))
     #  + m.maxChan*(period-1)
 
     sfData = getSF(m.bSF, Int64[k], returnasmatrix = false, bgcorrection=bgcorrection)[1][:,:,:,period]
+    sfData[:] ./= rxNumSamplingPoints(m.bSF)
 
-    Gtk.@sigatom setproperty!(m["entSFSNR"],:text,string(round(m.SNR[freq,recChan,period],2)))
+    Gtk.@sigatom set_gtk_property!(m["entSFSNR"],:text,string(round(m.SNR[freq,recChan,period],digits=2)))
 
     Gtk.@sigatom begin
       p = Winston.semilogy(vec(m.SNR[:,recChan,period]),"b-",linewidth=5)
@@ -132,22 +133,22 @@ function updateSF(m::SFViewerWidget)
 
     Gtk.@sigatom begin
       #updatingMOWidgets = true # avoid circular signals
-      setproperty!(m["adjSFMixX"],:value, m.mixFac[freq,1])
-      setproperty!(m["adjSFMixY"],:value, m.mixFac[freq,2])
-      setproperty!(m["adjSFMixZ"],:value, m.mixFac[freq,3])
+      set_gtk_property!(m["adjSFMixX"],:value, m.mixFac[freq,1])
+      set_gtk_property!(m["adjSFMixY"],:value, m.mixFac[freq,2])
+      set_gtk_property!(m["adjSFMixZ"],:value, m.mixFac[freq,3])
       #updatingMOWidgets = false
     end
 
     Gtk.@sigatom begin
       m.updatingSOWidget = true
       #updatingSOWidget = true # avoid circular signals
-      setproperty!(m["adjSFSignalOrdered"],:value, m.SNRSortedIndicesInverse[k] )
+      set_gtk_property!(m["adjSFSignalOrdered"],:value, m.SNRSortedIndicesInverse[k] )
       #updatingSOWidget = false
       m.updatingSOWidget = false
     end
 
     c = reshape(sfData, 1, size(sfData,1), size(sfData,2), size(sfData,3), 1)
-    c_ = cat(1,abs.(c),angle.(c))
+    c_ = cat(abs.(c),angle.(c), dims=1)
     im = AxisArray(c_, (:color,:x,:y,:z,:time),
                         tuple(1.0, 1.0, 1.0, 1.0, 1.0),
                         tuple(0.0, 0.0, 0.0, 0.0, 0.0))
@@ -165,20 +166,20 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   m.maxChan = rxNumChannels(m.bSF)
 
   m.updating = true
-  setproperty!(m["adjSFFreq"],:value, 2  )
-  setproperty!(m["adjSFFreq"],:upper, m.maxFreq-1  )
-  setproperty!(m["adjSFSignalOrdered"],:value, 1  )
-  setproperty!(m["adjSFSignalOrdered"],:upper, m.maxFreq*m.maxChan  )
-  setproperty!(m["adjSFMixX"],:value, 0 )
-  setproperty!(m["adjSFMixY"],:value, 0 )
-  setproperty!(m["adjSFMixZ"],:value, 0 )
-  #setproperty!(m["adjSFMixX"],:upper, 16 )
-  #setproperty!(m["adjSFMixY"],:upper, 16 )
-  #setproperty!(m["adjSFMixZ"],:upper, 16 )
-  setproperty!(m["adjSFRecChan"],:value, 1 )
-  setproperty!(m["adjSFRecChan"],:upper, m.maxChan )
-  setproperty!(m["adjSFPatch"],:value, 1 )
-  setproperty!(m["adjSFPatch"],:upper, acqNumPeriodsPerFrame(m.bSF) )
+  set_gtk_property!(m["adjSFFreq"],:value, 2  )
+  set_gtk_property!(m["adjSFFreq"],:upper, m.maxFreq-1  )
+  set_gtk_property!(m["adjSFSignalOrdered"],:value, 1  )
+  set_gtk_property!(m["adjSFSignalOrdered"],:upper, m.maxFreq*m.maxChan  )
+  set_gtk_property!(m["adjSFMixX"],:value, 0 )
+  set_gtk_property!(m["adjSFMixY"],:value, 0 )
+  set_gtk_property!(m["adjSFMixZ"],:value, 0 )
+  #set_gtk_property!(m["adjSFMixX"],:upper, 16 )
+  #set_gtk_property!(m["adjSFMixY"],:upper, 16 )
+  #set_gtk_property!(m["adjSFMixZ"],:upper, 16 )
+  set_gtk_property!(m["adjSFRecChan"],:value, 1 )
+  set_gtk_property!(m["adjSFRecChan"],:upper, m.maxChan )
+  set_gtk_property!(m["adjSFPatch"],:value, 1 )
+  set_gtk_property!(m["adjSFPatch"],:upper, acqNumPeriodsPerFrame(m.bSF) )
 
   m.SNR = calibSNR(m.bSF)[:,:,:]
   m.SNRSortedIndices = flipud(sortperm(vec(m.SNR)))

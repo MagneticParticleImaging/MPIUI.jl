@@ -1,6 +1,6 @@
 
 
-type FileBrowser <: Gtk.GtkBox
+mutable struct FileBrowser <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   path::String
   store::ListStore
@@ -32,11 +32,11 @@ function FileBrowser()
   btnUp = ToolButton("gtk-go-up")
   btnChooser = ToolButton("gtk-open")
   btnPkgDir = ToolButton("gtk-directory")
-  setproperty!(btnPkgDir,"tooltip-text","Open Package Directory")
+  set_gtk_property!(btnPkgDir,"tooltip-text","Open Package Directory")
   btnHome = ToolButton("gtk-home")
-  setproperty!(btnHome,"tooltip-text","Open Home Directory")
+  set_gtk_property!(btnHome,"tooltip-text","Open Home Directory")
 
-  setproperty!(entry,:editable,false)
+  set_gtk_property!(entry,:editable,false)
   toolbar = Toolbar()
   push!(toolbar,btnUp,btnChooser, btnHome, btnPkgDir)
   G_.style(toolbar,GtkToolbarStyle.ICONS)
@@ -46,7 +46,7 @@ function FileBrowser()
   push!(box,combo)
   push!(box,toolbar)
   push!(box,sw)
-  setproperty!(box,:expand,sw,true)
+  set_gtk_property!(box,:expand,sw,true)
 
   recentFolder = String[]
 
@@ -60,7 +60,7 @@ function FileBrowser()
   end
 
   signal_connect(btnPkgDir, "clicked") do widget
-    cd(Pkg.dir())
+    cd(first(DEPOT_PATH))
     changedir!(browser,pwd())
   end
 

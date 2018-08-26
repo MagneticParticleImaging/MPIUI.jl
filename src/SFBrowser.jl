@@ -1,6 +1,6 @@
 using Gtk.ShortNames, Gtk.GConstants
 
-type SFBrowserWidget
+mutable struct SFBrowserWidget
   store
   tv
   box
@@ -30,8 +30,8 @@ function updateData!(m::SFBrowserWidget, sysFuncs)
 
   for l = 2:size(sysFuncs,1)
     push!(m.store,( sysFuncs[l,15],
-            sysFuncs[l,1],round(sysFuncs[l,2],2),
-           "$(round((sysFuncs[l,3]),2)) x $(round((sysFuncs[l,4]),2)) x $(round((sysFuncs[l,5]),2))",
+            sysFuncs[l,1],round(sysFuncs[l,2], digits=2),
+           "$(round((sysFuncs[l,3]), digits=2)) x $(round((sysFuncs[l,4]), digits=2)) x $(round((sysFuncs[l,5]), digits=2))",
                               "$(sysFuncs[l,6]) x $(sysFuncs[l,7]) x $(sysFuncs[l,8])",
                               sysFuncs[l,10],sysFuncs[l,11],sysFuncs[l,12],sysFuncs[l,14], true))
   end
@@ -90,7 +90,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
       sffilename = TreeModel(tmSorted)[currentIt,9]
 
       Gtk.@sigatom begin
-        if !getproperty(cbOpenMeas,:active,Bool)
+        if !get_gtk_property(cbOpenMeas,:active,Bool)
           updateData!(mpilab[].sfViewerWidget, sffilename)
           G_.current_page(mpilab[]["nbView"], 3)
         else
@@ -112,7 +112,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   entTracer = Entry()
 
   for ent in [entGradient,entDF,entSize,entTracer]
-    setproperty!(ent,:width_chars,11)
+    set_gtk_property!(ent,:width_chars,11)
   end
 
   btnSFUpdate = Button("Update")
@@ -120,7 +120,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   if smallWidth
     grid = Grid()
     push!(vbox, grid)
-    #setproperty!(vbox, :expand, grid, true)
+    #set_gtk_property!(vbox, :expand, grid, true)
 
     grid[1,1] = Label("Grad.")
     grid[2,1] = entGradient
@@ -135,11 +135,11 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   else
     hbox = Box(:h)
     push!(vbox, hbox)
-    setproperty!(hbox,:spacing,5)
-    setproperty!(hbox,:margin_left,5)
-    setproperty!(hbox,:margin_right,5)
-    setproperty!(hbox,:margin_top,5)
-    setproperty!(hbox,:margin_bottom,5)
+    set_gtk_property!(hbox,:spacing,5)
+    set_gtk_property!(hbox,:margin_left,5)
+    set_gtk_property!(hbox,:margin_right,5)
+    set_gtk_property!(hbox,:margin_top,5)
+    set_gtk_property!(hbox,:margin_bottom,5)
 
     push!(hbox, Label("Gradient"))
     push!(hbox, entGradient)
@@ -156,7 +156,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   sw = ScrolledWindow()
   push!(sw, tv)
   push!(vbox, sw)
-  setproperty!(vbox, :expand, sw, true)
+  set_gtk_property!(vbox, :expand, sw, true)
   showall(tv)
   showall(vbox)
 
@@ -170,33 +170,33 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   signal_connect(updateSFDB, btnSFUpdate, "clicked")
 
   function updateShownSF( widget )
-    G = tryparse(Float64,getproperty(entGradient,:text,String))
-    s = split(getproperty(entSize,:text,String),"x")
+    G = tryparse(Float64,get_gtk_property(entGradient,:text,String))
+    s = split(get_gtk_property(entSize,:text,String),"x")
     s_ = Any[]
     if length(s) == 3
       s1 = tryparse(Int64,s[1])
       s2 = tryparse(Int64,s[2])
       s3 = tryparse(Int64,s[3])
-      if !isnull(s1) && !isnull(s2) && !isnull(s3)
-        s_ = Int64[get(s1),get(s2),get(s3)]
+      if s1 != nothing && s2 != nothing && s3 != nothing
+        s_ = Int64[s1,s2,s3]
       end
     end
-    df = split(getproperty(entDF,:text,String),"x")
+    df = split(get_gtk_property(entDF,:text,String),"x")
     df_ = Any[]
     if length(df) == 3
       dfx = tryparse(Float64,df[1])
       dfy = tryparse(Float64,df[2])
       dfz = tryparse(Float64,df[3])
-      if !isnull(dfx) && !isnull(dfy) && !isnull(dfz)
-        df_ = Float64[get(dfx),get(dfy),get(dfz)]
+      if dfx != nothing && dfy != nothing && dfz != nothing
+        df_ = Float64[dfx,dfy,dfz]
       end
     end
-    tracer = getproperty(entTracer,:text,String)
+    tracer = get_gtk_property(entTracer,:text,String)
 
     for l=1:length(store)
       showMe = true
-      if !isnull(G)
-        showMe = showMe && (get(G) == store[l,3])
+      if G != nothing
+        showMe = showMe && (G == store[l,3])
       end
       if length(df_) == 3
         showMe = showMe && ([parse(Float64,dv) for dv in split(store[l,4],"x")] == df_ )
@@ -218,13 +218,13 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   signal_connect(updateShownSF, entTracer, "changed")
 
   if gradient != nothing
-    Gtk.@sigatom setproperty!(entGradient,:text,string(gradient))
+    Gtk.@sigatom set_gtk_property!(entGradient,:text,string(gradient))
   end
 
   if driveField != nothing
     driveField[:].*=1000
     str = join([string(df," x ") for df in driveField])[1:end-2]
-    Gtk.@sigatom setproperty!(entDF, :text, str)
+    Gtk.@sigatom set_gtk_property!(entDF, :text, str)
   end
 
 
@@ -236,7 +236,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 end
 
 
-type SFSelectionDialog <: Gtk.GtkDialog
+mutable struct SFSelectionDialog <: Gtk.GtkDialog
   handle::Ptr{Gtk.GObject}
   selection
   store
@@ -257,7 +257,7 @@ function SFSelectionDialog(;gradient = nothing, driveField = nothing)
   updateData!(sfBrowser, activeDatasetStore(mpilab[]))
 
   push!(box, sfBrowser.box)
-  setproperty!(box, :expand, sfBrowser.box, true)
+  set_gtk_property!(box, :expand, sfBrowser.box, true)
 
   selection = G_.selection(sfBrowser.tv)
 

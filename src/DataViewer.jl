@@ -45,7 +45,7 @@ end
 ########### DataViewerWidget #################
 
 
-type DataViewerWidget <: Gtk.GtkBox
+mutable struct DataViewerWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder
   data
@@ -81,7 +81,7 @@ getindex(m::DataViewerWidget, w::AbstractString) = G_.object(m.builder, w)
 
 function DataViewerWidget(offlineMode = true)
 
-  uifile = joinpath(Pkg.dir("MPIUI"),"src","builder","dataviewer.ui")
+  uifile = joinpath(@__DIR__,"builder","dataviewer.ui")
 
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxDataViewer")
@@ -110,26 +110,26 @@ function DataViewerWidget(offlineMode = true)
     push!(m["cbCMaps"], c)
     push!(m["cbCMapsBG"], c)
   end
-  setproperty!(m["cbCMaps"],:active,length(choices)-1)
-  setproperty!(m["cbCMapsBG"],:active,0)
+  set_gtk_property!(m["cbCMaps"],:active,length(choices)-1)
+  set_gtk_property!(m["cbCMapsBG"],:active,0)
 
   permutes = permuteCombinationsName()
   for c in permutes
     push!(m["cbPermutes"], c)
   end
-  setproperty!(m["cbPermutes"], :active, 0)
+  set_gtk_property!(m["cbPermutes"], :active, 0)
 
   flippings = flippingsName()
   for c in flippings
     push!(m["cbFlips"], c)
   end
-  setproperty!(m["cbFlips"], :active, 0)
+  set_gtk_property!(m["cbFlips"], :active, 0)
 
   choicesFrameProj = ["None", "MIP", "TTP"]
   for c in choicesFrameProj
     push!(m["cbFrameProj"], c)
   end
-  setproperty!(m["cbFrameProj"],:active,0)
+  set_gtk_property!(m["cbFrameProj"],:active,0)
 
   visible(m["mbFusion"], false)
   visible(m["lbFusion"], false)
@@ -144,7 +144,7 @@ function DataViewerWidget(offlineMode = true)
 
 
   signal_connect(m["btnPlayMovie"], "toggled") do widget
-    isActive = getproperty(m["btnPlayMovie"], :active, Bool)
+    isActive = get_gtk_property(m["btnPlayMovie"], :active, Bool)
     if isActive
       m.stopPlayingMovie = false
       Gtk.@sigatom playMovie()
@@ -155,10 +155,10 @@ function DataViewerWidget(offlineMode = true)
 
   function playMovie()
     @async begin
-    L = getproperty(m["adjFrames"],:upper, Int64)
-    curFrame = getproperty(m["adjFrames"],:value, Int64)
+    L = get_gtk_property(m["adjFrames"],:upper, Int64)
+    curFrame = get_gtk_property(m["adjFrames"],:value, Int64)
     while !m.stopPlayingMovie
-      Gtk.@sigatom setproperty!(m["adjFrames"],:value, curFrame)
+      Gtk.@sigatom set_gtk_property!(m["adjFrames"],:value, curFrame)
       yield()
       sleep(0.01)
       curFrame = mod1(curFrame+1,L)
@@ -225,7 +225,7 @@ function initCallbacks(m_::DataViewerWidget)
     end
 
     signal_connect(m["cbShowExtraWindow"], "toggled") do widget
-      if !getproperty(m["cbShowExtraWindow"], :active, Bool)
+      if !get_gtk_property(m["cbShowExtraWindow"], :active, Bool)
         Gtk.destroy(m.extraWindow)
         m.extraWindow = nothing
       end
@@ -272,62 +272,62 @@ end
 
 function permuteBGData(m::DataViewerWidget)
   if m.dataBGNotPermuted != nothing
-    permInd = getproperty(m["cbPermutes"], :active, Int64) + 1
-    flipInd = getproperty(m["cbFlips"], :active, Int64) + 1
+    permInd = get_gtk_property(m["cbPermutes"], :active, Int64) + 1
+    flipInd = get_gtk_property(m["cbFlips"], :active, Int64) + 1
     perm = permuteCombinations()[permInd]
     flip = flippings()[flipInd]
     m.dataBG = applyPermutions(m.dataBGNotPermuted, perm, flip)
 
     fov = collect(size(m.dataBG)).*collect(pixelspacing(m.dataBG)).*1000
 
-    setproperty!(m["adjTransX"],:lower,-fov[1]/2)
-    setproperty!(m["adjTransY"],:lower,-fov[2]/2)
-    setproperty!(m["adjTransZ"],:lower,-fov[3]/2)
-    setproperty!(m["adjTransX"],:upper,fov[1]/2)
-    setproperty!(m["adjTransY"],:upper,fov[2]/2)
-    setproperty!(m["adjTransZ"],:upper,fov[3]/2)
+    set_gtk_property!(m["adjTransX"],:lower,-fov[1]/2)
+    set_gtk_property!(m["adjTransY"],:lower,-fov[2]/2)
+    set_gtk_property!(m["adjTransZ"],:lower,-fov[3]/2)
+    set_gtk_property!(m["adjTransX"],:upper,fov[1]/2)
+    set_gtk_property!(m["adjTransY"],:upper,fov[2]/2)
+    set_gtk_property!(m["adjTransZ"],:upper,fov[3]/2)
 
-    setproperty!(m["adjTransBGX"],:lower,-fov[1]/2)
-    setproperty!(m["adjTransBGY"],:lower,-fov[2]/2)
-    setproperty!(m["adjTransBGZ"],:lower,-fov[3]/2)
-    setproperty!(m["adjTransBGX"],:upper,fov[1]/2)
-    setproperty!(m["adjTransBGY"],:upper,fov[2]/2)
-    setproperty!(m["adjTransBGZ"],:upper,fov[3]/2)
+    set_gtk_property!(m["adjTransBGX"],:lower,-fov[1]/2)
+    set_gtk_property!(m["adjTransBGY"],:lower,-fov[2]/2)
+    set_gtk_property!(m["adjTransBGZ"],:lower,-fov[3]/2)
+    set_gtk_property!(m["adjTransBGX"],:upper,fov[1]/2)
+    set_gtk_property!(m["adjTransBGY"],:upper,fov[2]/2)
+    set_gtk_property!(m["adjTransBGZ"],:upper,fov[3]/2)
   end
 end
 
 function updateSliceWidgets(m::DataViewerWidget)
 
-  sxw = getproperty(m["adjSliceX"],:upper,Int64)
-  syw = getproperty(m["adjSliceY"],:upper,Int64)
-  szw = getproperty(m["adjSliceZ"],:upper,Int64)
+  sxw = get_gtk_property(m["adjSliceX"],:upper,Int64)
+  syw = get_gtk_property(m["adjSliceY"],:upper,Int64)
+  szw = get_gtk_property(m["adjSliceZ"],:upper,Int64)
   refdata = (m.dataBG == nothing) ? m.data[1] : m.dataBG
   if m.offlineMode
     if refdata != nothing && (size(refdata) != (sxw,syw,szw))
 
-      setproperty!(m["adjFrames"],:upper,size(m.data[1],4))
-      setproperty!(m["adjSliceX"],:upper,size(refdata,1))
-      setproperty!(m["adjSliceY"],:upper,size(refdata,2))
-      setproperty!(m["adjSliceZ"],:upper,size(refdata,3))
+      set_gtk_property!(m["adjFrames"],:upper,size(m.data[1],4))
+      set_gtk_property!(m["adjSliceX"],:upper,size(refdata,1))
+      set_gtk_property!(m["adjSliceY"],:upper,size(refdata,2))
+      set_gtk_property!(m["adjSliceZ"],:upper,size(refdata,3))
 
-      Gtk.@sigatom setproperty!(m["adjFrames"],:value, 1)
-      Gtk.@sigatom setproperty!(m["adjSliceX"],:value,max(div(size(refdata,1),2),1))
-      Gtk.@sigatom setproperty!(m["adjSliceY"],:value,max(div(size(refdata,2),2),1))
-      Gtk.@sigatom setproperty!(m["adjSliceZ"],:value,max(div(size(refdata,3),2),1))
+      Gtk.@sigatom set_gtk_property!(m["adjFrames"],:value, 1)
+      Gtk.@sigatom set_gtk_property!(m["adjSliceX"],:value,max(div(size(refdata,1),2),1))
+      Gtk.@sigatom set_gtk_property!(m["adjSliceY"],:value,max(div(size(refdata,2),2),1))
+      Gtk.@sigatom set_gtk_property!(m["adjSliceZ"],:value,max(div(size(refdata,3),2),1))
     end
   elseif refdata != nothing
-    setproperty!(m["adjFrames"],:upper,size(m.data[1],4))
-    setproperty!(m["adjSliceX"],:upper,size(refdata,1))
-    setproperty!(m["adjSliceY"],:upper,size(refdata,2))
-    setproperty!(m["adjSliceZ"],:upper,size(refdata,3))
+    set_gtk_property!(m["adjFrames"],:upper,size(m.data[1],4))
+    set_gtk_property!(m["adjSliceX"],:upper,size(refdata,1))
+    set_gtk_property!(m["adjSliceY"],:upper,size(refdata,2))
+    set_gtk_property!(m["adjSliceZ"],:upper,size(refdata,3))
 
-    sxwValue = getproperty(m["adjSliceX"],:value,Int64)
-    sywValue = getproperty(m["adjSliceY"],:value,Int64)
-    szwValue = getproperty(m["adjSliceZ"],:value,Int64)
+    sxwValue = get_gtk_property(m["adjSliceX"],:value,Int64)
+    sywValue = get_gtk_property(m["adjSliceY"],:value,Int64)
+    szwValue = get_gtk_property(m["adjSliceZ"],:value,Int64)
     if sxwValue > sxw || sywValue > syw || szwValue > szw
-      setproperty!(m["adjSliceX"],:value,size(refdata,1))
-      setproperty!(m["adjSliceY"],:value,size(refdata,2))
-      setproperty!(m["adjSliceZ"],:value,size(refdata,3))
+      set_gtk_property!(m["adjSliceX"],:value,size(refdata,1))
+      set_gtk_property!(m["adjSliceY"],:value,size(refdata,2))
+      set_gtk_property!(m["adjSliceZ"],:value,size(refdata,3))
     end
   end
 end
@@ -359,7 +359,7 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
     visible(m["lbChannel"], multiChannel)
 
     if m.data == nothing || (length(m.data) != length(data))
-      m.coloring = Array{ColoringParams}(length(data))
+      m.coloring = Array{ColoringParams}(undef,length(data))
       for l=1:length(data)
         m.coloring[l] = ColoringParams(0.0,1.0,0)
       end
@@ -368,7 +368,7 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
       for i=1:length(data)
         push!(m["cbChannel"], "$i")
       end
-      Gtk.@sigatom setproperty!(m["cbChannel"],:active,0)
+      Gtk.@sigatom set_gtk_property!(m["cbChannel"],:active,0)
 
       strProfile = ["x direction", "y direction", "z direction","temporal"]
       Gtk.@sigatom empty!(m["cbProfile"])
@@ -376,7 +376,7 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
       for i=1:nd
         push!(m["cbProfile"], strProfile[i])
       end
-      Gtk.@sigatom setproperty!(m["cbProfile"],:active,nd==4?3:0)
+      Gtk.@sigatom set_gtk_property!(m["cbProfile"],:active,nd==4 ? 3 : 0)
 
       updateColoringWidgets( m )
     end
@@ -390,7 +390,7 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
     permuteBGData(m)
     updateSliceWidgets(m)
     showData(m)
-    Gtk.@sigatom setproperty!(m["adjPixelResizeFactor"],:value, (dataBG==nothing)?5:1  )
+    Gtk.@sigatom set_gtk_property!(m["adjPixelResizeFactor"],:value, (dataBG==nothing) ? 5 : 1  )
 
     if params!=nothing
       setParams(m,params)
@@ -403,18 +403,18 @@ end
 
 function updateColoringWidgets(m::DataViewerWidget)
   m.upgradeColoringWInProgress = true
-  chan = max(getproperty(m["cbChannel"],:active, Int64) + 1,1)
-  Gtk.@sigatom setproperty!(m["adjCMin"],:value, m.coloring[chan].cmin)
-  Gtk.@sigatom setproperty!(m["adjCMax"],:value, m.coloring[chan].cmax)
-  Gtk.@sigatom setproperty!(m["cbCMaps"],:active, m.coloring[chan].cmap)
+  chan = max(get_gtk_property(m["cbChannel"],:active, Int64) + 1,1)
+  Gtk.@sigatom set_gtk_property!(m["adjCMin"],:value, m.coloring[chan].cmin)
+  Gtk.@sigatom set_gtk_property!(m["adjCMax"],:value, m.coloring[chan].cmax)
+  Gtk.@sigatom set_gtk_property!(m["cbCMaps"],:active, m.coloring[chan].cmap)
   m.upgradeColoringWInProgress = false
 end
 
 function updateColoring(m::DataViewerWidget)
-  chan = max(getproperty(m["cbChannel"],:active, Int64) + 1,1)
-  m.coloring[chan].cmin = getproperty(m["adjCMin"],:value, Float64)
-  m.coloring[chan].cmax = getproperty(m["adjCMax"],:value, Float64)
-  m.coloring[chan].cmap = getproperty(m["cbCMaps"],:active, Int64)
+  chan = max(get_gtk_property(m["cbChannel"],:active, Int64) + 1,1)
+  m.coloring[chan].cmin = get_gtk_property(m["adjCMin"],:value, Float64)
+  m.coloring[chan].cmax = get_gtk_property(m["adjCMax"],:value, Float64)
+  m.coloring[chan].cmap = get_gtk_property(m["cbCMaps"],:active, Int64)
 end
 
 
@@ -477,7 +477,7 @@ function showData(m::DataViewerWidget)
         drawImages(m,slices, isDrawSectionalLines, isDrawRectangle, cdata_zx, cdata_zy, cdata_xy, xy, xz, yz, offsetxy, offsetxz, offsetyz,
           pixelSpacingBG, sizeBG)
 
-        if getproperty(m["cbShowExtraWindow"], :active, Bool) && !m.offlineMode
+        if get_gtk_property(m["cbShowExtraWindow"], :active, Bool) && !m.offlineMode
           showExtraWindow(m, cdata_zy, cdata_zx, cdata_xy, isDrawSectionalLines, slices)
         end
         if ndims(m.data[1]) >= 3 && slicesInRawData != (0,0,0)
@@ -668,7 +668,7 @@ end
 
 function showProfile(m::DataViewerWidget, params, slicesInRawData)
   chan = params[:activeChannel]
-  prof = getproperty(m["cbProfile"],:active, Int64) + 1
+  prof = get_gtk_property(m["cbProfile"],:active, Int64) + 1
   if prof == 1
     m.currentProfile = squeeze(m.data[chan][:,slicesInRawData[2],slicesInRawData[3],params[:frame]])
   elseif prof == 2
@@ -724,7 +724,7 @@ function drawImageCairo(c, image, isDrawSectionalLines, xsec, ysec,
   h = height(ctx)
   w = width(ctx)
 
-  im = flipdim(convert(ImageMeta{RGB{N0f8}},image).data,1)
+  im = copy(reverse(convert(ImageMeta{RGB{N0f8}},image).data,dims=1))
   xsec_ = !flipX ? xsec : (size(im,2)-xsec+1)
   ysec_ = !flipY ? ysec : (size(im,1)-ysec+1)
   xx = w*(xsec_-0.5)/size(im,2)
@@ -761,8 +761,8 @@ function drawImageCairo(c, image, isDrawSectionalLines, xsec, ysec,
    yy = event.y / h*size(image,1) + 0.5
    xx = !flipX ? xx : (size(image,2)-xx+1)
    yy = !flipY ? yy : (size(image,1)-yy+1)
-   Gtk.@sigatom setproperty!(adjX, :value, round(Int64,xx))
-   Gtk.@sigatom setproperty!(adjY, :value, round(Int64,yy))
+   Gtk.@sigatom set_gtk_property!(adjX, :value, round(Int64,xx))
+   Gtk.@sigatom set_gtk_property!(adjY, :value, round(Int64,yy))
   end
  end
 end
@@ -841,108 +841,108 @@ end
 
 function getParams(m::DataViewerWidget)
   params = defaultVisuParams()
-  params[:sliceX] = getproperty(m["adjSliceX"], :value, Int64)
-  params[:sliceY] = getproperty(m["adjSliceY"], :value, Int64)
-  params[:sliceZ] = getproperty(m["adjSliceZ"], :value, Int64)
-  params[:frame] = getproperty(m["adjFrames"], :value, Int64)
-  params[:spatialMIP] = getproperty(m["cbSpatialMIP"], :active, Bool)
+  params[:sliceX] = get_gtk_property(m["adjSliceX"], :value, Int64)
+  params[:sliceY] = get_gtk_property(m["adjSliceY"], :value, Int64)
+  params[:sliceZ] = get_gtk_property(m["adjSliceZ"], :value, Int64)
+  params[:frame] = get_gtk_property(m["adjFrames"], :value, Int64)
+  params[:spatialMIP] = get_gtk_property(m["cbSpatialMIP"], :active, Bool)
   params[:coloring] = m.coloring
-  params[:description] = getproperty(m["entVisuName"], :text, String)
-  params[:showSlices] = getproperty(m["cbShowSlices"], :active, Bool)
+  params[:description] = get_gtk_property(m["entVisuName"], :text, String)
+  params[:showSlices] = get_gtk_property(m["cbShowSlices"], :active, Bool)
 
-  params[:permuteBG] = permuteCombinations()[getproperty(m["cbPermutes"], :active, Int64) + 1]
-  params[:flipBG] = flippings()[getproperty(m["cbFlips"], :active, Int64) + 1]
+  params[:permuteBG] = permuteCombinations()[get_gtk_property(m["cbPermutes"], :active, Int64) + 1]
+  params[:flipBG] = flippings()[get_gtk_property(m["cbFlips"], :active, Int64) + 1]
 
-  params[:transX] = getproperty(m["adjTransX"], :value, Float64) / 1000
-  params[:transY] = getproperty(m["adjTransY"], :value, Float64) / 1000
-  params[:transZ] = getproperty(m["adjTransZ"], :value, Float64) / 1000
-  params[:rotX] = getproperty(m["adjRotX"], :value, Float64)
-  params[:rotY] = getproperty(m["adjRotY"], :value, Float64)
-  params[:rotZ] = getproperty(m["adjRotZ"], :value, Float64)
-  params[:transBGX] = getproperty(m["adjTransBGX"], :value, Float64) / 1000
-  params[:transBGY] = getproperty(m["adjTransBGY"], :value, Float64) / 1000
-  params[:transBGZ] = getproperty(m["adjTransBGZ"], :value, Float64) / 1000
-  params[:rotBGX] = getproperty(m["adjRotBGX"], :value, Float64)
-  params[:rotBGY] = getproperty(m["adjRotBGY"], :value, Float64)
-  params[:rotBGZ] = getproperty(m["adjRotBGZ"], :value, Float64)
-  params[:coloringBG] = ColoringParams(getproperty(m["adjCMinBG"], :value, Float64),
-                                       getproperty(m["adjCMaxBG"], :value, Float64),
-                                       getproperty(m["cbCMapsBG"], :active, Int64))
+  params[:transX] = get_gtk_property(m["adjTransX"], :value, Float64) / 1000
+  params[:transY] = get_gtk_property(m["adjTransY"], :value, Float64) / 1000
+  params[:transZ] = get_gtk_property(m["adjTransZ"], :value, Float64) / 1000
+  params[:rotX] = get_gtk_property(m["adjRotX"], :value, Float64)
+  params[:rotY] = get_gtk_property(m["adjRotY"], :value, Float64)
+  params[:rotZ] = get_gtk_property(m["adjRotZ"], :value, Float64)
+  params[:transBGX] = get_gtk_property(m["adjTransBGX"], :value, Float64) / 1000
+  params[:transBGY] = get_gtk_property(m["adjTransBGY"], :value, Float64) / 1000
+  params[:transBGZ] = get_gtk_property(m["adjTransBGZ"], :value, Float64) / 1000
+  params[:rotBGX] = get_gtk_property(m["adjRotBGX"], :value, Float64)
+  params[:rotBGY] = get_gtk_property(m["adjRotBGY"], :value, Float64)
+  params[:rotBGZ] = get_gtk_property(m["adjRotBGZ"], :value, Float64)
+  params[:coloringBG] = ColoringParams(get_gtk_property(m["adjCMinBG"], :value, Float64),
+                                       get_gtk_property(m["adjCMaxBG"], :value, Float64),
+                                       get_gtk_property(m["cbCMapsBG"], :active, Int64))
   if m.offlineMode
     params[:filenameBG] = (m.dataBGNotPermuted != nothing) ?
                           m.dataBGNotPermuted["filename"] : ""
   end
-  params[:hideFG] = getproperty(m["cbHideFG"], :active, Bool)
-  params[:hideBG] = getproperty(m["cbHideBG"], :active, Bool)
-  params[:showSFFOV] = getproperty(m["cbShowSFFOV"], :active, Bool)
-  params[:showDFFOV] = getproperty(m["cbShowDFFOV"], :active, Bool)
-  params[:translucentBlending] = getproperty(m["cbTranslucentBlending"], :active, Bool)
-  params[:spatialMIPBG] = getproperty(m["cbSpatialBGMIP"], :active, Bool)
+  params[:hideFG] = get_gtk_property(m["cbHideFG"], :active, Bool)
+  params[:hideBG] = get_gtk_property(m["cbHideBG"], :active, Bool)
+  params[:showSFFOV] = get_gtk_property(m["cbShowSFFOV"], :active, Bool)
+  params[:showDFFOV] = get_gtk_property(m["cbShowDFFOV"], :active, Bool)
+  params[:translucentBlending] = get_gtk_property(m["cbTranslucentBlending"], :active, Bool)
+  params[:spatialMIPBG] = get_gtk_property(m["cbSpatialBGMIP"], :active, Bool)
 
 
-  params[:TTPThresh] = getproperty(m["adjTTPThresh"], :value, Float64)
-  params[:frameProj] = getproperty(m["cbFrameProj"], :active, Int64)
+  params[:TTPThresh] = get_gtk_property(m["adjTTPThresh"], :value, Float64)
+  params[:frameProj] = get_gtk_property(m["cbFrameProj"], :active, Int64)
 
-  params[:blendChannels] = getproperty(m["cbBlendChannels"], :active, Bool)
-  params[:profile] = getproperty(m["cbProfile"], :active, Int64)
+  params[:blendChannels] = get_gtk_property(m["cbBlendChannels"], :active, Bool)
+  params[:profile] = get_gtk_property(m["cbProfile"], :active, Int64)
 
-  params[:activeChannel] = max(getproperty(m["cbChannel"],:active, Int64) + 1,1)
+  params[:activeChannel] = max(get_gtk_property(m["cbChannel"],:active, Int64) + 1,1)
 
   return params
 end
 
 function setParams(m::DataViewerWidget, params)
-  Gtk.@sigatom setproperty!(m["adjSliceX"], :value, params[:sliceX])
-  Gtk.@sigatom setproperty!(m["adjSliceY"], :value, params[:sliceY])
-  Gtk.@sigatom setproperty!(m["adjSliceZ"], :value, params[:sliceZ])
-  Gtk.@sigatom setproperty!(m["adjFrames"], :value, params[:frame])
-  Gtk.@sigatom setproperty!(m["cbSpatialMIP"], :active, params[:spatialMIP])
+  Gtk.@sigatom set_gtk_property!(m["adjSliceX"], :value, params[:sliceX])
+  Gtk.@sigatom set_gtk_property!(m["adjSliceY"], :value, params[:sliceY])
+  Gtk.@sigatom set_gtk_property!(m["adjSliceZ"], :value, params[:sliceZ])
+  Gtk.@sigatom set_gtk_property!(m["adjFrames"], :value, params[:frame])
+  Gtk.@sigatom set_gtk_property!(m["cbSpatialMIP"], :active, params[:spatialMIP])
   m.coloring = params[:coloring]
   updateColoringWidgets(m)
-  Gtk.@sigatom setproperty!(m["entVisuName"], :text, params[:description])
-  Gtk.@sigatom setproperty!(m["cbShowSlices"], :active, get(params,:showSlices,false))
+  Gtk.@sigatom set_gtk_property!(m["entVisuName"], :text, params[:description])
+  Gtk.@sigatom set_gtk_property!(m["cbShowSlices"], :active, get(params,:showSlices,false))
 
   # The following is for backwards compatibility with a former data format
   # where instead of permuteBG and flipBG we stored permutionBG
   if haskey(params, :permutionBG)
     perm, flip = convertMode2PermFlip(params[:permutionBG])
-    Gtk.@sigatom setproperty!(m["cbPermutes"], :active, find(x->x==perm,permuteCombinations())[1] - 1)
-    Gtk.@sigatom setproperty!(m["cbFlips"], :active, find(x->x==flip,flippings())[1] - 1)
+    Gtk.@sigatom set_gtk_property!(m["cbPermutes"], :active, findall(x->x==perm,permuteCombinations())[1] - 1)
+    Gtk.@sigatom set_gtk_property!(m["cbFlips"], :active, findall(x->x==flip,flippings())[1] - 1)
   else
-    Gtk.@sigatom setproperty!(m["cbPermutes"], :active, find(x->x==params[:permuteBG],permuteCombinations())[1] - 1)
-    Gtk.@sigatom setproperty!(m["cbFlips"], :active, find(x->x==params[:flipBG],flippings())[1] - 1)
+    Gtk.@sigatom set_gtk_property!(m["cbPermutes"], :active, findall(x->x==params[:permuteBG],permuteCombinations())[1] - 1)
+    Gtk.@sigatom set_gtk_property!(m["cbFlips"], :active, findall(x->x==params[:flipBG],flippings())[1] - 1)
   end
 
-  Gtk.@sigatom setproperty!(m["adjTransX"], :value, params[:transX]*1000)
-  Gtk.@sigatom setproperty!(m["adjTransY"], :value, params[:transY]*1000)
-  Gtk.@sigatom setproperty!(m["adjTransZ"], :value, params[:transZ]*1000)
-  Gtk.@sigatom setproperty!(m["adjRotX"], :value, params[:rotX])
-  Gtk.@sigatom setproperty!(m["adjRotY"], :value, params[:rotY])
-  Gtk.@sigatom setproperty!(m["adjRotZ"], :value, params[:rotZ])
+  Gtk.@sigatom set_gtk_property!(m["adjTransX"], :value, params[:transX]*1000)
+  Gtk.@sigatom set_gtk_property!(m["adjTransY"], :value, params[:transY]*1000)
+  Gtk.@sigatom set_gtk_property!(m["adjTransZ"], :value, params[:transZ]*1000)
+  Gtk.@sigatom set_gtk_property!(m["adjRotX"], :value, params[:rotX])
+  Gtk.@sigatom set_gtk_property!(m["adjRotY"], :value, params[:rotY])
+  Gtk.@sigatom set_gtk_property!(m["adjRotZ"], :value, params[:rotZ])
 
-  Gtk.@sigatom setproperty!(m["adjTransBGX"], :value, get(params,:transBGX,0.0)*1000)
-  Gtk.@sigatom setproperty!(m["adjTransBGY"], :value, get(params,:transBGY,0.0)*1000)
-  Gtk.@sigatom setproperty!(m["adjTransBGZ"], :value, get(params,:transBGZ,0.0)*1000)
-  Gtk.@sigatom setproperty!(m["adjRotBGX"], :value, get(params,:rotBGX,0.0))
-  Gtk.@sigatom setproperty!(m["adjRotBGY"], :value, get(params,:rotBGY,0.0))
-  Gtk.@sigatom setproperty!(m["adjRotBGZ"], :value, get(params,:rotBGZ,0.0))
+  Gtk.@sigatom set_gtk_property!(m["adjTransBGX"], :value, get(params,:transBGX,0.0)*1000)
+  Gtk.@sigatom set_gtk_property!(m["adjTransBGY"], :value, get(params,:transBGY,0.0)*1000)
+  Gtk.@sigatom set_gtk_property!(m["adjTransBGZ"], :value, get(params,:transBGZ,0.0)*1000)
+  Gtk.@sigatom set_gtk_property!(m["adjRotBGX"], :value, get(params,:rotBGX,0.0))
+  Gtk.@sigatom set_gtk_property!(m["adjRotBGY"], :value, get(params,:rotBGY,0.0))
+  Gtk.@sigatom set_gtk_property!(m["adjRotBGZ"], :value, get(params,:rotBGZ,0.0))
 
-  Gtk.@sigatom setproperty!(m["adjCMinBG"], :value, params[:coloringBG].cmin)
-  Gtk.@sigatom setproperty!(m["adjCMaxBG"], :value, params[:coloringBG].cmax)
-  Gtk.@sigatom setproperty!(m["cbCMapsBG"], :active, params[:coloringBG].cmap)
-  Gtk.@sigatom setproperty!(m["cbHideFG"], :active, get(params,:hideFG, false))
-  Gtk.@sigatom setproperty!(m["cbHideBG"], :active, get(params,:hideBG, false))
-  Gtk.@sigatom setproperty!(m["cbShowSFFOV"], :active, get(params,:showSFFOV, false))
-  Gtk.@sigatom setproperty!(m["cbShowDFFOV"], :active, get(params,:showDFFOV, false))
-  Gtk.@sigatom setproperty!(m["cbTranslucentBlending"], :active, get(params,:translucentBlending, false))
-  Gtk.@sigatom setproperty!(m["cbSpatialBGMIP"], :active, get(params,:spatialMIPBG, false))
+  Gtk.@sigatom set_gtk_property!(m["adjCMinBG"], :value, params[:coloringBG].cmin)
+  Gtk.@sigatom set_gtk_property!(m["adjCMaxBG"], :value, params[:coloringBG].cmax)
+  Gtk.@sigatom set_gtk_property!(m["cbCMapsBG"], :active, params[:coloringBG].cmap)
+  Gtk.@sigatom set_gtk_property!(m["cbHideFG"], :active, get(params,:hideFG, false))
+  Gtk.@sigatom set_gtk_property!(m["cbHideBG"], :active, get(params,:hideBG, false))
+  Gtk.@sigatom set_gtk_property!(m["cbShowSFFOV"], :active, get(params,:showSFFOV, false))
+  Gtk.@sigatom set_gtk_property!(m["cbShowDFFOV"], :active, get(params,:showDFFOV, false))
+  Gtk.@sigatom set_gtk_property!(m["cbTranslucentBlending"], :active, get(params,:translucentBlending, false))
+  Gtk.@sigatom set_gtk_property!(m["cbSpatialBGMIP"], :active, get(params,:spatialMIPBG, false))
 
-  Gtk.@sigatom setproperty!(m["adjTTPThresh"], :value, get(params,:TTPThresh, 0.4))
-  Gtk.@sigatom setproperty!(m["cbFrameProj"], :active, get(params,:frameProj, 0))
+  Gtk.@sigatom set_gtk_property!(m["adjTTPThresh"], :value, get(params,:TTPThresh, 0.4))
+  Gtk.@sigatom set_gtk_property!(m["cbFrameProj"], :active, get(params,:frameProj, 0))
 
-  Gtk.@sigatom setproperty!(m["cbBlendChannels"], :active, get(params,:blendChannels, false))
+  Gtk.@sigatom set_gtk_property!(m["cbBlendChannels"], :active, get(params,:blendChannels, false))
 
-  Gtk.@sigatom setproperty!(m["cbProfile"], :active, get(params,:profile, 0))
+  Gtk.@sigatom set_gtk_property!(m["cbProfile"], :active, get(params,:profile, 0))
 
   showData(m)
 end
@@ -958,12 +958,12 @@ function initSimpleDataViewer(m::DataViewerWidget)
 end
 
 function getRegistrationFGParams(m::DataViewerWidget)
-    transBGX = getproperty(m["adjTransX"], :value, Float64)
-    transBGY = getproperty(m["adjTransY"], :value, Float64)
-    transBGZ = getproperty(m["adjTransZ"], :value, Float64)
-    rotBGX = getproperty(m["adjRotX"], :value, Float64)
-    rotBGY = getproperty(m["adjRotY"], :value, Float64)
-    rotBGZ = getproperty(m["adjRotZ"], :value, Float64)
+    transBGX = get_gtk_property(m["adjTransX"], :value, Float64)
+    transBGY = get_gtk_property(m["adjTransY"], :value, Float64)
+    transBGZ = get_gtk_property(m["adjTransZ"], :value, Float64)
+    rotBGX = get_gtk_property(m["adjRotX"], :value, Float64)
+    rotBGY = get_gtk_property(m["adjRotY"], :value, Float64)
+    rotBGZ = get_gtk_property(m["adjRotZ"], :value, Float64)
     transBG =[transBGX transBGY transBGZ]
     rotBG = [rotBGX rotBGY rotBGZ]
     return rotBG, transBG
@@ -971,12 +971,12 @@ end
 
 function setRegistrationFGParams!(m::DataViewerWidget, rotBG, transBG)
   Gtk.@sigatom begin
-    setproperty!(m["adjTransX"], :value, transBG[1])
-    setproperty!(m["adjTransY"], :value, transBG[2])
-    setproperty!(m["adjTransZ"], :value, transBG[3])
-    setproperty!(m["adjRotX"], :value, rotBG[1])
-    setproperty!(m["adjRotY"], :value, rotBG[2])
-    setproperty!(m["adjRotZ"], :value, rotBG[3])
+    set_gtk_property!(m["adjTransX"], :value, transBG[1])
+    set_gtk_property!(m["adjTransY"], :value, transBG[2])
+    set_gtk_property!(m["adjTransZ"], :value, transBG[3])
+    set_gtk_property!(m["adjRotX"], :value, rotBG[1])
+    set_gtk_property!(m["adjRotY"], :value, rotBG[2])
+    set_gtk_property!(m["adjRotZ"], :value, rotBG[3])
   end
 end
 
@@ -993,7 +993,7 @@ function exportImages(m::DataViewerWidget)
     filter = Gtk.GtkFileFilter(pattern=String("*.png"), mimetype=String("image/png"))
     filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
     if filenameImageData != ""
-      pixelResizeFactor = getproperty(m["adjPixelResizeFactor"],:value,Int64)
+      pixelResizeFactor = get_gtk_property(m["adjPixelResizeFactor"],:value,Int64)
       @async println("Export Image as ", filenameImageData)
       exportImage(filenameImageData, m.currentlyShownImages, pixelResizeFactor=pixelResizeFactor)
     end
@@ -1005,7 +1005,7 @@ function exportTikz(m::DataViewerWidget)
     filter = Gtk.GtkFileFilter(pattern=String("*.tikz*"), mimetype=String("image/tikz"))
     filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
     if filenameImageData != ""
-      pixelResizeFactor = getproperty(m["adjPixelResizeFactor"],:value,Int64)
+      pixelResizeFactor = get_gtk_property(m["adjPixelResizeFactor"],:value,Int64)
       @async println("Export Tikz as ", filenameImageData)
       props = m.currentlyShownData[1].properties
       SFPath=props["recoParams"][:SFPath]
@@ -1022,7 +1022,7 @@ function exportMovi(m::DataViewerWidget)
   if filenameMovi != ""
     params = getParams(m)
     sliceMovies = getColoredSlicesMovie(m.data, m.dataBG, m.coloring, params)
-    pixelResizeFactor = getproperty(m["adjPixelResizeFactor"],:value, Int64)
+    pixelResizeFactor = get_gtk_property(m["adjPixelResizeFactor"],:value, Int64)
     @async println("Export Movi as ", filenameMovi)
     exportMovies(filenameMovi, sliceMovies, pixelResizeFactor=pixelResizeFactor)
   end
@@ -1128,7 +1128,7 @@ function exportProfile(m::DataViewerWidget)
     if filenameImageData != "" && m.currentProfile != nothing
       @async println("Export Image as ", filenameImageData)
 
-      writecsv(filenameImageData, m.currentProfile )
+      writedlm(filenameImageData, m.currentProfile )
     end
   end
 end

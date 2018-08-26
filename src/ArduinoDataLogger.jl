@@ -1,6 +1,6 @@
 import Base: getindex
 using MPIMeasurements
-type ArduinoDataLoggerUI
+mutable struct ArduinoDataLoggerUI
     builder
     data
     freq
@@ -24,7 +24,7 @@ getindex(m::ArduinoDataLoggerUI, w::AbstractString)= G_.object(m.builder,w)
 
 function ArduinoDataLoggerUI()
         println("Starting ArduinoDataLoggerUI")
-        uifile= joinpath(Pkg.dir("MPIUI"),"src","builder","ArduinoDataLogger.ui")
+        uifile= joinpath(@__DIR__,"builder","ArduinoDataLogger.ui")
         b= Builder(filename=uifile)
 
         m= ArduinoDataLoggerUI(b,nothing, nothing,nothing, nothing, nothing,nothing,nothing,nothing,nothing,nothing)
@@ -40,7 +40,7 @@ function ArduinoDataLoggerUI()
 end
 
 function connectToArduino(m::ArduinoDataLoggerUI)
-    port=getproperty(m["Port"], :text,String)
+    port=get_gtk_property(m["Port"], :text,String)
     pause_ms::Int=30
     timeout_ms::Int=500
     delim::String="#"
@@ -68,8 +68,8 @@ function connectToArduino(m::ArduinoDataLoggerUI)
 
     m.c1 = Canvas()
     push!(m["boxMain"],m.c1)
-    setproperty!(m["boxMain"],:expand,m.c1,true)
-    while getproperty(m["ONOFF"],:activate, Bool)
+    set_gtk_property!(m["boxMain"],:expand,m.c1,true)
+    while get_gtk_property(m["ONOFF"],:activate, Bool)
         data = rand(numSamp)+im*rand(numSamp) #TODO
         #data=readuntil(sp,delim_read,timeout_ms);
         #make things with Data

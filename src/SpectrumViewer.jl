@@ -2,7 +2,7 @@ using Gtk, Gtk.ShortNames
 
 export SpectrumViewer, SpectrumViewerWidget
 
-type SpectrumViewerWidget <: Gtk.GtkBox
+mutable struct SpectrumViewerWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   file
   freq
@@ -34,7 +34,7 @@ function SpectrumViewerWidget(file::MPIFile; semilogY=false)
   hbox = Box(:h)
   push!(vbox, hbox)
 
-  #setproperty!(vbox, :expand, hbox, true)
+  #set_gtk_property!(vbox, :expand, hbox, true)
 
   cc = Canvas()
   g = Gtk.Grid()
@@ -47,7 +47,7 @@ function SpectrumViewerWidget(file::MPIFile; semilogY=false)
   for c in choices
     push!(cbDomain, c)
   end
-  setproperty!(cbDomain,:active,0)
+  set_gtk_property!(cbDomain,:active,0)
   push!(hbox, cbDomain)
 
   cbChan = ComboBoxText()
@@ -56,7 +56,7 @@ function SpectrumViewerWidget(file::MPIFile; semilogY=false)
   for c in choices
     push!(cbChan, c)
   end
-  setproperty!(cbChan,:active,0)
+  set_gtk_property!(cbChan,:active,0)
   push!(hbox, cbChan)
 
   scFrame = Scale(false, 1:100)
@@ -64,48 +64,48 @@ function SpectrumViewerWidget(file::MPIFile; semilogY=false)
   push!(hbox,Label("Frame"))
   push!(hbox,scFrame)
   G_.value(scFrame, 0)
-  setproperty!(adjFrame,:lower,1)
-  setproperty!(adjFrame,:upper,1)
-  setproperty!(hbox, :expand, scFrame, true)
+  set_gtk_property!(adjFrame,:lower,1)
+  set_gtk_property!(adjFrame,:upper,1)
+  set_gtk_property!(hbox, :expand, scFrame, true)
 
   scMinFreq = Scale(false, 1:100)
   adjMinFreq = Adjustment(scMinFreq)
   push!(hbox,Label("MinFreq"))
   push!(hbox,scMinFreq)
   G_.value(scMinFreq, 0)
-  setproperty!(adjMinFreq,:lower,1)
-  setproperty!(adjMinFreq,:upper,1)
-  setproperty!(hbox, :expand, scMinFreq, true)
+  set_gtk_property!(adjMinFreq,:lower,1)
+  set_gtk_property!(adjMinFreq,:upper,1)
+  set_gtk_property!(hbox, :expand, scMinFreq, true)
 
   scMaxFreq = Scale(false, 1:100)
   adjMaxFreq = Adjustment(scMaxFreq)
   push!(hbox,Label("MaxFreq"))
   push!(hbox,scMaxFreq)
   G_.value(scMaxFreq, 1)
-  setproperty!(adjMaxFreq,:lower,1)
-  setproperty!(adjMaxFreq,:upper,1)
-  setproperty!(hbox, :expand, scMaxFreq, true)
+  set_gtk_property!(adjMaxFreq,:lower,1)
+  set_gtk_property!(adjMaxFreq,:upper,1)
+  set_gtk_property!(hbox, :expand, scMaxFreq, true)
 
   cbBGSubtract = CheckButton("Subtract last 100 frames as BG")
   push!(hbox,cbBGSubtract)
 
   g[1,1] = cc
 
-  setproperty!(g, :column_homogeneous, true)
-  setproperty!(g, :row_homogeneous, true)
+  set_gtk_property!(g, :column_homogeneous, true)
+  set_gtk_property!(g, :row_homogeneous, true)
 
-  setproperty!(vbox, :fill, g, true)
-  setproperty!(vbox, :expand, g, true)
+  set_gtk_property!(vbox, :fill, g, true)
+  set_gtk_property!(vbox, :expand, g, true)
 
   # set all widgets
 
   freq = frequencies(file)
 
-  setproperty!(adjMinFreq,:upper,length(freq))
-  setproperty!(adjMaxFreq,:upper,length(freq))
-  setproperty!(adjMaxFreq,:value,length(freq))
+  set_gtk_property!(adjMinFreq,:upper,length(freq))
+  set_gtk_property!(adjMaxFreq,:upper,length(freq))
+  set_gtk_property!(adjMaxFreq,:value,length(freq))
 
-  setproperty!(adjFrame,:upper, numScans(file))
+  set_gtk_property!(adjFrame,:upper, numScans(file))
 
   bgdata = getMeasurementsFT(file, frames=(numScans(file)-99):numScans(file), nAverages=100)
 
@@ -131,11 +131,11 @@ end
 
 
 function showData(d::SpectrumViewerWidget)
-  frame = getproperty(d.adjFrame, :value, Int64)
-  minFreq = getproperty(d.adjMinFreq, :value, Int64)
-  maxFreq = getproperty(d.adjMaxFreq, :value, Int64)
-  chan  =  getproperty(d.cbChan, :active, Int64)
-  bgsubtract  =  getproperty(d.cbBGSubtract, :active, Bool)
+  frame = get_gtk_property(d.adjFrame, :value, Int64)
+  minFreq = get_gtk_property(d.adjMinFreq, :value, Int64)
+  maxFreq = get_gtk_property(d.adjMaxFreq, :value, Int64)
+  chan  =  get_gtk_property(d.cbChan, :active, Int64)
+  bgsubtract  =  get_gtk_property(d.cbBGSubtract, :active, Bool)
 
   dataAll = getMeasurementsFT(d.file, frames=frame, recChannels=(chan+1))
 
