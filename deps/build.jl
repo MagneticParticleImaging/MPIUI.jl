@@ -1,0 +1,6 @@
+Pkg.clone("https://github.com/tknopp/LinearSolver.jl.git","release-julia-0.6")
+Pkg.clone("https://github.com/tknopp/RedPitayaDAQServer.jl.git","release-julia-0.6")
+Pkg.clone("https://github.com/tknopp/MPILib.jl.git","release-julia-0.6")
+Pkg.clone("https://github.com/tknopp/MPIMeasurements.jl.git","release-julia-0.6")
+Pkg.clone("https://github.com/MagneticParticleImaging/MPIFiles.jl.git","release-julia-0.6")
+Pkg.clone("https://github.com/MagneticParticleImaging/MPIReco.jl.git","release-julia-0.6")
