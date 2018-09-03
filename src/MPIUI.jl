@@ -8,6 +8,7 @@ using Printf
 using DelimitedFiles
 using FFTW
 using Pkg
+using GC
 using InteractiveUtils
 
 ENV["MPILIB_UI"] = "Nothing"
