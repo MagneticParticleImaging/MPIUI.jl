@@ -567,6 +567,7 @@ function initExperimentStore(m::MPILab)
 
       if splitext(m.currentExperiment.path)[2] == ".mdf"
         Gtk.@sigatom m.experimentStore[currentIt,2] = string(text)
+        GC.gc() # This is important to run all finalizers of MPIFile
         h5open(m.currentExperiment.path, "r+") do file
           if exists(file, "/experiment/name")
             o_delete(file, "/experiment/name")
