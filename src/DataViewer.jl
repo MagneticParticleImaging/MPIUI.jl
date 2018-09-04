@@ -396,7 +396,7 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
       setParams(m,params)
     end
   catch ex
-    println(catch_stacktrace(),"\nException: ",ex)
+    println(stacktrace(catch_backtrace()),"\nException: ",ex)
   end
 end
 
@@ -507,7 +507,7 @@ function showData(m::DataViewerWidget)
       end
     end
   catch ex
-    println(catch_stacktrace(),"\nException: ",ex)
+    println(stacktrace(catch_backtrace()),"\nException: ",ex)
   end
 end
 
