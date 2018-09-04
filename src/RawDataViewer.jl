@@ -223,17 +223,17 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       maxFr = (div(length(data),2)+1)
 
       if length(m.dataBG) > 0 && get_gtk_property(m["cbSubtractBG",CheckButtonLeaf], :active, Bool)
-        data[:] .-=  vec(mean(m.dataBG[:,chan,:,:],3))
+        data[:] .-=  vec(mean(m.dataBG[:,chan,:,:],dims=3))
       end
     else
       if get_gtk_property(m["cbAbsFrameAverage",CheckButtonLeaf], :active, Bool)
         dataFD = rfft(m.data[:,chan,patch,:],1)
-        dataFD_ = vec(mean(abs.(dataFD), 2))
+        dataFD_ = vec(mean(abs.(dataFD), dims=2))
         data = irfft(dataFD_, 2*size(dataFD_, 1) -2)
 
         if length(m.dataBG) > 0
           dataBGFD = rfft(m.dataBG[:,chan,patch,:],1)
-          dataBGFD_ = vec(mean(abs.(dataBGFD), 2))
+          dataBGFD_ = vec(mean(abs.(dataBGFD), dims=2))
           dataBG = irfft(dataBGFD_, 2*size(dataBGFD_, 1) -2)
           if get_gtk_property(m["cbSubtractBG",CheckButtonLeaf], :active, Bool)
             data[:] .-=  dataBG
@@ -242,8 +242,8 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       else
         data = vec(m.data[:,chan,patch,1])
         if length(m.dataBG) > 0
-          #dataBG = vec(m.dataBG[:,chan,patch,1] .- mean(m.dataBG[:,chan,patch,:],2))
-          dataBG = vec( mean(m.dataBG[:,chan,patch,:],2))
+          #dataBG = vec(m.dataBG[:,chan,patch,1] .- mean(m.dataBG[:,chan,patch,:], dims=2))
+          dataBG = vec( mean(m.dataBG[:,chan,patch,:],dims=2))
           if get_gtk_property(m["cbSubtractBG",CheckButtonLeaf], :active, Bool)
             data[:] .-=  dataBG
           end
