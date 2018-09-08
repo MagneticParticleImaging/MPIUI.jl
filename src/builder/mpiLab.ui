@@ -1300,7 +1300,6 @@
           <object class="GtkNotebook" id="nbView">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="show_tabs">False</property>
             <child>
               <object class="GtkBox" id="boxRawViewer">
                 <property name="visible">True</property>
