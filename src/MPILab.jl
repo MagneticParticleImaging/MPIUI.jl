@@ -486,7 +486,7 @@ function initExperimentStore(m::MPILab)
     if hasselection(m.selectionExp)
       Gtk.@sigatom begin
         if m.settings["enableRecoStore", true]
-          updateData!(m.recoWidget, m.currentExperiment.path )
+          updateData!(m.recoWidget, m.currentExperiment.path, m.currentStudy, m.currentExperiment )
           G_.current_page(m["nbView"], 2)
         end
       end
@@ -720,7 +720,7 @@ function initReconstructionStore(m::MPILab)
       params = m.currentReco.params
 
       Gtk.@sigatom begin
-        updateData!(m.recoWidget, m.currentExperiment.path, params)
+        updateData!(m.recoWidget, m.currentExperiment.path, params, m.currentStudy, m.currentExperiment)
         G_.current_page(m["nbView"], 2)
       end
     end
@@ -755,7 +755,7 @@ function updateReconstructionStore(m::MPILab)
   end
 end
 
-function addReco(m::MPILab, image)
+function addReco(m::MPILab, image, currentStudy, currentExperiment)
   addReco(activeRecoStore(m), m.currentStudy, m.currentExperiment, image)
   Gtk.@sigatom updateReconstructionStore(m)
 end

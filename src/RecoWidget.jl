@@ -32,6 +32,8 @@ mutable struct RecoWidget<: Gtk.GtkGrid
   selectedSF
   bgExperiments
   recoGrid
+  currentStudy
+  currentExperiment
 end
 
 getindex(m::RecoWidget, w::AbstractString) = G_.object(m.builder, w)
@@ -47,7 +49,8 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
                   nothing,
                   nothing, true,
                   nothing, nothing, nothing, nothing, 1,
-                  Dict{Int64,String}(),nothing)
+                  Dict{Int64,String}(),nothing,
+                  nothing, nothing)
   Gtk.gobject_move_ref(m, mainGrid)
 
   spReco = m["spReco"]
@@ -195,7 +198,7 @@ end
 function saveReco(m::RecoWidget)
   if m.recoResult != nothing
     m.recoResult["recoParams"][:description] = get_gtk_property(m["entRecoDescrip"], :text, String)
-    Gtk.@sigatom addReco(mpilab[], m.recoResult)
+    Gtk.@sigatom addReco(mpilab[], m.recoResult, m.currentStudy, m.currentExperiment)
   end
 end
 
@@ -273,12 +276,13 @@ function setSF(m::RecoWidget, filename)
   nothing
 end
 
-function updateData!(m::RecoWidget, filenameMeas, params)
+function updateData!(m::RecoWidget, filenameMeas, params::Dict,
+                     study=nothing, experiment=nothing)
   setParams(m, params)
-  updateData!(m, filenameMeas)
+  updateData!(m, filenameMeas, study, experiment)
 end
 
-function updateData!(m::RecoWidget, filenameMeas)
+function updateData!(m::RecoWidget, filenameMeas, study=nothing, experiment=nothing)
   if filenameMeas != nothing
     m.bMeas = MPIFile(filenameMeas)
     set_gtk_property!(m["adjFrame"],:upper, numScans(m.bMeas))
@@ -293,6 +297,8 @@ function updateData!(m::RecoWidget, filenameMeas)
 
     end
     initBGSubtractionWidgets(m)
+    m.currentStudy = study
+    m.currentExperiment = experiment
   end
   nothing
 end
