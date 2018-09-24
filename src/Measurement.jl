@@ -395,8 +395,10 @@ function initCallbacks(m::MeasurementWidget)
               temp = getTemperatures(su)
               while maximum(temp[1:2]) > params["maxTemperature"]
                Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
-                    """<span foreground="red" font_weight="bold" size="x-large"> System Cooling Down! </span>""")
+                    """<span foreground="red" font_weight="bold" size="x-large"> System Cooling Down! $currPos / $numPos ($posStr mm) </span>""")
                sleep(20)
+               temp = getTemperatures(su)
+               println("Temp = $temp")
               end
             end
             if currPos > numPos
