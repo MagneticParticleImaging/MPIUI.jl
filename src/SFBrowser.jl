@@ -26,7 +26,6 @@ function updateData!(m::SFBrowserWidget, sysFuncs)
   m.sysFuncs = sysFuncs
 
   Gtk.@sigatom empty!(m.store)
-  #println(sysFuncs)
 
   for l = 2:size(sysFuncs,1)
     push!(m.store,( sysFuncs[l,15],

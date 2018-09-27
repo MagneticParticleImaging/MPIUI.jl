@@ -11,7 +11,7 @@ end
 getindex(m::LCRMeterUI, w::AbstractString) = G_.object(m.builder, w)
 
 function LCRMeterUI()
-  println("Starting LCRMeterUI")
+  @info "Starting LCRMeterUI"
   uifile = joinpath(@__DIR__,"builder","lcrMeter.ui")
 
   b = Builder(filename=uifile)
@@ -32,6 +32,7 @@ function LCRMeterUI()
 
   showall(m["mainWindow"])
 
+  @info "Finished starting LCRMeterUI"
   return m
 end
 

@@ -23,7 +23,7 @@ function isMeasurementStore(m::MeasurementWidget, d::DatasetStore)
 end
 
 function MeasurementWidget(filenameConfig="")
-  println("Starting MeasurementWidget")
+  @info "Starting MeasurementWidget"
   uifile = joinpath(@__DIR__,"builder","measurementWidget.ui")
 
   #filenameConfig=nothing
@@ -45,9 +45,9 @@ function MeasurementWidget(filenameConfig="")
                   "", RawDataWidget(), String[], false)
   Gtk.gobject_move_ref(m, mainBox)
 
-  println("Type constructed")
+  @debug "Type constructed"
 
-  println("InvalidateBG")
+  @debug "InvalidateBG"
   invalidateBG(C_NULL, m)
 
   push!(m["boxMeasTabVisu",BoxLeaf],m.rawDataWidget)
@@ -55,7 +55,7 @@ function MeasurementWidget(filenameConfig="")
 
   Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:use_markup,true)
 
-  println("Read Sequences")
+  @debug "Read Sequences"
   Gtk.@sigatom empty!(m["cbSeFo",ComboBoxTextLeaf])
   m.sequences = String[ splitext(seq)[1] for seq in readdir(sequenceDir())]
   for seq in m.sequences
@@ -63,7 +63,7 @@ function MeasurementWidget(filenameConfig="")
   end
   Gtk.@sigatom set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf],:active,0)
 
-  println("Read safety parameters")
+  @debug "Read safety parameters"
   Gtk.@sigatom empty!(m["cbSafeCoil", ComboBoxTextLeaf])
   for coil in getValidHeadScannerGeos()
       Gtk.@sigatom push!(m["cbSafeCoil",ComboBoxTextLeaf], coil.name)
@@ -87,7 +87,7 @@ function MeasurementWidget(filenameConfig="")
   end
 
 
-  println("Online / Offline")
+  @debug "Online / Offline"
   if m.scanner != nothing
     setInfoParams(m)
     setParams(m, merge!(getGeneralParams(m.scanner),toDict(getDAQ(m.scanner).params)))
@@ -103,11 +103,11 @@ function MeasurementWidget(filenameConfig="")
 
   Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
 
-  println("InitCallbacks")
+  @debug "InitCallbacks"
 
   @time initCallbacks(m)
 
-  println("Finished")
+  @info "Finished starting MeasurementWidget"
 
   return m
 end
@@ -159,7 +159,7 @@ end
 
 function initCallbacks(m::MeasurementWidget)
 
-  println("CAAALLLLBACK")
+  @debug "CAAALLLLBACK"
 
   # TODO This currently does not work!
   #@time signal_connect(m["expSurveillance",ExpanderLeaf], :activate) do w
@@ -369,7 +369,7 @@ function initCallbacks(m::MeasurementWidget)
         Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
         cancelled = false
         function update_(::Timer)
-          println("Timer active $currPos / $numPos")
+          @debug "Timer active $currPos / $numPos"
           if timerCalibrationActive
             if currPos <= numPos
               pos = Float64.(ustrip.(uconvert.(Unitful.mm, positions[currPos])))
@@ -398,7 +398,7 @@ function initCallbacks(m::MeasurementWidget)
                     """<span foreground="red" font_weight="bold" size="x-large"> System Cooling Down! $currPos / $numPos ($posStr mm) </span>""")
                sleep(20)
                temp = getTemperatures(su)
-               println("Temp = $temp")
+               @info "Temp = $temp"
               end
             end
             if currPos > numPos
@@ -547,7 +547,7 @@ end
 
 
 function measurement(widgetptr::Ptr, m::MeasurementWidget)
-  Gtk.@sigatom  println("Calling measurement")
+  Gtk.@sigatom @info "Calling measurement"
 
   params = merge!(getGeneralParams(m.scanner),getParams(m))
   params["acqNumFrames"] = params["acqNumFGFrames"]
@@ -568,7 +568,7 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
 end
 
 function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
-  Gtk.@sigatom println("Calling BG measurement")
+  Gtk.@sigatom @info "Calling BG measurement"
 
   params = merge!(getGeneralParams(m.scanner),getParams(m))
   params["acqNumFrames"] = params["acqNumBGFrames"]
@@ -612,7 +612,6 @@ function getParams(m::MeasurementWidget)
 
   dfString = get_gtk_property(m["entDFStrength",EntryLeaf], :text, String)
   params["dfStrength"] = parse.(Float64,split(dfString," x "))*1e-3
-  println("DF strength = $(params["dfStrength"])")
 
   params["acqFFSequence"] = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
   params["acqFFLinear"] = get_gtk_property(m["cbFFInterpolation",CheckButtonLeaf], :active, Bool)

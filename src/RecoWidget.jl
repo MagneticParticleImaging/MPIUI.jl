@@ -85,14 +85,14 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
 
   initBGSubtractionWidgets(m)
 
-  #println(mpilab[].settings)
+  @debug "" mpilab[].settings
 
   function loadRecoProfile( widget )
 
     cache = loadcache()
 
     selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
-    println(selectedProfileName)
+    @debug "" selectedProfileName
     if haskey(cache["recoParams"],selectedProfileName)
       Gtk.@sigatom setParams(m, cache["recoParams"][selectedProfileName])
     end
@@ -114,7 +114,7 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
   function deleteRecoProfile( widget )
     selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
 
-    Gtk.@sigatom println("delete reco profile ", selectedProfileName)
+    Gtk.@sigatom @info "delete reco profile $selectedProfileName"
 
     cache = loadcache()
     delete!(cache["recoParams"], selectedProfileName)
@@ -154,7 +154,7 @@ function initCallbacks(m_::RecoWidget)
     signal_connect((w)->performReco(m), m["tbPerformReco"], "clicked")
     signal_connect((w)->selectSF(m), m["btBrowseSF"], "clicked")
     signal_connect(m["adjSelectedSF"], "value_changed") do widget
-      println(m.bSF)
+      @debug "" m.bSF
 
       m.selectedSF = get_gtk_property(m_["adjSelectedSF"],:value,Int64)
 
@@ -209,7 +209,7 @@ function updateBGMeas(m::RecoWidget)
     if !isempty(bgstr)
       bgnum =  parse(Int64, bgstr)
       filenameBG = m.bgExperiments[bgnum]
-      println(filenameBG)
+      @debug "" filenameBG
       if isdir(filenameBG) || isfile(filenameBG)
         m.bEmpty = MPIFile(filenameBG)
 
@@ -233,7 +233,7 @@ function selectSF(m::RecoWidget)
     if hasselection(dlg.selection)
       sffilename =  getSelectedSF(dlg)
 
-      println(sffilename)
+      @debug "" sffilename
       setSF(m, sffilename )
     end
   end
@@ -320,7 +320,7 @@ function updateSF(m::RecoWidget)
 #       S = getSF(m.bSF, freq, redFactor=redFactor, sparseTrafo="DCT")
 #     else
 
-  println("Reloading SF")
+  @info "Reloading SF"
   m.sysMatrix, m.recoGrid = getSF(m.bSF, m.freq, params[:sparseTrafo], params[:solver], bgcorrection=bgcorrection,
                       loadasreal = params[:loadasreal], loadas32bit = params[:loadas32bit],
                       redFactor = params[:redFactor])
@@ -495,9 +495,9 @@ end
 
 #=
 function performMultiProcessReco( widget )
-  println("Num Procs: $(procs())")
+  @debug "Num Procs: $(procs())"
   recoWorkers = workers()
-  println("Num Workers: $(recoWorkers)")
+  @debug "Num Workers: $(recoWorkers)"
   nWorkers = length(recoWorkers)
   start(spReco)
   params = getParams(m)
@@ -522,12 +522,12 @@ function performMultiProcessReco( widget )
     @async begin
       for p=1:nWorkers
         recoTasks[p] = @async begin
-            println("Entering recoTask...")
+            @debug "Entering recoTask..."
             taskParams = copy(params)
             taskParams[:frames] = splittedFrames[p]
             recoResult = remotecall_fetch(multiCoreReconstruction, recoWorkers[p], bSF, bMeas, freq, taskParams )
             recoResults[p] = recoResult
-            println("Finished recoTask.")
+            @debug "Finished recoTask."
         end # recoTasks[p]
       end # for
       for k=1:nWorkers
@@ -538,7 +538,7 @@ function performMultiProcessReco( widget )
       m.recoResult["recoParams"] = getParams(m)
       Gtk.@sigatom updateData!(m.dv, m.recoResult )
       stop(spReco)
-      println("reco processes finished.")
+      @debug "reco processes finished."
     end # async
   end # Gtk.sigatom
 end #Function

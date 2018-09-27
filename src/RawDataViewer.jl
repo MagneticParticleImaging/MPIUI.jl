@@ -22,7 +22,7 @@ end
 getindex(m::RawDataWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
 function RawDataWidget(filenameConfig=nothing)
-  println("Starting RawDataWidget")
+  @info "Starting RawDataWidget"
   uifile = joinpath(@__DIR__,"builder","rawDataViewer.ui")
 
   b = Builder(filename=uifile)
@@ -36,7 +36,7 @@ function RawDataWidget(filenameConfig=nothing)
                   AdjustmentLeaf[], Canvas[], Vector{Vector{Float32}}())
   Gtk.gobject_move_ref(m, mainBox)
 
-  println("Type constructed")
+  @debug "Type constructed"
 
   push!(m["boxTD",BoxLeaf],m.cTD)
   set_gtk_property!(m["boxTD",BoxLeaf],:expand,m.cTD,true)
@@ -44,13 +44,13 @@ function RawDataWidget(filenameConfig=nothing)
   push!(m["boxFD",BoxLeaf],m.cFD)
   set_gtk_property!(m["boxFD",BoxLeaf],:expand,m.cFD,true)
 
-  println("InitCallbacks")
+  @debug "InitCallbacks"
 
   initHarmView(m)
 
   initCallbacks(m)
 
-  println("Finished")
+  @info "Finished starting RawDataWidget"
 
   return m
 end
@@ -143,7 +143,7 @@ end
 function loadData(widgetptr::Ptr, m::RawDataWidget)
   if !m.loadingData
     m.loadingData = true
-    @Gtk.sigatom println("Loading Data ...")
+    @Gtk.sigatom @info "Loading Data ..."
 
 
     if m.filenameData != "" && ispath(m.filenameData)

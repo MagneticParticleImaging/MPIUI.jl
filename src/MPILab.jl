@@ -44,7 +44,7 @@ activeRecoStore(m::MPILab) = typeof(activeDatasetStore(m)) <: BrukerDatasetStore
                                       m.brukerRecoStore : activeDatasetStore(m)
 
 function MPILab(offlineMode=false)::MPILab
-  println("## Start ...")
+  @info "Starting MPILab"
 
   uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
@@ -61,37 +61,37 @@ function MPILab(offlineMode=false)::MPILab
 
   w = m["mainWindow"]
 
-  println("## Init Settings ...")
+  @debug "## Init Settings ..."
   initSettings(m)
-  println("## Init Measurement Tab ...")
-  @time initMeasurementTab(m, offlineMode)
-  println("## Init Store switch ...")
+  @debug "## Init Measurement Tab ..."
+  initMeasurementTab(m, offlineMode)
+  @debug "## Init Store switch ..."
   initStoreSwitch(m)
 
-  println("## Init Study ...")
+  @debug "## Init Study ..."
   initStudyStore(m)
 
-  println("## Init Experiment Store ...")
+  @debug "## Init Experiment Store ..."
   initExperimentStore(m)
-  println("## Init SFStore ...")
+  @debug "## Init SFStore ..."
   initSFStore(m)
-  println("## Init SF Viewer...")
+  @debug "## Init SF Viewer..."
   initSFViewerTab(m)
-  println("## Init Image Tab ...")
+  @debug "## Init Image Tab ..."
   initImageTab(m)
-  println("## Init Raw Data Tab ...")
+  @debug "## Init Raw Data Tab ..."
   initRawDataTab(m)
   if m.settings["enableRecoStore", true]
-    println("## Init Reco Tab ...")
-    @time initRecoTab(m)
+    @debug "## Init Reco Tab ..."
+    initRecoTab(m)
   end
-  println("## Init Reco Store ...")
+  @debug "## Init Reco Store ..."
   initReconstructionStore(m)
-  println("## Init Anatom Ref Store ...")
+  @debug "## Init Anatom Ref Store ..."
   initAnatomRefStore(m)
-  println("## Init Visu Store ...")
+  @debug "## Init Visu Store ..."
   initVisuStore(m)
-  println("## Init View switch ...")
+  @debug "## Init View switch ..."
   initViewSwitch(m)
 
   Gtk.@sigatom set_gtk_property!(m["cbDatasetStores"],:active,0)
@@ -108,26 +108,26 @@ function MPILab(offlineMode=false)::MPILab
   signal_connect(w, "key-press-event") do widget, event
     if event.keyval ==  Gtk.GConstants.GDK_KEY_c
       if event.state & 0x04 != 0x00 # Control key is pressed
-        @async println("copy visu params to clipboard...")
+        @debug "copy visu params to clipboard..."
         str = string( getParams(m.dataViewerWidget) )
         # str_ = replace(str,",Pair",",\n  Pair")
         clipboard( str )
       end
     elseif event.keyval == Gtk.GConstants.GDK_KEY_v
         if event.state & 0x04 != 0x00 # Control key is pressed
-          @async println("copy visu params from clipboard to UI...")
+          @debug "copy visu params from clipboard to UI..."
           str = clipboard()
           try
           dict= eval(Meta.parse(str))
           setParams(m.dataViewerWidget, dict)
         catch
-            @async println("not the right format for SetParams in clipboard...")
+          @warn "not the right format for SetParams in clipboard..."
         end
         end
     end
   end
 
-  println("## finished ...")
+  @info "Finished starting MPILab"
 
   end
 
@@ -151,7 +151,7 @@ function initStoreSwitch(m::MPILab)
   m.brukerRecoStore = MDFDatasetStore( m.settings["brukerRecoStore"] )
 
   signal_connect(m["cbDatasetStores"], "changed") do widget...
-    println("changing dataset store")
+    @debug "changing dataset store"
     m.activeStore = get_gtk_property(m["cbDatasetStores"], :active, Int64)+1
     Gtk.@sigatom begin
       scanDatasetDir(m)
@@ -177,7 +177,7 @@ end
 
 function initViewSwitch(m::MPILab)
   signal_connect(m["nbView"], "switch-page") do widget, page, page_num
-    println("switched to tab $page_num")
+    @debug "switched to tab" page_num
     if page_num == 0
       if m.currentExperiment != nothing
         Gtk.@sigatom updateData(m.rawDataWidget, m.currentExperiment.path)
@@ -264,7 +264,7 @@ function initStudyStore(m::MPILab)
 
       Gtk.@sigatom updateExperimentStore(m, m.currentStudy)
 
-      #println("Current Study Id: ", id(m.currentStudy))
+      @debug "Current Study Id: " id(m.currentStudy)
       Gtk.@sigatom updateAnatomRefStore(m)
 
       m.measurementWidget.currStudyName = m.currentStudy.name
@@ -381,7 +381,7 @@ function initAnatomRefStore(m::MPILab)
   signal_connect(m["tbAddAnatomicalData"], "clicked") do widget
     filename = open_dialog("Select Anatomic Reference", mpilab[]["mainWindow"], action=GtkFileChooserAction.OPEN)
     if !isfile(filename)
-      println(filename * " is not a file")
+      @warn "$filename * is not a file"
     else
       targetPath = joinpath(activeRecoStore(m).path, "reconstructions", id(m.currentStudy), "anatomicReferences", last(splitdir(filename)) )
       mkpath(targetPath)
@@ -520,7 +520,7 @@ function initExperimentStore(m::MPILab)
       currentIt = selected( m.selectionExp )
 
       exp = getExperiment(m.currentStudy, m.experimentStore[currentIt,1])
-      println(exp.path)
+      @debug "Experiment path" exp.path
       if exp != nothing && ispath(exp.path)
         m.currentExperiment = exp
         #Experiment( string(m.experimentStore[currentIt,length(cols)+1]),
@@ -649,7 +649,7 @@ function initReconstructionStore(m::MPILab)
   end
 
   signal_connect(r2, "edited") do widget, path, text
-    println(text)
+    @debug "" text
     if hasselection(m.selectionReco)
       currentIt = selected( m.selectionReco )
 

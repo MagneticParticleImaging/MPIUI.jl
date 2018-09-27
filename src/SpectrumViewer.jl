@@ -158,7 +158,6 @@ function showData(d::SpectrumViewerWidget)
   else
     p = Winston.plot(freq, angle( vec( data ) ) )
   end
-  #println(typeof(d.c))
 
   display(d.c,p)
 

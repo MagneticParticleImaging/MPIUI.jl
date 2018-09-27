@@ -23,7 +23,7 @@ end
 getindex(m::ArduinoDataLoggerUI, w::AbstractString)= G_.object(m.builder,w)
 
 function ArduinoDataLoggerUI()
-        println("Starting ArduinoDataLoggerUI")
+        @info "Starting ArduinoDataLoggerUI"
         uifile= joinpath(@__DIR__,"builder","ArduinoDataLogger.ui")
         b= Builder(filename=uifile)
 
@@ -35,8 +35,8 @@ function ArduinoDataLoggerUI()
             connectToArduino(m)
         end
         showall(m["mainWindow"])
+        @info "Finished starting ArduinoDataLoggerUI"
     return m
-
 end
 
 function connectToArduino(m::ArduinoDataLoggerUI)
@@ -62,7 +62,7 @@ function connectToArduino(m::ArduinoDataLoggerUI)
     write(sp, "!ConnectionEstablished*#")
     response=readuntil(sp,delim_read,timeout_ms);
     if (response == "ArduinoDataLoggerV1")
-        println("Connected to ArduinoDataLogger")
+        @info "Connected to ArduinoDataLogger"
         Arduino=ArduinoDataLogger(MPIMeasurements.SerialDevice(sp,pause_ms, timeout_ms, delim_read, delim_write),CommandStart,CommandEnd,delim)
     end
 
