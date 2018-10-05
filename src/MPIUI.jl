@@ -46,6 +46,15 @@ function openFileBrowser(dir::String)
   return
 end
 
+function imToVecIm(image::ImageMeta)
+   out = ImageMeta[]
+   for i=1:size(image,1)
+     I = getindex(image, i, ntuple(x->:,ndims(image)-1)...)
+     push!(out, I)
+   end
+   return out
+ end
+
 include("GtkUtils.jl")
 include("RawDataViewer.jl")
 include("Measurement.jl")
