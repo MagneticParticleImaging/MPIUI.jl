@@ -20,8 +20,6 @@ function DataViewer(imFG::Vector, imBG=nothing; params=nothing)
   dw
 end
 
-
-
 function DataViewer()
   w = Window("Data Viewer",800,600)
   dw = DataViewerWidget()
@@ -43,7 +41,6 @@ function DataViewer()
 end
 
 ########### DataViewerWidget #################
-
 
 mutable struct DataViewerWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
@@ -416,14 +413,6 @@ function updateColoring(m::DataViewerWidget)
   m.coloring[chan].cmax = get_gtk_property(m["adjCMax"],:value, Float64)
   m.coloring[chan].cmap = get_gtk_property(m["cbCMaps"],:active, Int64)
 end
-
-
-#     function get_context(c::Gtk.Canvas, pc::Winston.PlotContainer)
-#         device = Winston.CairoRenderer(Gtk.cairo_surface(c))
-#         ext_bbox = Winston.BoundingBox(0,Winston.width(c),0,Winston.height(c))
-#         Winston._get_context(device, ext_bbox, pc)
-#     end
-
 
 function showData(m::DataViewerWidget)
   try
