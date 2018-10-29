@@ -115,7 +115,7 @@
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjTracerConcentration">
-    <property name="upper">100</property>
+    <property name="upper">2000</property>
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjTracerVolume">
