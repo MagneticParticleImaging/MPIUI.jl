@@ -516,8 +516,8 @@ uuid = "cffeea2d-44ef-50d9-9a8a-3f5d8306ed6d"
 version = "0.0.0"
 
 [[RegularizedLeastSquares]]
-deps = ["FFTW", "LinearAlgebra", "LinearOperators", "SparseArrays", "Wavelets"]
-git-tree-sha1 = "e3458e261de24e257104df527411598d8fe30279"
+deps = ["Documenter", "FFTW", "LinearAlgebra", "LinearOperators", "ProgressMeter", "SparseArrays", "Wavelets"]
+git-tree-sha1 = "0b27865701a269e94e4eeb0643f216988938dd1a"
 repo-rev = "master"
 repo-url = "https://github.com/tknopp/RegularizedLeastSquares.jl.git"
 uuid = "1906c763-83da-50c9-aa61-18e2016498cc"
