@@ -455,8 +455,8 @@ uuid = "a5edc15b-39e9-55dc-ae45-4d55e961169a"
 version = "0.0.0"
 
 [[MPILib]]
-deps = ["AxisArrays", "Cairo", "ColorTypes", "ColorVectorSpace", "Colors", "Compat", "Dierckx", "FFTW", "FileIO", "FixedPointNumbers", "GR", "Gtk", "HDF5", "ImageMagick", "ImageMetadata", "Images", "IniFile", "Interpolations", "IterativeSolvers", "LibSerialPort", "LightXML", "LinearAlgebra", "MPIFiles", "MPIMeasurements", "MPIReco", "MappedArrays", "Optim", "Pkg", "Printf", "ProgressMeter", "PyPlot", "QuartzImageIO", "Random", "RedPitayaDAQServer", "Reexport", "RegularizedLeastSquares", "StaticArrays", "Statistics", "TOML", "Unitful", "Winston"]
-git-tree-sha1 = "af921997e245dc3820882b72fdc0a991b4f68c3b"
+deps = ["AxisArrays", "Cairo", "ColorTypes", "ColorVectorSpace", "Colors", "Compat", "Dierckx", "FFTW", "FileIO", "FixedPointNumbers", "GR", "Gtk", "HDF5", "ImageMagick", "ImageMetadata", "Images", "IniFile", "Interpolations", "IterativeSolvers", "LibSerialPort", "LightXML", "LinearAlgebra", "MPIFiles", "MPIMeasurements", "MPIReco", "MappedArrays", "Optim", "Pkg", "Printf", "ProgressMeter", "PyPlot", "QuartzImageIO", "Random", "RedPitayaDAQServer", "Reexport", "RegularizedLeastSquares", "StaticArrays", "Statistics", "TOML", "Test", "Unitful", "Winston"]
+git-tree-sha1 = "e3e7b4f074477517e9fe7385e625506bcfb987b4"
 repo-rev = "master"
 repo-url = "https://github.com/tknopp/MPILib.jl.git"
 uuid = "997f185d-0a60-5ade-a0f9-ea3a58c88504"
@@ -472,7 +472,7 @@ version = "0.0.0"
 
 [[MPIReco]]
 deps = ["AxisArrays", "HTTP", "Images", "LinearAlgebra", "MPIFiles", "Pkg", "ProgressMeter", "Reexport", "RegularizedLeastSquares", "SparseArrays", "Test", "Unitful", "Winston"]
-git-tree-sha1 = "6202f29015a114200737f096a8e20557025c04e4"
+git-tree-sha1 = "bf57951fcf2274aead0b73b637586b26ac26ef1b"
 repo-rev = "master"
 repo-url = "https://github.com/MagneticParticleImaging/MPIReco.jl.git"
 uuid = "cffeea2d-44ef-50d9-9a8a-3f5d8306ed6d"
@@ -636,12 +636,10 @@ uuid = "189a3867-3050-52da-a836-e630ba90ab69"
 version = "0.2.0"
 
 [[RegularizedLeastSquares]]
-deps = ["Documenter", "FFTW", "LinearAlgebra", "LinearOperators", "ProgressMeter", "SparseArrays", "Wavelets"]
+deps = ["Documenter", "FFTW", "LinearAlgebra", "LinearOperators", "ProgressMeter", "Random", "SparseArrays", "Test", "Wavelets"]
 git-tree-sha1 = "c6d3476550098f69562539d234cf41df8da149b6"
-repo-rev = "master"
-repo-url = "https://github.com/tknopp/RegularizedLeastSquares.jl.git"
-uuid = "1906c763-83da-50c9-aa61-18e2016498cc"
-version = "0.0.0"
+uuid = "1e9c538a-f78c-5de5-8ffb-0b6dbe892d23"
+version = "0.1.1"
 
 [[Requires]]
 deps = ["Test"]
