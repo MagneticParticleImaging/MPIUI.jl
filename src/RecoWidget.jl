@@ -181,6 +181,7 @@ function initCallbacks(m_::RecoWidget)
     signal_connect(updateSFParamsChanged_, m["cbLoadAsReal"], "toggled")
     signal_connect(updateSFParamsChanged_, m["cbSolver"], "changed")
     signal_connect(updateSFParamsChanged_, m["cbSubtractBG"], "toggled")
+    signal_connect(updateSFParamsChanged_, m["cbSubtractInternalBG"], "toggled")
     signal_connect(updateSFParamsChanged_, m["cbRecX"], "toggled")
     signal_connect(updateSFParamsChanged_, m["cbRecY"], "toggled")
     signal_connect(updateSFParamsChanged_, m["cbRecZ"], "toggled")
@@ -306,7 +307,8 @@ end
 function updateSF(m::RecoWidget)
   params = getParams(m)
 
-  bgcorrection = get_gtk_property(m["cbSubtractBG"], :active, Bool)
+  bgcorrection = get_gtk_property(m["cbSubtractBG"], :active, Bool) ||
+                 get_gtk_property(m["cbSubtractInternalBG"], :active, Bool)
 
   m.freq = filterFrequencies(m.bSF, minFreq=params[:minFreq], maxFreq=params[:maxFreq],
                              SNRThresh=params[:SNRThresh], recChannels=params[:recChannels])
@@ -379,6 +381,7 @@ function getParams(m::RecoWidget)
 
   bgcorrection = get_gtk_property(m["cbSubtractBG"], :active, Bool)
   params[:emptyMeasPath] = bgcorrection ? filepath(m.bEmpty) : nothing
+  params[:bgCorrectionInternal] = get_gtk_property(m["cbSubtractInternalBG"], :active, Bool)
 
   if bgcorrection
     firstFrameBG = get_gtk_property(m["adjFirstFrameBG"], :value, Int64)
@@ -450,6 +453,7 @@ function setParams(m::RecoWidget, params)
   set_gtk_property!(m["cbRecZ"], :active, in(3,params[:recChannels]))
 
   Gtk.@sigatom set_gtk_property!(m["entRecoDescrip"], :text, get(params, :description,""))
+  Gtk.@sigatom set_gtk_property!(m["cbSubtractInternalBG"], :active, get(params, :bgCorrectionInternal, false))
 
 
   if haskey(params, :SFPath)

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.20.0 -->
+<!-- Generated with glade 3.22.1 -->
 <interface>
   <requires lib="gtk+" version="3.12"/>
   <object class="GtkAdjustment" id="adjAverages">
@@ -835,7 +835,7 @@
                             <property name="column_spacing">5</property>
                             <child>
                               <object class="GtkCheckButton" id="cbSubtractBG">
-                                <property name="label" translatable="yes">Subtract BG</property>
+                                <property name="label" translatable="yes">Subtract Ext. BG</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
@@ -845,6 +845,7 @@
                               <packing>
                                 <property name="left_attach">0</property>
                                 <property name="top_attach">0</property>
+                                <property name="width">2</property>
                               </packing>
                             </child>
                             <child>
@@ -861,7 +862,7 @@
                               <object class="GtkLabel" id="label24">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">BG Measurement</property>
+                                <property name="label" translatable="yes">BG Meas</property>
                               </object>
                               <packing>
                                 <property name="left_attach">0</property>
@@ -920,7 +921,18 @@
                               </packing>
                             </child>
                             <child>
-                              <placeholder/>
+                              <object class="GtkCheckButton" id="cbSubtractInternalBG">
+                                <property name="label" translatable="yes">Subtract Internal BG</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">False</property>
+                                <property name="draw_indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">4</property>
+                                <property name="width">2</property>
+                              </packing>
                             </child>
                           </object>
                         </child>
