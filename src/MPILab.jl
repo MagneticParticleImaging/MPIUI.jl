@@ -696,7 +696,6 @@ function initReconstructionStore(m::MPILab)
     if hasselection(m.selectionReco) && isfile(m.currentAnatomRefFilename)
 
       imFG = loaddata(m.currentReco.path)
-
       currentIt = selected( m.selectionAnatomicRefs )
 
       imBG = loaddata(m.currentAnatomRefFilename)
@@ -710,8 +709,6 @@ function initReconstructionStore(m::MPILab)
          updateData!(m.dataViewerWidget, imFG, imBG_)
          G_.current_page(m["nbView"], 1)
       end
-
-
     end
   end
 

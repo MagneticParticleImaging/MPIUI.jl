@@ -275,7 +275,7 @@ function permuteBGData(m::DataViewerWidget)
     flip = flippings()[flipInd]
     m.dataBG = applyPermutions(m.dataBGNotPermuted, perm, flip)
 
-    fov = collect(size(m.dataBG)).*collect(pixelspacing(m.dataBG)).*1000
+    fov = collect(size(m.dataBG)).*collect(converttometer(pixelspacing(m.dataBG))).*1000
 
     set_gtk_property!(m["adjTransX"],:lower,-fov[1]/2)
     set_gtk_property!(m["adjTransY"],:lower,-fov[2]/2)
@@ -447,7 +447,7 @@ function showData(m::DataViewerWidget)
         @debug "Slices in raw data:" slicesInRawData
         data = interpolateToRefImage(m.dataBG, data_, params)
         dataBG = cacheBackGround(m, params)
-        edgeMask = getEdgeMask(m.dataBG, data_, params)
+        edgeMask = nothing #getEdgeMask(m.dataBG, data_, params)
       else
         data = data_
         slicesInRawData = slices
@@ -460,7 +460,7 @@ function showData(m::DataViewerWidget)
         cdata_zx, cdata_zy, cdata_xy = getColoredSlices(data, dataBG, edgeMask, m.coloring, minval, maxval, params)
         isDrawSectionalLines = params[:showSlices] && proj != "MIP"
         isDrawRectangle = params[:showDFFOV]
-        pixelSpacingBG = dataBG==nothing ? [0.002,0.002,0.001] : collect(pixelspacing(dataBG))
+        pixelSpacingBG = dataBG==nothing ? [0.002,0.002,0.001] : collect(converttometer(pixelspacing(dataBG)))
         sizeBG = dataBG==nothing ? [128,128,64] : collect(size(dataBG))
         xy,xz,yz,offsetxy,offsetxz,offsetyz = calcDFFovRectangle(m, params, pixelSpacingBG)
         drawImages(m,slices, isDrawSectionalLines, isDrawRectangle, cdata_zx, cdata_zy, cdata_xy, xy, xz, yz, offsetxy, offsetxz, offsetyz,
@@ -1000,7 +1000,7 @@ function exportTikz(m::DataViewerWidget)
       SFPath=props["recoParams"][:SFPath]
       bSF = MPIFile(SFPath)
       exportTikz(filenameImageData, m.currentlyShownImages, collect(size(m.dataBG)),
-       collect(pixelspacing(m.dataBG)),fov(bSF),getParams(m); pixelResizeFactor=pixelResizeFactor)
+       collect(converttometer(pixelspacing(m.dataBG))),fov(bSF),getParams(m); pixelResizeFactor=pixelResizeFactor)
     end
   end
 end
