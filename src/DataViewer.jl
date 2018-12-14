@@ -415,7 +415,7 @@ function updateColoring(m::DataViewerWidget)
 end
 
 function showData(m::DataViewerWidget)
-  try
+  #try
     params = getParams(m)
     if m.data != nothing
 
@@ -495,9 +495,9 @@ function showData(m::DataViewerWidget)
         #m.currentlyShownImages = cdata
       end
     end
-  catch ex
-    @warn "Exception" ex stacktrace(catch_backtrace())
-  end
+  #catch ex
+  #  @warn "Exception" ex stacktrace(catch_backtrace())
+  #end
 end
 
 function drawSlice(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectangle, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
