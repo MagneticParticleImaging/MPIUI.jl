@@ -857,10 +857,10 @@ function getParams(m::DataViewerWidget)
   params[:coloringBG] = ColoringParams(get_gtk_property(m["adjCMinBG"], :value, Float64),
                                        get_gtk_property(m["adjCMaxBG"], :value, Float64),
                                        get_gtk_property(m["cbCMapsBG"], :active, Int64))
-  if m.offlineMode
-    params[:filenameBG] = (m.dataBGNotPermuted != nothing) ?
-                          m.dataBGNotPermuted["filename"] : ""
-  end
+   if m.offlineMode
+       params[:filenameBG] = (m.dataBGNotPermuted != nothing) && haskey(m.dataBGNotPermuted, "filename") ? m.dataBGNotPermuted["filename"] : ""
+   end
+
   params[:hideFG] = get_gtk_property(m["cbHideFG"], :active, Bool)
   params[:hideBG] = get_gtk_property(m["cbHideBG"], :active, Bool)
   params[:showSFFOV] = get_gtk_property(m["cbShowSFFOV"], :active, Bool)
