@@ -379,6 +379,7 @@ function initCallbacks(m::MeasurementWidget)
         Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
         cancelled = false
         function update_(::Timer)
+          try
           @debug "Timer active $currPos / $numPos"
           if timerCalibrationActive
             if currPos <= numPos
@@ -391,7 +392,7 @@ function initCallbacks(m::MeasurementWidget)
 
               setEnabled(getRobot(m.scanner), false)
               sleep(0.5)
-              uMeas, uRef = postMoveAction(calibObj, positions[currPos], currPos)
+              uMeas = postMoveAction(calibObj, positions[currPos], currPos)
               setEnabled(getRobot(m.scanner), true)
 
               deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
@@ -412,6 +413,7 @@ function initCallbacks(m::MeasurementWidget)
               end
             end
             if currPos > numPos
+              @info "Store SF"
               stopTx(daq)
               disableACPower(getSurveillanceUnit(m.scanner))
               MPIMeasurements.disconnect(daq)
@@ -455,6 +457,9 @@ function initCallbacks(m::MeasurementWidget)
             end
           else
 
+          end
+          catch ex
+            @warn "Exception" ex stacktrace(catch_backtrace())
           end
         end
         timerCalibration = Timer(update_, 0.0, interval=0.001)
