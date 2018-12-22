@@ -112,6 +112,12 @@ function MeasurementWidget(filenameConfig="")
   return m
 end
 
+function reloadConfig(m::MeasurementWidget)
+  m.scanner = MPIScanner(m.scanner.file)
+  m.scanner.params["Robot"]["doReferenceCheck"] = false
+  m.mdfstore = MDFDatasetStore( getGeneralParams(m.scanner)["datasetStore"] )
+end
+
 function initSurveillance(m::MeasurementWidget)
   if !m.expanded
     su = getSurveillanceUnit(m.scanner)
@@ -176,6 +182,10 @@ function initCallbacks(m::MeasurementWidget)
 
   @time signal_connect(m["tbMeasureBG",ToolButtonLeaf], :clicked) do w
     measurementBG(C_NULL, m)
+  end
+
+  @time signal_connect(m["btnReloadConfig",ButtonLeaf], :clicked) do w
+    reloadConfig(m)
   end
 
   @time signal_connect(m["btnRobotMove",ButtonLeaf], :clicked) do w
@@ -524,7 +534,6 @@ end
 
 function invalidateBG(widgetptr::Ptr, m::MeasurementWidget)
   m.dataBGStore = zeros(Float32,0,0,0,0)
-  Gtk.@sigatom set_gtk_property!(m["cbBGAvailable",CheckButtonLeaf],:active,false)
   Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
         """<span foreground="red" font_weight="bold" size="x-large"> No BG Measurement Available!</span>""")
   return nothing
@@ -556,8 +565,14 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
 
   setEnabled(getRobot(m.scanner), false)
   enableACPower(getSurveillanceUnit(m.scanner))
+
+try
   m.filenameExperiment = MPIMeasurements.measurement(getDAQ(m.scanner), params, m.mdfstore,
                          bgdata=bgdata)
+                       catch ex
+                         @warn "Exception" ex stacktrace(catch_backtrace())
+                       end
+
   disableACPower(getSurveillanceUnit(m.scanner))
   setEnabled(getRobot(m.scanner), true)
 
@@ -582,7 +597,6 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
   m.dataBGStore = u
   #updateData(m, u)
 
-  Gtk.@sigatom set_gtk_property!(m["cbBGAvailable",CheckButtonLeaf],:active,true)
   Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,"")
   return nothing
 end
