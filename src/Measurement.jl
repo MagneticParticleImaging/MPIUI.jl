@@ -296,20 +296,18 @@ function initCallbacks(m::MeasurementWidget)
     end
   end
 
+  calibState = nothing
 
-  timerCalibration = nothing
-  timerCalibrationActive = false
-  calibObj = nothing
-  numPos = 0
-  currPos = 0
-  cancelled = false
   @time signal_connect(m["tbCancel",ToolButtonLeaf], :clicked) do w
-    cancelled = true
-    currPos = numPos+1
-    timerCalibrationActive = true
+    if calibState != nothing
+      cancel(calibState)
+    end
   end
 
+  timerCalibration = nothing
+
   @time signal_connect(m["tbCalibration",ToggleToolButtonLeaf], :toggled) do w
+    try
     su = getSurveillanceUnit(m.scanner)
 
     if !isReferenced(getRobot(m.scanner))
@@ -320,8 +318,8 @@ function initCallbacks(m::MeasurementWidget)
 
     daq = getDAQ(m.scanner)
     if get_gtk_property(m["tbCalibration",ToggleToolButtonLeaf], :active, Bool)
-      if currPos == 0
 
+      if calibState == nothing
         shpString = get_gtk_property(m["entGridShape",EntryLeaf], :text, String)
         shp_ = tryparse.(Int64,split(shpString,"x"))
         fovString = get_gtk_property(m["entFOV",EntryLeaf], :text, String)
@@ -370,104 +368,69 @@ function initCallbacks(m::MeasurementWidget)
         end
 
         params = merge!(getGeneralParams(m.scanner),getParams(m))
-        calibObj = SystemMatrixRobotMeas(m.scanner, getRobotSetupUI(m), positions, params)
+        calibObj = SystemMatrixRobotMeas(m.scanner, getRobotSetupUI(m), positions, params,
+                  waitTime = get_gtk_property(m["adjPause",AdjustmentLeaf],:value,Float64))
 
-        timerCalibrationActive = true
-        currPos = 1
-        numPos = length(positions)
+        # the following spawns a task
+        @info "perform calibration"
+        calibState = performCalibration(m.scanner, calibObj, m.mdfstore, params)
 
         Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
-        cancelled = false
+
         function update_(::Timer)
           try
-          @debug "Timer active $currPos / $numPos"
-          if timerCalibrationActive
-            if currPos <= numPos
-              pos = Float64.(ustrip.(uconvert.(Unitful.mm, positions[currPos])))
-              posStr = @sprintf("%.2f x %.2f x %.2f", pos[1],pos[2],pos[3])
-              Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
-                    """<span foreground="green" font_weight="bold" size="x-large"> $currPos / $numPos ($posStr mm) </span>""")
+            if calibState.calibrationActive
+              if 1 <= calibState.currPos <= calibState.numPos
+                pos = Float64.(ustrip.(uconvert.(Unitful.mm, positions[calibState.currPos])))
+                posStr = @sprintf("%.2f x %.2f x %.2f", pos[1],pos[2],pos[3])
+                Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
+                      """<span foreground="green" font_weight="bold" size="x-large"> $(calibState.currPos) / $(calibState.numPos) ($posStr mm) </span>""")
 
-              moveAbsUnsafe(getRobot(m.scanner), positions[currPos]) # comment for testing
+                deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
+                if !calibState.consumed && !isempty(calibState.currentMeas)
+                  uMeas = calibState.currentMeas
+                  #Gtk.@sigatom
+                  updateData(m.rawDataWidget, uMeas, deltaT)
+                  calibState.consumed = true
+                end
 
-              setEnabled(getRobot(m.scanner), false)
-              sleep(0.5)
-              uMeas = postMoveAction(calibObj, positions[currPos], currPos)
-              setEnabled(getRobot(m.scanner), true)
+                #Lauft nicht
 
-              deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
-
-              Gtk.@sigatom updateData(m.rawDataWidget, uMeas, deltaT)
-
-              currPos +=1
-              sleep(get_gtk_property(m["adjPause",AdjustmentLeaf],:value,Float64))
-              #Lauft nicht
-
-              temp = getTemperatures(su)
-              while maximum(temp[1:2]) > params["maxTemperature"]
-               Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
-                    """<span foreground="red" font_weight="bold" size="x-large"> System Cooling Down! $currPos / $numPos ($posStr mm) </span>""")
-               sleep(20)
-               temp = getTemperatures(su)
-               @info "Temp = $temp"
-              end
-            end
-            if currPos > numPos
-              @info "Store SF"
-              stopTx(daq)
-              disableACPower(getSurveillanceUnit(m.scanner))
-              MPIMeasurements.disconnect(daq)
-
-              movePark(getRobot(m.scanner))
-
-              Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label, "")
-              currPos = 0
-              Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
-
-              if !cancelled
-                cancelled = false
-                calibNum = getNewCalibNum(m.mdfstore)
-                if get_gtk_property(m["cbStoreAsSystemMatrix",CheckButtonLeaf],:active, Bool)
-                  saveasMDF("/tmp/tmp.mdf",
-                        calibObj, params)
-                  saveasMDF(joinpath(calibdir(m.mdfstore),string(calibNum)*".mdf"),
-                        MPIFile("/tmp/tmp.mdf"), applyCalibPostprocessing=true)
-                  updateData!(mpilab[].sfBrowser, m.mdfstore)
-                else
-
-                  name = params["studyName"]
-                  path = joinpath( studydir(m.mdfstore), name)
-                  subject = ""
-                  date = ""
-
-                  newStudy = Study(path,name,subject,date)
-
-                  addStudy(m.mdfstore, newStudy)
-                  expNum = getNewExperimentNum(m.mdfstore, newStudy)
-                  params["experimentNumber"] = expNum
-
-                  filename = joinpath(studydir(m.mdfstore),newStudy.name,string(expNum)*".mdf")
-
-                  saveasMDF(filename, calibObj, params)
-                  updateExperimentStore(mpilab[], mpilab[].currentStudy)
+                temp = getTemperatures(su)
+                while maximum(temp[1:2]) > params["maxTemperature"]
+                 Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
+                      """<span foreground="red" font_weight="bold" size="x-large"> System Cooling Down! $(calibState.currPos) / $(calibState.numPos) ($posStr mm) </span>""")
+                 sleep(20)
+                 temp = getTemperatures(su)
+                 @info "Temp = $temp"
                 end
               end
-              close(timerCalibration)
-              Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
-            end
-          else
+              if istaskdone(calibState.task)
 
-          end
+                Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label, "")
+                Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
+
+                close(timerCalibration)
+                Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
+
+                updateData!(mpilab[].sfBrowser, m.mdfstore)
+                updateExperimentStore(mpilab[], mpilab[].currentStudy)
+                calibState = nothing
+              end
+            end
+            sleep(0.5)
           catch ex
-            @warn "Exception" ex stacktrace(catch_backtrace())
+            showError(ex)
           end
         end
         timerCalibration = Timer(update_, 0.0, interval=0.001)
-      else
-        timerCalibrationActive = true
       end
+      calibState.calibrationActive = true
     else
-      timerCalibrationActive = false
+      calibState.calibrationActive = false
+    end
+    catch ex
+      showError(ex)
     end
   end
 
@@ -561,29 +524,52 @@ end
 
 
 function measurement(widgetptr::Ptr, m::MeasurementWidget)
-  Gtk.@sigatom @info "Calling measurement"
+  try
+    Gtk.@sigatom @info "Calling measurement"
 
-  params = merge!(getGeneralParams(m.scanner),getParams(m))
-  params["acqNumFrames"] = params["acqNumFGFrames"]
+    daq = getDAQ(m.scanner)
 
-  bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
+    params = merge!(getGeneralParams(m.scanner),getParams(m))
+    params["acqNumFrames"] = params["acqNumFGFrames"]
 
-  setEnabled(getRobot(m.scanner), false)
-  enableACPower(getSurveillanceUnit(m.scanner))
+    bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
 
-try
-  m.filenameExperiment = MPIMeasurements.measurement(getDAQ(m.scanner), params, m.mdfstore,
-                         bgdata=bgdata)
-                       catch ex
-                         @warn "Exception" ex stacktrace(catch_backtrace())
-                       end
+    measState = asyncMeasurement(m.scanner, m.mdfstore, params, bgdata)
+    deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
 
-  disableACPower(getSurveillanceUnit(m.scanner))
-  setEnabled(getRobot(m.scanner), true)
-
-  Gtk.@sigatom updateData(m.rawDataWidget, m.filenameExperiment)
-
-  updateExperimentStore(mpilab[], mpilab[].currentStudy)
+    timerMeas = nothing
+    function update_(::Timer)
+      try
+        if Base.istaskfailed(measState.task)
+          close(timerMeas)
+          @async showError(measState.task.exception,measState.task.backtrace)
+          return
+        end
+        set_gtk_property!(m["lbInfo",LabelLeaf],:label,
+              """<span foreground="green" font_weight="bold" size="x-large"> Frame $(measState.currFrame) / $(measState.numFrames) </span>""")
+        fr = measState.currFrame
+        if fr > 0 && !measState.consumed
+          updateData(m.rawDataWidget, measState.buffer[:,:,:,fr:fr], deltaT)
+          measState.consumed = true
+        end
+        if istaskdone(measState.task)
+          close(timerMeas)
+          set_gtk_property!(m["lbInfo",LabelLeaf],:label,"")
+          m.filenameExperiment = measState.filename
+          updateData(m.rawDataWidget, m.filenameExperiment)
+          updateExperimentStore(mpilab[], mpilab[].currentStudy)
+        end
+        sleep(0.1)
+      catch ex
+        close(timerMeas)
+        showError(ex)
+      end
+      return
+    end
+    timerMeas = Timer(update_, 0.0, interval=0.1)
+  catch ex
+   showError(ex)
+  end
   return nothing
 end
 
@@ -634,6 +620,7 @@ function getParams(m::MeasurementWidget)
 
   params["acqFFSequence"] = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
   params["acqFFLinear"] = get_gtk_property(m["cbFFInterpolation",CheckButtonLeaf], :active, Bool)
+  params["storeAsSystemMatrix"] = get_gtk_property(m["cbStoreAsSystemMatrix",CheckButtonLeaf],:active, Bool)
 
   return params
 end

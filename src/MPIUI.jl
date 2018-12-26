@@ -55,6 +55,11 @@ function imToVecIm(image::ImageMeta)
    return out
  end
 
+function showError(ex, bt=catch_backtrace())
+  str = string("Something went wrong!\n", ex, "\n\n", stacktrace(bt))
+  info_dialog(str, mpilab[]["mainWindow"])
+end
+
 include("GtkUtils.jl")
 include("RawDataViewer.jl")
 include("Measurement.jl")
