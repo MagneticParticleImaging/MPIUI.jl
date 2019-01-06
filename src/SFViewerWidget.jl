@@ -122,6 +122,7 @@ function updateSF(m::SFViewerWidget)
     sfData = reshape(sfData_, calibSize(m.bSF)...)
 
     Gtk.@sigatom set_gtk_property!(m["entSFSNR"],:text,string(round(m.SNR[freq,recChan,period],digits=2)))
+    Gtk.@sigatom set_gtk_property!(m["entSFSNR2"],:text,string(round(calcSNRF(sfData_),digits=2)))
 
     Gtk.@sigatom begin
       p = Winston.semilogy(vec(m.SNR[:,recChan,period]),"b-",linewidth=5)
@@ -162,6 +163,39 @@ function updateSF(m::SFViewerWidget)
   end
 end
 
+function calcSNRF(im)
+  imFT = fft(im)
+  N = size(imFT)
+  if ndims(im) == 1
+    Noise = mean(abs.(imFT[div(N[1],2):div(N[1],2)+1]))
+  elseif ndims(im) == 2
+    x = mean(abs.(imFT[div(N[1],2):div(N[1],2)+1,:]))
+    y = mean(abs.(imFT[:,div(N[2],2):div(N[2],2)+1]))
+    Noise = (x+y)/2
+  elseif ndims(im) == 3
+    x = mean(abs.(imFT[div(N[1],2):div(N[1],2)+1,:,:]))
+    y = mean(abs.(imFT[:,div(N[2],2):div(N[2],2)+1,:]))
+    z = mean(abs.(imFT[:,:,div(N[3],2):div(N[3],2)+1]))
+    Noise = (x+y+z)/3
+  else
+    error("not implemented")
+  end
+  Sig = maximum(abs.(im))
+  return Sig / Noise * prod(sqrt.(N))
+end
+
+function calcSNR(im)
+  im = squeeze(im)
+  N = size(im)
+  imFilt = im #imfilter(abs.(im), Kernel.gaussian(2))
+  Sig = maximum(abs.(im))
+  mask = abs.(imFilt)/Sig .< 0.02
+  Noise = mean(abs.(im[mask]))
+  return Sig / Noise
+end
+
+
+
 function updateData!(m::SFViewerWidget, filenameSF::String)
   m.bSF = MPIFile(filenameSF)
   m.maxFreq = length(frequencies(m.bSF))
@@ -184,6 +218,7 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   set_gtk_property!(m["adjSFPatch"],:upper, acqNumPeriodsPerFrame(m.bSF) )
 
   m.SNR = calibSNR(m.bSF)[:,:,:]
+  #m.SNR = calculateSystemMatrixSNR(m.bSF)
   m.SNRSortedIndices = flipud(sortperm(vec(m.SNR)))
   m.SNRSortedIndicesInverse = sortperm(m.SNRSortedIndices)
   m.mixFac = MPIFiles.mixingFactors(m.bSF)
