@@ -226,19 +226,23 @@ function updateSFParamsChanged(m::RecoWidget)
 end
 
 function selectSF(m::RecoWidget)
-  dlg = SFSelectionDialog( gradient=sfGradient(m.bMeas)[3], driveField=dfStrength(m.bMeas)  )
+  try
+    dlg = SFSelectionDialog( gradient=sfGradient(m.bMeas)[3], driveField=dfStrength(m.bMeas)  )
 
-  ret = run(dlg)
-  if ret == GtkResponseType.ACCEPT
+    ret = run(dlg)
+    if ret == GtkResponseType.ACCEPT
 
-    if hasselection(dlg.selection)
-      sffilename =  getSelectedSF(dlg)
+      if hasselection(dlg.selection)
+        sffilename =  getSelectedSF(dlg)
 
-      @debug "" sffilename
-      setSF(m, sffilename )
+        @debug "" sffilename
+        setSF(m, sffilename )
+      end
     end
+    destroy(dlg)
+  catch ex
+    showError(ex)
   end
-  destroy(dlg)
 end
 
 function initBGSubtractionWidgets(m::RecoWidget)
