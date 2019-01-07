@@ -147,7 +147,7 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
 
 
     if m.filenameData != "" && ispath(m.filenameData)
-      f = MPIFile(m.filenameData, isCalib=false)
+      f = MPIFile(m.filenameData)#, isCalib=false)
       params = MPIFiles.loadMetadata(f)
       params["acqNumFGFrames"] = acqNumFGFrames(f)
       params["acqNumBGFrames"] = acqNumBGFrames(f)
