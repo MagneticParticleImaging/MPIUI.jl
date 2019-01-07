@@ -574,21 +574,24 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
 end
 
 function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
-  Gtk.@sigatom @info "Calling BG measurement"
+  try
+    Gtk.@sigatom @info "Calling BG measurement"
+    params = merge!(getGeneralParams(m.scanner),getParams(m))
+    params["acqNumFrames"] = params["acqNumBGFrames"]
 
-  params = merge!(getGeneralParams(m.scanner),getParams(m))
-  params["acqNumFrames"] = params["acqNumBGFrames"]
+    setEnabled(getRobot(m.scanner), false)
+    enableACPower(getSurveillanceUnit(m.scanner))
+    uMeas, uSlowADC = MPIMeasurements.measurement(getDAQ(m.scanner), params)
+    disableACPower(getSurveillanceUnit(m.scanner))
+    setEnabled(getRobot(m.scanner), true)
 
-  setEnabled(getRobot(m.scanner), false)
-  enableACPower(getSurveillanceUnit(m.scanner))
-  u = MPIMeasurements.measurement(getDAQ(m.scanner), params)
-  disableACPower(getSurveillanceUnit(m.scanner))
-  setEnabled(getRobot(m.scanner), true)
+    m.dataBGStore = uMeas
+    #updateData(m, u)
 
-  m.dataBGStore = u
-  #updateData(m, u)
-
-  Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,"")
+    Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,"")
+  catch ex
+   showError(ex)
+  end
   return nothing
 end
 
