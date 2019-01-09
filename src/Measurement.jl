@@ -113,6 +113,9 @@ function MeasurementWidget(filenameConfig="")
 end
 
 function reloadConfig(m::MeasurementWidget)
+  if m.scanner != nothing
+    finalize(m.scanner)
+  end
   m.scanner = MPIScanner(m.scanner.file)
   m.scanner.params["Robot"]["doReferenceCheck"] = false
   m.mdfstore = MDFDatasetStore( getGeneralParams(m.scanner)["datasetStore"] )
