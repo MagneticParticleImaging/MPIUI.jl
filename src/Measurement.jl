@@ -62,6 +62,11 @@ function MeasurementWidget(filenameConfig="")
     Gtk.@sigatom push!(m["cbSeFo",ComboBoxTextLeaf], seq)
   end
   Gtk.@sigatom set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf],:active,0)
+  combo = m["cbSeFo",ComboBoxTextLeaf]
+  cells = Gtk.GLib.GList(ccall((:gtk_cell_layout_get_cells, Gtk.libgtk),
+               Ptr{Gtk._GList{Gtk.GtkCellRenderer}}, (Ptr{GObject},), combo))
+  set_gtk_property!(cells[1],"max_width_chars", 1)
+  #set_gtk_property!(cells[1],"ellipsize_set", 2)
 
   @debug "Read safety parameters"
   Gtk.@sigatom empty!(m["cbSafeCoil", ComboBoxTextLeaf])
@@ -134,8 +139,8 @@ function initSurveillance(m::MeasurementWidget)
     temp1 = zeros(0)
     temp2 = zeros(0)
 
-    function update_(::Timer)
-      Gtk.@sigatom begin
+    @guarded function update_(::Timer)
+      begin
         temp = getTemperatures(su)
         str = join([ @sprintf("%.2f C ",t) for t in temp ])
         set_gtk_property!(m["entTemperatures",EntryLeaf], :text, str)
@@ -171,9 +176,9 @@ function initCallbacks(m::MeasurementWidget)
   @debug "CAAALLLLBACK"
 
   # TODO This currently does not work!
-  #@time signal_connect(m["expSurveillance",ExpanderLeaf], :activate) do w
-  #  initSurveillance(m)
-  #end
+  @time signal_connect(m["expSurveillance",ExpanderLeaf], :activate) do w
+    initSurveillance(m)
+  end
 
   #@time signal_connect(measurement, m["tbMeasure",ToolButtonLeaf], "clicked", Nothing, (), false, m )
   #@time signal_connect(measurementBG, m["tbMeasureBG",ToolButtonLeaf], "clicked", Nothing, (), false, m)
