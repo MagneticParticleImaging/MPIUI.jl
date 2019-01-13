@@ -65,7 +65,8 @@ function MeasurementWidget(filenameConfig="")
   combo = m["cbSeFo",ComboBoxTextLeaf]
   cells = Gtk.GLib.GList(ccall((:gtk_cell_layout_get_cells, Gtk.libgtk),
                Ptr{Gtk._GList{Gtk.GtkCellRenderer}}, (Ptr{GObject},), combo))
-  set_gtk_property!(cells[1],"max_width_chars", 1)
+  set_gtk_property!(cells[1],"max_width_chars", 14)
+  set_gtk_property!(combo,"wrap_width", 2)
   #set_gtk_property!(cells[1],"ellipsize_set", 2)
 
   @debug "Read safety parameters"
