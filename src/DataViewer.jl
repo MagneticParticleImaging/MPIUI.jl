@@ -379,6 +379,7 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
     end
 
     m.data = data
+
     if !m.offlineMode
       (dataBG != nothing) && (dataBG["offset"] = [0.0,0.0,0.0])
     end
@@ -390,6 +391,11 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
     Gtk.@sigatom set_gtk_property!(m["adjPixelResizeFactor"],:value, (dataBG==nothing) ? 5 : 1  )
 
     if params!=nothing
+      if data != nothing
+        params[:sliceX] = min(params[:sliceX],size(data[1],1))
+        params[:sliceY] = min(params[:sliceY],size(data[1],2))
+        params[:sliceZ] = min(params[:sliceZ],size(data[1],3))
+      end
       setParams(m,params)
     end
   catch ex
@@ -427,6 +433,10 @@ function showData(m::DataViewerWidget)
       else
         data_ = [getindex(d,:,:,:,params[:frame]) for d in m.data]
       end
+      params[:sliceX] = min(params[:sliceX],size(m.data[1],1))
+      params[:sliceY] = min(params[:sliceY],size(m.data[1],2))
+      params[:sliceZ] = min(params[:sliceZ],size(m.data[1],3))
+
       slices = (params[:sliceX],params[:sliceY],params[:sliceZ])
         if params[:spatialMIP]
           proj = "MIP"
