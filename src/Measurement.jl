@@ -220,12 +220,24 @@ function initCallbacks(m::MeasurementWidget)
       Gtk.@sigatom set_gtk_property!(m["entArbitraryPos",EntryLeaf],:text,filename)
   end
 
-  @time signal_connect(m["bt_MovePark",ButtonLeaf], :clicked) do w
+  @time signal_connect(m["btnMovePark",ButtonLeaf], :clicked) do w
+      Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
+      Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,true)
       if !isReferenced(getRobot(m.scanner))
         info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
         return
       end
       movePark(getRobot(m.scanner))
+  end
+
+  @time signal_connect(m["btnMoveAssemblePos",ButtonLeaf], :clicked) do w
+      if !isReferenced(getRobot(m.scanner))
+        info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
+        return
+      end
+      moveAssemble(getRobot(m.scanner))
+      Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
+      Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
   end
 
   @time signal_connect(m["btnReferenceDrive",ButtonLeaf], :clicked) do w
@@ -266,7 +278,7 @@ function initCallbacks(m::MeasurementWidget)
       end
 
       timerActive = true
-      Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
+      #Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
 
       function update_(::Timer)
         if timerActive
@@ -295,7 +307,7 @@ function initCallbacks(m::MeasurementWidget)
           stopTx(daq)
           disableACPower(getSurveillanceUnit(m.scanner))
           MPIMeasurements.disconnect(daq)
-          Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
+          #Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
           close(timer)
         end
       end
@@ -385,6 +397,8 @@ function initCallbacks(m::MeasurementWidget)
         calibState = performCalibration(m.scanner, calibObj, m.mdfstore, params)
 
         Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
+        Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
+        Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
 
         function update_(::Timer)
           try
@@ -421,6 +435,7 @@ function initCallbacks(m::MeasurementWidget)
 
                 close(timerCalibration)
                 Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
+                Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
 
                 updateData!(mpilab[].sfBrowser, m.mdfstore)
                 updateExperimentStore(mpilab[], mpilab[].currentStudy)

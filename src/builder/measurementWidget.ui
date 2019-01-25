@@ -1248,7 +1248,7 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkButton" id="bt_MovePark">
+                          <object class="GtkButton" id="btnMovePark">
                             <property name="label" translatable="yes">Move BGPos (Park)</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
@@ -1257,6 +1257,19 @@
                           <packing>
                             <property name="left_attach">0</property>
                             <property name="top_attach">2</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="btnMoveAssemblePos">
+                            <property name="label" translatable="yes">Move Assemble Pos</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">3</property>
                             <property name="width">2</property>
                           </packing>
                         </child>
