@@ -433,9 +433,6 @@ function showData(m::DataViewerWidget)
       else
         data_ = [getindex(d,:,:,:,params[:frame]) for d in m.data]
       end
-      params[:sliceX] = min(params[:sliceX],size(m.data[1],1))
-      params[:sliceY] = min(params[:sliceY],size(m.data[1],2))
-      params[:sliceZ] = min(params[:sliceZ],size(m.data[1],3))
 
       slices = (params[:sliceX],params[:sliceY],params[:sliceZ])
         if params[:spatialMIP]
@@ -459,10 +456,16 @@ function showData(m::DataViewerWidget)
         dataBG = cacheBackGround(m, params)
         edgeMask = nothing #getEdgeMask(m.dataBG, data_, params)
       else
-        data = data_
+        # not ideal ....
+        params[:sliceX] = min(params[:sliceX],size(m.data[1],1))
+        params[:sliceY] = min(params[:sliceY],size(m.data[1],2))
+        params[:sliceZ] = min(params[:sliceZ],size(m.data[1],3))
+ 
+	data = data_
         slicesInRawData = slices
         dataBG = edgeMask = nothing
       end
+      
 
       m.currentlyShownData = data
 
