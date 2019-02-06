@@ -99,6 +99,18 @@ function MeasurementWidget(filenameConfig="")
     setParams(m, merge!(getGeneralParams(m.scanner),toDict(getDAQ(m.scanner).params)))
     Gtk.@sigatom set_gtk_property!(m["entConfig",EntryLeaf],:text,filenameConfig)
     Gtk.@sigatom set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isReferenced(getRobot(m.scanner)))
+    enableRobotMoveButtons(m,isReferenced(getRobot(m.scanner)))
+
+    if isReferenced(getRobot(m.scanner))
+      try
+        rob = getRobot(m.scanner)
+        isValid = checkCoords(getRobotSetupUI(m), getPos(rob), getMinMaxPosX(rob))
+      catch
+        enableRobotMoveButtons(m,false)
+        Gtk.@sigatom set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,true)
+      end
+    end
+
     Gtk.@sigatom updateCalibTime(C_NULL, m)
   else
     Gtk.@sigatom set_gtk_property!(m["tbMeasure",ToolButtonLeaf],:sensitive,false)
@@ -210,7 +222,12 @@ function initCallbacks(m::MeasurementWidget)
       return
     end
     pos = get.(pos_).*1Unitful.mm
-    moveAbs(getRobot(m.scanner),getRobotSetupUI(m), pos)
+    try
+      setEnabled(getRobot(m.scanner), true)
+      moveAbs(getRobot(m.scanner),getRobotSetupUI(m), pos)
+    catch ex
+      showError(ex)
+    end
     #infoMessage(m, "move to $posString")
   end
 
@@ -221,13 +238,13 @@ function initCallbacks(m::MeasurementWidget)
   end
 
   @time signal_connect(m["btnMovePark",ButtonLeaf], :clicked) do w
-      Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
-      Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,true)
       if !isReferenced(getRobot(m.scanner))
         info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
         return
       end
+      setEnabled(getRobot(m.scanner), true)
       movePark(getRobot(m.scanner))
+      enableRobotMoveButtons(m, true)
   end
 
   @time signal_connect(m["btnMoveAssemblePos",ButtonLeaf], :clicked) do w
@@ -254,6 +271,8 @@ function initCallbacks(m::MeasurementWidget)
             message = """The robot is now referenced.
                You can mount your sample. Press \"Ok\" to proceed. """
             info_dialog(message, mpilab[]["mainWindow"])
+            enableRobotMoveButtons(m,true)
+            Gtk.@sigatom set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,false)
          end
       end
     end
@@ -719,4 +738,12 @@ function getCustomPhatom(m::MeasurementWidget)
     cP_ = tryparse.(Float64,split(cPStr,"x"))
     cP= get.(cP_) .*1Unitful.mm
     return Cuboid(Rectangle(cP[2],cP[3], "UI Custom Phantom"),cP[1],"UI Custom Phantom 3D")
+end
+
+
+function enableRobotMoveButtons(m::MeasurementWidget, enable::Bool)
+  Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,enable)
+  Gtk.@sigatom set_gtk_property!(m["btnMoveAssemblePos",ButtonLeaf],:sensitive,enable)
+  Gtk.@sigatom set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,enable)
+  Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,enable)
 end
