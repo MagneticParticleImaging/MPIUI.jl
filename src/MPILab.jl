@@ -562,21 +562,23 @@ function initExperimentStore(m::MPILab)
   end
 
   signal_connect(r2, "edited") do widget, path, text
+    try
     if hasselection(m.selectionExp)
       currentIt = selected( m.selectionExp )
-
       if splitext(m.currentExperiment.path)[2] == ".mdf"
         Gtk.@sigatom m.experimentStore[currentIt,2] = string(text)
-        GC.gc() # This is important to run all finalizers of MPIFile
+        Base.GC.gc() # This is important to run all finalizers of MPIFile
         h5open(m.currentExperiment.path, "r+") do file
           if exists(file, "/experiment/name")
             o_delete(file, "/experiment/name")
           end
           write(file, "/experiment/name", string(text) )
+          @info "changed experiment name"
         end
       end
-      #m.currentVisu.params[:description] = string(text)
-      #Gtk.@sigatom save(m.currentVisu)
+    end
+    catch ex
+      showError(ex)
     end
   end
 
