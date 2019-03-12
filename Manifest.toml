@@ -471,12 +471,10 @@ uuid = "a874a27a-e9a7-503d-98b6-bf61df4bb725"
 version = "0.0.0"
 
 [[MPIReco]]
-deps = ["AxisArrays", "HTTP", "Images", "LinearAlgebra", "MPIFiles", "Pkg", "ProgressMeter", "Reexport", "RegularizedLeastSquares", "SparseArrays", "Test", "Unitful", "Winston"]
-git-tree-sha1 = "bf57951fcf2274aead0b73b637586b26ac26ef1b"
-repo-rev = "master"
-repo-url = "https://github.com/MagneticParticleImaging/MPIReco.jl.git"
-uuid = "cffeea2d-44ef-50d9-9a8a-3f5d8306ed6d"
-version = "0.0.0"
+deps = ["AxisArrays", "FileIO", "HTTP", "ImageMagick", "Images", "LinearAlgebra", "MPIFiles", "Pkg", "ProgressMeter", "QuartzImageIO", "Reexport", "RegularizedLeastSquares", "SparseArrays", "Test", "Unitful", "Winston"]
+git-tree-sha1 = "4394b38cb2dff471e056eacaa9299e1575ed6f78"
+uuid = "e4246700-6248-511e-8146-a1d1f47669d2"
+version = "0.1.0"
 
 [[MacroTools]]
 deps = ["Compat"]
