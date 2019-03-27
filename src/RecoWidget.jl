@@ -336,22 +336,26 @@ end
 
 #function performReco(widgetptr::Ptr, m::RecoWidget)
 function performReco(m::RecoWidget)
-  params = getParams(m)
+  try
+    params = getParams(m)
 
-  if m.sfParamsChanged
-    updateSF(m)
+    if m.sfParamsChanged
+      updateSF(m)
+    end
+
+
+    if params[:emptyMeasPath] != nothing
+      params[:bEmpty] = MPIFile( params[:emptyMeasPath] )
+    end
+
+    conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
+
+    m.recoResult = conc
+    m.recoResult["recoParams"] = getParams(m)
+    Gtk.@sigatom updateData!(m.dv, m.recoResult )
+  catch ex
+    showError(ex)
   end
-
-
-  if params[:emptyMeasPath] != nothing
-    params[:bEmpty] = MPIFile( params[:emptyMeasPath] )
-  end
-
-  conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
-
-  m.recoResult = conc
-  m.recoResult["recoParams"] = getParams(m)
-  Gtk.@sigatom updateData!(m.dv, m.recoResult )
   nothing
 end
 
