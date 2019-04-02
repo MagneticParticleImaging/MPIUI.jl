@@ -460,12 +460,12 @@ function showData(m::DataViewerWidget)
         params[:sliceX] = min(params[:sliceX],size(m.data[1],1))
         params[:sliceY] = min(params[:sliceY],size(m.data[1],2))
         params[:sliceZ] = min(params[:sliceZ],size(m.data[1],3))
- 
+
 	data = data_
         slicesInRawData = slices
         dataBG = edgeMask = nothing
       end
-      
+
 
       m.currentlyShownData = data
 
@@ -636,7 +636,11 @@ function getDFFov(im::ImageMeta)
   if haskey(props, "dfStrength") && haskey(props, "acqGradient")
     dfS = squeeze(props["dfStrength"])
     acqGrad = squeeze(props["acqGradient"])
-    dfFov = abs.(2*(dfS./acqGrad))
+    acqGrad_ = zeros(size(acqGrad,2),size(acqGrad,3))
+    for k=1:size(acqGrad,3)
+        acqGrad_[:,k]=diag(acqGrad[:,:,k])
+    end
+    dfFov = abs.(2*(dfS./acqGrad_))
   else
     dfFov = [0.05,0.05,0.025] # use better default...
     #warn("using default dfFov: ",dfFov)
