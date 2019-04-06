@@ -393,15 +393,19 @@ function initAnatomRefStore(m::MPILab)
   end
 
   signal_connect(tv, "row-activated") do treeview, path, col, other...
-    if hasselection(selection)
-      currentIt = selected( selection )
+    try
+      if hasselection(selection)
+        currentIt = selected( selection )
 
-      name = m.anatomRefStore[currentIt,1]
-      filename = m.anatomRefStore[currentIt,2]
+        name = m.anatomRefStore[currentIt,1]
+        filename = m.anatomRefStore[currentIt,2]
 
-      im = loaddata(filename)
-      im_ = copyproperties(im,squeeze(data(im)))
-      Gtk.@sigatom DataViewer(im_)
+        im = loaddata(filename)
+        im_ = copyproperties(im,squeeze(data(im)))
+        Gtk.@sigatom DataViewer(im_)
+      end
+    catch ex
+      showError(ex)
     end
     false
   end
@@ -426,7 +430,9 @@ function updateAnatomRefStore(m::MPILab)
 
     for file in files
       name, ext = splitext(file)
-      if isfile(joinpath(currentPath,file)) && (ext == ".hdf" || ext == ".mdf" ||ext == ".nii" ||ext == ".dcm")
+      if (isfile(joinpath(currentPath,file)) &&
+           (ext == ".hdf" || ext == ".mdf" ||ext == ".nii" || ext == ".dcm") ) ||
+         (isdir(joinpath(currentPath,file)) && isfile(joinpath(currentPath,file),"acqp"))
         push!(m.anatomRefStore, (name,joinpath(currentPath,file)))
       end
     end
