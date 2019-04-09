@@ -701,23 +701,7 @@ function initReconstructionStore(m::MPILab)
   end
 
   signal_connect(m["tbOpenFusion"], "clicked") do widget
-    if hasselection(m.selectionReco) && isfile(m.currentAnatomRefFilename)
-
-      imFG = loaddata(m.currentReco.path)
-      currentIt = selected( m.selectionAnatomicRefs )
-
-      imBG = loaddata(m.currentAnatomRefFilename)
-      imBG_ = copyproperties(imBG,squeeze(data(imBG)))
-
-      imBG_["filename"] = m.currentAnatomRefFilename #last(splitdir(filename))
-
-      #DataViewer(imFG, imBG_)
-
-      Gtk.@sigatom begin
-         updateData!(m.dataViewerWidget, imFG, imBG_)
-         G_.current_page(m["nbView"], 1)
-      end
-    end
+    openFusion(m)
   end
 
   signal_connect(m["tbRedoReco"], "clicked") do widget
@@ -743,8 +727,34 @@ function initReconstructionStore(m::MPILab)
     end
   end
 
-
 end
+
+function openFusion(m::MPILab)
+    if hasselection(m.selectionReco) && 
+       (isfile(m.currentAnatomRefFilename) ||
+         (isdir(m.currentAnatomRefFilename) && 
+	   isfile(m.currentAnatomRefFilename,"acqp")))
+      try
+        imFG = loaddata(m.currentReco.path)
+        currentIt = selected( m.selectionAnatomicRefs )
+
+        imBG = loaddata(m.currentAnatomRefFilename)
+        imBG_ = copyproperties(imBG,squeeze(data(imBG)))
+
+        imBG_["filename"] = m.currentAnatomRefFilename #last(splitdir(filename))
+
+        #DataViewer(imFG, imBG_)
+
+        Gtk.@sigatom begin
+           updateData!(m.dataViewerWidget, imFG, imBG_)
+           G_.current_page(m["nbView"], 1)
+        end
+      catch ex
+        @show  string("Something went wrong!\n", ex, "\n\n", stacktrace(bt)) 
+        #showError(ex)
+      end
+    end
+end 
 
 
 function updateReconstructionStore(m::MPILab)
