@@ -429,7 +429,7 @@ function showData(m::DataViewerWidget)
         #data_ = [maximum(d, 4) for d in m.data]
         data_ = [  mip(d,4) for d in m.data]
       elseif params[:frameProj] == 2 && ndims(m.data[1]) == 4
-        data_ = [timetopeak(d, params[:TTPThresh]) for d in m.data]
+        data_ = [timetopeak(d, alpha=params[:TTPThresh], alpha2=params[:TTPThresh]) for d in m.data]
       else
         data_ = [getindex(d,:,:,:,params[:frame]) for d in m.data]
       end
