@@ -375,6 +375,7 @@ function getParams(m::RecoWidget)
   # Small hack
   if params[:solver] == "fusedlasso"
     params[:loadasreal] = true
+    params[:lambd] = [params[:lambdaL1], params[:lambdaTV]]
   end
 
   firstFrame = get_gtk_property(m["adjFrame"], :value, Int64)
