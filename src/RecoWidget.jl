@@ -347,9 +347,15 @@ function performReco(m::RecoWidget)
     if params[:emptyMeasPath] != nothing
       params[:bEmpty] = MPIFile( params[:emptyMeasPath] )
     end
+    
+    if typeof(m.bMeas) == BrukerFileCalib
+      m.bMeas = BrukerFileMeas(m.bMeas.path,m.bMeas.params,m.bMeas.paramsProc,m.bMeas.methodRead,m.bMeas.acqpRead,m.bMeas.visupars_globalRead,m.bMeas.recoRead,m.bMeas.methrecoRead,m.bMeas.visuparsRead,m.bMeas.mpiParRead,m.bMeas.maxEntriesAcqp);
 
-    conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
+      conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
 
+    else
+      conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
+    end
     m.recoResult = conc
     m.recoResult["recoParams"] = getParams(m)
     Gtk.@sigatom updateData!(m.dv, m.recoResult )
