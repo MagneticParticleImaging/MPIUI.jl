@@ -346,6 +346,11 @@ function performReco(m::RecoWidget)
 
     if params[:emptyMeasPath] != nothing
       params[:bEmpty] = MPIFile( params[:emptyMeasPath] )
+      if typeof(params[:bEmpty]) == BrukerFileCalib
+        bbEmpty = params[:bEmpty]
+        bbEmpty_ = BrukerFileMeas(bbEmpty.path,bbEmpty.params,bbEmpty.paramsProc,bbEmpty.methodRead,bbEmpty.acqpRead,bbEmpty.visupars_globalRead,bbEmpty.recoRead,bbEmpty.methrecoRead,bbEmpty.visuparsRead,bbEmpty.mpiParRead,bbEmpty.maxEntriesAcqp);
+        params[:bEmpty] = bbEmpty_
+      end
     end
     
     if typeof(m.bMeas) == BrukerFileCalib
