@@ -207,7 +207,7 @@ end
 
 function initStudyStore(m::MPILab)
 
-  m.studyStore = ListStore(String,String,String,String,Bool)
+  m.studyStore = ListStore(String,String,String,String,String,Bool)
 
   tv = TreeView(TreeModel(m.studyStore))
   #G_.headers_visible(tv,false)
@@ -236,7 +236,7 @@ function initStudyStore(m::MPILab)
   scanDatasetDir(m)
 
   tmFiltered = TreeModelFilter(m.studyStore)
-  G_.visible_column(tmFiltered,4)
+  G_.visible_column(tmFiltered,5)
   m.studyStoreSorted = TreeModelSort(tmFiltered)
   G_.model(tv, m.studyStoreSorted)
 
@@ -260,7 +260,8 @@ function initStudyStore(m::MPILab)
       m.currentStudy = Study(TreeModel(m.studyStoreSorted)[currentIt,4],
                              TreeModel(m.studyStoreSorted)[currentIt,2],
                              TreeModel(m.studyStoreSorted)[currentIt,3],
-                             TreeModel(m.studyStoreSorted)[currentIt,1])
+                             DateTime(string(TreeModel(m.studyStoreSorted)[currentIt,1],"T",
+				             TreeModel(m.studyStoreSorted)[currentIt,5])))
 
       Gtk.@sigatom updateExperimentStore(m, m.currentStudy)
 
@@ -286,7 +287,7 @@ function initStudyStore(m::MPILab)
         showMe = showMe && occursin(lowercase(studySearchText), lowercase(m.studyStore[l,2]))
       end
 
-      Gtk.@sigatom m.studyStore[l,5] = showMe
+      Gtk.@sigatom m.studyStore[l,6] = showMe
     end
   end
 
@@ -309,7 +310,7 @@ function initStudyStore(m::MPILab)
 
   signal_connect(m["tbAddStudy"], "clicked") do widget
     name = get_gtk_property(m["entSearchStudies"], :text, String)
-    study = Study("", name, "", "")
+    study = Study(now(), name, "", "")
     addStudy(activeDatasetStore(m), study)
     Gtk.@sigatom scanDatasetDir(m)
 
@@ -344,7 +345,8 @@ function scanDatasetDir(m::MPILab)
   studies = getStudies( activeDatasetStore(m) )
 
   for study in studies
-    push!(m.studyStore, (study.date, study.name, study.subject, study.path, true))
+    push!(m.studyStore, (split(string(study.date),"T")[1], study.name, study.subject, 
+			  study.path, split(string(study.date),"T")[2], true))
   end
 end
 
