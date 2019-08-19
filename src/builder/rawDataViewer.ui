@@ -307,7 +307,7 @@
             </child>
             <child>
               <object class="GtkCheckButton" id="cbSubtractBG">
-                <property name="label" translatable="yes">Subtract BG</property>
+                <property name="label" translatable="yes">Subtr. BG</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">False</property>

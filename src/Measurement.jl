@@ -23,7 +23,7 @@ function isMeasurementStore(m::MeasurementWidget, d::DatasetStore)
 end
 
 function MeasurementWidget(filenameConfig="")
-  println("Starting MeasurementWidget")
+  @info "Starting MeasurementWidget"
   uifile = joinpath(@__DIR__,"builder","measurementWidget.ui")
 
   #filenameConfig=nothing
@@ -45,9 +45,9 @@ function MeasurementWidget(filenameConfig="")
                   "", RawDataWidget(), String[], false)
   Gtk.gobject_move_ref(m, mainBox)
 
-  println("Type constructed")
+  @debug "Type constructed"
 
-  println("InvalidateBG")
+  @debug "InvalidateBG"
   invalidateBG(C_NULL, m)
 
   push!(m["boxMeasTabVisu",BoxLeaf],m.rawDataWidget)
@@ -55,15 +55,21 @@ function MeasurementWidget(filenameConfig="")
 
   Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:use_markup,true)
 
-  println("Read Sequences")
+  @debug "Read Sequences"
   Gtk.@sigatom empty!(m["cbSeFo",ComboBoxTextLeaf])
   m.sequences = String[ splitext(seq)[1] for seq in readdir(sequenceDir())]
   for seq in m.sequences
     Gtk.@sigatom push!(m["cbSeFo",ComboBoxTextLeaf], seq)
   end
   Gtk.@sigatom set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf],:active,0)
+  combo = m["cbSeFo",ComboBoxTextLeaf]
+  cells = Gtk.GLib.GList(ccall((:gtk_cell_layout_get_cells, Gtk.libgtk),
+               Ptr{Gtk._GList{Gtk.GtkCellRenderer}}, (Ptr{GObject},), combo))
+  set_gtk_property!(cells[1],"max_width_chars", 14)
+  set_gtk_property!(combo,"wrap_width", 2)
+  #set_gtk_property!(cells[1],"ellipsize_set", 2)
 
-  println("Read safety parameters")
+  @debug "Read safety parameters"
   Gtk.@sigatom empty!(m["cbSafeCoil", ComboBoxTextLeaf])
   for coil in getValidHeadScannerGeos()
       Gtk.@sigatom push!(m["cbSafeCoil",ComboBoxTextLeaf], coil.name)
@@ -87,12 +93,24 @@ function MeasurementWidget(filenameConfig="")
   end
 
 
-  println("Online / Offline")
+  @debug "Online / Offline"
   if m.scanner != nothing
     setInfoParams(m)
     setParams(m, merge!(getGeneralParams(m.scanner),toDict(getDAQ(m.scanner).params)))
     Gtk.@sigatom set_gtk_property!(m["entConfig",EntryLeaf],:text,filenameConfig)
     Gtk.@sigatom set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isReferenced(getRobot(m.scanner)))
+    enableRobotMoveButtons(m,isReferenced(getRobot(m.scanner)))
+
+    if isReferenced(getRobot(m.scanner))
+      try
+        rob = getRobot(m.scanner)
+        isValid = checkCoords(getRobotSetupUI(m), getPos(rob), getMinMaxPosX(rob))
+      catch
+        enableRobotMoveButtons(m,false)
+        Gtk.@sigatom set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,true)
+      end
+    end
+
     Gtk.@sigatom updateCalibTime(C_NULL, m)
   else
     Gtk.@sigatom set_gtk_property!(m["tbMeasure",ToolButtonLeaf],:sensitive,false)
@@ -103,13 +121,22 @@ function MeasurementWidget(filenameConfig="")
 
   Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
 
-  println("InitCallbacks")
+  @debug "InitCallbacks"
 
   @time initCallbacks(m)
 
-  println("Finished")
+  @info "Finished starting MeasurementWidget"
 
   return m
+end
+
+function reloadConfig(m::MeasurementWidget)
+  if m.scanner != nothing
+    finalize(m.scanner)
+  end
+  m.scanner = MPIScanner(m.scanner.file)
+  m.scanner.params["Robot"]["doReferenceCheck"] = false
+  m.mdfstore = MDFDatasetStore( getGeneralParams(m.scanner)["datasetStore"] )
 end
 
 function initSurveillance(m::MeasurementWidget)
@@ -125,8 +152,8 @@ function initSurveillance(m::MeasurementWidget)
     temp1 = zeros(0)
     temp2 = zeros(0)
 
-    function update_(::Timer)
-      Gtk.@sigatom begin
+    @guarded function update_(::Timer)
+      begin
         temp = getTemperatures(su)
         str = join([ @sprintf("%.2f C ",t) for t in temp ])
         set_gtk_property!(m["entTemperatures",EntryLeaf], :text, str)
@@ -159,12 +186,12 @@ end
 
 function initCallbacks(m::MeasurementWidget)
 
-  println("CAAALLLLBACK")
+  @debug "CAAALLLLBACK"
 
   # TODO This currently does not work!
-  #@time signal_connect(m["expSurveillance",ExpanderLeaf], :activate) do w
-  #  initSurveillance(m)
-  #end
+  @time signal_connect(m["expSurveillance",ExpanderLeaf], :activate) do w
+    initSurveillance(m)
+  end
 
   #@time signal_connect(measurement, m["tbMeasure",ToolButtonLeaf], "clicked", Nothing, (), false, m )
   #@time signal_connect(measurementBG, m["tbMeasureBG",ToolButtonLeaf], "clicked", Nothing, (), false, m)
@@ -176,6 +203,10 @@ function initCallbacks(m::MeasurementWidget)
 
   @time signal_connect(m["tbMeasureBG",ToolButtonLeaf], :clicked) do w
     measurementBG(C_NULL, m)
+  end
+
+  @time signal_connect(m["btnReloadConfig",ButtonLeaf], :clicked) do w
+    reloadConfig(m)
   end
 
   @time signal_connect(m["btnRobotMove",ButtonLeaf], :clicked) do w
@@ -191,7 +222,12 @@ function initCallbacks(m::MeasurementWidget)
       return
     end
     pos = get.(pos_).*1Unitful.mm
-    moveAbs(getRobot(m.scanner),getRobotSetupUI(m), pos)
+    try
+      setEnabled(getRobot(m.scanner), true)
+      moveAbs(getRobot(m.scanner),getRobotSetupUI(m), pos)
+    catch ex
+      showError(ex)
+    end
     #infoMessage(m, "move to $posString")
   end
 
@@ -201,12 +237,24 @@ function initCallbacks(m::MeasurementWidget)
       Gtk.@sigatom set_gtk_property!(m["entArbitraryPos",EntryLeaf],:text,filename)
   end
 
-  @time signal_connect(m["bt_MovePark",ButtonLeaf], :clicked) do w
+  @time signal_connect(m["btnMovePark",ButtonLeaf], :clicked) do w
       if !isReferenced(getRobot(m.scanner))
         info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
         return
       end
+      setEnabled(getRobot(m.scanner), true)
       movePark(getRobot(m.scanner))
+      enableRobotMoveButtons(m, true)
+  end
+
+  @time signal_connect(m["btnMoveAssemblePos",ButtonLeaf], :clicked) do w
+      if !isReferenced(getRobot(m.scanner))
+        info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
+        return
+      end
+      moveAssemble(getRobot(m.scanner))
+      Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
+      Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
   end
 
   @time signal_connect(m["btnReferenceDrive",ButtonLeaf], :clicked) do w
@@ -223,6 +271,8 @@ function initCallbacks(m::MeasurementWidget)
             message = """The robot is now referenced.
                You can mount your sample. Press \"Ok\" to proceed. """
             info_dialog(message, mpilab[]["mainWindow"])
+            enableRobotMoveButtons(m,true)
+            Gtk.@sigatom set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,false)
          end
       end
     end
@@ -247,7 +297,7 @@ function initCallbacks(m::MeasurementWidget)
       end
 
       timerActive = true
-      Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
+      #Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
 
       function update_(::Timer)
         if timerActive
@@ -276,7 +326,7 @@ function initCallbacks(m::MeasurementWidget)
           stopTx(daq)
           disableACPower(getSurveillanceUnit(m.scanner))
           MPIMeasurements.disconnect(daq)
-          Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
+          #Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
           close(timer)
         end
       end
@@ -286,20 +336,18 @@ function initCallbacks(m::MeasurementWidget)
     end
   end
 
+  calibState = nothing
 
-  timerCalibration = nothing
-  timerCalibrationActive = false
-  calibObj = nothing
-  numPos = 0
-  currPos = 0
-  cancelled = false
   @time signal_connect(m["tbCancel",ToolButtonLeaf], :clicked) do w
-    cancelled = true
-    currPos = numPos+1
-    timerCalibrationActive = true
+    if calibState != nothing
+      cancel(calibState)
+    end
   end
 
+  timerCalibration = nothing
+
   @time signal_connect(m["tbCalibration",ToggleToolButtonLeaf], :toggled) do w
+    try
     su = getSurveillanceUnit(m.scanner)
 
     if !isReferenced(getRobot(m.scanner))
@@ -310,8 +358,8 @@ function initCallbacks(m::MeasurementWidget)
 
     daq = getDAQ(m.scanner)
     if get_gtk_property(m["tbCalibration",ToggleToolButtonLeaf], :active, Bool)
-      if currPos == 0
 
+      if calibState == nothing
         shpString = get_gtk_property(m["entGridShape",EntryLeaf], :text, String)
         shp_ = tryparse.(Int64,split(shpString,"x"))
         fovString = get_gtk_property(m["entFOV",EntryLeaf], :text, String)
@@ -360,97 +408,72 @@ function initCallbacks(m::MeasurementWidget)
         end
 
         params = merge!(getGeneralParams(m.scanner),getParams(m))
-        calibObj = SystemMatrixRobotMeas(m.scanner, getRobotSetupUI(m), positions, params)
+        calibObj = SystemMatrixRobotMeas(m.scanner, getRobotSetupUI(m), positions, params,
+                  waitTime = get_gtk_property(m["adjPause",AdjustmentLeaf],:value,Float64))
 
-        timerCalibrationActive = true
-        currPos = 1
-        numPos = length(positions)
+        # the following spawns a task
+        @info "perform calibration"
+        calibState = performCalibration(m.scanner, calibObj, m.mdfstore, params)
 
         Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
-        cancelled = false
+        Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
+        Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
+
         function update_(::Timer)
-          println("Timer active $currPos / $numPos")
-          if timerCalibrationActive
-            if currPos <= numPos
-              pos = Float64.(ustrip.(uconvert.(Unitful.mm, positions[currPos])))
-              posStr = @sprintf("%.2f x %.2f x %.2f", pos[1],pos[2],pos[3])
-              Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
-                    """<span foreground="green" font_weight="bold" size="x-large"> $currPos / $numPos ($posStr mm) </span>""")
+          try
+            if calibState.calibrationActive
+              if 1 <= calibState.currPos <= calibState.numPos
+                pos = Float64.(ustrip.(uconvert.(Unitful.mm, positions[calibState.currPos])))
+                posStr = @sprintf("%.2f x %.2f x %.2f", pos[1],pos[2],pos[3])
+                Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
+                      """<span foreground="green" font_weight="bold" size="x-large"> $(calibState.currPos) / $(calibState.numPos) ($posStr mm) </span>""")
 
-              moveAbsUnsafe(getRobot(m.scanner), positions[currPos]) # comment for testing
+                deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
+                if !calibState.consumed && !isempty(calibState.currentMeas)
+                  uMeas = calibState.currentMeas
+                  #Gtk.@sigatom
+                  updateData(m.rawDataWidget, uMeas, deltaT)
+                  calibState.consumed = true
+                end
 
-              setEnabled(getRobot(m.scanner), false)
-              sleep(0.5)
-              uMeas, uRef = postMoveAction(calibObj, positions[currPos], currPos)
-              setEnabled(getRobot(m.scanner), true)
+                #Lauft nicht
 
-              deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
-
-              Gtk.@sigatom updateData(m.rawDataWidget, uMeas, deltaT)
-
-              currPos +=1
-              sleep(get_gtk_property(m["adjPause",AdjustmentLeaf],:value,Float64))
-              #Lauft nicht
-              temp = getTemperatures(su)
-              while maximum(temp[1:2]) > params["maxTemperature"]
-               Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
-                    """<span foreground="red" font_weight="bold" size="x-large"> System Cooling Down! </span>""")
-               sleep(20)
-               temp[:] = getTemperatures(su)
-              end
-            end
-            if currPos > numPos
-              stopTx(daq)
-              disableACPower(getSurveillanceUnit(m.scanner))
-              MPIMeasurements.disconnect(daq)
-
-              movePark(getRobot(m.scanner))
-
-              Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label, "")
-              currPos = 0
-              Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
-
-              if !cancelled
-                cancelled = false
-                calibNum = getNewCalibNum(m.mdfstore)
-                if get_gtk_property(m["cbStoreAsSystemMatrix",CheckButtonLeaf],:active, Bool)
-                  saveasMDF("/tmp/tmp.mdf",
-                        calibObj, params)
-                  saveasMDF(joinpath(calibdir(m.mdfstore),string(calibNum)*".mdf"),
-                        MPIFile("/tmp/tmp.mdf"), applyCalibPostprocessing=true)
-                  updateData!(mpilab[].sfBrowser, m.mdfstore)
-                else
-
-                  name = params["studyName"]
-                  path = joinpath( studydir(m.mdfstore), name)
-                  subject = ""
-                  date = ""
-
-                  newStudy = Study(path,name,subject,date)
-
-                  addStudy(m.mdfstore, newStudy)
-                  expNum = getNewExperimentNum(m.mdfstore, newStudy)
-                  params["experimentNumber"] = expNum
-
-                  filename = joinpath(studydir(m.mdfstore),newStudy.name,string(expNum)*".mdf")
-
-                  saveasMDF(filename, calibObj, params)
-                  updateExperimentStore(mpilab[], mpilab[].currentStudy)
+                temp = getTemperatures(su)
+                while maximum(temp[1:2]) > params["maxTemperature"]
+                 Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
+                      """<span foreground="red" font_weight="bold" size="x-large"> System Cooling Down! $(calibState.currPos) / $(calibState.numPos) ($posStr mm) </span>""")
+                 sleep(20)
+                 temp = getTemperatures(su)
+                 @info "Temp = $temp"
                 end
               end
-              close(timerCalibration)
-              Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
-            end
-          else
+              if istaskdone(calibState.task)
 
+                Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label, "")
+                Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
+
+                close(timerCalibration)
+                Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
+                Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
+
+                updateData!(mpilab[].sfBrowser, m.mdfstore)
+                updateExperimentStore(mpilab[], mpilab[].currentStudy)
+                calibState = nothing
+              end
+            end
+            sleep(0.5)
+          catch ex
+            showError(ex)
           end
         end
         timerCalibration = Timer(update_, 0.0, interval=0.001)
-      else
-        timerCalibrationActive = true
       end
+      calibState.calibrationActive = true
     else
-      timerCalibrationActive = false
+      calibState.calibrationActive = false
+    end
+    catch ex
+      showError(ex)
     end
   end
 
@@ -522,7 +545,6 @@ end
 
 function invalidateBG(widgetptr::Ptr, m::MeasurementWidget)
   m.dataBGStore = zeros(Float32,0,0,0,0)
-  Gtk.@sigatom set_gtk_property!(m["cbBGAvailable",CheckButtonLeaf],:active,false)
   Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
         """<span foreground="red" font_weight="bold" size="x-large"> No BG Measurement Available!</span>""")
   return nothing
@@ -545,43 +567,74 @@ end
 
 
 function measurement(widgetptr::Ptr, m::MeasurementWidget)
-  Gtk.@sigatom  println("Calling measurement")
+  try
+    Gtk.@sigatom @info "Calling measurement"
 
-  params = merge!(getGeneralParams(m.scanner),getParams(m))
-  params["acqNumFrames"] = params["acqNumFGFrames"]
+    daq = getDAQ(m.scanner)
 
-  bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
+    params = merge!(getGeneralParams(m.scanner),getParams(m))
+    params["acqNumFrames"] = params["acqNumFGFrames"]
 
-  setEnabled(getRobot(m.scanner), false)
-  enableACPower(getSurveillanceUnit(m.scanner))
-  m.filenameExperiment = MPIMeasurements.measurement(getDAQ(m.scanner), params, m.mdfstore,
-                         bgdata=bgdata)
-  disableACPower(getSurveillanceUnit(m.scanner))
-  setEnabled(getRobot(m.scanner), true)
+    bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
 
-  Gtk.@sigatom updateData(m.rawDataWidget, m.filenameExperiment)
+    measState = asyncMeasurement(m.scanner, m.mdfstore, params, bgdata)
+    deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
 
-  updateExperimentStore(mpilab[], mpilab[].currentStudy)
+    timerMeas = nothing
+    function update_(::Timer)
+      try
+        if Base.istaskfailed(measState.task)
+          close(timerMeas)
+          @async showError(measState.task.exception,measState.task.backtrace)
+          return
+        end
+        set_gtk_property!(m["lbInfo",LabelLeaf],:label,
+              """<span foreground="green" font_weight="bold" size="x-large"> Frame $(measState.currFrame) / $(measState.numFrames) </span>""")
+        fr = measState.currFrame
+        if fr > 0 && !measState.consumed
+          updateData(m.rawDataWidget, measState.buffer[:,:,:,fr:fr], deltaT)
+          measState.consumed = true
+        end
+        if istaskdone(measState.task)
+          close(timerMeas)
+          set_gtk_property!(m["lbInfo",LabelLeaf],:label,"")
+          m.filenameExperiment = measState.filename
+          updateData(m.rawDataWidget, m.filenameExperiment)
+          updateExperimentStore(mpilab[], mpilab[].currentStudy)
+        end
+        sleep(0.1)
+      catch ex
+        close(timerMeas)
+        showError(ex)
+      end
+      return
+    end
+    timerMeas = Timer(update_, 0.0, interval=0.1)
+  catch ex
+   showError(ex)
+  end
   return nothing
 end
 
 function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
-  Gtk.@sigatom println("Calling BG measurement")
+  try
+    Gtk.@sigatom @info "Calling BG measurement"
+    params = merge!(getGeneralParams(m.scanner),getParams(m))
+    params["acqNumFrames"] = params["acqNumBGFrames"]
 
-  params = merge!(getGeneralParams(m.scanner),getParams(m))
-  params["acqNumFrames"] = params["acqNumBGFrames"]
+    setEnabled(getRobot(m.scanner), false)
+    enableACPower(getSurveillanceUnit(m.scanner))
+    uMeas, uSlowADC = MPIMeasurements.measurement(getDAQ(m.scanner), params)
+    disableACPower(getSurveillanceUnit(m.scanner))
+    setEnabled(getRobot(m.scanner), true)
 
-  setEnabled(getRobot(m.scanner), false)
-  enableACPower(getSurveillanceUnit(m.scanner))
-  u = MPIMeasurements.measurement(getDAQ(m.scanner), params)
-  disableACPower(getSurveillanceUnit(m.scanner))
-  setEnabled(getRobot(m.scanner), true)
+    m.dataBGStore = uMeas
+    #updateData(m, u)
 
-  m.dataBGStore = u
-  #updateData(m, u)
-
-  Gtk.@sigatom set_gtk_property!(m["cbBGAvailable",CheckButtonLeaf],:active,true)
-  Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,"")
+    Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,"")
+  catch ex
+   showError(ex)
+  end
   return nothing
 end
 
@@ -610,10 +663,10 @@ function getParams(m::MeasurementWidget)
 
   dfString = get_gtk_property(m["entDFStrength",EntryLeaf], :text, String)
   params["dfStrength"] = parse.(Float64,split(dfString," x "))*1e-3
-  println("DF strength = $(params["dfStrength"])")
 
   params["acqFFSequence"] = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
   params["acqFFLinear"] = get_gtk_property(m["cbFFInterpolation",CheckButtonLeaf], :active, Bool)
+  params["storeAsSystemMatrix"] = get_gtk_property(m["cbStoreAsSystemMatrix",CheckButtonLeaf],:active, Bool)
 
   return params
 end
@@ -685,4 +738,12 @@ function getCustomPhatom(m::MeasurementWidget)
     cP_ = tryparse.(Float64,split(cPStr,"x"))
     cP= get.(cP_) .*1Unitful.mm
     return Cuboid(Rectangle(cP[2],cP[3], "UI Custom Phantom"),cP[1],"UI Custom Phantom 3D")
+end
+
+
+function enableRobotMoveButtons(m::MeasurementWidget, enable::Bool)
+  Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,enable)
+  Gtk.@sigatom set_gtk_property!(m["btnMoveAssemblePos",ButtonLeaf],:sensitive,enable)
+  Gtk.@sigatom set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,enable)
+  Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,enable)
 end

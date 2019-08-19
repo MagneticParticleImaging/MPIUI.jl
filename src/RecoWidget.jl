@@ -32,6 +32,8 @@ mutable struct RecoWidget<: Gtk.GtkGrid
   selectedSF
   bgExperiments
   recoGrid
+  currentStudy
+  currentExperiment
 end
 
 getindex(m::RecoWidget, w::AbstractString) = G_.object(m.builder, w)
@@ -47,7 +49,8 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
                   nothing,
                   nothing, true,
                   nothing, nothing, nothing, nothing, 1,
-                  Dict{Int64,String}(),nothing)
+                  Dict{Int64,String}(),nothing,
+                  nothing, nothing)
   Gtk.gobject_move_ref(m, mainGrid)
 
   spReco = m["spReco"]
@@ -82,14 +85,14 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
 
   initBGSubtractionWidgets(m)
 
-  #println(mpilab[].settings)
+  @debug "" mpilab[].settings
 
   function loadRecoProfile( widget )
 
     cache = loadcache()
 
     selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
-    println(selectedProfileName)
+    @debug "" selectedProfileName
     if haskey(cache["recoParams"],selectedProfileName)
       Gtk.@sigatom setParams(m, cache["recoParams"][selectedProfileName])
     end
@@ -111,7 +114,7 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
   function deleteRecoProfile( widget )
     selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
 
-    Gtk.@sigatom println("delete reco profile ", selectedProfileName)
+    Gtk.@sigatom @info "delete reco profile $selectedProfileName"
 
     cache = loadcache()
     delete!(cache["recoParams"], selectedProfileName)
@@ -151,7 +154,7 @@ function initCallbacks(m_::RecoWidget)
     signal_connect((w)->performReco(m), m["tbPerformReco"], "clicked")
     signal_connect((w)->selectSF(m), m["btBrowseSF"], "clicked")
     signal_connect(m["adjSelectedSF"], "value_changed") do widget
-      println(m.bSF)
+      @debug "" m.bSF
 
       m.selectedSF = get_gtk_property(m_["adjSelectedSF"],:value,Int64)
 
@@ -178,6 +181,7 @@ function initCallbacks(m_::RecoWidget)
     signal_connect(updateSFParamsChanged_, m["cbLoadAsReal"], "toggled")
     signal_connect(updateSFParamsChanged_, m["cbSolver"], "changed")
     signal_connect(updateSFParamsChanged_, m["cbSubtractBG"], "toggled")
+    signal_connect(updateSFParamsChanged_, m["cbSubtractInternalBG"], "toggled")
     signal_connect(updateSFParamsChanged_, m["cbRecX"], "toggled")
     signal_connect(updateSFParamsChanged_, m["cbRecY"], "toggled")
     signal_connect(updateSFParamsChanged_, m["cbRecZ"], "toggled")
@@ -195,7 +199,7 @@ end
 function saveReco(m::RecoWidget)
   if m.recoResult != nothing
     m.recoResult["recoParams"][:description] = get_gtk_property(m["entRecoDescrip"], :text, String)
-    Gtk.@sigatom addReco(mpilab[], m.recoResult)
+    Gtk.@sigatom addReco(mpilab[], m.recoResult, m.currentStudy, m.currentExperiment)
   end
 end
 
@@ -206,7 +210,7 @@ function updateBGMeas(m::RecoWidget)
     if !isempty(bgstr)
       bgnum =  parse(Int64, bgstr)
       filenameBG = m.bgExperiments[bgnum]
-      println(filenameBG)
+      @debug "" filenameBG
       if isdir(filenameBG) || isfile(filenameBG)
         m.bEmpty = MPIFile(filenameBG)
 
@@ -222,19 +226,23 @@ function updateSFParamsChanged(m::RecoWidget)
 end
 
 function selectSF(m::RecoWidget)
-  dlg = SFSelectionDialog( gradient=sfGradient(m.bMeas)[3], driveField=dfStrength(m.bMeas)  )
+  try
+    dlg = SFSelectionDialog( gradient=sfGradient(m.bMeas)[3], driveField=dfStrength(m.bMeas)  )
 
-  ret = run(dlg)
-  if ret == GtkResponseType.ACCEPT
+    ret = run(dlg)
+    if ret == GtkResponseType.ACCEPT
 
-    if hasselection(dlg.selection)
-      sffilename =  getSelectedSF(dlg)
+      if hasselection(dlg.selection)
+        sffilename =  getSelectedSF(dlg)
 
-      println(sffilename)
-      setSF(m, sffilename )
+        @debug "" sffilename
+        setSF(m, sffilename )
+      end
     end
+    destroy(dlg)
+  catch ex
+    showError(ex)
   end
-  destroy(dlg)
 end
 
 function initBGSubtractionWidgets(m::RecoWidget)
@@ -273,12 +281,13 @@ function setSF(m::RecoWidget, filename)
   nothing
 end
 
-function updateData!(m::RecoWidget, filenameMeas, params)
+function updateData!(m::RecoWidget, filenameMeas, params::Dict,
+                     study=nothing, experiment=nothing)
   setParams(m, params)
-  updateData!(m, filenameMeas)
+  updateData!(m, filenameMeas, study, experiment)
 end
 
-function updateData!(m::RecoWidget, filenameMeas)
+function updateData!(m::RecoWidget, filenameMeas, study=nothing, experiment=nothing)
   if filenameMeas != nothing
     m.bMeas = MPIFile(filenameMeas)
     set_gtk_property!(m["adjFrame"],:upper, numScans(m.bMeas))
@@ -293,6 +302,8 @@ function updateData!(m::RecoWidget, filenameMeas)
 
     end
     initBGSubtractionWidgets(m)
+    m.currentStudy = study
+    m.currentExperiment = experiment
   end
   nothing
 end
@@ -300,7 +311,8 @@ end
 function updateSF(m::RecoWidget)
   params = getParams(m)
 
-  bgcorrection = get_gtk_property(m["cbSubtractBG"], :active, Bool)
+  bgcorrection = get_gtk_property(m["cbSubtractBG"], :active, Bool) ||
+                 get_gtk_property(m["cbSubtractInternalBG"], :active, Bool)
 
   m.freq = filterFrequencies(m.bSF, minFreq=params[:minFreq], maxFreq=params[:maxFreq],
                              SNRThresh=params[:SNRThresh], recChannels=params[:recChannels])
@@ -314,7 +326,7 @@ function updateSF(m::RecoWidget)
 #       S = getSF(m.bSF, freq, redFactor=redFactor, sparseTrafo="DCT")
 #     else
 
-  println("Reloading SF")
+  @info "Reloading SF"
   m.sysMatrix, m.recoGrid = getSF(m.bSF, m.freq, params[:sparseTrafo], params[:solver], bgcorrection=bgcorrection,
                       loadasreal = params[:loadasreal], loadas32bit = params[:loadas32bit],
                       redFactor = params[:redFactor])
@@ -324,22 +336,37 @@ end
 
 #function performReco(widgetptr::Ptr, m::RecoWidget)
 function performReco(m::RecoWidget)
-  params = getParams(m)
+  try
+    params = getParams(m)
 
-  if m.sfParamsChanged
-    updateSF(m)
+    if m.sfParamsChanged
+      updateSF(m)
+    end
+
+
+    if params[:emptyMeasPath] != nothing
+      params[:bEmpty] = MPIFile( params[:emptyMeasPath] )
+      if typeof(params[:bEmpty]) == BrukerFileCalib
+        bbEmpty = params[:bEmpty]
+        bbEmpty_ = BrukerFileMeas(bbEmpty.path,bbEmpty.params,bbEmpty.paramsProc,bbEmpty.methodRead,bbEmpty.acqpRead,bbEmpty.visupars_globalRead,bbEmpty.recoRead,bbEmpty.methrecoRead,bbEmpty.visuparsRead,bbEmpty.mpiParRead,bbEmpty.maxEntriesAcqp);
+        params[:bEmpty] = bbEmpty_
+      end
+    end
+    
+    if typeof(m.bMeas) == BrukerFileCalib
+      m.bMeas = BrukerFileMeas(m.bMeas.path,m.bMeas.params,m.bMeas.paramsProc,m.bMeas.methodRead,m.bMeas.acqpRead,m.bMeas.visupars_globalRead,m.bMeas.recoRead,m.bMeas.methrecoRead,m.bMeas.visuparsRead,m.bMeas.mpiParRead,m.bMeas.maxEntriesAcqp);
+
+      conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
+
+    else
+      conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
+    end
+    m.recoResult = conc
+    m.recoResult["recoParams"] = getParams(m)
+    Gtk.@sigatom updateData!(m.dv, m.recoResult )
+  catch ex
+    showError(ex)
   end
-
-
-  if params[:emptyMeasPath] != nothing
-    params[:bEmpty] = MPIFile( params[:emptyMeasPath] )
-  end
-
-  conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
-
-  m.recoResult = conc
-  m.recoResult["recoParams"] = getParams(m)
-  Gtk.@sigatom updateData!(m.dv, m.recoResult )
   nothing
 end
 
@@ -359,6 +386,7 @@ function getParams(m::RecoWidget)
   # Small hack
   if params[:solver] == "fusedlasso"
     params[:loadasreal] = true
+    params[:lambd] = [params[:lambdaL1], params[:lambdaTV]]
   end
 
   firstFrame = get_gtk_property(m["adjFrame"], :value, Int64)
@@ -373,6 +401,7 @@ function getParams(m::RecoWidget)
 
   bgcorrection = get_gtk_property(m["cbSubtractBG"], :active, Bool)
   params[:emptyMeasPath] = bgcorrection ? filepath(m.bEmpty) : nothing
+  params[:bgCorrectionInternal] = get_gtk_property(m["cbSubtractInternalBG"], :active, Bool)
 
   if bgcorrection
     firstFrameBG = get_gtk_property(m["adjFirstFrameBG"], :value, Int64)
@@ -444,6 +473,7 @@ function setParams(m::RecoWidget, params)
   set_gtk_property!(m["cbRecZ"], :active, in(3,params[:recChannels]))
 
   Gtk.@sigatom set_gtk_property!(m["entRecoDescrip"], :text, get(params, :description,""))
+  Gtk.@sigatom set_gtk_property!(m["cbSubtractInternalBG"], :active, get(params, :bgCorrectionInternal, false))
 
 
   if haskey(params, :SFPath)
@@ -489,9 +519,9 @@ end
 
 #=
 function performMultiProcessReco( widget )
-  println("Num Procs: $(procs())")
+  @debug "Num Procs: $(procs())"
   recoWorkers = workers()
-  println("Num Workers: $(recoWorkers)")
+  @debug "Num Workers: $(recoWorkers)"
   nWorkers = length(recoWorkers)
   start(spReco)
   params = getParams(m)
@@ -516,12 +546,12 @@ function performMultiProcessReco( widget )
     @async begin
       for p=1:nWorkers
         recoTasks[p] = @async begin
-            println("Entering recoTask...")
+            @debug "Entering recoTask..."
             taskParams = copy(params)
             taskParams[:frames] = splittedFrames[p]
             recoResult = remotecall_fetch(multiCoreReconstruction, recoWorkers[p], bSF, bMeas, freq, taskParams )
             recoResults[p] = recoResult
-            println("Finished recoTask.")
+            @debug "Finished recoTask."
         end # recoTasks[p]
       end # for
       for k=1:nWorkers
@@ -532,7 +562,7 @@ function performMultiProcessReco( widget )
       m.recoResult["recoParams"] = getParams(m)
       Gtk.@sigatom updateData!(m.dv, m.recoResult )
       stop(spReco)
-      println("reco processes finished.")
+      @debug "reco processes finished."
     end # async
   end # Gtk.sigatom
 end #Function

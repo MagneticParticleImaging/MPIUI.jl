@@ -83,7 +83,7 @@ function FileBrowser()
 
   selection = G_.selection(tv)
 
-  println(selection)
+  @debug "" selection
 
   signal_connect(tv, "row-activated") do treeview, path, col, other...
     if hasselection(selection)
@@ -93,7 +93,7 @@ function FileBrowser()
 
       newpath = joinpath(browser.path,file)
 
-      println(newpath)
+      @debug newpath
 
       if isdir(newpath)
         changedir!(browser, newpath)

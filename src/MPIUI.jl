@@ -40,10 +40,24 @@ function openFileBrowser(dir::String)
     elseif Sys.islinux()
       run(`xdg-open $dir`)
     else
-      println("openFileBrowser not supported on thos OS!")
+      @info "openFileBrowser not supported on thos OS!"
     end
   end
   return
+end
+
+function imToVecIm(image::ImageMeta)
+   out = ImageMeta[]
+   for i=1:size(image,1)
+     I = getindex(image, i, ntuple(x->:,ndims(image)-1)...)
+     push!(out, I)
+   end
+   return out
+ end
+
+function showError(ex, bt=catch_backtrace())
+  str = string("Something went wrong!\n", ex, "\n\n", stacktrace(bt))
+  info_dialog(str, mpilab[]["mainWindow"])
 end
 
 include("GtkUtils.jl")

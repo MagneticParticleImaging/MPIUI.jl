@@ -22,7 +22,7 @@ end
 getindex(m::RawDataWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
 function RawDataWidget(filenameConfig=nothing)
-  println("Starting RawDataWidget")
+  @info "Starting RawDataWidget"
   uifile = joinpath(@__DIR__,"builder","rawDataViewer.ui")
 
   b = Builder(filename=uifile)
@@ -36,7 +36,7 @@ function RawDataWidget(filenameConfig=nothing)
                   AdjustmentLeaf[], Canvas[], Vector{Vector{Float32}}())
   Gtk.gobject_move_ref(m, mainBox)
 
-  println("Type constructed")
+  @debug "Type constructed"
 
   push!(m["boxTD",BoxLeaf],m.cTD)
   set_gtk_property!(m["boxTD",BoxLeaf],:expand,m.cTD,true)
@@ -44,13 +44,13 @@ function RawDataWidget(filenameConfig=nothing)
   push!(m["boxFD",BoxLeaf],m.cFD)
   set_gtk_property!(m["boxFD",BoxLeaf],:expand,m.cFD,true)
 
-  println("InitCallbacks")
+  @debug "InitCallbacks"
 
   initHarmView(m)
 
   initCallbacks(m)
 
-  println("Finished")
+  @info "Finished starting RawDataWidget"
 
   return m
 end
@@ -143,11 +143,11 @@ end
 function loadData(widgetptr::Ptr, m::RawDataWidget)
   if !m.loadingData
     m.loadingData = true
-    @Gtk.sigatom println("Loading Data ...")
+    @Gtk.sigatom @info "Loading Data ..."
 
 
     if m.filenameData != "" && ispath(m.filenameData)
-      f = MPIFile(m.filenameData)
+      f = MPIFile(m.filenameData)#, isCalib=false)
       params = MPIFiles.loadMetadata(f)
       params["acqNumFGFrames"] = acqNumFGFrames(f)
       params["acqNumBGFrames"] = acqNumBGFrames(f)
@@ -223,17 +223,17 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       maxFr = (div(length(data),2)+1)
 
       if length(m.dataBG) > 0 && get_gtk_property(m["cbSubtractBG",CheckButtonLeaf], :active, Bool)
-        data[:] .-=  vec(mean(m.dataBG[:,chan,:,:],3))
+        data[:] .-=  vec(mean(m.dataBG[:,chan,:,:],dims=3))
       end
     else
       if get_gtk_property(m["cbAbsFrameAverage",CheckButtonLeaf], :active, Bool)
         dataFD = rfft(m.data[:,chan,patch,:],1)
-        dataFD_ = vec(mean(abs.(dataFD), 2))
+        dataFD_ = vec(mean(abs.(dataFD), dims=2))
         data = irfft(dataFD_, 2*size(dataFD_, 1) -2)
 
         if length(m.dataBG) > 0
           dataBGFD = rfft(m.dataBG[:,chan,patch,:],1)
-          dataBGFD_ = vec(mean(abs.(dataBGFD), 2))
+          dataBGFD_ = vec(mean(abs.(dataBGFD), dims=2))
           dataBG = irfft(dataBGFD_, 2*size(dataBGFD_, 1) -2)
           if get_gtk_property(m["cbSubtractBG",CheckButtonLeaf], :active, Bool)
             data[:] .-=  dataBG
@@ -242,8 +242,8 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       else
         data = vec(m.data[:,chan,patch,1])
         if length(m.dataBG) > 0
-          #dataBG = vec(m.dataBG[:,chan,patch,1] .- mean(m.dataBG[:,chan,patch,:],2))
-          dataBG = vec( mean(m.dataBG[:,chan,patch,:],2))
+          #dataBG = vec(m.dataBG[:,chan,patch,1] .- mean(m.dataBG[:,chan,patch,:], dims=2))
+          dataBG = vec( mean(m.dataBG[:,chan,patch,:],dims=2))
           if get_gtk_property(m["cbSubtractBG",CheckButtonLeaf], :active, Bool)
             data[:] .-=  dataBG
           end

@@ -20,8 +20,6 @@ function DataViewer(imFG::Vector, imBG=nothing; params=nothing)
   dw
 end
 
-
-
 function DataViewer()
   w = Window("Data Viewer",800,600)
   dw = DataViewerWidget()
@@ -31,7 +29,7 @@ function DataViewer()
   signal_connect(w, "key-press-event") do widget, event
     if event.keyval ==  Gtk.GConstants.GDK_KEY_c
       if event.state & 0x04 != 0x00 # Control key is pressed
-        @async println("copy visu params to clipboard...")
+        @debug "copy visu params to clipboard..."
         str = string( getParams(dw) )
         str_ = replace(str,",Pair",",\n  Pair")
         clipboard( str_ )
@@ -43,7 +41,6 @@ function DataViewer()
 end
 
 ########### DataViewerWidget #################
-
 
 mutable struct DataViewerWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
@@ -264,7 +261,7 @@ function initCallbacks(m_::DataViewerWidget)
     end
 
     signal_connect(m["btnAutoRegistration"], "clicked") do widget
-      println("auto register")
+      @info "auto register"
     end
 
   end
@@ -278,7 +275,7 @@ function permuteBGData(m::DataViewerWidget)
     flip = flippings()[flipInd]
     m.dataBG = applyPermutions(m.dataBGNotPermuted, perm, flip)
 
-    fov = collect(size(m.dataBG)).*collect(pixelspacing(m.dataBG)).*1000
+    fov = collect(size(m.dataBG)).*collect(converttometer(pixelspacing(m.dataBG))).*1000
 
     set_gtk_property!(m["adjTransX"],:lower,-fov[1]/2)
     set_gtk_property!(m["adjTransY"],:lower,-fov[2]/2)
@@ -382,6 +379,7 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
     end
 
     m.data = data
+
     if !m.offlineMode
       (dataBG != nothing) && (dataBG["offset"] = [0.0,0.0,0.0])
     end
@@ -393,10 +391,15 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
     Gtk.@sigatom set_gtk_property!(m["adjPixelResizeFactor"],:value, (dataBG==nothing) ? 5 : 1  )
 
     if params!=nothing
+      if data != nothing
+        params[:sliceX] = min(params[:sliceX],size(data[1],1))
+        params[:sliceY] = min(params[:sliceY],size(data[1],2))
+        params[:sliceZ] = min(params[:sliceZ],size(data[1],3))
+      end
       setParams(m,params)
     end
   catch ex
-    println(stacktrace(catch_backtrace()),"\nException: ",ex)
+    @warn "Exception" ex stacktrace(catch_backtrace())
   end
 end
 
@@ -417,16 +420,8 @@ function updateColoring(m::DataViewerWidget)
   m.coloring[chan].cmap = get_gtk_property(m["cbCMaps"],:active, Int64)
 end
 
-
-#     function get_context(c::Gtk.Canvas, pc::Winston.PlotContainer)
-#         device = Winston.CairoRenderer(Gtk.cairo_surface(c))
-#         ext_bbox = Winston.BoundingBox(0,Winston.width(c),0,Winston.height(c))
-#         Winston._get_context(device, ext_bbox, pc)
-#     end
-
-
 function showData(m::DataViewerWidget)
-  try
+  #try
     params = getParams(m)
     if m.data != nothing
 
@@ -434,10 +429,11 @@ function showData(m::DataViewerWidget)
         #data_ = [maximum(d, 4) for d in m.data]
         data_ = [  mip(d,4) for d in m.data]
       elseif params[:frameProj] == 2 && ndims(m.data[1]) == 4
-        data_ = [timetopeak(d, params[:TTPThresh]) for d in m.data]
+        data_ = [timetopeak(d, alpha=params[:TTPThresh], alpha2=params[:TTPThresh]) for d in m.data]
       else
         data_ = [getindex(d,:,:,:,params[:frame]) for d in m.data]
       end
+
       slices = (params[:sliceX],params[:sliceY],params[:sliceZ])
         if params[:spatialMIP]
           proj = "MIP"
@@ -455,15 +451,21 @@ function showData(m::DataViewerWidget)
 
       if m.dataBG != nothing
         slicesInRawData = MPILib.indexFromBGToFG(m.dataBG, data_, params)
-        @async println("Slices in raw data: ", slicesInRawData)
+        @debug "Slices in raw data:" slicesInRawData
         data = interpolateToRefImage(m.dataBG, data_, params)
         dataBG = cacheBackGround(m, params)
-        edgeMask = getEdgeMask(m.dataBG, data_, params)
+        edgeMask = nothing #getEdgeMask(m.dataBG, data_, params)
       else
-        data = data_
+        # not ideal ....
+        params[:sliceX] = min(params[:sliceX],size(m.data[1],1))
+        params[:sliceY] = min(params[:sliceY],size(m.data[1],2))
+        params[:sliceZ] = min(params[:sliceZ],size(m.data[1],3))
+
+	data = data_
         slicesInRawData = slices
         dataBG = edgeMask = nothing
       end
+
 
       m.currentlyShownData = data
 
@@ -471,7 +473,7 @@ function showData(m::DataViewerWidget)
         cdata_zx, cdata_zy, cdata_xy = getColoredSlices(data, dataBG, edgeMask, m.coloring, minval, maxval, params)
         isDrawSectionalLines = params[:showSlices] && proj != "MIP"
         isDrawRectangle = params[:showDFFOV]
-        pixelSpacingBG = dataBG==nothing ? [0.002,0.002,0.001] : collect(pixelspacing(dataBG))
+        pixelSpacingBG = dataBG==nothing ? [0.002,0.002,0.001] : collect(converttometer(pixelspacing(dataBG)))
         sizeBG = dataBG==nothing ? [128,128,64] : collect(size(dataBG))
         xy,xz,yz,offsetxy,offsetxz,offsetyz = calcDFFovRectangle(m, params, pixelSpacingBG)
         drawImages(m,slices, isDrawSectionalLines, isDrawRectangle, cdata_zx, cdata_zy, cdata_xy, xy, xz, yz, offsetxy, offsetxz, offsetyz,
@@ -506,9 +508,9 @@ function showData(m::DataViewerWidget)
         #m.currentlyShownImages = cdata
       end
     end
-  catch ex
-    println(stacktrace(catch_backtrace()),"\nException: ",ex)
-  end
+  #catch ex
+  #  @warn "Exception" ex stacktrace(catch_backtrace())
+  #end
 end
 
 function drawSlice(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectangle, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
@@ -545,7 +547,7 @@ function cacheSelectedFovXYZPos(m::DataViewerWidget, cachePos::Array{Float64,1},
   m.cacheSelectedFovXYZ = cachePos
   screenXYZtoBackgroundXYZ = (cachePos .-[hX/2,wY/2,hZ/2]) .* (sizeBG ./ [hX,wY,hZ])
   m.cacheSelectedMovePos = screenXYZtoBackgroundXYZ .* pixelSpacingBG
-  println("cachePos",cachePos,"screenXYZtoBackgroundXYZ", screenXYZtoBackgroundXYZ, "m.cacheSelectedMovePos", m.cacheSelectedMovePos)
+  @debug "" cachePos screenXYZtoBackgroundXYZ m.cacheSelectedMovePos
 end
 
 function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectangle,
@@ -556,17 +558,17 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
   m.grid3D[1,1].mouse.button3press = @guarded (widget, event) -> begin
     @guarded Gtk.draw(widget) do widget
       if isDrawRectangle
-        println("mouse event ZX")
+        @debug "mouse event ZX"
         ctxZY,ctxZX,ctxXY,hZY,wZY,hZX,wZX,hXY,wXY = getMetaDataSlices(m)
         reveal(widget)
         pZX = [event.x, event.y]
         ZXtoXYforX = (wZX-pZX[1])/wZX *hXY # X coord in ZX width direction and in XY in height direction
         cacheSelectedFovXYZPos(m, [ZXtoXYforX,m.cacheSelectedFovXYZ[2], pZX[2]], pixelSpacingBG, sizeBG, hXY,wZY,hZY)
-        println("cacheSelectedFovXYZ",m.cacheSelectedFovXYZ)
+        @debug "cacheSelectedFovXYZ" m.cacheSelectedFovXYZ
         pZY = [m.cacheSelectedFovXYZ[2], pZX[2]]
         pXY = [m.cacheSelectedFovXYZ[2], ZXtoXYforX]
         imSizeZY,imSizeZX,imSizeXY= getImSizes(cdata_zy,cdata_zx,cdata_xy)
-        println("pZX",pZX,"zx", zx, "offsetzy", offsetzy, "imSizeZY", imSizeZY)
+        @debug "" pZX zx offsetzy imSizeZY
         drawSlice(m,slices,isDrawSectionalLines,isDrawRectangle, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
         drawRectangle(ctxZY, hZY,wZY, pZY, imSizeZY, zy, offsetzy, rgb=[1,0,0],lineWidth=3.0)
         drawRectangle(ctxZX, hZX,wZX, pZX, imSizeZX, zx, offsetzx, rgb=[1,0,0],lineWidth=3.0)
@@ -577,17 +579,17 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
   m.grid3D[2,1].mouse.button3press = @guarded (widget, event) -> begin
    @guarded Gtk.draw(widget) do widget
      if isDrawRectangle
-       println("mouse event ZY")
+       @debug "mouse event ZY"
        ctxZY,ctxZX,ctxXY,hZY,wZY,hZX,wZX,hXY,wXY = getMetaDataSlices(m)
        reveal(widget)
        pZY = [event.x, event.y]
        cacheSelectedFovXYZPos(m, [m.cacheSelectedFovXYZ[1],pZY[1], pZY[2]], pixelSpacingBG, sizeBG, hXY,wZY,hZY)
-       println("cacheSelectedFovXYZ",m.cacheSelectedFovXYZ)
+       @debug "" m.cacheSelectedFovXYZ
        XYtoZXforX = wZX-(m.cacheSelectedFovXYZ[1]/hXY *wZX) # X coord in ZX width direction and in XY in height direction
        pZX = [XYtoZXforX, pZY[2]]
        pXY = [pZY[1],m.cacheSelectedFovXYZ[1]]
        imSizeZY,imSizeZX,imSizeXY= getImSizes(cdata_zy,cdata_zx,cdata_xy)
-       println("pZY",pZY,"zy", zy, "offsetzy", offsetzy, "imSizeZY", imSizeZY)
+       @debug "" pZY zy offsetzy imSizeZY
        drawSlice(m,slices,isDrawSectionalLines,isDrawRectangle, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
        drawRectangle(ctxZY, hZY,wZY, pZY, imSizeZY, zy, offsetzy, rgb=[1,0,0],lineWidth=3.0)
        drawRectangle(ctxZX, hZX,wZX, pZX, imSizeZX, zx, offsetzx, rgb=[1,0,0],lineWidth=3.0)
@@ -598,17 +600,17 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
  m.grid3D[2,2].mouse.button3press = @guarded (widget, event) -> begin
    @guarded Gtk.draw(widget) do widget
      if isDrawRectangle
-       println("mouse event XY")
+       @debug "mouse event XY"
        ctxZY,ctxZX,ctxXY,hZY,wZY,hZX,wZX,hXY,wXY = getMetaDataSlices(m)
        reveal(widget)
        pXY = [event.x, event.y]
        XYtoZXforX = wZX-(pXY[2]/hXY *wZX) # X coord in ZX width direction and in XY in height direction
        cacheSelectedFovXYZPos(m, [pXY[2],pXY[1],m.cacheSelectedFovXYZ[3]], pixelSpacingBG, sizeBG, hXY,wZY,hZY)
-       println("cacheSelectedFovXYZ",m.cacheSelectedFovXYZ)
+       @debug "" m.cacheSelectedFovXYZ
        pZY = [pXY[1],m.cacheSelectedFovXYZ[3]]
        pZX = [XYtoZXforX, m.cacheSelectedFovXYZ[3]]
        imSizeZY,imSizeZX,imSizeXY= getImSizes(cdata_zy,cdata_zx,cdata_xy)
-       println("pXY",pXY,"xy", xy, "offsetzy", offsetzy, "imSizeZY", imSizeZY)
+       @debug pXY xy offsetzy imSizeZY
        drawSlice(m,slices,isDrawSectionalLines,isDrawRectangle, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
        drawRectangle(ctxZY, hZY,wZY, pZY, imSizeZY, zy, offsetzy, rgb=[1,0,0],lineWidth=3.0)
        drawRectangle(ctxZX, hZX,wZX, pZX, imSizeZX, zx, offsetzx, rgb=[1,0,0],lineWidth=3.0)
@@ -622,7 +624,7 @@ end
 function calcDFFovRectangle(m::DataViewerWidget, params, pixelSpacingBG)
   dfFov = getDFFov(m.currentlyShownData[1])
   xy,xz,yz = getSliceSizes(dfFov, pixelSpacingBG)
-  #println("dfFov",dfFov,"xy:",xy,"xz:",xz,"yz:",yz,"pS:",m.dataBG==nothing ? [0.002,0.002,0.001] : collect(pixelspacing(m.dataBG)))
+  @debug "" dfFov xy xz yz
   offsetxy = ([params[:transY], params[:transX]])./([pixelSpacingBG[2],pixelSpacingBG[1]])
   offsetxz = ([-params[:transX], -params[:transZ]])./([pixelSpacingBG[1],pixelSpacingBG[3]])
   offsetyz = ([params[:transY], -params[:transZ]])./([pixelSpacingBG[2],pixelSpacingBG[3]])
@@ -634,7 +636,11 @@ function getDFFov(im::ImageMeta)
   if haskey(props, "dfStrength") && haskey(props, "acqGradient")
     dfS = squeeze(props["dfStrength"])
     acqGrad = squeeze(props["acqGradient"])
-    dfFov = abs.(2*(dfS./acqGrad))
+    acqGrad_ = zeros(size(acqGrad,2),size(acqGrad,3))
+    for k=1:size(acqGrad,3)
+        acqGrad_[:,k]=diag(acqGrad[:,:,k])
+    end
+    dfFov = abs.(2*(dfS./acqGrad_))
   else
     dfFov = [0.05,0.05,0.025] # use better default...
     #warn("using default dfFov: ",dfFov)
@@ -742,7 +748,7 @@ function drawImageCairo(c, image, isDrawSectionalLines, xsec, ysec,
    end
   imSize = size(im)
   if isDrawRectangle
-    println(imSize)
+    @debug "" imSize
     drawRectangle(ctx,h,w,[w/2,h/2], imSize, xy, xyOffset)
   end
   if isDrawSectionalLines || isDrawRectangle
@@ -811,7 +817,7 @@ function calcMeta(h,w,imSize)
   cDA = [w/2,h/2]
   cIA = [imSize[2]/2,imSize[1]/2]
   sFac = cDA ./ cIA
-  println("cIA", cIA, "sFac", sFac)
+  @debug "" cIA sFac
   return sFac
 end
 
@@ -820,7 +826,7 @@ function createRectangle(ctx, cDA, sFac, xy, xyOffset)
   lowCY= cDA[2] - sFac[2] * xy[2]/2 + sFac[2] * xyOffset[2]
   highCX =lowCX + sFac[1]*xy[1]
   highCY =lowCY + sFac[2]*xy[2]
-  #println("lowCX:",lowCX,"lowCY:",lowCY,"highCX:",highCX,"highCY:",highCY)
+  @debug "" lowCX lowCY highCX highCY
   move_to(ctx, lowCX, lowCY)
   line_to(ctx, highCX, lowCY)
   move_to(ctx, lowCX, lowCY)
@@ -868,10 +874,10 @@ function getParams(m::DataViewerWidget)
   params[:coloringBG] = ColoringParams(get_gtk_property(m["adjCMinBG"], :value, Float64),
                                        get_gtk_property(m["adjCMaxBG"], :value, Float64),
                                        get_gtk_property(m["cbCMapsBG"], :active, Int64))
-  if m.offlineMode
-    params[:filenameBG] = (m.dataBGNotPermuted != nothing) ?
-                          m.dataBGNotPermuted["filename"] : ""
-  end
+   if m.offlineMode
+       params[:filenameBG] = (m.dataBGNotPermuted != nothing) && haskey(m.dataBGNotPermuted, "filename") ? m.dataBGNotPermuted["filename"] : ""
+   end
+
   params[:hideFG] = get_gtk_property(m["cbHideFG"], :active, Bool)
   params[:hideBG] = get_gtk_property(m["cbHideBG"], :active, Bool)
   params[:showSFFOV] = get_gtk_property(m["cbShowSFFOV"], :active, Bool)
@@ -994,7 +1000,7 @@ function exportImages(m::DataViewerWidget)
     filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
     if filenameImageData != ""
       pixelResizeFactor = get_gtk_property(m["adjPixelResizeFactor"],:value,Int64)
-      @async println("Export Image as ", filenameImageData)
+      @info "Export Image as" filenameImageData
       exportImage(filenameImageData, m.currentlyShownImages, pixelResizeFactor=pixelResizeFactor)
     end
   end
@@ -1006,12 +1012,12 @@ function exportTikz(m::DataViewerWidget)
     filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
     if filenameImageData != ""
       pixelResizeFactor = get_gtk_property(m["adjPixelResizeFactor"],:value,Int64)
-      @async println("Export Tikz as ", filenameImageData)
+      @info "Export Tikz as" filenameImageData
       props = m.currentlyShownData[1].properties
       SFPath=props["recoParams"][:SFPath]
       bSF = MPIFile(SFPath)
       exportTikz(filenameImageData, m.currentlyShownImages, collect(size(m.dataBG)),
-       collect(pixelspacing(m.dataBG)),fov(bSF),getParams(m); pixelResizeFactor=pixelResizeFactor)
+       collect(converttometer(pixelspacing(m.dataBG))),fov(bSF),getParams(m); pixelResizeFactor=pixelResizeFactor)
     end
   end
 end
@@ -1023,7 +1029,7 @@ function exportMovi(m::DataViewerWidget)
     params = getParams(m)
     sliceMovies = getColoredSlicesMovie(m.data, m.dataBG, m.coloring, params)
     pixelResizeFactor = get_gtk_property(m["adjPixelResizeFactor"],:value, Int64)
-    @async println("Export Movi as ", filenameMovi)
+    @info "Export Movi as" filenameMovi
     exportMovies(filenameMovi, sliceMovies, pixelResizeFactor=pixelResizeFactor)
   end
 end
@@ -1126,8 +1132,7 @@ function exportProfile(m::DataViewerWidget)
     filter = Gtk.GtkFileFilter(pattern=String("*.csv"), mimetype=String("text/comma-separated-values"))
     filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
     if filenameImageData != "" && m.currentProfile != nothing
-      @async println("Export Image as ", filenameImageData)
-
+      @info "Export Image as" filenameImageData
       writedlm(filenameImageData, m.currentProfile )
     end
   end

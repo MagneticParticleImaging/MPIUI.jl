@@ -61,7 +61,7 @@ function showData(m::SimpleDataViewerWidget, cdata_zy, cdata_zx, cdata_xy, drawS
     # display(m.grid3D[1,2], p)
     G_.current_page(m["nb2D3D"], 0)
   catch ex
-    println(stacktrace(catch_backtrace()),"\nException: ",ex)
+    @warn "Exception" ex stacktrace(catch_backtrace())
   end
 end
 
@@ -71,7 +71,7 @@ function showData(m::SimpleDataViewerWidget, cdata)
     display(m.grid2D[1,1],pZ)
     G_.current_page(m["nb2D3D"], 1)
   catch ex
-    println(stacktrace(catch_backtrace()),"\nException: ",ex)
+    @warn "Exception" ex stacktrace(catch_backtrace())
   end
 end
 

@@ -1,6 +1,6 @@
 # MPIUI
 
-dev https://github.com/tknopp/LinearSolver.jl.git
+dev https://github.com/tknopp/RegularizedLeastSquares.jl.git
 dev https://github.com/tknopp/RedPitayaDAQServer.jl.git
 dev https://github.com/MagneticParticleImaging/MPIFiles.jl.git
 dev https://github.com/MagneticParticleImaging/MPIReco.jl.git
