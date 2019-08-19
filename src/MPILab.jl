@@ -385,7 +385,8 @@ function initAnatomRefStore(m::MPILab)
     if !isfile(filename)
       @warn "$filename * is not a file"
     else
-      targetPath = joinpath(activeRecoStore(m).path, "reconstructions", id(m.currentStudy), "anatomicReferences", last(splitdir(filename)) )
+      targetPath = joinpath(activeRecoStore(m).path, "reconstructions", getMDFStudyFolderName(m.currentStudy), 
+						     "anatomicReferences", last(splitdir(filename)) )
       mkpath(targetPath)
       try_chmod(targetPath, 0o777, recursive=true)
       cp(filename, targetPath, force=true)
@@ -425,7 +426,8 @@ end
 function updateAnatomRefStore(m::MPILab)
   empty!(m.anatomRefStore)
 
-  currentPath = joinpath(activeRecoStore(m).path, "reconstructions", id(m.currentStudy), "anatomicReferences" )
+  currentPath = joinpath(activeRecoStore(m).path, "reconstructions", getMDFStudyFolderName(m.currentStudy), 
+						  "anatomicReferences" )
 
   if isdir(currentPath)
     files = readdir(currentPath)
@@ -818,7 +820,7 @@ function initVisuStore(m::MPILab)
         params = m.currentVisu.params
         if params!=nothing && params[:filenameBG] != ""
           path = joinpath(activeRecoStore(m).path, "reconstructions",
-                      id(m.currentStudy), "anatomicReferences", params[:filenameBG])
+                      getMDFStudyFolderName(m.currentStudy), "anatomicReferences", params[:filenameBG])
           imBG = loaddata(path)
           imBG_ = copyproperties(imBG,squeeze(data(imBG)))
           imBG_["filename"] = path #params[:filenameBG]
