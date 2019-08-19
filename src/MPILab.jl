@@ -310,7 +310,7 @@ function initStudyStore(m::MPILab)
 
   signal_connect(m["tbAddStudy"], "clicked") do widget
     name = get_gtk_property(m["entSearchStudies"], :text, String)
-    study = Study(now(), name, "", "")
+    study = Study("", name, "", now())
     addStudy(activeDatasetStore(m), study)
     Gtk.@sigatom scanDatasetDir(m)
 
