@@ -269,6 +269,8 @@ function initStudyStore(m::MPILab)
       Gtk.@sigatom updateAnatomRefStore(m)
 
       m.measurementWidget.currStudyName = m.currentStudy.name
+      m.measurementWidget.currStudyDate = m.currentStudy.date
+
     end
   end
 
@@ -345,7 +347,7 @@ function scanDatasetDir(m::MPILab)
   studies = getStudies( activeDatasetStore(m) )
 
   for study in studies
-    push!(m.studyStore, (split(string(study.date),"T")[1], study.name, study.subject, 
+    push!(m.studyStore, (split(string(study.date),"T")[1], study.name, study.subject,
 			  study.path, split(string(study.date),"T")[2], true))
   end
 end
@@ -385,7 +387,7 @@ function initAnatomRefStore(m::MPILab)
     if !isfile(filename)
       @warn "$filename * is not a file"
     else
-      targetPath = joinpath(activeRecoStore(m).path, "reconstructions", getMDFStudyFolderName(m.currentStudy), 
+      targetPath = joinpath(activeRecoStore(m).path, "reconstructions", getMDFStudyFolderName(m.currentStudy),
 						     "anatomicReferences", last(splitdir(filename)) )
       mkpath(targetPath)
       try_chmod(targetPath, 0o777, recursive=true)
@@ -426,7 +428,7 @@ end
 function updateAnatomRefStore(m::MPILab)
   empty!(m.anatomRefStore)
 
-  currentPath = joinpath(activeRecoStore(m).path, "reconstructions", getMDFStudyFolderName(m.currentStudy), 
+  currentPath = joinpath(activeRecoStore(m).path, "reconstructions", getMDFStudyFolderName(m.currentStudy),
 						  "anatomicReferences" )
 
   if isdir(currentPath)
@@ -734,9 +736,9 @@ function initReconstructionStore(m::MPILab)
 end
 
 function openFusion(m::MPILab)
-    if hasselection(m.selectionReco) && 
+    if hasselection(m.selectionReco) &&
        (isfile(m.currentAnatomRefFilename) ||
-         (isdir(m.currentAnatomRefFilename) && 
+         (isdir(m.currentAnatomRefFilename) &&
 	   isfile(m.currentAnatomRefFilename,"acqp")))
       try
         imFG = loaddata(m.currentReco.path)
@@ -754,11 +756,11 @@ function openFusion(m::MPILab)
            G_.current_page(m["nbView"], 1)
         end
       catch ex
-        @show  string("Something went wrong!\n", ex, "\n\n", stacktrace(bt)) 
+        @show  string("Something went wrong!\n", ex, "\n\n", stacktrace(bt))
         #showError(ex)
       end
     end
-end 
+end
 
 
 function updateReconstructionStore(m::MPILab)

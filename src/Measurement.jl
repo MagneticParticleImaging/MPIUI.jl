@@ -6,6 +6,7 @@ mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   dataBGStore::Array{Float32,4}
   mdfstore::MDFDatasetStore
   currStudyName::String
+  currStudyDate::DateTime
   filenameExperiment::String
   rawDataWidget::RawDataWidget
   sequences::Vector{String}
@@ -41,7 +42,7 @@ function MeasurementWidget(filenameConfig="")
   mainBox = object_(b, "boxMeasurement",BoxLeaf)
 
   m = MeasurementWidget( mainBox.handle, b,
-                  scanner, zeros(Float32,0,0,0,0), mdfstore, "",
+                  scanner, zeros(Float32,0,0,0,0), mdfstore, "", now(),
                   "", RawDataWidget(), String[], false)
   Gtk.gobject_move_ref(m, mainBox)
 
@@ -650,6 +651,7 @@ function getParams(m::MeasurementWidget)
   params["acqNumBGFrames"] = get_gtk_property(m["adjNumBGFrames",AdjustmentLeaf], :value, Int64)
   params["acqNumPeriodsPerFrame"] = get_gtk_property(m["adjNumPeriods",AdjustmentLeaf], :value, Int64)
   params["studyName"] = m.currStudyName
+  params["studyDate"] = m.currStudyDate
   params["studyDescription"] = ""
   params["experimentDescription"] = get_gtk_property(m["entExpDescr",EntryLeaf], :text, String)
   params["experimentName"] = get_gtk_property(m["entExpName",EntryLeaf], :text, String)
