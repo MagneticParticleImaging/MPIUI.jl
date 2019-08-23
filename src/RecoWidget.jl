@@ -298,8 +298,8 @@ function updateData!(m::RecoWidget, filenameMeas, study=nothing, experiment=noth
       elseif isdir( m.bSF[1].path )
         setSF(m, m.bSF[1].path )
       end
-    catch
-
+    catch e
+      @show e
     end
     initBGSubtractionWidgets(m)
     m.currentStudy = study
@@ -325,8 +325,9 @@ function updateSF(m::RecoWidget)
 #     if get_gtk_property(cbSparseReco, :active, Bool)
 #       S = getSF(m.bSF, freq, redFactor=redFactor, sparseTrafo="DCT")
 #     else
-
+  
   @info "Reloading SF"
+  @show m.bSF
   m.sysMatrix, m.recoGrid = getSF(m.bSF, m.freq, params[:sparseTrafo], params[:solver], bgcorrection=bgcorrection,
                       loadasreal = params[:loadasreal], loadas32bit = params[:loadas32bit],
                       redFactor = params[:redFactor])
