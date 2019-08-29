@@ -60,6 +60,10 @@ function showError(ex, bt=catch_backtrace())
   info_dialog(str, mpilab[]["mainWindow"])
 end
 
+macro guard(ex)
+  return :(try; begin $(ex) end; catch e; showError(e); end)
+end
+
 include("GtkUtils.jl")
 include("RawDataViewer.jl")
 include("Measurement.jl")
@@ -74,4 +78,5 @@ include("Settings.jl")
 include("MPILab.jl")
 include("LCRMeter.jl")
 include("ArduinoDataLogger.jl")
+include("OnlineReco/OnlineReco.jl")
 end # module

@@ -728,7 +728,12 @@ function initReconstructionStore(m::MPILab)
       if filenameData != ""
         image = loaddata(m.currentReco.path)
         file, ext = splitext(filenameData)
-        savedata(string(file,".nii"), image)
+        try
+          savedata(string(file,".nii"), image)
+        catch e
+          showError(e)
+          @show e
+        end
       end
     end
   end
