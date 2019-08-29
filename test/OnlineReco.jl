@@ -22,7 +22,8 @@ end
 b = MPIFile("measurement.mdf")
 bSF = MPIFile("systemMatrix.mdf")
 
-onlineReco(bSF, b, minFreq=80e3,  lambd=1e-2, iterations=20, SNRThresh=2.0, sparseTrafo=nothing,startFrame=1,skipFrames=100,numAverages=100, spectralLeakageCorrection=true)
+#onlineReco(bSF, b, minFreq=80e3,  lambd=1e-2, iterations=20, SNRThresh=2.0, sparseTrafo=nothing,startFrame=1,skipFrames=100,numAverages=100, spectralLeakageCorrection=true)
+onlineReco(bSF, b, minFreq=80e3,  lambd=1e-2, iterations=20, SNRThresh=2.0, sparseTrafo=nothing,startFrame=1,skipFrames=100,numAverages=100, spectralLeakageCorrection=true, recoParamsFile="/opt/mpidata/currentRecoParams.txt")
 
 
 

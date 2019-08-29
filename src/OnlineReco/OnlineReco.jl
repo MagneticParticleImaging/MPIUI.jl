@@ -15,9 +15,9 @@ function currentFrame(b::BrukerFile, simulation = false)
   if !simulation
     dataFilename = joinpath(b.path,"rawdata.job0")
 
-    nbytes = numAverages(b) == 1 ? 2 : 4
+    nbytes = acqNumAverages(b) == 1 ? 2 : 4
 
-    framenum = div(filesize(dataFilename), nbytes*rxNumChannels(b)*rxNumSamplingPoints(b))
+    framenum = max(div(filesize(dataFilename), nbytes*rxNumChannels(b)*rxNumSamplingPoints(b))-1, 0)
   else
     if !_acqSimStarted
       _acqSimStarted = true
@@ -73,9 +73,9 @@ function onlineReco(bSF::Union{T,Vector{T}}, b::MPIFile; proj="MIP",
    dv[].grid3D[1:2,3] = canvasHist
 
 
-   pb = ProgressBar()
-   dv[].grid3D[1:2,4] = pb
-   set_gtk_property!(pb,:fraction,0.1)
+   #pb = ProgressBar()
+   #dv[].grid3D[1:2,4] = pb
+   #set_gtk_property!(pb,:fraction,0.1)
    
    showall(dv[])
 
@@ -99,24 +99,18 @@ function onlineReco(bSF::Union{T,Vector{T}}, b::MPIFile; proj="MIP",
 			       spectralLeakageCorrection=spectralLeakageCorrection)
   end
 
-  # hack! Pretend everything is multispectral
-#  typeof(bSF)==BrukerFile && (bSF = BrukerFile[bSF])
-  #typeof(bSF)<:MPIFile && (bSF = MPIFile[bSF])
+  @info "Loading System Matrix ..."
 
   S, grid = getSF(bSF, frequencies, sparseTrafo, "kaczmarz", bgCorrection=bgCorrection, redFactor=redFactor)
 
-  #shape = getshape(gridSize(bSF))
-  #image = initImage(bSF, b, 1, acqNumAverages(b), grid, true)
   D = shape(grid)
   images = Array{Float32,5}(undef, length(bSF), D[1], D[2], D[3], 0)
-  #_assignColor!(image)
 
   #FOVMask = trustedFOV==true ? trustedFOVMask(bSF)[:] : 1
   frame = startFrame>0 ? startFrame : 0
   lastFrame = 0
 
-  #p = Progress(div(acqNumFrames(b)-startFrame,max.(skipFrames,1)), max.(1,skipFrames), "Online reconstruction...", 50)
-  while frame < acqNumFrames(b)
+  while frame < acqNumFrames(b)-1
     if currentAcquisitionFile != nothing
       if currentAcquisitionFile != currentAcquisition()
         return
@@ -125,15 +119,12 @@ function onlineReco(bSF::Union{T,Vector{T}}, b::MPIFile; proj="MIP",
 
     newframe = false
     currFrame = currentFrame(b,simulation)
-    if currFrame>frame
+    if currFrame > frame
       lastFrame = frame
       frame = skipFrames==0 ? currFrame : min.(frame+skipFrames, currFrame) #skip frames, if measurement is fast enough
       newframe = true
-      #while p.counter<div(frame-startFrame,max.(skipFrames,1))
-        set_gtk_property!(pb,:fraction, currFrame / acqNumFrames(b))
-        showall(dv[])
-        @show frame / acqNumFrames(b)
-      #end
+      #set_gtk_property!(pb,:fraction, currFrame / acqNumFrames(b))
+      #showall(dv[])
       
     end
 
@@ -143,7 +134,11 @@ function onlineReco(bSF::Union{T,Vector{T}}, b::MPIFile; proj="MIP",
       # Here we take maximum that number of frames that were acquired since
       # the last reconstruction
       currAverages = max.(min.(min.(frame,numAverages), frame-lastFrame),1)
-      u = getMeasurementsFD(b, frequencies=frequencies, frames=(frame-currAverages+1):frame, 
+      frames = (frame-currAverages+1):frame
+      @show frames
+      @show currAverages
+      @show spectralLeakageCorrection
+      u = getMeasurementsFD(b, frequencies=frequencies, frames=frames, 
 			       numAverages=currAverages, spectralLeakageCorrection=spectralLeakageCorrection)
       
       bgCorrection ? u .= u .- uEmpty : nothing # subtract background signal
@@ -154,14 +149,16 @@ function onlineReco(bSF::Union{T,Vector{T}}, b::MPIFile; proj="MIP",
         r = loadRecoParams(recoParamsFile)
         TR = get(r,:repetitionTime,0.0)
         if TR > 0
-          r[:numAverages] = max.(round(Int, TR / (dfCycle(b) * acqNumAverages(b))),1)
+          r[:nAverages] = max.(round(Int, TR / (dfCycle(b) * acqNumAverages(b))),1)
         end
-        numAverages = r[:numAverages]
+        numAverages = r[:nAverages]
         c = reconstruction(S, u; sparseTrafo=sparseTrafo, lambda=r[:lambd],
                           iterations=r[:iterations], solver=r[:solver] )
       end
+      cB = permutedims(reshape(c, D[1]*D[2]*D[3], length(bSF)),[2,1])
+      cF = reshape(cB,length(bSF),D[1],D[2],D[3],1)
 
-      images = cat(reshape(c,length(bSF),D[1],D[2],D[3],1), images, dims=5)
+      images = cat(cF, images, dims=5)
       image = makeAxisArray(images, spacing(grid), grid.center, 1.0) 
 
       updateData!(dv[], ImageMeta(image))
@@ -203,12 +200,13 @@ end
 function onlineReco()
   while true
     c = currentAcquisition()
+    @show c
     if c != nothing
       try
         recoargs = loadRecoParams("/opt/mpidata/currentRecoParams.txt")
         bE = get(recoargs,:bEmpty,nothing)
-        recoargs[:bEmpty] = bE == nothing ? nothing : BrukerFile(bE)
-        b = BrukerFile(c)
+        recoargs[:bEmpty] = bE == nothing ? nothing : MPIFile(bE)
+        b = MPIFile(c)
 
         if recoargs[:SFPath]==nothing
 	         bSF = MPIFile(sfPath(b) )
@@ -222,10 +220,11 @@ function onlineReco()
         end
         onlineReco(bSF, b; currentAcquisitionFile=c, recoParamsFile="/opt/mpidata/currentRecoParams.txt", recoargs...)
       catch e
+        showError(e)
         @warn "Exception" e
       end
+      finishReco()
    end
-   finishReco()
    sleep(0.4)
   end
 end
