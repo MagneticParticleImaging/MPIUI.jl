@@ -205,6 +205,8 @@ function reinit(m::MPILab)
   scanDatasetDir(m)
 end
 
+const searchActive = Ref(false)
+
 function initStudyStore(m::MPILab)
 
   m.studyStore = ListStore(String,String,String,String,String,Bool)
@@ -279,17 +281,29 @@ function initStudyStore(m::MPILab)
   end
 
   function updateShownStudies( widget )
+    if !searchActive[]
+      searchActive[] = true
+      Gtk.@sigatom unselectall!(m.selectionExp)
+      Gtk.@sigatom unselectall!(m.selectionStudy)
+      Gtk.@sigatom unselectall!(m.selectionVisu)
+      Gtk.@sigatom unselectall!(m.selectionReco)
+      Gtk.@sigatom empty!(m.experimentStore)
+      Gtk.@sigatom empty!(m.reconstructionStore)
+      Gtk.@sigatom empty!(m.visuStore)
+  
+      studySearchText = get_gtk_property(m["entSearchStudies"], :text, String)
 
-    studySearchText = get_gtk_property(m["entSearchStudies"], :text, String)
+      for l=1:length(m.studyStore)
+        showMe = true
 
-    for l=1:length(m.studyStore)
-      showMe = true
+        if length(studySearchText) > 0
+          showMe = showMe && occursin(lowercase(studySearchText), 
+                              lowercase(m.studyStore[l,2]))
+        end
 
-      if length(studySearchText) > 0
-        showMe = showMe && occursin(lowercase(studySearchText), lowercase(m.studyStore[l,2]))
+        Gtk.@sigatom m.studyStore[l,6] = showMe
       end
-
-      Gtk.@sigatom m.studyStore[l,6] = showMe
+      searchActive[] = false
     end
   end
 
@@ -602,6 +616,7 @@ function updateExperimentStore(m::MPILab, study::Study)
 
   Gtk.@sigatom empty!(m.experimentStore)
   Gtk.@sigatom empty!(m.reconstructionStore)
+  Gtk.@sigatom empty!(m.visuStore)
 
   experiments = getExperiments( activeDatasetStore(m), study)
 
