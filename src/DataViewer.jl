@@ -229,27 +229,51 @@ function initCallbacks(m_::DataViewerWidget)
     end
 
     signal_connect(m["btnExportImages"], "clicked") do widget
-      exportImages(m)
+      try
+        exportImages(m)
+      catch e
+        showError(e)
+      end
     end
 
     signal_connect(m["btnExportTikz"], "clicked") do widget
-      exportTikz(m)
+      try
+        exportTikz(m)
+      catch e
+        showError(e)
+      end
     end
 
     signal_connect(m["btnExportMovi"], "clicked") do widget
-      exportMovi(m)
+      try
+        exportMovi(m)
+      catch e
+        showError(e)
+      end
     end
 
     signal_connect(m["btnExportAllData"], "clicked") do widget
-      exportAllData(m)
+      try
+        exportAllData(m)
+      catch e
+        showError(e)
+      end
     end
 
     signal_connect(m["btnExportRealDataAllFr"], "clicked") do widget
-      exportRealDataAllFr(m)
+      try
+        exportRealDataAllFr(m)
+      catch e
+        showError(e)
+      end
     end
 
     signal_connect(m["btnExportData"], "clicked") do widget
-      exportData(m)
+      try
+        exportData(m)
+      catch e
+        showError(e)
+      end
     end
 
     signal_connect(m["btnExportProfile"], "clicked") do widget
