@@ -72,6 +72,11 @@ function onlineReco(bSF::Union{T,Vector{T}}, b::MPIFile; proj="MIP",
    canvasHist = Canvas()
    dv[].grid3D[1:2,3] = canvasHist
 
+
+   pb = ProgressBar()
+   dv[].grid3D[1:2,4] = pb
+   set_gtk_property!(pb,:fraction,0.1)
+   
    showall(dv[])
 
    bSFFreq=bSF
@@ -125,8 +130,11 @@ function onlineReco(bSF::Union{T,Vector{T}}, b::MPIFile; proj="MIP",
       frame = skipFrames==0 ? currFrame : min.(frame+skipFrames, currFrame) #skip frames, if measurement is fast enough
       newframe = true
       #while p.counter<div(frame-startFrame,max.(skipFrames,1))
-      #  next!(p)
+        set_gtk_property!(pb,:fraction, currFrame / acqNumFrames(b))
+        showall(dv[])
+        @show frame / acqNumFrames(b)
       #end
+      
     end
 
     @show currFrame
