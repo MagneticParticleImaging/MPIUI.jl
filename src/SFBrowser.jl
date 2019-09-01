@@ -7,6 +7,7 @@ mutable struct SFBrowserWidget
   tmSorted
   sysFuncs
   datasetStore
+  selection
 end
 
 function updateData!(m::SFBrowserWidget, d::DatasetStore)
@@ -69,8 +70,6 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   G_.max_width(c1,200)
   G_.max_width(c2,200)
 
-  selection = G_.selection(tv)
-
   tmFiltered = TreeModelFilter(store)
   G_.visible_column(tmFiltered,9)
   tmSorted = TreeModelSort(tmFiltered)
@@ -78,6 +77,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 
   G_.sort_column_id(TreeSortable(tmSorted),0,GtkSortType.DESCENDING)
 
+  selection = G_.selection(tv)
 
   cbOpenMeas = CheckButton("Open as Meas")
 
@@ -226,8 +226,27 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     Gtk.@sigatom set_gtk_property!(entDF, :text, str)
   end
 
+  m = SFBrowserWidget(store, tv, vbox, tmSorted, nothing, nothing, selection)
 
-  m = SFBrowserWidget(store,tv,vbox,tmSorted, nothing, nothing)
+  signal_connect(m.selection, "changed") do widget
+    if hasselection(m.selection) 
+      currentIt = selected( m.selection )
+      #Gtk.@sigatom begin
+        filename = TreeModel(m.tmSorted)[currentIt,9] 
+        f = MPIFile(filename)
+        str =   """Num: $(experimentNumber(f))\n
+                Name: $(experimentName(f))\n
+                Tracer: $(tracerName(f))\n
+                Path 1: $(filepath(f))\n
+                Path 2: $(filename)\n
+                Time: $(acqStartTime(f))"""
+        set_gtk_property!(m.tv, :tooltip_text, str)
+      #end
+    end
+  end
+
+
+
 
   #updateData!(m, sfDatabase.database)
 
