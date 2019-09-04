@@ -293,10 +293,10 @@ function updateData!(m::RecoWidget, filenameMeas, study=nothing, experiment=noth
     set_gtk_property!(m["adjFrame"],:upper, numScans(m.bMeas))
     set_gtk_property!(m["adjLastFrame"],:upper, numScans(m.bMeas))
     try
-      if m.bSF[1].path=="" && isdir( sfPath(m.bMeas) )
-        setSF(m, sfPath(m.bMeas)  )
-      elseif isdir( m.bSF[1].path ) || isfile( m.bSF[1].path )
-        setSF(m, m.bSF[1].path )
+      if filepath(m.bSF[1])=="" #&& isdir( sfPath(m.bMeas) )
+        #setSF(m, sfPath(m.bMeas)  )
+      elseif isdir( m.bSF[1].path ) || isfile( filepath(m.bSF[1]) )
+        setSF(m, filepath(m.bSF[1]) )
       end
     catch e
       @show e
