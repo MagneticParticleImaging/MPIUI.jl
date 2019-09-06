@@ -2,20 +2,20 @@ import Base: getindex
 
 mutable struct SFViewerWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
-  builder
-  dv
-  bSF
+  builder::GtkBuilder
+  dv::DataViewerWidget
+  bSF::MPIFile
   updating::Bool
-  maxFreq
-  maxChan
-  SNR
-  SNRSortedIndices
-  SNRSortedIndicesInverse
-  mixFac
-  mxyz
-  updatingMOWidgets
-  updatingSOWidget
-  grid
+  maxFreq::Int
+  maxChan::Int
+  SNR::Array{Float64,3}
+  SNRSortedIndices::Array{Float64,1}
+  SNRSortedIndicesInverse::Array{Float64,1}
+  mixFac::Array{Float64,2}
+  mxyz::Array{Float64,1}
+  updatingMOWidgets::Bool
+  updatingSOWidget::Bool
+  grid::GtkGridLeaf
 end
 
 
@@ -27,13 +27,11 @@ function SFViewerWidget()
   b = Builder(filename=uifile)
   mainBox = Box(:h) #G_.object(b, "boxSFViewer")
 
-  m = SFViewerWidget(mainBox.handle, b,
-                  nothing, nothing, false, nothing,nothing, nothing,
-                  nothing, nothing, zeros(0,0,0,0), zeros(0), false, false, nothing)
+  m = SFViewerWidget(mainBox.handle, b, DataViewerWidget(),
+                  BrukerFile(), false, 0, 0, zeros(0,0,0),
+                  zeros(0), zeros(0), zeros(0,0), zeros(0), false, false, Grid())
   Gtk.gobject_move_ref(m, mainBox)
 
-  m.grid = Grid()
-  m.dv = DataViewerWidget()
   m.grid[1,1] = m.dv
   m.grid[1,2] = Canvas()
   set_gtk_property!(m.grid[1,2], :height_request, 200)
@@ -200,7 +198,6 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   m.bSF = MPIFile(filenameSF)
   m.maxFreq = length(frequencies(m.bSF))
   m.maxChan = rxNumChannels(m.bSF)
-
   m.updating = true
   set_gtk_property!(m["adjSFFreq"],:value, 2  )
   set_gtk_property!(m["adjSFFreq"],:upper, m.maxFreq-1  )

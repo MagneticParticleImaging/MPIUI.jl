@@ -295,7 +295,7 @@ function updateData!(m::RecoWidget, filenameMeas, study=nothing, experiment=noth
     try
       if filepath(m.bSF[1])=="" #&& isdir( sfPath(m.bMeas) )
         #setSF(m, sfPath(m.bMeas)  )
-      elseif isdir( m.bSF[1].path ) || isfile( filepath(m.bSF[1]) )
+      elseif isdir( filepath(m.bSF[1]) ) || isfile( filepath(m.bSF[1]) )
         setSF(m, filepath(m.bSF[1]) )
       end
     catch e
