@@ -319,22 +319,27 @@ end
 
 function updateSliceWidgets(m::DataViewerWidget)
 
+  sfw = get_gtk_property(m["adjFrames"],:upper,Int64)
   sxw = get_gtk_property(m["adjSliceX"],:upper,Int64)
   syw = get_gtk_property(m["adjSliceY"],:upper,Int64)
   szw = get_gtk_property(m["adjSliceZ"],:upper,Int64)
   refdata = (m.dataBG == nothing) ? m.data[1] : m.dataBG
   if m.offlineMode
-    if refdata != nothing && (size(refdata) != (sxw,syw,szw))
+    if refdata != nothing 
+      if size(refdata,4) != sfw
+        Gtk.@sigatom set_gtk_property!(m["adjFrames"],:value, 1)
+        set_gtk_property!(m["adjFrames"],:upper,size(m.data[1],4))
+      end
+      
+      if size(refdata,1) != sxw || size(refdata,2) != syw || size(refdata,3) != szw
+        set_gtk_property!(m["adjSliceX"],:upper,size(refdata,1))
+        set_gtk_property!(m["adjSliceY"],:upper,size(refdata,2))
+        set_gtk_property!(m["adjSliceZ"],:upper,size(refdata,3))
 
-      set_gtk_property!(m["adjFrames"],:upper,size(m.data[1],4))
-      set_gtk_property!(m["adjSliceX"],:upper,size(refdata,1))
-      set_gtk_property!(m["adjSliceY"],:upper,size(refdata,2))
-      set_gtk_property!(m["adjSliceZ"],:upper,size(refdata,3))
-
-      Gtk.@sigatom set_gtk_property!(m["adjFrames"],:value, 1)
-      Gtk.@sigatom set_gtk_property!(m["adjSliceX"],:value,max(div(size(refdata,1),2),1))
-      Gtk.@sigatom set_gtk_property!(m["adjSliceY"],:value,max(div(size(refdata,2),2),1))
-      Gtk.@sigatom set_gtk_property!(m["adjSliceZ"],:value,max(div(size(refdata,3),2),1))
+        Gtk.@sigatom set_gtk_property!(m["adjSliceX"],:value,max(div(size(refdata,1),2),1))
+        Gtk.@sigatom set_gtk_property!(m["adjSliceY"],:value,max(div(size(refdata,2),2),1))
+        Gtk.@sigatom set_gtk_property!(m["adjSliceZ"],:value,max(div(size(refdata,3),2),1))
+      end
     end
   elseif refdata != nothing
     set_gtk_property!(m["adjFrames"],:upper,size(m.data[1],4))
