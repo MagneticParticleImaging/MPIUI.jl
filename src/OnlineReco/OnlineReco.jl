@@ -1,4 +1,4 @@
-
+using Winston
 import MPIMeasurements.currentFrame
 
 export onlineRawViewer, onlineReco, currentFrame, finishReco, currentAcquisition
@@ -162,10 +162,17 @@ function onlineReco(bSF::Union{T,Vector{T}}, b::MPIFile; proj="MIP",
       image = makeAxisArray(images, spacing(grid), grid.center, 1.0) 
 
       updateData!(dv[], ImageMeta(image))
+      profile = reverse(vec(maximum(arraydata(image),dims=1:4)))
+      p = Winston.plot(profile, "b-", linewidth=7)
+      Winston.ylabel("c")
+      Winston.xlabel("frame")
 
-      p = Winston.plot(reverse(vec(maximum(arraydata(image),dims=1:4))),"b-",linewidth=5)
-      Winston.ylabel("c / a.u.")
-      Winston.xlabel("t / a.u.")
+      setattr(p.y1, draw_ticks=false)
+      setattr(p.y2, draw_ticks=false)
+      if length(profile) > 1
+        setattr(p.x1, draw_ticks=false,
+               ticks=1:(length(profile)-1):length(profile), ticklabels=["1","$(frame)"])
+      end
       display(canvasHist, p)
       
     end
