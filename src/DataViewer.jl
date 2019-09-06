@@ -71,6 +71,7 @@ mutable struct DataViewerWidget <: Gtk.GtkBox
   cacheSelectedFovXYZ::Array{Float64,1}
   cacheSelectedMovePos::Array{Float64,1}
   stopPlayingMovie
+  updating
 end
 
 getindex(m::DataViewerWidget, w::AbstractString) = G_.object(m.builder, w)
@@ -86,7 +87,7 @@ function DataViewerWidget(offlineMode = true)
                          nothing, nothing, false, nothing, nothing, nothing, offlineMode,
                         nothing, nothing, nothing, nothing, nothing , nothing, nothing,
                         nothing, nothing, zeros(Float32,10000), 1, string(),
-                        [0.0,0.0,0.0], [0.0,0.0,0.0], false)
+                        [0.0,0.0,0.0], [0.0,0.0,0.0], false, false)
   Gtk.gobject_move_ref(m, mainBox)
 
   initSimpleDataViewer(m)
@@ -369,6 +370,7 @@ end
 
 function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=nothing)
   try
+    m.updating = true
     visible(m["mbFusion"], dataBG != nothing)
     visible(m["lbFusion"], dataBG != nothing)
     visible(m["sepFusion"], dataBG != nothing)
@@ -386,9 +388,19 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
 
     if m.data == nothing || (length(m.data) != length(data))
       m.coloring = Array{ColoringParams}(undef,length(data))
-      for l=1:length(data)
-        m.coloring[l] = ColoringParams(0.0,1.0,0)
+      if length(data) == 1
+        m.coloring[1] = ColoringParams(0.0,1.0,21)
       end
+      if length(data) > 2
+        for l=1:length(data)
+          m.coloring[l] = ColoringParams(0.0,1.0,l)
+        end
+      end
+      if length(data) == 2
+        m.coloring[1] = ColoringParams(0.0,1.0,3)
+        m.coloring[2] = ColoringParams(0.0,1.0,2)
+      end
+
 
       Gtk.@sigatom empty!(m["cbChannel"])
       for i=1:length(data)
@@ -405,6 +417,7 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
       Gtk.@sigatom set_gtk_property!(m["cbProfile"],:active,nd==4 ? 3 : 0)
 
       updateColoringWidgets( m )
+      set_gtk_property!(m["cbBlendChannels"], :active, length(data)>1)
     end
 
     m.data = data
@@ -416,6 +429,7 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
     m.dataBG = nothing
     permuteBGData(m)
     updateSliceWidgets(m)
+    m.updating = false
     showData(m)
     Gtk.@sigatom set_gtk_property!(m["adjPixelResizeFactor"],:value, (dataBG==nothing) ? 5 : 1  )
 
@@ -450,6 +464,7 @@ function updateColoring(m::DataViewerWidget)
 end
 
 function showData(m::DataViewerWidget)
+  if !m.updating
   #try
     params = getParams(m)
     if m.data != nothing
@@ -540,6 +555,7 @@ function showData(m::DataViewerWidget)
   #catch ex
   #  @warn "Exception" ex stacktrace(catch_backtrace())
   #end
+  end
 end
 
 function drawSlice(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectangle, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
