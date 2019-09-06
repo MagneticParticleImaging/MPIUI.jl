@@ -360,15 +360,15 @@ function updateSliceWidgets(m::DataViewerWidget)
 end
 
 
-function updateData!(m::DataViewerWidget, data::ImageMeta, dataBG=nothing; params=nothing)
+function updateData!(m::DataViewerWidget, data::ImageMeta, dataBG=nothing; params=nothing, kargs...)
   if ndims(data) <= 4
-    updateData!(m, ImageMeta[data], dataBG; params=params)
+    updateData!(m, ImageMeta[data], dataBG; params=params, kargs...)
   else
-    updateData!(m, imToVecIm(data), dataBG; params=params)
+    updateData!(m, imToVecIm(data), dataBG; params=params, kargs...)
   end
 end
 
-function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=nothing)
+function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=nothing, ampPhase=false)
   try
     m.updating = true
     visible(m["mbFusion"], dataBG != nothing)
@@ -397,8 +397,13 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
         end
       end
       if length(data) == 2
-        m.coloring[1] = ColoringParams(0.0,1.0,3)
-        m.coloring[2] = ColoringParams(0.0,1.0,2)
+        if ampPhase
+          m.coloring[1] = ColoringParams(0.0,1.0,21)
+          m.coloring[2] = ColoringParams(0.0,1.0,21)
+        else
+	  m.coloring[1] = ColoringParams(0.0,1.0,3)
+          m.coloring[2] = ColoringParams(0.0,1.0,2)
+	end
       end
 
 
@@ -417,7 +422,7 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
       Gtk.@sigatom set_gtk_property!(m["cbProfile"],:active,nd==4 ? 3 : 0)
 
       updateColoringWidgets( m )
-      set_gtk_property!(m["cbBlendChannels"], :active, length(data)>1)
+      set_gtk_property!(m["cbBlendChannels"], :active, length(data)>1 && !ampPhase)
     end
 
     m.data = data

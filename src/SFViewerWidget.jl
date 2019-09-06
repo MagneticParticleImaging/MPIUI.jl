@@ -156,7 +156,7 @@ function updateSF(m::SFViewerWidget)
 
     imMeta = ImageMeta(im, Dict{String,Any}())
 
-    updateData!(m.dv, imMeta)
+    updateData!(m.dv, imMeta, ampPhase=true)
     m.updating = false
   end
 end
