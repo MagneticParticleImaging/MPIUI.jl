@@ -9,6 +9,7 @@ using DelimitedFiles
 using FFTW
 using Pkg
 using InteractiveUtils
+using ImageUtils
 
 ENV["MPILIB_UI"] = "Nothing"
 
@@ -29,9 +30,15 @@ import MPIFiles: addReco, getVisu, id, addVisu
 import MPIMeasurements #: measurement
 export openFileBrowser
 
-function object_(builder::Builder,name::AbstractString, T::Type)::T
+function obj(builder::Builder,name::AbstractString, T::Type)::T
    return convert(T,ccall((:gtk_builder_get_object,Gtk.libgtk),Ptr{Gtk.GObject},(Ptr{Gtk.GObject},Ptr{UInt8}),builder,name))
 end
+
+object_(builder::Builder,name::AbstractString, T::Type)::T = obj(builder, name, T)
+
+#function obj(builder::Builder, name::AbstractString, T::Type)::T
+#   return convert(T,ccall((:gtk_builder_get_object,Gtk.libgtk),T,(Ptr{Gtk.GObject},Ptr{UInt8}),builder,name))
+#end
 
 function openFileBrowser(dir::String)
   if isdir(dir)
@@ -69,7 +76,7 @@ include("RawDataViewer.jl")
 include("Measurement.jl")
 include("SpectrumViewer.jl")
 include("BaseViewer.jl")
-include("DataViewer.jl")
+include("DataViewer/DataViewer.jl")
 include("SimpleDataViewer.jl")
 include("SFViewerWidget.jl")
 include("SFBrowser.jl")
