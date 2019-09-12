@@ -263,6 +263,9 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   m.mixFac = MPIFiles.mixingFactors(m.bSF)
   mxyz, mask, freqNumber = MPIFiles.calcPrefactors(m.bSF)
   m.mxyz = mxyz
-  m.updating = false
+  
+  updateMix(m)
+  updateSigOrd(m)
   updateSF(m)
+  m.updating = false
 end
