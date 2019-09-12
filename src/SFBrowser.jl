@@ -29,7 +29,7 @@ function updateData!(m::SFBrowserWidget, sysFuncs)
   Gtk.@sigatom empty!(m.store)
 
   for l = 2:size(sysFuncs,1)
-    push!(m.store,( sysFuncs[l,15],
+    push!(m.store,( split(sysFuncs[l,15],"T")[1],
             sysFuncs[l,1],round(sysFuncs[l,2], digits=2),
            "$(round((sysFuncs[l,3]), digits=2)) x $(round((sysFuncs[l,4]), digits=2)) x $(round((sysFuncs[l,5]), digits=2))",
                               "$(sysFuncs[l,6]) x $(sysFuncs[l,7]) x $(sysFuncs[l,8])",
@@ -49,24 +49,36 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   tv = TreeView(TreeModel(store))
   r1 = CellRendererText()
   r2 = CellRendererToggle()
-  c1 = TreeViewColumn("Date", r1, Dict("text" => 0))
-  c2 = TreeViewColumn("Name", r1, Dict("text" => 1))
-  c3 = TreeViewColumn("Gradient", r1, Dict("text" => 2))
-  c4 = TreeViewColumn("DF", r1, Dict("text" => 3))
-  c5 = TreeViewColumn("Size", r1, Dict("text" => 4))
-  c6 = TreeViewColumn("Tracer", r1, Dict("text" => 5))
-  c7 = TreeViewColumn("Batch", r1, Dict("text" => 6))
-  c8 = TreeViewColumn("Conc.", r1, Dict("text" => 7))
-  c9 = TreeViewColumn("Path", r1, Dict("text" => 8))
+  
+  if !smallWidth
+    c1 = TreeViewColumn("Date", r1, Dict("text" => 0))
+    c2 = TreeViewColumn("Name", r1, Dict("text" => 1))
+    c3 = TreeViewColumn("Gradient", r1, Dict("text" => 2))
+    c4 = TreeViewColumn("DF", r1, Dict("text" => 3))
+    c5 = TreeViewColumn("Size", r1, Dict("text" => 4))
+    c6 = TreeViewColumn("Tracer", r1, Dict("text" => 5))
+    c7 = TreeViewColumn("Batch", r1, Dict("text" => 6))
+    c8 = TreeViewColumn("Conc.", r1, Dict("text" => 7))
+    c9 = TreeViewColumn("Path", r1, Dict("text" => 8))
 
-  for (i,c) in enumerate((c1,c2,c3,c4,c5,c6,c7,c8,c9))
-    G_.sort_column_id(c,i-1)
-    G_.resizable(c,true)
-    G_.max_width(c,80)
-    push!(tv,c)
+    for (i,c) in enumerate((c1,c2,c3,c4,c5,c6,c7,c8,c9))
+      G_.sort_column_id(c,i-1)
+      G_.resizable(c,true)
+      G_.max_width(c,80)
+      push!(tv,c)
+    end
+  else
+    c1 = TreeViewColumn("Date", r1, Dict("text" => 0))
+    c2 = TreeViewColumn("Name", r1, Dict("text" => 1))
+    c3 = TreeViewColumn("Path", r1, Dict("text" => 8))
+
+    for (i,c) in enumerate((c1,c2,c3))
+      G_.sort_column_id(c,i-1)
+      G_.resizable(c,true)
+      G_.max_width(c,80)
+      push!(tv,c)
+    end  
   end
-
-  #G_.max_width(c0,20)
   G_.max_width(c1,200)
   G_.max_width(c2,200)
 
@@ -80,6 +92,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   selection = G_.selection(tv)
 
   cbOpenMeas = CheckButton("Open as Meas")
+  cbOpenInWindow = CheckButton("Open in Window")
 
 
   signal_connect(tv, "row-activated") do treeview, path, col, other...
@@ -90,8 +103,12 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 
       Gtk.@sigatom begin
         if !get_gtk_property(cbOpenMeas,:active,Bool)
-          updateData!(mpilab[].sfViewerWidget, sffilename)
-          G_.current_page(mpilab[]["nbView"], 3)
+          if get_gtk_property(cbOpenInWindow,:active,Bool)
+            SFViewer(sffilename)   
+          else
+            updateData!(mpilab[].sfViewerWidget, sffilename)
+            G_.current_page(mpilab[]["nbView"], 3)
+          end
         else
           updateData(mpilab[].rawDataWidget, sffilename)
           G_.current_page(mpilab[]["nbView"], 0)
@@ -131,6 +148,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     grid[4,2] = entTracer
     grid[1:2,3] = cbOpenMeas
     grid[3:4,3] = btnSFUpdate
+    grid[1:2,4] = cbOpenInWindow
   else
     hbox = Box(:h)
     push!(vbox, hbox)
@@ -204,7 +222,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
         showMe = showMe && ([parse(Int64,sv) for sv in split(store[l,5],"x")] == s_ )
       end
       if length(tracer) > 0
-        showMe = showMe && contains(lowercase(store[l,6]),lowercase(tracer))
+        showMe = showMe && occursin(lowercase(tracer),lowercase(store[l,6]))
       end
 
       store[l,10] = showMe
@@ -231,7 +249,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   signal_connect(m.selection, "changed") do widget
     if hasselection(m.selection) 
       currentIt = selected( m.selection )
-      #Gtk.@sigatom begin
+      Gtk.@sigatom begin
         filename = TreeModel(m.tmSorted)[currentIt,9] 
         f = MPIFile(filename, fastMode=true)
         num = experimentNumber(f)
@@ -247,14 +265,9 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
                 Path 2: $(path2)\n
                 Time: $(time)"""
         set_gtk_property!(m.tv, :tooltip_text, str)
-      #end
+      end
     end
   end
-
-
-
-
-  #updateData!(m, sfDatabase.database)
 
   return m
 end

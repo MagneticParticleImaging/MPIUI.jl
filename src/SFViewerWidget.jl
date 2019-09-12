@@ -1,4 +1,17 @@
+export SFViewer
+
 import Base: getindex
+
+
+function SFViewer(filename::AbstractString)
+  sfViewerWidget = SFViewerWidget()
+  w = Window("SF Viewer: $(filename)",800,600)
+  push!(w,sfViewerWidget)
+  showall(w) 
+  updateData!(sfViewerWidget, filename)
+  return sfViewerWidget
+end
+
 
 mutable struct SFViewerWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}

@@ -187,7 +187,7 @@ function initCallbacks(m_::DataViewerWidget)
 
     widgets = ["cbSpatialMIP", "cbShowSlices", "cbHideFG", "cbHideBG",
                "cbBlendChannels", "cbShowSFFOV", "cbTranslucentBlending",
-                "cbSpatialBGMIP", "cbShowDFFOV"]
+                "cbSpatialBGMIP", "cbShowDFFOV", "cbComplexBlending"]
     for w in widgets
       signal_connect(update, m[w], "toggled")
     end
@@ -422,7 +422,8 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
       Gtk.@sigatom set_gtk_property!(m["cbProfile"],:active,nd==4 ? 3 : 0)
 
       updateColoringWidgets( m )
-      set_gtk_property!(m["cbBlendChannels"], :active, length(data)>1 && !ampPhase)
+      set_gtk_property!(m["cbBlendChannels"], :active, length(data)>1 )
+      set_gtk_property!(m["cbComplexBlending"], :active, ampPhase)
     end
 
     m.data = data
@@ -940,6 +941,8 @@ function getParams(m::DataViewerWidget)
   params[:frameProj] = get_gtk_property(m["cbFrameProj"], :active, Int64)
 
   params[:blendChannels] = get_gtk_property(m["cbBlendChannels"], :active, Bool)
+  params[:complexBlending] = get_gtk_property(m["cbComplexBlending"], :active, Bool)
+  
   params[:profile] = get_gtk_property(m["cbProfile"], :active, Int64)
 
   params[:activeChannel] = max(get_gtk_property(m["cbChannel"],:active, Int64) + 1,1)
