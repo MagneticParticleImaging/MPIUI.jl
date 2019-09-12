@@ -233,13 +233,19 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
       currentIt = selected( m.selection )
       #Gtk.@sigatom begin
         filename = TreeModel(m.tmSorted)[currentIt,9] 
-        f = MPIFile(filename)
-        str =   """Num: $(experimentNumber(f))\n
-                Name: $(experimentName(f))\n
-                Tracer: $(tracerName(f))\n
-                Path 1: $(filepath(f))\n
-                Path 2: $(filename)\n
-                Time: $(acqStartTime(f))"""
+        f = MPIFile(filename, fastMode=true)
+        num = experimentNumber(f)
+        name = experimentName(f)
+        tname = tracerName(f)
+        path1 = filepath(f)
+        path2 = filename
+        time = acqStartTime(f)
+        str =   """Num: $(num)\n
+                Name: $(name)\n
+                Tracer: $(tname)\n
+                Path 1: $(path1)\n
+                Path 2: $(path2)\n
+                Time: $(time)"""
         set_gtk_property!(m.tv, :tooltip_text, str)
       #end
     end
