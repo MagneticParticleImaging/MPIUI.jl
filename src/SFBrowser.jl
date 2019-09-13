@@ -103,11 +103,16 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 
       Gtk.@sigatom begin
         if !get_gtk_property(cbOpenMeas,:active,Bool)
-          if get_gtk_property(cbOpenInWindow,:active,Bool)
-            SFViewer(sffilename)   
+          if measIsCalibProcessed(MPIFile(sffilename,fastMode=true))
+            if get_gtk_property(cbOpenInWindow,:active,Bool)
+              SFViewer(sffilename)   
+            else
+              updateData!(mpilab[].sfViewerWidget, sffilename)
+              G_.current_page(mpilab[]["nbView"], 3)
+            end
           else
-            updateData!(mpilab[].sfViewerWidget, sffilename)
-            G_.current_page(mpilab[]["nbView"], 3)
+            @show sffilename
+            info_dialog("The calibration file $(sffilename) is not yet processed!", mpilab[]["mainWindow"])
           end
         else
           updateData(mpilab[].rawDataWidget, sffilename)
