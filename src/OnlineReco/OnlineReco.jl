@@ -3,8 +3,8 @@ import MPIMeasurements.currentFrame
 
 export onlineRawViewer, onlineReco, currentFrame, finishReco, currentAcquisition
 
-_acqSimStarted = false
-_acqSimStartTime = 0.0
+const _acqSimStarted = Ref(false)
+const _acqSimStartTime = Ref(now())
 
 # Return the frame that is currently beeing written
 function currentFrame(b::BrukerFile, simulation = false)
@@ -19,12 +19,12 @@ function currentFrame(b::BrukerFile, simulation = false)
 
     framenum = max(div(filesize(dataFilename), nbytes*rxNumChannels(b)*rxNumSamplingPoints(b))-1, 0)
   else
-    if !_acqSimStarted
-      _acqSimStarted = true
-      _acqSimStartTime = Dates.unix2datetime(time())
+    if !_acqSimStarted[]
+      _acqSimStarted[] = true
+      _acqSimStartTime[] = now()
     end
 
-    diffTime = Dates.unix2datetime(time()) - _acqSimStartTime
+    diffTime = now() - _acqSimStartTime[]
     sec = convert(Int,diffTime.value)*1e-3 # Dates.minute(diffTime)*60 + Dates.second(diffTime) + Dates.millisecond(diffTime)*1e-3
 
     framenum = min.(acqNumFrames(b), floor(Int, sec / 0.0214))
@@ -36,12 +36,12 @@ function currentFrame(b::MDFFile, simulation = false)
   global _acqSimStartTime
 
 
-  if !_acqSimStarted
-    _acqSimStarted = true
-    _acqSimStartTime = Dates.unix2datetime(time())
+  if !_acqSimStarted[]
+    _acqSimStarted[] = true
+    _acqSimStartTime[] = now()
   end
 
-  diffTime = Dates.unix2datetime(time()) - _acqSimStartTime
+  diffTime = now() - _acqSimStartTime[]
   sec = convert(Int,diffTime.value)*1e-3 # Dates.minute(diffTime)*60 + Dates.second(diffTime) + Dates.millisecond(diffTime)*1e-3
 
   framenum = min.(acqNumFrames(b), floor(Int, sec / 0.0214))
@@ -51,19 +51,19 @@ end
 
 
 
-const dv = a=Ref{Union{DataViewerWidget,Nothing}}(nothing)
+const dv = Ref{Union{DataViewerWidget,Nothing}}(nothing)
 
 # Important parameter is "skipFrames"
-function onlineReco(bSF::Union{T,Vector{T}}, b::MPIFile; proj="MIP",
+function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
     SNRThresh=-1, minFreq=0, maxFreq=1.25e6, recChannels=1:numReceivers(b), sortBySNR=false,
     sparseTrafo=nothing, redFactor=0.01, bEmpty=nothing, skipFrames=0, startFrame=0, outputdir=nothing,
     numAverages=1, bgFrames=1, recoParamsFile=nothing, currentAcquisitionFile=nothing, 
     spectralLeakageCorrection=false,
-    simulation=false,trustedFOV=true, kargs...) where {T<:MPIFile}
+    simulation=false,trustedFOV=true, kargs...) 
 
    global _acqSimStarted
    global dv
-   _acqSimStarted = false
+   _acqSimStarted[] = false
 
    if dv[] == nothing
      dv[] = DataViewer()
@@ -72,24 +72,13 @@ function onlineReco(bSF::Union{T,Vector{T}}, b::MPIFile; proj="MIP",
    canvasHist = Canvas()
    dv[].grid3D[1:2,3] = canvasHist
 
-
    #pb = ProgressBar()
    #dv[].grid3D[1:2,4] = pb
    #set_gtk_property!(pb,:fraction,0.1)
    
    showall(dv[])
 
-   bSFFreq=bSF
-   if recoParamsFile != nothing
-      recoargs=loadRecoParams(recoParamsFile)
-      if recoargs[:SFPathFreq]!=nothing
-         bSFFreq = MPIFile(recoargs[:SFPathFreq])
-      end
-   end
-
-  typeof(bSF)<:MPIFile && (bSF = MPIFile[bSF])
-
-  frequencies = filterFrequencies(bSFFreq, minFreq=minFreq, maxFreq=maxFreq,
+  frequencies = filterFrequencies(bSF, minFreq=minFreq, maxFreq=maxFreq,
                                   recChannels=recChannels, SNRThresh=SNRThresh, sortBySNR=sortBySNR)
 
   bgCorrection = bEmpty != nothing
@@ -155,8 +144,11 @@ function onlineReco(bSF::Union{T,Vector{T}}, b::MPIFile; proj="MIP",
         c = reconstruction(S, u; sparseTrafo=sparseTrafo, lambda=r[:lambd],
                           iterations=r[:iterations], solver=r[:solver] )
       end
+
       cB = permutedims(reshape(c, D[1]*D[2]*D[3], length(bSF)),[2,1])
       cF = reshape(cB,length(bSF),D[1],D[2],D[3],1)
+
+      #cF[:].=0.0
 
       images = cat(cF, images, dims=5)
       image = makeAxisArray(images, spacing(grid), grid.center, 1.0) 
@@ -188,7 +180,7 @@ onlineReco(filenameSF::AbstractString, filenameMeas::AbstractString; kargs...) =
 
 
 function currentAcquisition()
-   path = open("/opt/mpidata/currentAcquisition.txt","r") do fd
+   path = open("/opt/mpidata/currentAcquisitionNew.txt","r") do fd
          readline(fd)
         end
 
@@ -200,11 +192,14 @@ function currentAcquisition()
 end
 
 function finishReco()
-  open("/opt/mpidata/currentAcquisition.txt","w") do fd
+  open("/opt/mpidata/currentAcquisitionNew.txt","w") do fd
   end
 end
 
-function onlineReco()
+function onlineReco(simulation::Bool=false)
+  global dv
+
+  dv[] = nothing
   while true
     c = currentAcquisition()
     @show c
@@ -216,16 +211,22 @@ function onlineReco()
         b = MPIFile(c)
 
         if recoargs[:SFPath]==nothing
-	         bSF = MPIFile(sfPath(b) )
+            bSF = MPIFile(sfPath(b) )
         else
-          bSF = MPIFile(recoargs[:SFPath])
+          if length(recoargs[:SFPath]) == 1
+            bSF = MPIFile(recoargs[:SFPath][1])
+          else
+            bSF = MultiContrastFile(recoargs[:SFPath])
+          end
         end
 
         TR = get(recoargs,:repetitionTime,0.0)
         if TR > 0
           recoargs[:numAverages] = max.(round(Int, TR / (dfCycle(b) * acqNumAverages(b))),1)
         end
-        onlineReco(bSF, b; currentAcquisitionFile=c, recoParamsFile="/opt/mpidata/currentRecoParams.txt", recoargs...)
+        onlineReco(bSF, b; currentAcquisitionFile=c, 
+			recoParamsFile="/opt/mpidata/currentRecoParams.txt", 
+			simulation=simulation, recoargs...)
       catch e
         showError(e)
         @warn "Exception" e
