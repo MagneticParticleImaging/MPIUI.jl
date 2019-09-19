@@ -91,7 +91,7 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
   @info "Loading System Matrix ..."
 
   S, grid = getSF(bSF, frequencies, sparseTrafo, "kaczmarz", bgCorrection=bgCorrection, redFactor=redFactor)
-
+  
   D = shape(grid)
   images = Array{Float32,5}(undef, length(bSF), D[1], D[2], D[3], 0)
 
@@ -129,7 +129,7 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
       @show spectralLeakageCorrection
       u = getMeasurementsFD(b, frequencies=frequencies, frames=frames, 
 			       numAverages=currAverages, spectralLeakageCorrection=spectralLeakageCorrection)
-      
+
       bgCorrection ? u .= u .- uEmpty : nothing # subtract background signal
       
       if recoParamsFile == nothing
@@ -147,8 +147,6 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
 
       cB = permutedims(reshape(c, D[1]*D[2]*D[3], length(bSF)),[2,1])
       cF = reshape(cB,length(bSF),D[1],D[2],D[3],1)
-
-      #cF[:].=0.0
 
       if !any(isnan.(cF))
 
