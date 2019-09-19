@@ -150,23 +150,27 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
 
       #cF[:].=0.0
 
-      images = cat(cF, images, dims=5)
-      image = makeAxisArray(images, spacing(grid), grid.center, 1.0) 
+      if !any(isnan.(cF))
 
-      updateData!(dv[], ImageMeta(image))
-      profile = reverse(vec(maximum(arraydata(image),dims=1:4)))
-      p = Winston.plot(profile, "b-", linewidth=7)
-      Winston.ylabel("c")
-      Winston.xlabel("frame")
+        images = cat(cF, images, dims=5)
+        image = makeAxisArray(images, spacing(grid), grid.center, 1.0) 
 
-      setattr(p.y1, draw_ticks=false)
-      setattr(p.y2, draw_ticks=false)
-      if length(profile) > 1
-        setattr(p.x1, draw_ticks=false,
-               ticks=1:(length(profile)-1):length(profile), ticklabels=["1","$(frame)"])
+        updateData!(dv[], ImageMeta(image))
+        profile = reverse(vec(maximum(arraydata(image),dims=1:4)))
+        p = Winston.plot(profile, "b-", linewidth=7)
+        Winston.ylabel("c")
+        Winston.xlabel("frame")
+
+        setattr(p.y1, draw_ticks=false)
+        setattr(p.y2, draw_ticks=false)
+        if length(profile) > 1
+          setattr(p.x1, draw_ticks=false,
+                 ticks=1:(length(profile)-1):length(profile), ticklabels=["1","$(frame)"])
+        end
+        display(canvasHist, p)
+      else
+        @info "Reco contains NaNs. Will not display it"
       end
-      display(canvasHist, p)
-      
     end
     sleep(0.2)
 
@@ -180,7 +184,7 @@ onlineReco(filenameSF::AbstractString, filenameMeas::AbstractString; kargs...) =
 
 
 function currentAcquisition()
-   path = open("/opt/mpidata/currentAcquisitionNew.txt","r") do fd
+   path = open("/opt/mpidata/currentAcquisition.txt","r") do fd
          readline(fd)
         end
 
@@ -192,7 +196,7 @@ function currentAcquisition()
 end
 
 function finishReco()
-  open("/opt/mpidata/currentAcquisitionNew.txt","w") do fd
+  open("/opt/mpidata/currentAcquisition.txt","w") do fd
   end
 end
 

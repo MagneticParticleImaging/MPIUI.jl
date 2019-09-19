@@ -57,7 +57,11 @@ function imToVecIm(image::ImageMeta)
 
 function showError(ex, bt=catch_backtrace())
   str = string("Something went wrong!\n", ex, "\n\n", stacktrace(bt))
-  info_dialog(str, mpilab[]["mainWindow"])
+  if isassigned(mpilab)
+    info_dialog(str, mpilab[]["mainWindow"])
+  else
+    info_dialog(str)
+  end
 end
 
 macro guard(ex)
