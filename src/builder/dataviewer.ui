@@ -619,20 +619,6 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="cbShowSFFOV">
-            <property name="label" translatable="yes">Show SF FOV</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="xalign">0</property>
-            <property name="draw_indicator">True</property>
-          </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">14</property>
-          </packing>
-        </child>
-        <child>
           <object class="GtkCheckButton" id="cbHideBG">
             <property name="label" translatable="yes">Hide BG Data</property>
             <property name="visible">True</property>
@@ -944,32 +930,6 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="cbShowDFFOV">
-            <property name="label" translatable="yes">Show DF FOV</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="xalign">0</property>
-            <property name="draw_indicator">True</property>
-          </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">15</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkButton" id="btnAutoRegistration">
-            <property name="label" translatable="yes">Auto Register</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-          </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">16</property>
-          </packing>
-        </child>
-        <child>
           <object class="GtkComboBoxText" id="cbPermutes">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
@@ -989,6 +949,26 @@
             <property name="left_attach">0</property>
             <property name="top_attach">1</property>
           </packing>
+        </child>
+        <child>
+          <object class="GtkCheckButton" id="cbShowDFFOV">
+            <property name="label" translatable="yes">Show FOV</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">False</property>
+            <property name="xalign">0</property>
+            <property name="draw_indicator">True</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">14</property>
+          </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
         </child>
         <child>
           <placeholder/>
@@ -1022,8 +1002,8 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="cbShowExtraWindow">
-            <property name="label" translatable="yes">Extra Window</property>
+          <object class="GtkCheckButton" id="cbComplexBlending">
+            <property name="label" translatable="yes">Complex Blending </property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
@@ -1037,19 +1017,10 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="cbComplexBlending">
-            <property name="label" translatable="yes">Complex Blending </property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="xalign">0</property>
-            <property name="draw_indicator">True</property>
-          </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">2</property>
-            <property name="width">2</property>
-          </packing>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
         </child>
       </object>
     </child>
