@@ -71,7 +71,7 @@ end
 
 
 function calcDFFovRectangle(m::DataViewerWidget, trans::Vector, pixelSpacingBG::Vector)
-  dfFov = getDFFov(m.currentlyShownData[1])
+  dfFov = getDFFov(m.currentlyShownData)
   xy,xz,yz = getSliceSizes(dfFov, pixelSpacingBG)
   @debug "" dfFov xy xz yz
   offsetxy = ([trans[2], trans[1]])./([pixelSpacingBG[2],pixelSpacingBG[1]])
@@ -215,7 +215,7 @@ function drawImageCairo(c, image, isDrawSectionalLines, xsec, ysec,
  end
 
  c.mouse.button1press = @guarded (widget, event) -> begin
-  if isDrawSectionalLines
+  #if isDrawSectionalLines
    ctx = getgc(widget)
    reveal(widget)
    h = height(ctx)
@@ -226,7 +226,7 @@ function drawImageCairo(c, image, isDrawSectionalLines, xsec, ysec,
    yy = !flipY ? yy : (size(image,1)-yy+1)
    Gtk.@sigatom set_gtk_property!(adjX, :value, round(Int64,xx))
    Gtk.@sigatom set_gtk_property!(adjY, :value, round(Int64,yy))
-  end
+  #end
  end
 end
 
@@ -238,13 +238,13 @@ function showProfile(m::DataViewerWidget, params, slicesInRawData)
   chan = params[:activeChannel]
   prof = get_gtk_property(m["cbProfile"],:active, Int64) + 1
   if prof == 1
-    m.currentProfile = vec(m.data[chan][:,slicesInRawData[2],slicesInRawData[3],params[:frame]])
+    m.currentProfile = vec(m.data[chan,:,slicesInRawData[2],slicesInRawData[3],params[:frame]])
   elseif prof == 2
-    m.currentProfile = vec(m.data[chan][slicesInRawData[1],:,slicesInRawData[3],params[:frame]])
+    m.currentProfile = vec(m.data[chan,slicesInRawData[1],:,slicesInRawData[3],params[:frame]])
   elseif prof == 3
-    m.currentProfile = vec(m.data[chan][slicesInRawData[1],slicesInRawData[2],:,params[:frame]])
+    m.currentProfile = vec(m.data[chan,slicesInRawData[1],slicesInRawData[2],:,params[:frame]])
   else
-    m.currentProfile = vec(m.data[chan][slicesInRawData[1],slicesInRawData[2],slicesInRawData[3],:])
+    m.currentProfile = vec(m.data[chan,slicesInRawData[1],slicesInRawData[2],slicesInRawData[3],:])
   end
   showWinstonPlot(m, m.currentProfile, "c", "xyzt")
 end

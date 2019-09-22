@@ -214,8 +214,8 @@ function updateBGMeas(m::RecoWidget)
       if isdir(filenameBG) || isfile(filenameBG)
         m.bEmpty = MPIFile(filenameBG)
 
-        set_gtk_property!(m["adjFirstFrameBG"],:upper, numScans(m.bEmpty))
-        set_gtk_property!(m["adjLastFrameBG"],:upper, numScans(m.bEmpty))
+        set_gtk_property!(m["adjFirstFrameBG"],:upper, acqNumFrames(m.bEmpty))
+        set_gtk_property!(m["adjLastFrameBG"],:upper, acqNumFrames(m.bEmpty))
       end
     end
   end
@@ -227,7 +227,7 @@ end
 
 function selectSF(m::RecoWidget)
   try
-    dlg = SFSelectionDialog( gradient=sfGradient(m.bMeas)[3], driveField=dfStrength(m.bMeas)  )
+    dlg = SFSelectionDialog( gradient=maximum(acqGradient(m.bMeas)), driveField=dfStrength(m.bMeas)  )
 
     ret = run(dlg)
     if ret == GtkResponseType.ACCEPT
@@ -274,8 +274,8 @@ function setSF(m::RecoWidget, filename)
   m.bSF[m.selectedSF] = MPIFile( filename )
 
   set_gtk_property!(m["entSF"], :text, filename)
-  set_gtk_property!(m["adjMinFreq"],:upper,bandwidth(m.bSF[m.selectedSF]) / 1000)
-  set_gtk_property!(m["adjMaxFreq"],:upper,bandwidth(m.bSF[m.selectedSF]) / 1000)
+  set_gtk_property!(m["adjMinFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
+  set_gtk_property!(m["adjMaxFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
 
   m.sfParamsChanged = true
   nothing
@@ -290,8 +290,8 @@ end
 function updateData!(m::RecoWidget, filenameMeas, study=nothing, experiment=nothing)
   if filenameMeas != nothing
     m.bMeas = MPIFile(filenameMeas)
-    set_gtk_property!(m["adjFrame"],:upper, numScans(m.bMeas))
-    set_gtk_property!(m["adjLastFrame"],:upper, numScans(m.bMeas))
+    set_gtk_property!(m["adjFrame"],:upper, acqNumFrames(m.bMeas))
+    set_gtk_property!(m["adjLastFrame"],:upper, acqNumFrames(m.bMeas))
     try
       if filepath(m.bSF[1])=="" #&& isdir( sfPath(m.bMeas) )
         #setSF(m, sfPath(m.bMeas)  )
@@ -492,79 +492,3 @@ function setParams(m::RecoWidget, params)
 end
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#=
-function performMultiProcessReco( widget )
-  @debug "Num Procs: $(procs())"
-  recoWorkers = workers()
-  @debug "Num Workers: $(recoWorkers)"
-  nWorkers = length(recoWorkers)
-  start(spReco)
-  params = getParams(m)
-
-  if m.sfParamsChanged
-    updateSF(m)
-  end
-
-  if params[:emptyMeasPath] != nothing
-    params[:bEmpty] = MPIFile( params[:emptyMeasPath] )
-  end
-  bSF=m.bSF
-  bMeas=m.bMeas
-  freq=m.freq
-
-  recoTasks = Vector{Task}(nWorkers)
-  recoResults = Vector{ImageMetadata.ImageMeta}(nWorkers)
-
-  splittedFrames = splittingFrames(params, nWorkers)
-
-  @Gtk.sigatom begin
-    @async begin
-      for p=1:nWorkers
-        recoTasks[p] = @async begin
-            @debug "Entering recoTask..."
-            taskParams = copy(params)
-            taskParams[:frames] = splittedFrames[p]
-            recoResult = remotecall_fetch(multiCoreReconstruction, recoWorkers[p], bSF, bMeas, freq, taskParams )
-            recoResults[p] = recoResult
-            @debug "Finished recoTask."
-        end # recoTasks[p]
-      end # for
-      for k=1:nWorkers
-        wait(recoTasks[k])
-      end
-      res = reductionRecoResults(recoResults)
-      m.recoResult = res
-      m.recoResult["recoParams"] = getParams(m)
-      Gtk.@sigatom updateData!(m.dv, m.recoResult )
-      stop(spReco)
-      @debug "reco processes finished."
-    end # async
-  end # Gtk.sigatom
-end #Function
-=#

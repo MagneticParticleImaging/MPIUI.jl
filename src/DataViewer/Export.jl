@@ -127,7 +127,7 @@ function exportAllData(m::DataViewerWidget)
       cdata_[:] = convert(ImageMeta{RGB},cdata)[:] #TK: ugly hack
 
       file, ext = splitext(filenameData)
-      savedata(string(file,".nii"), ImageMeta(cdata_,prop), permRGBData=true)
+      savedata_analyze(string(file,".nii"), ImageMeta(cdata_,prop), permRGBData=true)
     end
   end
 end
@@ -145,8 +145,8 @@ function exportRealDataAllFr(m::DataViewerWidget)
       #dataBG_ = applyPermutionsRev(m, dataBG)
 
       file, ext = splitext(filenameData)
-      savedata(string(file,".nii"), data)
-      savedata(string(file,"_BG.nii"), dataBG)
+      savedata_analyze(string(file,".nii"), data)
+      savedata_analyze(string(file,"_BG.nii"), dataBG)
     end
   end
 end
@@ -179,7 +179,7 @@ function exportData(m::DataViewerWidget)
       cdata_[:] = convert(ImageMeta{RGB},cdata)[:] #TK: ugly hack
 
       file, ext = splitext(filenameData)
-      savedata(string(file,".nii"), ImageMeta(cdata_,prop), permRGBData=true)
+      savedata_analyze(string(file,".nii"), ImageMeta(cdata_,prop), permRGBData=true)
     end
   end
 end

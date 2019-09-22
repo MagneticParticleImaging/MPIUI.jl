@@ -419,7 +419,7 @@ function initAnatomRefStore(m::MPILab)
         name = m.anatomRefStore[currentIt,1]
         filename = m.anatomRefStore[currentIt,2]
 
-        im = loaddata(filename)
+        im = loadRecoData(filename)
         im_ = copyproperties(im,squeeze(data(im)))
         Gtk.@sigatom DataViewer(im_)
       end
@@ -667,7 +667,7 @@ function initReconstructionStore(m::MPILab)
 
   signal_connect(tv, "row-activated") do treeview, path, col, other...
     if hasselection(m.selectionReco)
-      im = loaddata(m.currentReco.path)
+      im = loadRecoData(m.currentReco.path)
       #Gtk.@sigatom DataViewer(im)
       Gtk.@sigatom begin
          updateData!(m.dataViewerWidget, im)
@@ -700,7 +700,7 @@ function initReconstructionStore(m::MPILab)
       m.currentReco = getReco(activeRecoStore(m), m.currentStudy, m.currentExperiment, recoNum)
 
       if isfile(m.currentReco.path)
-        im = loaddata(m.currentReco.path)
+        im = loadRecoData(m.currentReco.path)
         #Gtk.@sigatom DataViewer(im)
         #Gtk.@sigatom begin
         #   updateData!(m.dataViewerWidget, im)
@@ -737,20 +737,20 @@ function initReconstructionStore(m::MPILab)
   end
 
   signal_connect(m["tbExportRecoData"], "clicked") do widget
+   try
     if hasselection(m.selectionReco)
       filter = Gtk.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
       filenameData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
       if filenameData != ""
-        image = loaddata(m.currentReco.path)
+        image = sliceColorDim( loadRecoData(m.currentReco.path), 1)
         file, ext = splitext(filenameData)
-        try
-          savedata(string(file,".nii"), image)
-        catch e
-          showError(e)
-          @show e
-        end
+        savedata_analyze(string(file,".nii"), image)
       end
     end
+   catch e
+    @info e
+    showError(e)
+   end 
   end
 
 end
@@ -761,10 +761,10 @@ function openFusion(m::MPILab)
          (isdir(m.currentAnatomRefFilename) &&
 	   isfile(m.currentAnatomRefFilename,"acqp")))
       try
-        imFG = loaddata(m.currentReco.path)
+        imFG = loadRecoData(m.currentReco.path)
         currentIt = selected( m.selectionAnatomicRefs )
 
-        imBG = loaddata(m.currentAnatomRefFilename)
+        imBG = loadRecoData(m.currentAnatomRefFilename)
         imBG_ = copyproperties(imBG,squeeze(data(imBG)))
 
         imBG_["filename"] = m.currentAnatomRefFilename #last(splitdir(filename))
@@ -837,13 +837,13 @@ function initVisuStore(m::MPILab)
     if hasselection(m.selectionReco)
       if hasselection(m.selectionVisu)
 
-        im = loaddata(m.currentReco.path)
+        im = loadRecoData(m.currentReco.path)
 
         params = m.currentVisu.params
         if params!=nothing && params[:filenameBG] != ""
           path = joinpath(activeRecoStore(m).path, "reconstructions",
                       getMDFStudyFolderName(m.currentStudy), "anatomicReferences", params[:filenameBG])
-          imBG = loaddata(path)
+          imBG = loadRecoData(path)
           imBG_ = copyproperties(imBG,squeeze(data(imBG)))
           imBG_["filename"] = path #params[:filenameBG]
         else

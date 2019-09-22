@@ -258,7 +258,7 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
 
   @time m.SNR = calibSNR(m.bSF)[:,:,:]
   #m.SNR = calculateSystemMatrixSNR(m.bSF)
-  @time m.SNRSortedIndices = flipud(sortperm(vec(m.SNR)))
+  @time m.SNRSortedIndices = reverse(sortperm(vec(m.SNR)))
   @time m.SNRSortedIndicesInverse = sortperm(m.SNRSortedIndices)
   m.mixFac = MPIFiles.mixingFactors(m.bSF)
   mxyz, mask, freqNumber = MPIFiles.calcPrefactors(m.bSF)

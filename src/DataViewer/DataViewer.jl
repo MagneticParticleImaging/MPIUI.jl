@@ -1,17 +1,8 @@
 using Gtk, Gtk.ShortNames, Cairo
 
-export DataViewer, DataViewer, DataViewerWidget, drawImageCairo
-export getRegistrationBGParams, setRegistrationBGParams!
+export DataViewer, DataViewerWidget
 
 function DataViewer(imFG::ImageMeta, imBG=nothing; params=nothing)
-  if ndims(imFG) <= 4
-    DataViewer(ImageMeta[imFG], imBG; params=params)
-  else
-    DataViewer(imToVecIm(imFG), imBG; params=params)
-  end
-end
-
-function DataViewer(imFG::Vector, imBG=nothing; params=nothing)
   dw = DataViewer()
   updateData!(dw,imFG,imBG)
   if params!=nothing
@@ -47,12 +38,12 @@ mutable struct DataViewerWidget <: Gtk.GtkBox
   builder::Builder
   grid2D::Grid
   grid3D::Grid
-  coloring
-  upgradeColoringWInProgress
+  coloring::Vector{ColoringParams}
+  upgradeColoringWInProgress::Bool
   cacheSelectedFovXYZ::Array{Float64,1}
   cacheSelectedMovePos::Array{Float64,1}
-  stopPlayingMovie
-  updating
+  stopPlayingMovie::Bool
+  updating::Bool
   data
   dataBG
   dataBGNotPermuted
@@ -75,7 +66,7 @@ function DataViewerWidget()
   m = DataViewerWidget( mainBox.handle, b,  
                          G_.object(b, "gridDataViewer2D"),
                          G_.object(b, "gridDataViewer3D"),
-                         nothing, false, 
+                         Vector{ColoringParams}(), false, 
                         [0.0,0.0,0.0], [0.0,0.0,0.0], false, false,
                         nothing, nothing, nothing,nothing, nothing, nothing)
   Gtk.gobject_move_ref(m, mainBox)
@@ -153,7 +144,7 @@ function initCallbacks(m_::DataViewerWidget)
     function update( widget )
       if !m.upgradeColoringWInProgress
         updateColoring( m )
-        Gtk.@sigatom showData( m )
+        showData( m )
       end
     end
 
@@ -200,7 +191,26 @@ function initCallbacks(m_::DataViewerWidget)
     end
 
     signal_connect(m["btnSaveVisu"], "clicked") do widget
-      addVisu(mpilab[], getParams(m))
+      try
+        params = getParams(m)
+        # Need to convert the coloring into the old Int format
+        coloring = params[:coloring]
+        
+        coloringInt = ColoringParamsInt[]
+        for c in coloring
+          idx = findfirst(a->a==c.cmap,existing_cmaps())-1
+          push!(coloringInt, ColoringParamsInt(c.cmin, c.cmax, idx))
+        end
+        params[:coloring] = coloringInt
+        
+        c = params[:coloringBG]
+        idx = findfirst(a->a==c.cmap,existing_cmaps())-1
+        params[:coloringBG] = ColoringParamsInt(c.cmin, c.cmax, idx)
+        
+        addVisu(mpilab[], params)
+      catch e
+        showError(e)
+      end
     end
 
     initExportCallbacks(m)
@@ -239,82 +249,81 @@ function updateSliceWidgets(m::DataViewerWidget)
   sxw = get_gtk_property(m["adjSliceX"],:upper,Int64)
   syw = get_gtk_property(m["adjSliceY"],:upper,Int64)
   szw = get_gtk_property(m["adjSliceZ"],:upper,Int64)
-  refdata = (m.dataBG == nothing) ? m.data[1] : m.dataBG
+  refdata = (m.dataBG == nothing) ? m.data[1,:,:,:,:] : m.dataBG
 
   if refdata != nothing 
+  
     if size(refdata,4) != sfw
       Gtk.@sigatom set_gtk_property!(m["adjFrames"],:value, 1)
-      set_gtk_property!(m["adjFrames"],:upper,size(m.data[1],4))
+      set_gtk_property!(m["adjFrames"],:upper,size(m.data,Axis{:time}))
     end
-      
+    
     if size(refdata,1) != sxw || size(refdata,2) != syw || size(refdata,3) != szw
       set_gtk_property!(m["adjSliceX"],:upper,size(refdata,1))
       set_gtk_property!(m["adjSliceY"],:upper,size(refdata,2))
       set_gtk_property!(m["adjSliceZ"],:upper,size(refdata,3))
-
+      
       Gtk.@sigatom set_gtk_property!(m["adjSliceX"],:value,max(div(size(refdata,1),2),1))
       Gtk.@sigatom set_gtk_property!(m["adjSliceY"],:value,max(div(size(refdata,2),2),1))
       Gtk.@sigatom set_gtk_property!(m["adjSliceZ"],:value,max(div(size(refdata,3),2),1))
     end
   end
+  return
 end
 
-function updateData!(m::DataViewerWidget, data::ImageMeta, dataBG=nothing; params=nothing, kargs...)
-  if ndims(data) <= 4
-    updateData!(m, ImageMeta[data], dataBG; params=params, kargs...)
-  else
-    updateData!(m, imToVecIm(data), dataBG; params=params, kargs...)
-  end
-end
-
-function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=nothing, ampPhase=false)
-  try
+function updateData!(m::DataViewerWidget, data::ImageMeta, dataBG=nothing; params=nothing, ampPhase=false)
+  #try
     m.updating = true
+    numChan = size(data,Axis{:color})
+    
     visible(m["mbFusion"], dataBG != nothing)
     visible(m["lbFusion"], dataBG != nothing)
     visible(m["sepFusion"], dataBG != nothing)
 
-    multiChannel = length(data) > 1
+    multiChannel = numChan > 1
     visible(m["cbBlendChannels"], multiChannel)
     visible(m["cbChannel"], multiChannel)
     visible(m["lbChannel"], multiChannel)
+    
 
-    if m.data == nothing || (length(m.data) != length(data))
-      m.coloring = Array{ColoringParams}(undef,length(data))
-      if length(data) == 1
-        m.coloring[1] = ColoringParams(0.0,1.0,21)
+    if m.data == nothing || (size(m.data,Axis{:color}) != numChan)
+      m.coloring = Array{ColoringParams}(undef,numChan)
+      if numChan == 1
+        m.coloring[1] = ColoringParams(0.0,1.0,"viridis")
       end
-      if length(data) > 2
-        for l=1:length(data)
+      if numChan > 2
+        for l=1:numChan
           m.coloring[l] = ColoringParams(0.0,1.0,l)
         end
       end
-      if length(data) == 2
+      if numChan == 2
         if ampPhase
-          m.coloring[1] = ColoringParams(0.0,1.0,21)
-          m.coloring[2] = ColoringParams(0.0,1.0,21)
+          m.coloring[1] = ColoringParams(0.0,1.0,"viridis")
+          m.coloring[2] = ColoringParams(0.0,1.0,"viridis")
         else
-          m.coloring[1] = ColoringParams(0.0,1.0,3)
-          m.coloring[2] = ColoringParams(0.0,1.0,2)
+          m.coloring[1] = ColoringParams(0.0,1.0,"blue")
+          m.coloring[2] = ColoringParams(0.0,1.0,"red")
         end
       end
 
       Gtk.@sigatom empty!(m["cbChannel"])
-      for i=1:length(data)
+      for i=1:numChan
         push!(m["cbChannel"], "$i")
       end
       Gtk.@sigatom set_gtk_property!(m["cbChannel"],:active,0)
 
+      updateColoringWidgets( m )
+
       strProfile = ["x direction", "y direction", "z direction","temporal"]
       Gtk.@sigatom empty!(m["cbProfile"])
-      nd = size(data[1],4) > 1 ? 4 : 3
+      nd = size(data[1],5) > 1 ? 4 : 3
       for i=1:nd
         push!(m["cbProfile"], strProfile[i])
       end
       Gtk.@sigatom set_gtk_property!(m["cbProfile"],:active,nd==4 ? 3 : 0)
 
-      updateColoringWidgets( m )
-      set_gtk_property!(m["cbBlendChannels"], :active, length(data)>1 )
+
+      set_gtk_property!(m["cbBlendChannels"], :active, numChan>1 )
       set_gtk_property!(m["cbComplexBlending"], :active, ampPhase)
     end
 
@@ -330,15 +339,15 @@ function updateData!(m::DataViewerWidget, data::Vector, dataBG=nothing; params=n
 
     if params!=nothing
       if data != nothing
-        params[:sliceX] = min(params[:sliceX],size(data[1],1))
-        params[:sliceY] = min(params[:sliceY],size(data[1],2))
-        params[:sliceZ] = min(params[:sliceZ],size(data[1],3))
+        params[:sliceX] = min(params[:sliceX],size(data,Axis{:x}))
+        params[:sliceY] = min(params[:sliceY],size(data,Axis{:y}))
+        params[:sliceZ] = min(params[:sliceZ],size(data,Axis{:z}))
       end
       setParams(m,params)
     end
-  catch ex
-    @warn "Exception" ex stacktrace(catch_backtrace())
-  end
+  #catch ex
+  #  @warn "Exception" ex stacktrace(catch_backtrace())
+  #end
 end
 
 function updateColoringWidgets(m::DataViewerWidget)
@@ -346,68 +355,63 @@ function updateColoringWidgets(m::DataViewerWidget)
   chan = max(get_gtk_property(m["cbChannel"],:active, Int64) + 1,1)
   Gtk.@sigatom set_gtk_property!(m["adjCMin"],:value, m.coloring[chan].cmin)
   Gtk.@sigatom set_gtk_property!(m["adjCMax"],:value, m.coloring[chan].cmax)
-  Gtk.@sigatom set_gtk_property!(m["cbCMaps"],:active, m.coloring[chan].cmap)
-  m.upgradeColoringWInProgress = false
+  idx = findfirst(a->a==m.coloring[chan].cmap,existing_cmaps())-1
+  Gtk.@sigatom set_gtk_property!(m["cbCMaps"],:active, idx)
+  m.upgradeColoringWInProgress = false  
 end
 
 function updateColoring(m::DataViewerWidget)
   chan = max(get_gtk_property(m["cbChannel"],:active, Int64) + 1,1)
-  m.coloring[chan].cmin = get_gtk_property(m["adjCMin"],:value, Float64)
-  m.coloring[chan].cmax = get_gtk_property(m["adjCMax"],:value, Float64)
-  m.coloring[chan].cmap = get_gtk_property(m["cbCMaps"],:active, Int64)
+  cmin = get_gtk_property(m["adjCMin"],:value, Float64)
+  cmax = get_gtk_property(m["adjCMax"],:value, Float64)
+  cmap = existing_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
+  m.coloring[chan] = ColoringParams(cmin,cmax,cmap)
 end
 
 function showData(m::DataViewerWidget)
   if !m.updating
-  #try
+   try
     params = getParams(m)
     if m.data != nothing
 
-      if  params[:frameProj] == 1 && ndims(m.data[1]) == 4
-        #data_ = [maximum(d, 4) for d in m.data]
-        data_ = [  mip(d,4) for d in m.data]
-      elseif params[:frameProj] == 2 && ndims(m.data[1]) == 4
-        data_ = [timetopeak(d, alpha=params[:TTPThresh], alpha2=params[:TTPThresh]) for d in m.data]
-      else
-        data_ = [getindex(d,:,:,:,params[:frame]) for d in m.data]
-      end
+      data_ = sliceTimeDim(m.data, params[:frameProj] == 1 ? "MIP" : params[:frame])
 
       slices = (params[:sliceX],params[:sliceY],params[:sliceZ])
-        if params[:spatialMIP]
-          proj = "MIP"
-        else
-          proj = slices
-        end
-
-      # global windowing
-      maxval = [maximum(d) for d in m.data]
-      minval = [minimum(d) for d in m.data]
-      if params[:frameProj] == 2 && ndims(m.data[1]) == 4
-        maxval = [maximum(d) for d in data_]
-        minval = [minimum(d) for d in data_]
+      
+      if params[:spatialMIP]
+        proj = "MIP"
+      else
+        proj = slices
       end
 
+      # global windowing
+      maxval = [maximum(sliceColorDim(m.data,d)) for d=1:size(m.data,1)]
+      minval = [minimum(sliceColorDim(m.data,d)) for d=1:size(m.data,1)]
+      #if params[:frameProj] == 2 && ndims(m.data[1]) == 4
+      #  maxval = [maximum(d) for d in data_]
+      #  minval = [minimum(d) for d in data_]
+      #end
+
       if m.dataBG != nothing
-        slicesInRawData = MPILib.indexFromBGToFG(m.dataBG, data_, params)
+        slicesInRawData = ImageUtils.indexFromBGToFG(m.dataBG, data_, params)
         @debug "Slices in raw data:" slicesInRawData
         data = interpolateToRefImage(m.dataBG, data_, params)
         dataBG = interpolateToRefImage(m.dataBG, params)
-        edgeMask = nothing 
       else
         # not ideal ....
-        params[:sliceX] = min(params[:sliceX],size(m.data[1],1))
-        params[:sliceY] = min(params[:sliceY],size(m.data[1],2))
-        params[:sliceZ] = min(params[:sliceZ],size(m.data[1],3))
+        params[:sliceX] = min(params[:sliceX],size(m.data,Axis{:x}))
+        params[:sliceY] = min(params[:sliceY],size(m.data,Axis{:y}))
+        params[:sliceZ] = min(params[:sliceZ],size(m.data,Axis{:z}))
 
         data = data_
         slicesInRawData = slices
-        dataBG = edgeMask = nothing
+        dataBG = nothing
       end
       
       m.currentlyShownData = data
 
-      if ndims(squeeze(data[1])) >= 2
-        cdata_zx, cdata_zy, cdata_xy = getColoredSlices(data, dataBG, edgeMask, m.coloring, minval, maxval, params)
+      if ndims(squeeze(data[1,:,:,:])) >= 2
+        cdata_zx, cdata_zy, cdata_xy = getColoredSlices(data, dataBG, m.coloring, minval, maxval, params)
         isDrawSectionalLines = params[:showSlices] && proj != "MIP"
         isDrawRectangle = params[:showDFFOV]
         pixelSpacingBG = (dataBG==nothing) ? [0.002,0.002,0.001] : collect(converttometer(pixelspacing(dataBG)))
@@ -415,11 +419,11 @@ function showData(m::DataViewerWidget)
         drawImages(m,slices, isDrawSectionalLines, isDrawRectangle, cdata_zx, cdata_zy, cdata_xy,
                    [params[:transX], params[:transY], params[:transZ]], pixelSpacingBG, sizeBG)
 
-        if ndims(m.data[1]) >= 3 && slicesInRawData != (0,0,0)
+        if ndims(m.data) >= 3 && slicesInRawData != (0,0,0)
           showProfile(m, params, slicesInRawData)
         end
         G_.current_page(m["nb2D3D"], 0)
-        m.currentlyShownImages = ImageMeta[cdata_xy, cdata_zx, cdata_zy]
+        m.currentlyShownImages = [cdata_xy, cdata_zx, cdata_zy]
       else
         dat = vec(data_[1])
         p = Winston.FramedPlot(xlabel="x", ylabel="y")
@@ -430,10 +434,12 @@ function showData(m::DataViewerWidget)
         #m.currentlyShownImages = cdata
       end
     end
-  #catch ex
+  catch ex
+    @info ex
+    showError(ex)
   #  @warn "Exception" ex stacktrace(catch_backtrace())
-  #end
   end
+ end
 end
 
 function getParams(m::DataViewerWidget)
@@ -494,7 +500,10 @@ function setParams(m::DataViewerWidget, params)
   Gtk.@sigatom set_gtk_property!(m["adjSliceZ"], :value, params[:sliceZ])
   Gtk.@sigatom set_gtk_property!(m["adjFrames"], :value, params[:frame])
   Gtk.@sigatom set_gtk_property!(m["cbSpatialMIP"], :active, params[:spatialMIP])
-  m.coloring = params[:coloring]
+  m.coloring = Vector{ColoringParams}(undef,0)
+  for col in params[:coloring]
+    push!(m.coloring, ColoringParams(col.cmin, col.cmax, col.cmap))
+  end   
   updateColoringWidgets(m)
   Gtk.@sigatom set_gtk_property!(m["entVisuName"], :text, params[:description])
   Gtk.@sigatom set_gtk_property!(m["cbShowSlices"], :active, get(params,:showSlices,false))
