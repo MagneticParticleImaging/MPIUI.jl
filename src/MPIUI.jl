@@ -10,7 +10,7 @@ using FFTW
 using Pkg
 using InteractiveUtils
 using ImageUtils
-using ImageUtils: converttometer
+using ImageUtils: converttometer, ColoringParams
 
 ENV["MPILIB_UI"] = "Nothing"
 
