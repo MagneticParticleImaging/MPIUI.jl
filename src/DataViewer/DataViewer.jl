@@ -179,15 +179,29 @@ function initCallbacks(m_::DataViewerWidget)
     signal_connect(updateChan, m["cbChannel"], "changed")
 
     signal_connect(m["cbPermutes"], "changed") do widget
-      permuteBGData(m)
-      updateSliceWidgets(m)
-      update(m)
+      try
+        m.updating = true
+        permuteBGData(m)
+        updateSliceWidgets(m)
+        m.updating = false
+        update(m)
+      catch e
+        @error e
+        showError(e)
+      end
     end
 
     signal_connect(m["cbFlips"], "changed") do widget
-      permuteBGData(m)
-      updateSliceWidgets(m)
-      update(m)
+      try
+        m.updating = true
+        permuteBGData(m)
+        updateSliceWidgets(m)
+        m.updating = false
+        update(m)
+      catch e
+        @error e
+        showError(e)
+      end
     end
 
     signal_connect(m["btnSaveVisu"], "clicked") do widget
@@ -255,13 +269,13 @@ function updateSliceWidgets(m::DataViewerWidget)
   
     if size(refdata,4) != sfw
       Gtk.@sigatom set_gtk_property!(m["adjFrames"],:value, 1)
-      set_gtk_property!(m["adjFrames"],:upper,size(m.data,Axis{:time}))
+      Gtk.@sigatom set_gtk_property!(m["adjFrames"],:upper,size(m.data,Axis{:time}))
     end
     
     if size(refdata,1) != sxw || size(refdata,2) != syw || size(refdata,3) != szw
-      set_gtk_property!(m["adjSliceX"],:upper,size(refdata,1))
-      set_gtk_property!(m["adjSliceY"],:upper,size(refdata,2))
-      set_gtk_property!(m["adjSliceZ"],:upper,size(refdata,3))
+      Gtk.@sigatom set_gtk_property!(m["adjSliceX"],:upper,size(refdata,1))
+      Gtk.@sigatom set_gtk_property!(m["adjSliceY"],:upper,size(refdata,2))
+      Gtk.@sigatom set_gtk_property!(m["adjSliceZ"],:upper,size(refdata,3))
       
       Gtk.@sigatom set_gtk_property!(m["adjSliceX"],:value,max(div(size(refdata,1),2),1))
       Gtk.@sigatom set_gtk_property!(m["adjSliceY"],:value,max(div(size(refdata,2),2),1))
