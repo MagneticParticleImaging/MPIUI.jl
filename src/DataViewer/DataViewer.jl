@@ -271,7 +271,34 @@ function updateSliceWidgets(m::DataViewerWidget)
   return
 end
 
-function updateData!(m::DataViewerWidget, data::ImageMeta, dataBG=nothing; params=nothing, ampPhase=false)
+function updateData!(m::DataViewerWidget, data::ImageMeta{T,3}, dataBG=nothing; kargs...) where T
+  ax = ImageUtils.AxisArrays.axes(data)
+  dAx = AxisArray(reshape(data.data.data, 1, size(data,1), size(data,2), size(data,3), 1), 
+                        Axis{:color}(1:1), ax[1], ax[2], ax[3], 
+                        Axis{:time}(range(0*unit(1u"s"),step=1u"s",length=1)))
+  dIm = copyproperties(data, dAx)
+  updateData!(m, dIm, dataBG; kargs...)
+end
+
+function updateData!(m::DataViewerWidget, data::ImageMeta{T,4}, dataBG=nothing; kargs...) where T
+  ax = ImageUtils.AxisArrays.axes(data)
+  
+  if timeaxis(data) == nothing
+    dAx = AxisArray(reshape(data.data.data, size(data,1), size(data,2), 
+                            size(data,3), size(data,4), 1), 
+                        ax[1], ax[2], ax[3], ax[4],
+                        Axis{:time}(range(0*unit(1u"s"),step=1u"s",length=1)))
+  else
+    dAx = AxisArray(reshape(data.data.data, 1, size(data,1), size(data,2), 
+                            size(data,3), size(data,4)), 
+                            Axis{:color}(1:1), ax[1], ax[2], ax[3], ax[4])  
+  end                   
+             
+  dIm = copyproperties(data, dAx)
+  updateData!(m, dIm, dataBG; kargs...)
+end
+
+function updateData!(m::DataViewerWidget, data::ImageMeta{T,5}, dataBG=nothing; params=nothing, ampPhase=false) where T
   #try
     m.updating = true
     numChan = size(data,Axis{:color})
@@ -316,7 +343,7 @@ function updateData!(m::DataViewerWidget, data::ImageMeta, dataBG=nothing; param
 
       strProfile = ["x direction", "y direction", "z direction","temporal"]
       Gtk.@sigatom empty!(m["cbProfile"])
-      nd = size(data[1],5) > 1 ? 4 : 3
+      nd = size(data,5) > 1 ? 4 : 3
       for i=1:nd
         push!(m["cbProfile"], strProfile[i])
       end
