@@ -20,7 +20,8 @@ function initExportCallbacks(m::DataViewerWidget)
     try
       exportMovi(m)
     catch e
-      showError(e)
+      @error e
+    #  showError(e)
     end
   end
 
@@ -83,13 +84,13 @@ end
 
 function exportMovi(m::DataViewerWidget)
   filter = Gtk.GtkFileFilter(pattern=String("*.gif"), mimetype=String("image/gif"))
-  filenameMovi = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
-  if filenameMovi != ""
+  filenameMovie = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
+  if filenameMovie != ""
     params = getParams(m)
     sliceMovies = getColoredSlicesMovie(m.data, m.dataBG, m.coloring, params)
     pixelResizeFactor = get_gtk_property(m["adjPixelResizeFactor"],:value, Int64)
-    @info "Export Movi as" filenameMovi
-    exportMovies(filenameMovi, sliceMovies, pixelResizeFactor=pixelResizeFactor)
+    @info "Export Movie as" filenameMovie
+    exportMovies(filenameMovie, sliceMovies, pixelResizeFactor=pixelResizeFactor)
   end
 end
 
