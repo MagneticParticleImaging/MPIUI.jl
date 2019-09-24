@@ -1,5 +1,6 @@
 module MPIUI
 
+using ImageUtils
 using Statistics
 using Random
 using LinearAlgebra
@@ -9,13 +10,14 @@ using DelimitedFiles
 using FFTW
 using Pkg
 using InteractiveUtils
-using ImageUtils
 using ImageUtils: converttometer, ColoringParams
 
 ENV["MPILIB_UI"] = "Nothing"
 
 @reexport using MPIMeasurements
 @reexport using MPIReco
+
+using ImageUtils: makeAxisArray
 
 using Gtk, Gtk.ShortNames
 using Cairo

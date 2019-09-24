@@ -16,6 +16,7 @@ function currentFrame(b::BrukerFile, simulation = false)
     dataFilename = joinpath(b.path,"rawdata.job0")
 
     nbytes = acqNumAverages(b) == 1 ? 2 : 4
+    run(`ls -la $(b.path)`, wait=true)
 
     framenum = max(div(filesize(dataFilename), nbytes*rxNumChannels(b)*rxNumSamplingPoints(b))-1, 0)
   else
