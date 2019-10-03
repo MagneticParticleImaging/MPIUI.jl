@@ -388,7 +388,14 @@ function getParams(m::RecoWidget)
   if params[:solver] == "fusedlasso"
     params[:loadasreal] = true
     params[:lambd] = [params[:lambdaL1], params[:lambdaTV]]
+    params[:regName] = ["L1", "TV"]    
   end
+  
+  if params[:solver] == "kaczmarz"
+    #params[:loadasreal] = true
+    params[:lambd] = [params[:lambd], params[:lambdaL1]] #params[:lambdaTV], params[:lambdaL1]]
+    params[:regName] = ["L2", "L1"] #"TV", "L1"]
+  end  
 
   firstFrame = get_gtk_property(m["adjFrame"], :value, Int64)
   lastFrame = get_gtk_property(m["adjLastFrame"], :value, Int64)
