@@ -104,7 +104,9 @@ function MPILab(offlineMode=false)::MPILab
   @debug "## Init View switch ..."
   initViewSwitch(m)
 
+  Gtk.@sigatom set_gtk_property!(m["lbInfo"],:use_markup,true)
   Gtk.@sigatom set_gtk_property!(m["cbDatasetStores"],:active,0)
+  infoMessage(m, "")
 
   # ugly but necessary since showall unhides all widgets
   #Gtk.@sigatom visible(m["boxMeasTab"],
@@ -169,7 +171,7 @@ function initStoreSwitch(m::MPILab)
 
       #Gtk.@sigatom visible(m["boxMeasTab"],
       #    isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
-      visible(m["tbOpenMeasurementTab"],
+      visible(m["tbMeasurementTab"],
         isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
 
       if length(m.studyStore) > 0
@@ -189,21 +191,67 @@ function initViewSwitch(m::MPILab)
   signal_connect(m["nbView"], "switch-page") do widget, page, page_num
     @debug "switched to tab" page_num
     if page_num == 0
+      infoMessage(m, "")
       if m.currentExperiment != nothing
         Gtk.@sigatom updateData(m.rawDataWidget, m.currentExperiment.path)
       end
     elseif page_num == 1
-
+      infoMessage(m, "")
     elseif page_num == 2
+      infoMessage(m, "")
       if m.currentExperiment != nothing
         Gtk.@sigatom updateData!(m.recoWidget, m.currentExperiment.path )
       end
     elseif page_num == 4
       Gtk.@sigatom unselectall!(m.selectionExp)
       m.currentExperiment = nothing
+      infoMessage(m, m.measurementWidget.message)
     end
     return nothing
   end
+
+  updatingTab = false
+
+  signal_connect(m["tbDataTab"], "clicked") do widget
+    if !updatingTab
+      updatingTab = true
+      Gtk.@sigatom G_.current_page(m["nbView"], 0)
+      Gtk.@sigatom G_.current_page(m["nbData"], 0)
+      Gtk.@sigatom set_gtk_property!(m["tbDataTab"], :active, true)
+      Gtk.@sigatom set_gtk_property!(m["tbCalibrationTab"], :active, false)
+      Gtk.@sigatom set_gtk_property!(m["tbMeasurementTab"], :active, false)
+      visible(m["panedReco"],true)
+      updatingTab = false
+    end
+  end
+
+  signal_connect(m["tbCalibrationTab"], "clicked") do widget
+    if !updatingTab
+      updatingTab = true
+      Gtk.@sigatom G_.current_page(m["nbView"], 3)
+      Gtk.@sigatom G_.current_page(m["nbData"], 1)
+      Gtk.@sigatom set_gtk_property!(m["tbDataTab"], :active, false)
+      Gtk.@sigatom set_gtk_property!(m["tbCalibrationTab"], :active, true)
+      Gtk.@sigatom set_gtk_property!(m["tbMeasurementTab"], :active, false)
+      visible(m["panedReco"],false)
+      updatingTab = false
+    end
+  end
+
+  signal_connect(m["tbMeasurementTab"], "clicked") do widget
+    if !updatingTab
+      updatingTab = true
+      Gtk.@sigatom G_.current_page(m["nbView"], 4)
+      Gtk.@sigatom G_.current_page(m["nbData"], 0)
+      Gtk.@sigatom set_gtk_property!(m["tbDataTab"], :active, false)
+      Gtk.@sigatom set_gtk_property!(m["tbCalibrationTab"], :active, false)
+      Gtk.@sigatom set_gtk_property!(m["tbMeasurementTab"], :active, true)
+      visible(m["panedReco"],false)
+      updatingTab = false
+    end
+  end
+
+
   return nothing
 end
 
@@ -300,14 +348,14 @@ function initStudyStore(m::MPILab)
       Gtk.@sigatom empty!(m.experimentStore)
       Gtk.@sigatom empty!(m.reconstructionStore)
       Gtk.@sigatom empty!(m.visuStore)
-  
+
       studySearchText = get_gtk_property(m["entSearchStudies"], :text, String)
 
       for l=1:length(m.studyStore)
         showMe = true
 
         if length(studySearchText) > 0
-          showMe = showMe && occursin(lowercase(studySearchText), 
+          showMe = showMe && occursin(lowercase(studySearchText),
                               lowercase(m.studyStore[l,2]))
         end
 
@@ -353,11 +401,9 @@ function initStudyStore(m::MPILab)
     Gtk.@sigatom select!(m.selectionStudy, iter)
   end
 
-  signal_connect(m["tbOpenMeasurementTab"], "clicked") do widget
-    Gtk.@sigatom G_.current_page(m["nbView"], 4)
-  end
-
 end
+
+
 
 function scanDatasetDir(m::MPILab)
   #unselectall!(m.selectionStudy)
@@ -760,7 +806,7 @@ function initReconstructionStore(m::MPILab)
    catch e
     @info e
     showError(e)
-   end 
+   end
   end
 
 end
@@ -1006,4 +1052,12 @@ end
 function initSettings(m::MPILab)
   m.settings = Settings()
   #m["gridSettings_"][1,1] = m.settings["gridSettings"]
+end
+
+function infoMessage(m::MPILab, message::String, color::String)
+  infoMessage(m, """<span foreground="$color" font_weight="bold" size="x-large">$message</span>""")
+end
+
+function infoMessage(m::MPILab, message::String)
+  Gtk.@sigatom set_gtk_property!(m["lbInfo"],:label, message)
 end

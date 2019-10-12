@@ -11,6 +11,7 @@ mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   rawDataWidget::RawDataWidget
   sequences::Vector{String}
   expanded::Bool
+  message::String
 end
 
 getindex(m::MeasurementWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
@@ -43,7 +44,7 @@ function MeasurementWidget(filenameConfig="")
 
   m = MeasurementWidget( mainBox.handle, b,
                   scanner, zeros(Float32,0,0,0,0), mdfstore, "", now(),
-                  "", RawDataWidget(), String[], false)
+                  "", RawDataWidget(), String[], false, "")
   Gtk.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
@@ -53,8 +54,6 @@ function MeasurementWidget(filenameConfig="")
 
   push!(m["boxMeasTabVisu",BoxLeaf],m.rawDataWidget)
   set_gtk_property!(m["boxMeasTabVisu",BoxLeaf],:expand,m.rawDataWidget,true)
-
-  Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:use_markup,true)
 
   @debug "Read Sequences"
   Gtk.@sigatom empty!(m["cbSeFo",ComboBoxTextLeaf])
@@ -179,10 +178,13 @@ function initSurveillance(m::MeasurementWidget)
   end
 end
 
+function infoMessage(m::MeasurementWidget, message::String, color::String="green")
+  #Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
+  #      )
+  m.message = """<span foreground="$color" font_weight="bold" size="x-large">$message</span>"""
+  @show m.message
+  infoMessage(mpilab[], m.message)
 
-function infoMessage(m::MeasurementWidget, message::String)
-  Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
-      """<span foreground="green" font_weight="bold" size="x-large">$message</span>""")
 end
 
 function initCallbacks(m::MeasurementWidget)
@@ -426,8 +428,7 @@ function initCallbacks(m::MeasurementWidget)
               if 1 <= calibState.currPos <= calibState.numPos
                 pos = Float64.(ustrip.(uconvert.(Unitful.mm, positions[calibState.currPos])))
                 posStr = @sprintf("%.2f x %.2f x %.2f", pos[1],pos[2],pos[3])
-                Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
-                      """<span foreground="green" font_weight="bold" size="x-large"> $(calibState.currPos) / $(calibState.numPos) ($posStr mm) </span>""")
+                infoMessage(m, "$(calibState.currPos) / $(calibState.numPos) ($posStr mm)", "green")
 
                 deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
                 if !calibState.consumed && !isempty(calibState.currentMeas)
@@ -441,16 +442,14 @@ function initCallbacks(m::MeasurementWidget)
 
                 temp = getTemperatures(su)
                 while maximum(temp[1:2]) > params["maxTemperature"]
-                 Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
-                      """<span foreground="red" font_weight="bold" size="x-large"> System Cooling Down! $(calibState.currPos) / $(calibState.numPos) ($posStr mm) </span>""")
+                 infoMessage(m, "System Cooling Down! $(calibState.currPos) / $(calibState.numPos) ($posStr mm)", "red")
                  sleep(20)
                  temp = getTemperatures(su)
                  @info "Temp = $temp"
                 end
               end
               if istaskdone(calibState.task)
-
-                Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label, "")
+                infoMessage(m, "", "red")
                 Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
 
                 close(timerCalibration)
@@ -546,8 +545,7 @@ end
 
 function invalidateBG(widgetptr::Ptr, m::MeasurementWidget)
   m.dataBGStore = zeros(Float32,0,0,0,0)
-  Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
-        """<span foreground="red" font_weight="bold" size="x-large"> No BG Measurement Available!</span>""")
+  infoMessage(m, "No BG Measurement Available!", "orange")
   return nothing
 end
 
@@ -589,8 +587,7 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
           @async showError(measState.task.exception,measState.task.backtrace)
           return
         end
-        set_gtk_property!(m["lbInfo",LabelLeaf],:label,
-              """<span foreground="green" font_weight="bold" size="x-large"> Frame $(measState.currFrame) / $(measState.numFrames) </span>""")
+        infoMessage(m, "Frame $(measState.currFrame) / $(measState.numFrames)", "green")
         fr = measState.currFrame
         if fr > 0 && !measState.consumed
           updateData(m.rawDataWidget, measState.buffer[:,:,:,fr:fr], deltaT)
@@ -598,7 +595,7 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
         end
         if istaskdone(measState.task)
           close(timerMeas)
-          set_gtk_property!(m["lbInfo",LabelLeaf],:label,"")
+          infoMessage(m, "", "green")
           m.filenameExperiment = measState.filename
           updateData(m.rawDataWidget, m.filenameExperiment)
           updateExperimentStore(mpilab[], mpilab[].currentStudy)
@@ -632,7 +629,7 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
     m.dataBGStore = uMeas
     #updateData(m, u)
 
-    Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,"")
+    infoMessage(m, "", "green")
   catch ex
    showError(ex)
   end

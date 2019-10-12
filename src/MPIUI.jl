@@ -19,12 +19,11 @@ ENV["MPILIB_UI"] = "Nothing"
 
 using ImageUtils: makeAxisArray
 
-using Gtk, Gtk.ShortNames
+using Gtk, Gtk.ShortNames, Gtk.GLib
 using Cairo
 using Images
 using HDF5
 
-ENV["WINSTON_OUTPUT"] = :gtk
 import Winston
 using Colors
 
