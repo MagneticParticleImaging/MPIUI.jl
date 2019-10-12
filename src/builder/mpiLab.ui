@@ -798,7 +798,6 @@
               <object class="GtkNotebook" id="nbData">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="show_tabs">False</property>
                 <child>
                   <object class="GtkPaned">
                     <property name="visible">True</property>
@@ -1024,7 +1023,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkPaned">
+                              <object class="GtkPaned" id="panedReco">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="orientation">vertical</property>
