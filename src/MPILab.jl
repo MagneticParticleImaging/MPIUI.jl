@@ -104,16 +104,22 @@ function MPILab(offlineMode=false)::MPILab
   @debug "## Init View switch ..."
   initViewSwitch(m)
 
-  Gtk.@sigatom set_gtk_property!(m["lbInfo"],:use_markup,true)
-  Gtk.@sigatom set_gtk_property!(m["cbDatasetStores"],:active,0)
+  @idle_add set_gtk_property!(m["lbInfo"],:use_markup,true)
+  @idle_add set_gtk_property!(m["cbDatasetStores"],:active,0)
   infoMessage(m, "")
 
   # ugly but necessary since showall unhides all widgets
-  #Gtk.@sigatom visible(m["boxMeasTab"],
+  #@idle_add visible(m["boxMeasTab"],
   #    isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
-  #Gtk.@sigatom visible(m["tbOpenMeasurementTab"],
+  #@idle_add visible(m["tbOpenMeasurementTab"],
   #        isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
 
+  # Set the icon of MPILab
+  Gtk.GError() do error_check
+    filename = joinpath(@__DIR__,"assets","MPILabIcon.png")
+    G_.icon_from_file(w, filename, error_check)
+    return true
+  end
 
   show(w)
 
@@ -163,14 +169,12 @@ function initStoreSwitch(m::MPILab)
   m.brukerRecoStore = MDFDatasetStore( m.settings["brukerRecoStore"] )
 
   signal_connect(m["cbDatasetStores"], "changed") do widget...
-    @debug "changing dataset store"
+    @info "changing dataset store"
     m.activeStore = get_gtk_property(m["cbDatasetStores"], :active, Int64)+1
-    Gtk.@sigatom begin
+    @idle_add begin
       scanDatasetDir(m)
       updateData!(m.sfBrowser,activeDatasetStore(m))
 
-      #Gtk.@sigatom visible(m["boxMeasTab"],
-      #    isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
       visible(m["tbMeasurementTab"],
         isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
 
@@ -193,17 +197,17 @@ function initViewSwitch(m::MPILab)
     if page_num == 0
       infoMessage(m, "")
       if m.currentExperiment != nothing
-        Gtk.@sigatom updateData(m.rawDataWidget, m.currentExperiment.path)
+        @idle_add updateData(m.rawDataWidget, m.currentExperiment.path)
       end
     elseif page_num == 1
       infoMessage(m, "")
     elseif page_num == 2
       infoMessage(m, "")
       if m.currentExperiment != nothing
-        Gtk.@sigatom updateData!(m.recoWidget, m.currentExperiment.path )
+        @idle_add updateData!(m.recoWidget, m.currentExperiment.path )
       end
     elseif page_num == 4
-      Gtk.@sigatom unselectall!(m.selectionExp)
+      @idle_add unselectall!(m.selectionExp)
       m.currentExperiment = nothing
       infoMessage(m, m.measurementWidget.message)
     end
@@ -214,40 +218,46 @@ function initViewSwitch(m::MPILab)
 
   signal_connect(m["tbDataTab"], "clicked") do widget
     if !updatingTab
-      updatingTab = true
-      Gtk.@sigatom G_.current_page(m["nbView"], 0)
-      Gtk.@sigatom G_.current_page(m["nbData"], 0)
-      Gtk.@sigatom set_gtk_property!(m["tbDataTab"], :active, true)
-      Gtk.@sigatom set_gtk_property!(m["tbCalibrationTab"], :active, false)
-      Gtk.@sigatom set_gtk_property!(m["tbMeasurementTab"], :active, false)
-      visible(m["panedReco"],true)
-      updatingTab = false
+      @idle_add begin
+          updatingTab = true
+          G_.current_page(m["nbView"], 0)
+          G_.current_page(m["nbData"], 0)
+          set_gtk_property!(m["tbDataTab"], :active, true)
+          set_gtk_property!(m["tbCalibrationTab"], :active, false)
+          set_gtk_property!(m["tbMeasurementTab"], :active, false)
+          visible(m["panedReco"],true)
+          updatingTab = false
+      end
     end
   end
 
   signal_connect(m["tbCalibrationTab"], "clicked") do widget
     if !updatingTab
-      updatingTab = true
-      Gtk.@sigatom G_.current_page(m["nbView"], 3)
-      Gtk.@sigatom G_.current_page(m["nbData"], 1)
-      Gtk.@sigatom set_gtk_property!(m["tbDataTab"], :active, false)
-      Gtk.@sigatom set_gtk_property!(m["tbCalibrationTab"], :active, true)
-      Gtk.@sigatom set_gtk_property!(m["tbMeasurementTab"], :active, false)
-      visible(m["panedReco"],false)
-      updatingTab = false
+      @idle_add begin
+          updatingTab = true
+          G_.current_page(m["nbView"], 3)
+          G_.current_page(m["nbData"], 1)
+          set_gtk_property!(m["tbDataTab"], :active, false)
+          set_gtk_property!(m["tbCalibrationTab"], :active, true)
+          set_gtk_property!(m["tbMeasurementTab"], :active, false)
+          visible(m["panedReco"],false)
+          updatingTab = false
+      end
     end
   end
 
   signal_connect(m["tbMeasurementTab"], "clicked") do widget
     if !updatingTab
-      updatingTab = true
-      Gtk.@sigatom G_.current_page(m["nbView"], 4)
-      Gtk.@sigatom G_.current_page(m["nbData"], 0)
-      Gtk.@sigatom set_gtk_property!(m["tbDataTab"], :active, false)
-      Gtk.@sigatom set_gtk_property!(m["tbCalibrationTab"], :active, false)
-      Gtk.@sigatom set_gtk_property!(m["tbMeasurementTab"], :active, true)
-      visible(m["panedReco"],false)
-      updatingTab = false
+      @idle_add begin
+          updatingTab = true
+          G_.current_page(m["nbView"], 4)
+          G_.current_page(m["nbData"], 0)
+          set_gtk_property!(m["tbDataTab"], :active, false)
+          set_gtk_property!(m["tbCalibrationTab"], :active, false)
+          set_gtk_property!(m["tbMeasurementTab"], :active, true)
+          visible(m["panedReco"],false)
+          updatingTab = false
+      end
     end
   end
 
@@ -310,7 +320,7 @@ function initStudyStore(m::MPILab)
     # select first study so that always measurements can be performed
     iter = Gtk.mutable(Gtk.GtkTreeIter)
     Gtk.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
-    Gtk.@sigatom select!(m.selectionStudy, iter)
+    @idle_add select!(m.selectionStudy, iter)
   end
 
   function selectionChanged( widget )
@@ -323,10 +333,10 @@ function initStudyStore(m::MPILab)
                              DateTime(string(TreeModel(m.studyStoreSorted)[currentIt,1],"T",
 				             TreeModel(m.studyStoreSorted)[currentIt,5])))
 
-      Gtk.@sigatom updateExperimentStore(m, m.currentStudy)
+      @idle_add updateExperimentStore(m, m.currentStudy)
 
       @debug "Current Study Id: " id(m.currentStudy)
-      Gtk.@sigatom updateAnatomRefStore(m)
+      @idle_add updateAnatomRefStore(m)
 
       m.measurementWidget.currStudyName = m.currentStudy.name
       m.measurementWidget.currStudyDate = m.currentStudy.date
@@ -335,19 +345,19 @@ function initStudyStore(m::MPILab)
   end
 
   signal_connect(m.selectionStudy, "changed") do widget
-    Gtk.@sigatom selectionChanged(widget)
+    @idle_add selectionChanged(widget)
   end
 
   function updateShownStudies( widget )
     if !searchActive[]
       searchActive[] = true
-      Gtk.@sigatom unselectall!(m.selectionExp)
-      Gtk.@sigatom unselectall!(m.selectionStudy)
-      Gtk.@sigatom unselectall!(m.selectionVisu)
-      Gtk.@sigatom unselectall!(m.selectionReco)
-      Gtk.@sigatom empty!(m.experimentStore)
-      Gtk.@sigatom empty!(m.reconstructionStore)
-      Gtk.@sigatom empty!(m.visuStore)
+      @idle_add unselectall!(m.selectionExp)
+      @idle_add unselectall!(m.selectionStudy)
+      @idle_add unselectall!(m.selectionVisu)
+      @idle_add unselectall!(m.selectionReco)
+      @idle_add empty!(m.experimentStore)
+      @idle_add empty!(m.reconstructionStore)
+      @idle_add empty!(m.visuStore)
 
       studySearchText = get_gtk_property(m["entSearchStudies"], :text, String)
 
@@ -359,7 +369,7 @@ function initStudyStore(m::MPILab)
                               lowercase(m.studyStore[l,2]))
         end
 
-        Gtk.@sigatom m.studyStore[l,6] = showMe
+        @idle_add m.studyStore[l,6] = showMe
       end
       searchActive[] = false
     end
@@ -374,9 +384,9 @@ function initStudyStore(m::MPILab)
 
         # TODO
         #currentIt = selected( m.selectionStudy )
-        #Gtk.@sigatom delete!(TreeModel(m.studyStoreSorted), currentIt)
+        #@idle_add delete!(TreeModel(m.studyStoreSorted), currentIt)
 
-        Gtk.@sigatom scanDatasetDir(m)
+        @idle_add scanDatasetDir(m)
       end
     end
   end
@@ -386,7 +396,7 @@ function initStudyStore(m::MPILab)
     name = get_gtk_property(m["entSearchStudies"], :text, String)
     study = Study("", name, "", now())
     addStudy(activeDatasetStore(m), study)
-    Gtk.@sigatom scanDatasetDir(m)
+    @idle_add scanDatasetDir(m)
 
     iter = Gtk.mutable(Gtk.GtkTreeIter)
     Gtk.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
@@ -398,7 +408,7 @@ function initStudyStore(m::MPILab)
       end
     end
 
-    Gtk.@sigatom select!(m.selectionStudy, iter)
+    @idle_add select!(m.selectionStudy, iter)
   end
 
 end
@@ -462,7 +472,7 @@ function initAnatomRefStore(m::MPILab)
       mkpath(targetPath)
       try_chmod(targetPath, 0o777, recursive=true)
       cp(filename, targetPath, force=true)
-      Gtk.@sigatom updateAnatomRefStore(m)
+      @idle_add updateAnatomRefStore(m)
     end
 
   end
@@ -477,7 +487,7 @@ function initAnatomRefStore(m::MPILab)
 
         im = loaddata(filename)
         im_ = copyproperties(im,squeeze(data(im)))
-        Gtk.@sigatom DataViewer(im_)
+        @idle_add DataViewer(im_)
       end
     catch ex
       showError(ex)
@@ -496,24 +506,26 @@ end
 
 
 function updateAnatomRefStore(m::MPILab)
-  empty!(m.anatomRefStore)
+  if m.anatomRefStore != nothing
+      empty!(m.anatomRefStore)
 
-  currentPath = joinpath(activeRecoStore(m).path, "reconstructions", getMDFStudyFolderName(m.currentStudy),
-						  "anatomicReferences" )
+      currentPath = joinpath(activeRecoStore(m).path, "reconstructions", getMDFStudyFolderName(m.currentStudy),
+    						  "anatomicReferences" )
 
-  if isdir(currentPath)
-    files = readdir(currentPath)
+      if isdir(currentPath)
+        files = readdir(currentPath)
 
-    for file in files
-      name, ext = splitext(file)
-      if (isfile(joinpath(currentPath,file)) &&
-           (ext == ".hdf" || ext == ".mdf" ||ext == ".nii" || ext == ".dcm") ) ||
-         (isdir(joinpath(currentPath,file)) && isfile(joinpath(currentPath,file),"acqp"))
-        push!(m.anatomRefStore, (name,joinpath(currentPath,file)))
+        for file in files
+          name, ext = splitext(file)
+          if (isfile(joinpath(currentPath,file)) &&
+               (ext == ".hdf" || ext == ".mdf" ||ext == ".nii" || ext == ".dcm") ) ||
+             (isdir(joinpath(currentPath,file)) && isfile(joinpath(currentPath,file),"acqp"))
+            push!(m.anatomRefStore, (name,joinpath(currentPath,file)))
+          end
+        end
       end
-    end
   end
-
+  nothing
 end
 
 
@@ -556,7 +568,7 @@ function initExperimentStore(m::MPILab)
 
   signal_connect(m["tbRawData"], "clicked") do widget
     if hasselection( m.selectionExp)
-      Gtk.@sigatom begin
+      @idle_add begin
         updateData(m.rawDataWidget, m.currentExperiment.path)
         G_.current_page(m["nbView"], 0)
       end
@@ -566,7 +578,7 @@ function initExperimentStore(m::MPILab)
 
   signal_connect(m["tbReco"], "clicked") do widget
     if hasselection(m.selectionExp)
-      Gtk.@sigatom begin
+      @idle_add begin
         if m.settings["enableRecoStore", true]
           updateData!(m.recoWidget, m.currentExperiment.path, m.currentStudy, m.currentExperiment )
           G_.current_page(m["nbView"], 2)
@@ -577,7 +589,7 @@ function initExperimentStore(m::MPILab)
 
   signal_connect(m["tbOpenExperimentFolder"], "clicked") do widget
     if hasselection(m.selectionStudy)
-      Gtk.@sigatom begin
+      @idle_add begin
         openFileBrowser(m.currentStudy.path)
       end
     end
@@ -586,7 +598,7 @@ function initExperimentStore(m::MPILab)
 
   signal_connect(tv, "row-activated") do treeview, path, col, other...
     if hasselection(m.selectionExp)
-      Gtk.@sigatom begin
+      @idle_add begin
         #updateData!(m.recoWidget, m.currentExperiment.path )
         updateData(m.rawDataWidget, m.currentExperiment.path)
         G_.current_page(m["nbView"], 0)
@@ -612,10 +624,10 @@ function initExperimentStore(m::MPILab)
         #  m.experimentStore[currentIt,5])
 
 
-         Gtk.@sigatom updateReconstructionStore(m)
-         #Gtk.@sigatom updateAnatomRefStore(m)
+         @idle_add updateReconstructionStore(m)
+         #@idle_add updateAnatomRefStore(m)
 
-         Gtk.@sigatom begin
+         @idle_add begin
            exp = m.currentExperiment
            set_gtk_property!(tv, :tooltip_text,
              """Num: $(exp.num)\n
@@ -638,7 +650,7 @@ function initExperimentStore(m::MPILab)
       if ask_dialog("Do you really want to delete the experiment $(m.currentExperiment.num)?")
         remove(m.currentExperiment)
 
-        Gtk.@sigatom updateExperimentStore(m, m.currentStudy)
+        @idle_add updateExperimentStore(m, m.currentStudy)
       end
     end
   end
@@ -648,7 +660,7 @@ function initExperimentStore(m::MPILab)
     if hasselection(m.selectionExp)
       currentIt = selected( m.selectionExp )
       if splitext(m.currentExperiment.path)[2] == ".mdf"
-        Gtk.@sigatom m.experimentStore[currentIt,2] = string(text)
+        @idle_add m.experimentStore[currentIt,2] = string(text)
         Base.GC.gc() # This is important to run all finalizers of MPIFile
         h5open(m.currentExperiment.path, "r+") do file
           if exists(file, "/experiment/name")
@@ -667,20 +679,26 @@ function initExperimentStore(m::MPILab)
 end
 
 function updateExperimentStore(m::MPILab, study::Study)
-  m.clearingExpStore = true
-  Gtk.@sigatom unselectall!(m.selectionExp)
+  if m.experimentStore == nothing || m.reconstructionStore == nothing ||
+     m.visuStore == nothing
+     return
+  end
 
-  Gtk.@sigatom empty!(m.experimentStore)
-  Gtk.@sigatom empty!(m.reconstructionStore)
-  Gtk.@sigatom empty!(m.visuStore)
+  m.clearingExpStore = true
+  @idle_add unselectall!(m.selectionExp)
+
+  @idle_add empty!(m.experimentStore)
+  @idle_add empty!(m.reconstructionStore)
+  @idle_add empty!(m.visuStore)
 
   experiments = getExperiments( activeDatasetStore(m), study)
 
   for exp in experiments
-    Gtk.@sigatom push!(m.experimentStore,(exp.num, exp.name, exp.numFrames,
+    @idle_add push!(m.experimentStore,(exp.num, exp.name, exp.numFrames,
                 join(exp.df,"x"),exp.sfGradient, exp.path))
   end
   m.clearingExpStore = false
+  return
 end
 
 
@@ -724,8 +742,8 @@ function initReconstructionStore(m::MPILab)
   signal_connect(tv, "row-activated") do treeview, path, col, other...
     if hasselection(m.selectionReco)
       im = loaddata(m.currentReco.path)
-      #Gtk.@sigatom DataViewer(im)
-      Gtk.@sigatom begin
+      #@idle_add DataViewer(im)
+      @idle_add begin
          updateData!(m.dataViewerWidget, im)
          G_.current_page(m["nbView"], 1)
       end
@@ -738,11 +756,11 @@ function initReconstructionStore(m::MPILab)
     if hasselection(m.selectionReco)
       currentIt = selected( m.selectionReco )
 
-      Gtk.@sigatom m.reconstructionStore[currentIt,3] = string(text)
+      @idle_add m.reconstructionStore[currentIt,3] = string(text)
     end
     m.currentReco.params[:description] = string(text)
     save(m.currentReco)
-    #Gtk.@sigatom updateReconstructionStore(m)
+    #@idle_add updateReconstructionStore(m)
   end
 
   signal_connect(m.selectionReco, "changed") do widget
@@ -757,15 +775,15 @@ function initReconstructionStore(m::MPILab)
 
       if isfile(m.currentReco.path)
         im = loaddata(m.currentReco.path)
-        #Gtk.@sigatom DataViewer(im)
-        #Gtk.@sigatom begin
+        #@idle_add DataViewer(im)
+        #@idle_add begin
         #   updateData!(m.dataViewerWidget, im)
         #   G_.current_page(m["nbView"], 1)
         #end
       end
     end
 
-    Gtk.@sigatom updateVisuStore(m)
+    @idle_add updateVisuStore(m)
     return false
   end
 
@@ -773,7 +791,7 @@ function initReconstructionStore(m::MPILab)
     if hasselection(m.selectionReco)
       remove(m.currentReco)
 
-      Gtk.@sigatom updateReconstructionStore(m)
+      @idle_add updateReconstructionStore(m)
     end
   end
 
@@ -785,7 +803,7 @@ function initReconstructionStore(m::MPILab)
     if hasselection(m.selectionReco)
       params = m.currentReco.params
 
-      Gtk.@sigatom begin
+      @idle_add begin
         updateData!(m.recoWidget, m.currentExperiment.path, params, m.currentStudy, m.currentExperiment)
         G_.current_page(m["nbView"], 2)
       end
@@ -827,7 +845,7 @@ function openFusion(m::MPILab)
 
         #DataViewer(imFG, imBG_)
 
-        Gtk.@sigatom begin
+        @idle_add begin
            updateData!(m.dataViewerWidget, imFG, imBG_)
            G_.current_page(m["nbView"], 1)
         end
@@ -840,6 +858,10 @@ end
 
 
 function updateReconstructionStore(m::MPILab)
+  if m.reconstructionStore == nothing
+    return
+  end
+
   empty!(m.reconstructionStore)
 
   recons = getRecons(activeRecoStore(m), m.currentStudy, m.currentExperiment)
@@ -850,11 +872,12 @@ function updateReconstructionStore(m::MPILab)
         p[:solver],string(p[:iterations]),string(p[:lambd]),
         string(p[:nAverages]),string(p[:SNRThresh]),get(p,:reconstructor,"")))
   end
+  return
 end
 
 function addReco(m::MPILab, image, currentStudy, currentExperiment)
   addReco(activeRecoStore(m), m.currentStudy, m.currentExperiment, image)
-  Gtk.@sigatom updateReconstructionStore(m)
+  @idle_add updateReconstructionStore(m)
 end
 
 ### Visualization Store ###
@@ -905,9 +928,9 @@ function initVisuStore(m::MPILab)
         else
           imBG_ = nothing
         end
-        #Gtk.@sigatom DataViewer(im, imBG_, params=m.currentVisu.params)
+        #@idle_add DataViewer(im, imBG_, params=m.currentVisu.params)
 
-        Gtk.@sigatom begin
+        @idle_add begin
            updateData!(m.dataViewerWidget, im, imBG_, params=m.currentVisu.params)
            G_.current_page(m["nbView"], 1)
         end
@@ -921,15 +944,15 @@ function initVisuStore(m::MPILab)
     if hasselection(m.selectionVisu)
       currentIt = selected( m.selectionVisu )
       m.currentVisu.params[:description] = string(text)
-      Gtk.@sigatom m.visuStore[currentIt,2] = string(text)
-      Gtk.@sigatom save(m.currentVisu)
+      @idle_add m.visuStore[currentIt,2] = string(text)
+      @idle_add save(m.currentVisu)
     end
   end
 
   signal_connect(m["tbRemoveVisu"], "clicked") do widget
     if hasselection(m.selectionVisu)
      remove(m.currentVisu)
-     Gtk.@sigatom updateVisuStore(m)
+     @idle_add updateVisuStore(m)
     end
   end
 
@@ -946,6 +969,10 @@ end
 
 
 function updateVisuStore(m::MPILab)
+  if m.visuStore == nothing
+    return
+  end
+
   empty!(m.visuStore)
 
   if hasselection(m.selectionReco) && m.currentStudy != nothing &&
@@ -963,12 +990,13 @@ function updateVisuStore(m::MPILab)
                              existing_cmaps()[params[:coloring][1].cmap+1], anatomicRef))
     end
   end
+  return
 end
 
 function addVisu(m::MPILab, visuParams)
   if hasselection(m.selectionReco)
     addVisu(activeRecoStore(m), m.currentStudy, m.currentExperiment, m.currentReco, visuParams)
-    Gtk.@sigatom updateVisuStore(m)
+    @idle_add updateVisuStore(m)
   end
 end
 
@@ -1059,5 +1087,9 @@ function infoMessage(m::MPILab, message::String, color::String)
 end
 
 function infoMessage(m::MPILab, message::String)
-  Gtk.@sigatom set_gtk_property!(m["lbInfo"],:label, message)
+  @idle_add set_gtk_property!(m["lbInfo"],:label, message)
+end
+
+function progress(m::MPILab, startStop::Bool)
+  @idle_add set_gtk_property!(m["spProgress"],:active, startStop)
 end

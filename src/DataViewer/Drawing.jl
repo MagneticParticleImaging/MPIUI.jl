@@ -224,8 +224,8 @@ function drawImageCairo(c, image, isDrawSectionalLines, xsec, ysec,
    yy = event.y / h*size(image,1) + 0.5
    xx = !flipX ? xx : (size(image,2)-xx+1)
    yy = !flipY ? yy : (size(image,1)-yy+1)
-   Gtk.@sigatom set_gtk_property!(adjX, :value, round(Int64,xx))
-   Gtk.@sigatom set_gtk_property!(adjY, :value, round(Int64,yy))
+   @idle_add set_gtk_property!(adjX, :value, round(Int64,xx))
+   @idle_add set_gtk_property!(adjY, :value, round(Int64,yy))
   #end
  end
 end

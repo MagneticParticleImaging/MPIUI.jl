@@ -68,9 +68,9 @@ end
 function load(m::Settings)
   m.data = TOML.parsefile(settingsfile)
 
-  #Gtk.@sigatom set_gtk_property!(m["entSettingsDatasetFolder"], :text, m["datasetDir"])
-  #Gtk.@sigatom set_gtk_property!(m["entSettingsRecoFolder"], :text, m["reconstructionDir"])
-  #Gtk.@sigatom set_gtk_property!(m["cbMDFStoreFreqData"], :active, get(m.data, "exportMDFFreqSpace", false))
+  #@idle_add set_gtk_property!(m["entSettingsDatasetFolder"], :text, m["datasetDir"])
+  #@idle_add set_gtk_property!(m["entSettingsRecoFolder"], :text, m["reconstructionDir"])
+  #@idle_add set_gtk_property!(m["cbMDFStoreFreqData"], :active, get(m.data, "exportMDFFreqSpace", false))
 
 
   #hack for backwards compatibility

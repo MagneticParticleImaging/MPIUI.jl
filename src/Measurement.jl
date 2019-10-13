@@ -56,12 +56,12 @@ function MeasurementWidget(filenameConfig="")
   set_gtk_property!(m["boxMeasTabVisu",BoxLeaf],:expand,m.rawDataWidget,true)
 
   @debug "Read Sequences"
-  Gtk.@sigatom empty!(m["cbSeFo",ComboBoxTextLeaf])
+  @idle_add empty!(m["cbSeFo",ComboBoxTextLeaf])
   m.sequences = String[ splitext(seq)[1] for seq in readdir(sequenceDir())]
   for seq in m.sequences
-    Gtk.@sigatom push!(m["cbSeFo",ComboBoxTextLeaf], seq)
+    @idle_add push!(m["cbSeFo",ComboBoxTextLeaf], seq)
   end
-  Gtk.@sigatom set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf],:active,0)
+  @idle_add set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf],:active,0)
   combo = m["cbSeFo",ComboBoxTextLeaf]
   cells = Gtk.GLib.GList(ccall((:gtk_cell_layout_get_cells, Gtk.libgtk),
                Ptr{Gtk._GList{Gtk.GtkCellRenderer}}, (Ptr{GObject},), combo))
@@ -70,25 +70,25 @@ function MeasurementWidget(filenameConfig="")
   #set_gtk_property!(cells[1],"ellipsize_set", 2)
 
   @debug "Read safety parameters"
-  Gtk.@sigatom empty!(m["cbSafeCoil", ComboBoxTextLeaf])
+  @idle_add empty!(m["cbSafeCoil", ComboBoxTextLeaf])
   for coil in getValidHeadScannerGeos()
-      Gtk.@sigatom push!(m["cbSafeCoil",ComboBoxTextLeaf], coil.name)
+      @idle_add push!(m["cbSafeCoil",ComboBoxTextLeaf], coil.name)
   end
-  Gtk.@sigatom set_gtk_property!(m["cbSafeCoil",ComboBoxTextLeaf], :active, 0)
-  Gtk.@sigatom empty!(m["cbSafeObject", ComboBoxTextLeaf])
+  @idle_add set_gtk_property!(m["cbSafeCoil",ComboBoxTextLeaf], :active, 0)
+  @idle_add empty!(m["cbSafeObject", ComboBoxTextLeaf])
   for obj in getValidHeadObjects()
-      Gtk.@sigatom push!(m["cbSafeObject",ComboBoxTextLeaf], name(obj))
+      @idle_add push!(m["cbSafeObject",ComboBoxTextLeaf], name(obj))
   end
-  Gtk.@sigatom set_gtk_property!(m["cbSafeObject",ComboBoxTextLeaf], :active, 0)
+  @idle_add set_gtk_property!(m["cbSafeObject",ComboBoxTextLeaf], :active, 0)
 
-  Gtk.@sigatom signal_connect(m["cbSafeObject",ComboBoxTextLeaf], :changed) do w
+  @idle_add signal_connect(m["cbSafeObject",ComboBoxTextLeaf], :changed) do w
       ind = get_gtk_property(m["cbSafeObject",ComboBoxTextLeaf],:active,Int)+1
       if getValidHeadObjects()[ind].name==customPhantom3D.name
           sObjStr = @sprintf("%.2f x %.2f x %.2f", ustrip(customPhantom3D.length), ustrip(crosssection(customPhantom3D).width),ustrip(crosssection(customPhantom3D).height))
-          Gtk.@sigatom set_gtk_property!(m["entSafetyObj", EntryLeaf],:text, sObjStr)
-          Gtk.@sigatom set_gtk_property!(m["entSafetyObj", EntryLeaf],:sensitive,true)
+          @idle_add set_gtk_property!(m["entSafetyObj", EntryLeaf],:text, sObjStr)
+          @idle_add set_gtk_property!(m["entSafetyObj", EntryLeaf],:sensitive,true)
       else
-          Gtk.@sigatom set_gtk_property!(m["entSafetyObj", EntryLeaf],:sensitive,false)
+          @idle_add set_gtk_property!(m["entSafetyObj", EntryLeaf],:sensitive,false)
       end
   end
 
@@ -97,8 +97,8 @@ function MeasurementWidget(filenameConfig="")
   if m.scanner != nothing
     setInfoParams(m)
     setParams(m, merge!(getGeneralParams(m.scanner),toDict(getDAQ(m.scanner).params)))
-    Gtk.@sigatom set_gtk_property!(m["entConfig",EntryLeaf],:text,filenameConfig)
-    Gtk.@sigatom set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isReferenced(getRobot(m.scanner)))
+    @idle_add set_gtk_property!(m["entConfig",EntryLeaf],:text,filenameConfig)
+    @idle_add set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isReferenced(getRobot(m.scanner)))
     enableRobotMoveButtons(m,isReferenced(getRobot(m.scanner)))
 
     if isReferenced(getRobot(m.scanner))
@@ -107,19 +107,19 @@ function MeasurementWidget(filenameConfig="")
         isValid = checkCoords(getRobotSetupUI(m), getPos(rob), getMinMaxPosX(rob))
       catch
         enableRobotMoveButtons(m,false)
-        Gtk.@sigatom set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,true)
+        @idle_add set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,true)
       end
     end
 
-    Gtk.@sigatom updateCalibTime(C_NULL, m)
+    @idle_add updateCalibTime(C_NULL, m)
   else
-    Gtk.@sigatom set_gtk_property!(m["tbMeasure",ToolButtonLeaf],:sensitive,false)
-    Gtk.@sigatom set_gtk_property!(m["tbMeasureBG",ToolButtonLeaf],:sensitive,false)
-    Gtk.@sigatom set_gtk_property!(m["tbContinous",ToggleToolButtonLeaf],:sensitive,false)
-    Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
+    @idle_add set_gtk_property!(m["tbMeasure",ToolButtonLeaf],:sensitive,false)
+    @idle_add set_gtk_property!(m["tbMeasureBG",ToolButtonLeaf],:sensitive,false)
+    @idle_add set_gtk_property!(m["tbContinous",ToggleToolButtonLeaf],:sensitive,false)
+    @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
   end
 
-  Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
+  @idle_add set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
 
   @debug "InitCallbacks"
 
@@ -179,12 +179,8 @@ function initSurveillance(m::MeasurementWidget)
 end
 
 function infoMessage(m::MeasurementWidget, message::String, color::String="green")
-  #Gtk.@sigatom set_gtk_property!(m["lbInfo",LabelLeaf],:label,
-  #      )
   m.message = """<span foreground="$color" font_weight="bold" size="x-large">$message</span>"""
-  @show m.message
   infoMessage(mpilab[], m.message)
-
 end
 
 function initCallbacks(m::MeasurementWidget)
@@ -237,7 +233,7 @@ function initCallbacks(m::MeasurementWidget)
   @time signal_connect(m["btLoadArbPos",ButtonLeaf],:clicked) do w
       filter = Gtk.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
       filename = open_dialog("Select Arbitrary Position File", GtkNullContainer(), (filter, ))
-      Gtk.@sigatom set_gtk_property!(m["entArbitraryPos",EntryLeaf],:text,filename)
+      @idle_add set_gtk_property!(m["entArbitraryPos",EntryLeaf],:text,filename)
   end
 
   @time signal_connect(m["btnMovePark",ButtonLeaf], :clicked) do w
@@ -256,8 +252,8 @@ function initCallbacks(m::MeasurementWidget)
         return
       end
       moveAssemble(getRobot(m.scanner))
-      Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
-      Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
+      @idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
+      @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
   end
 
   @time signal_connect(m["btnReferenceDrive",ButtonLeaf], :clicked) do w
@@ -275,7 +271,7 @@ function initCallbacks(m::MeasurementWidget)
                You can mount your sample. Press \"Ok\" to proceed. """
             info_dialog(message, mpilab[]["mainWindow"])
             enableRobotMoveButtons(m,true)
-            Gtk.@sigatom set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,false)
+            @idle_add set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,false)
          end
       end
     end
@@ -300,7 +296,7 @@ function initCallbacks(m::MeasurementWidget)
       end
 
       timerActive = true
-      #Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
+      #@idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
 
       function update_(::Timer)
         if timerActive
@@ -320,7 +316,7 @@ function initCallbacks(m::MeasurementWidget)
 
           deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
 
-          Gtk.@sigatom updateData(m.rawDataWidget, uMeas, deltaT)
+          @idle_add updateData(m.rawDataWidget, uMeas, deltaT)
 
           sleep(get_gtk_property(m["adjPause",AdjustmentLeaf],:value,Float64))
         else
@@ -329,7 +325,7 @@ function initCallbacks(m::MeasurementWidget)
           stopTx(daq)
           disableACPower(getSurveillanceUnit(m.scanner))
           MPIMeasurements.disconnect(daq)
-          #Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
+          #@idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
           close(timer)
         end
       end
@@ -355,7 +351,7 @@ function initCallbacks(m::MeasurementWidget)
 
     if !isReferenced(getRobot(m.scanner))
       info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
-      Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
+      @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
       return
     end
 
@@ -377,7 +373,7 @@ function initCallbacks(m::MeasurementWidget)
 
         if any(shp_ .== nothing) || any(fov_ .== nothing) || any(center_ .== nothing) || any(velRob_ .== nothing) ||
            length(shp_) != 3 || length(fov_) != 3 || length(center_) != 3 || length(velRob_) != 3
-          Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
+          @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
           return
         end
 
@@ -418,9 +414,9 @@ function initCallbacks(m::MeasurementWidget)
         @info "perform calibration"
         calibState = performCalibration(m.scanner, calibObj, m.mdfstore, params)
 
-        Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
-        Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
-        Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
+        @idle_add set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
+        @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
+        @idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
 
         function update_(::Timer)
           try
@@ -433,7 +429,7 @@ function initCallbacks(m::MeasurementWidget)
                 deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
                 if !calibState.consumed && !isempty(calibState.currentMeas)
                   uMeas = calibState.currentMeas
-                  #Gtk.@sigatom
+                  #@idle_add
                   updateData(m.rawDataWidget, uMeas, deltaT)
                   calibState.consumed = true
                 end
@@ -450,11 +446,11 @@ function initCallbacks(m::MeasurementWidget)
               end
               if istaskdone(calibState.task)
                 infoMessage(m, "", "red")
-                Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
+                @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
 
                 close(timerCalibration)
-                Gtk.@sigatom set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
-                Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
+                @idle_add set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
+                @idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
 
                 updateData!(mpilab[].sfBrowser, m.mdfstore)
                 updateExperimentStore(mpilab[], mpilab[].currentStudy)
@@ -503,7 +499,7 @@ function initCallbacks(m::MeasurementWidget)
   @time signal_connect(m["cbSeFo",ComboBoxTextLeaf], :changed) do w
     seq = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
     val = readdlm(joinpath(sequenceDir(), seq*".csv"),',')
-    Gtk.@sigatom set_gtk_property!(m["adjNumPeriods",AdjustmentLeaf], :value, size(val,2))
+    @idle_add set_gtk_property!(m["adjNumPeriods",AdjustmentLeaf], :value, size(val,2))
   end
 
 end
@@ -538,7 +534,7 @@ function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
   end
   calibStr = string(calibStr,@sprintf("%.1f",calibTime/60)," min")
 
-  Gtk.@sigatom set_gtk_property!(m["entCalibTime",EntryLeaf],:text, calibStr)
+  @idle_add set_gtk_property!(m["entCalibTime",EntryLeaf],:text, calibStr)
   return
 end
 
@@ -556,18 +552,18 @@ function setInfoParams(m::MeasurementWidget)
   else
     freqStr = "$(round(daq.params.dfFreq[1], digits=2)) Hz"
   end
-  Gtk.@sigatom set_gtk_property!(m["entDFFreq",EntryLeaf],:text,freqStr)
-  Gtk.@sigatom set_gtk_property!(m["entDFPeriod",EntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")
+  @idle_add set_gtk_property!(m["entDFFreq",EntryLeaf],:text,freqStr)
+  @idle_add set_gtk_property!(m["entDFPeriod",EntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")
   framePeriod = get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
               get_gtk_property(m["adjNumPeriods",AdjustmentLeaf], :value, Int64) *
               daq.params.dfCycle
-  Gtk.@sigatom set_gtk_property!(m["entFramePeriod",EntryLeaf],:text,"$(@sprintf("%.5f",framePeriod)) s")
+  @idle_add set_gtk_property!(m["entFramePeriod",EntryLeaf],:text,"$(@sprintf("%.5f",framePeriod)) s")
 end
 
 
 function measurement(widgetptr::Ptr, m::MeasurementWidget)
   try
-    Gtk.@sigatom @info "Calling measurement"
+    @idle_add @info "Calling measurement"
 
     daq = getDAQ(m.scanner)
 
@@ -616,7 +612,7 @@ end
 
 function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
   try
-    Gtk.@sigatom @info "Calling BG measurement"
+    @idle_add @info "Calling BG measurement"
     params = merge!(getGeneralParams(m.scanner),getParams(m))
     params["acqNumFrames"] = params["acqNumBGFrames"]
 
@@ -671,34 +667,34 @@ function getParams(m::MeasurementWidget)
 end
 
 function setParams(m::MeasurementWidget, params)
-  Gtk.@sigatom set_gtk_property!(m["adjNumAverages",AdjustmentLeaf], :value, params["acqNumAverages"])
-  Gtk.@sigatom set_gtk_property!(m["adjNumFrameAverages",AdjustmentLeaf], :value, params["acqNumFrameAverages"])
-  Gtk.@sigatom set_gtk_property!(m["adjNumSubperiods",AdjustmentLeaf], :value, get(params,"acqNumSubperiods",1))
-  Gtk.@sigatom set_gtk_property!(m["adjNumFGFrames",AdjustmentLeaf], :value, params["acqNumFrames"])
-  Gtk.@sigatom set_gtk_property!(m["adjNumBGFrames",AdjustmentLeaf], :value, params["acqNumFrames"])
-  #Gtk.@sigatom set_gtk_property!(m["entStudy"], :text, params["studyName"])
-  Gtk.@sigatom set_gtk_property!(m["entExpDescr",EntryLeaf], :text, params["studyDescription"] )
-  Gtk.@sigatom set_gtk_property!(m["entOperator",EntryLeaf], :text, params["scannerOperator"])
+  @idle_add set_gtk_property!(m["adjNumAverages",AdjustmentLeaf], :value, params["acqNumAverages"])
+  @idle_add set_gtk_property!(m["adjNumFrameAverages",AdjustmentLeaf], :value, params["acqNumFrameAverages"])
+  @idle_add set_gtk_property!(m["adjNumSubperiods",AdjustmentLeaf], :value, get(params,"acqNumSubperiods",1))
+  @idle_add set_gtk_property!(m["adjNumFGFrames",AdjustmentLeaf], :value, params["acqNumFrames"])
+  @idle_add set_gtk_property!(m["adjNumBGFrames",AdjustmentLeaf], :value, params["acqNumFrames"])
+  #@idle_add set_gtk_property!(m["entStudy"], :text, params["studyName"])
+  @idle_add set_gtk_property!(m["entExpDescr",EntryLeaf], :text, params["studyDescription"] )
+  @idle_add set_gtk_property!(m["entOperator",EntryLeaf], :text, params["scannerOperator"])
   dfString = *([ string(x*1e3," x ") for x in params["dfStrength"] ]...)[1:end-3]
-  Gtk.@sigatom set_gtk_property!(m["entDFStrength",EntryLeaf], :text, dfString)
+  @idle_add set_gtk_property!(m["entDFStrength",EntryLeaf], :text, dfString)
 
-  Gtk.@sigatom set_gtk_property!(m["entTracerName",EntryLeaf], :text, params["tracerName"][1])
-  Gtk.@sigatom set_gtk_property!(m["entTracerBatch",EntryLeaf], :text, params["tracerBatch"][1])
-  Gtk.@sigatom set_gtk_property!(m["entTracerVendor",EntryLeaf], :text, params["tracerVendor"][1])
-  Gtk.@sigatom set_gtk_property!(m["adjTracerVolume",AdjustmentLeaf], :value, 1000*params["tracerVolume"][1])
-  Gtk.@sigatom set_gtk_property!(m["adjTracerConcentration",AdjustmentLeaf], :value, 1000*params["tracerConcentration"][1])
-  Gtk.@sigatom set_gtk_property!(m["entTracerSolute",EntryLeaf], :text, params["tracerSolute"][1])
+  @idle_add set_gtk_property!(m["entTracerName",EntryLeaf], :text, params["tracerName"][1])
+  @idle_add set_gtk_property!(m["entTracerBatch",EntryLeaf], :text, params["tracerBatch"][1])
+  @idle_add set_gtk_property!(m["entTracerVendor",EntryLeaf], :text, params["tracerVendor"][1])
+  @idle_add set_gtk_property!(m["adjTracerVolume",AdjustmentLeaf], :value, 1000*params["tracerVolume"][1])
+  @idle_add set_gtk_property!(m["adjTracerConcentration",AdjustmentLeaf], :value, 1000*params["tracerConcentration"][1])
+  @idle_add set_gtk_property!(m["entTracerSolute",EntryLeaf], :text, params["tracerSolute"][1])
 
   if haskey(params,"acqFFSequence")
     idx = findfirst_(m.sequences, params["acqFFSequence"])
     if idx > 0
-      Gtk.@sigatom set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf], :active,idx-1)
+      @idle_add set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf], :active,idx-1)
     end
   else
-      Gtk.@sigatom set_gtk_property!(m["adjNumPeriods",AdjustmentLeaf], :value, params["acqNumPeriodsPerFrame"])
+      @idle_add set_gtk_property!(m["adjNumPeriods",AdjustmentLeaf], :value, params["acqNumPeriodsPerFrame"])
   end
 
-  Gtk.@sigatom set_gtk_property!(m["cbFFInterpolation",CheckButtonLeaf], :active, params["acqFFLinear"])
+  @idle_add set_gtk_property!(m["cbFFInterpolation",CheckButtonLeaf], :active, params["acqFFLinear"])
 
   p = getGeneralParams(m.scanner)
   if haskey(p, "calibGridShape") && haskey(p, "calibGridFOV") && haskey(p, "calibGridCenter") &&
@@ -709,17 +705,17 @@ function setParams(m::MeasurementWidget, params)
     fovStr = @sprintf("%.2f x %.2f x %.2f", fov[1],fov[2],fov[3])
     ctr = p["calibGridCenter"]*1000 # convert to mm
     ctrStr = @sprintf("%.2f x %.2f x %.2f", ctr[1],ctr[2],ctr[3])
-    Gtk.@sigatom set_gtk_property!(m["entGridShape",EntryLeaf], :text, shpStr)
-    Gtk.@sigatom set_gtk_property!(m["entFOV",EntryLeaf], :text, fovStr)
-    Gtk.@sigatom set_gtk_property!(m["entCenter",EntryLeaf], :text, ctrStr)
-    Gtk.@sigatom set_gtk_property!(m["adjNumBGMeasurements",AdjustmentLeaf], :value, p["calibNumBGMeasurements"])
+    @idle_add set_gtk_property!(m["entGridShape",EntryLeaf], :text, shpStr)
+    @idle_add set_gtk_property!(m["entFOV",EntryLeaf], :text, fovStr)
+    @idle_add set_gtk_property!(m["entCenter",EntryLeaf], :text, ctrStr)
+    @idle_add set_gtk_property!(m["adjNumBGMeasurements",AdjustmentLeaf], :value, p["calibNumBGMeasurements"])
   end
   velRob = getDefaultVelocity(getRobot(m.scanner))
   velRobStr = @sprintf("%.d x %.d x %.d", velRob[1],velRob[2],velRob[3])
-  Gtk.@sigatom set_gtk_property!(m["entVelRob",EntryLeaf], :text, velRobStr)
-  Gtk.@sigatom set_gtk_property!(m["entCurrPos",EntryLeaf], :text, "0.0 x 0.0 x 0.0")
+  @idle_add set_gtk_property!(m["entVelRob",EntryLeaf], :text, velRobStr)
+  @idle_add set_gtk_property!(m["entCurrPos",EntryLeaf], :text, "0.0 x 0.0 x 0.0")
 
-  Gtk.@sigatom set_gtk_property!(m["adjPause",AdjustmentLeaf], :value, 2.0)
+  @idle_add set_gtk_property!(m["adjPause",AdjustmentLeaf], :value, 2.0)
 end
 
 function getRobotSetupUI(m::MeasurementWidget)
@@ -741,8 +737,8 @@ end
 
 
 function enableRobotMoveButtons(m::MeasurementWidget, enable::Bool)
-  Gtk.@sigatom set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,enable)
-  Gtk.@sigatom set_gtk_property!(m["btnMoveAssemblePos",ButtonLeaf],:sensitive,enable)
-  Gtk.@sigatom set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,enable)
-  Gtk.@sigatom set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,enable)
+  @idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,enable)
+  @idle_add set_gtk_property!(m["btnMoveAssemblePos",ButtonLeaf],:sensitive,enable)
+  @idle_add set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,enable)
+  @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,enable)
 end

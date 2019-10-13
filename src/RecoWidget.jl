@@ -94,7 +94,7 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
     selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
     @debug "" selectedProfileName
     if haskey(cache["recoParams"],selectedProfileName)
-      Gtk.@sigatom setParams(m, cache["recoParams"][selectedProfileName])
+      @idle_add setParams(m, cache["recoParams"][selectedProfileName])
     end
 
   end
@@ -108,19 +108,19 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
     cache["recoParams"][key] = currentRecoParams
     savecache(cache)
 
-    Gtk.@sigatom updateRecoProfiles()
+    @idle_add updateRecoProfiles()
   end
 
   function deleteRecoProfile( widget )
     selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
 
-    Gtk.@sigatom @info "delete reco profile $selectedProfileName"
+    @idle_add @info "delete reco profile $selectedProfileName"
 
     cache = loadcache()
     delete!(cache["recoParams"], selectedProfileName)
     savecache(cache)
 
-    Gtk.@sigatom updateRecoProfiles()
+    @idle_add updateRecoProfiles()
   end
 
   function updateRecoProfiles()
@@ -170,7 +170,7 @@ function initCallbacks(m_::RecoWidget)
         end
       end
 
-      Gtk.@sigatom set_gtk_property!(m["adjSelectedSF"], :upper, length(m.bSF))
+      @idle_add set_gtk_property!(m["adjSelectedSF"], :upper, length(m.bSF))
     end
 
     updateSFParamsChanged_ = (w)->updateSFParamsChanged(m)
@@ -199,7 +199,7 @@ end
 function saveReco(m::RecoWidget)
   if m.recoResult != nothing
     m.recoResult["recoParams"][:description] = get_gtk_property(m["entRecoDescrip"], :text, String)
-    Gtk.@sigatom addReco(mpilab[], m.recoResult, m.currentStudy, m.currentExperiment)
+    @idle_add addReco(mpilab[], m.recoResult, m.currentStudy, m.currentExperiment)
   end
 end
 
@@ -260,12 +260,12 @@ function initBGSubtractionWidgets(m::RecoWidget)
       m.bgExperiments[exp.num] = exp.path
       push!(m["cbBGMeasurements"], string(exp.num))
 
-      if filepath(m.bMeas) == exp.path
+      if m.bMeas != nothing && filepath(m.bMeas) == exp.path
         idxFG = i-1
       end
     end
 
-    Gtk.@sigatom set_gtk_property!(m["cbBGMeasurements"],:active, idxFG)
+    @idle_add set_gtk_property!(m["cbBGMeasurements"],:active, idxFG)
   end
 end
 
@@ -317,7 +317,7 @@ function updateSF(m::RecoWidget)
   m.freq = filterFrequencies(m.bSF, minFreq=params[:minFreq], maxFreq=params[:maxFreq],
                              SNRThresh=params[:SNRThresh], recChannels=params[:recChannels])
 
-  Gtk.@sigatom set_gtk_property!(m["entNumFreq"], :text, string(length(m.freq)))
+  #@idle_add set_gtk_property!(m["entNumFreq"], :text, string(length(m.freq)))
 
     #TODO
 
@@ -325,25 +325,47 @@ function updateSF(m::RecoWidget)
 #     if get_gtk_property(cbSparseReco, :active, Bool)
 #       S = getSF(m.bSF, freq, redFactor=redFactor, sparseTrafo="DCT")
 #     else
-  
+
   @info "Reloading SF"
   @show m.bSF
+  @idle_add begin
+    set_gtk_property!(m["entNumFreq"], :text, string(length(m.freq)))
+    infoMessage(m, "Loading System Matrix...")
+  end
+
   m.sysMatrix, m.recoGrid = getSF(m.bSF, m.freq, params[:sparseTrafo], params[:solver], bgcorrection=bgcorrection,
                       loadasreal = params[:loadasreal], loadas32bit = params[:loadas32bit],
                       redFactor = params[:redFactor])
 
+
+  @idle_add infoMessage(m, "")
   m.sfParamsChanged = false
 end
 
+function infoMessage(m::RecoWidget, message::String="", color::String="green")
+  message = """<span foreground="$color" font_weight="bold" size="x-large">$message</span>"""
+  infoMessage(mpilab[], message)
+end
+
+function progress(m::RecoWidget, startStop::Bool)
+  progress(mpilab[], startStop)
+end
+
 #function performReco(widgetptr::Ptr, m::RecoWidget)
+
 function performReco(m::RecoWidget)
+  Threads.@spawn performReco_(m)
+end
+
+function performReco_(m::RecoWidget)
   try
     params = getParams(m)
+
+    @idle_add progress(m, true)
 
     if m.sfParamsChanged
       updateSF(m)
     end
-
 
     if params[:emptyMeasPath] != nothing
       params[:bEmpty] = MPIFile( params[:emptyMeasPath] )
@@ -353,7 +375,9 @@ function performReco(m::RecoWidget)
         params[:bEmpty] = bbEmpty_
       end
     end
-    
+
+    @idle_add infoMessage(m, "Performing Reconstruction...")
+
     if typeof(m.bMeas) == BrukerFileCalib
       m.bMeas = BrukerFileMeas(m.bMeas.path,m.bMeas.params,m.bMeas.paramsProc,m.bMeas.methodRead,m.bMeas.acqpRead,m.bMeas.visupars_globalRead,m.bMeas.recoRead,m.bMeas.methrecoRead,m.bMeas.visuparsRead,m.bMeas.mpiParRead,m.bMeas.maxEntriesAcqp);
 
@@ -364,7 +388,11 @@ function performReco(m::RecoWidget)
     end
     m.recoResult = conc
     m.recoResult["recoParams"] = getParams(m)
-    Gtk.@sigatom updateData!(m.dv, m.recoResult )
+    @idle_add begin
+      updateData!(m.dv, m.recoResult)
+      infoMessage(m, "")
+      progress(m, false)
+    end
   catch ex
     showError(ex)
   end
@@ -388,20 +416,20 @@ function getParams(m::RecoWidget)
   if params[:solver] == "fusedlasso"
     params[:loadasreal] = true
     params[:lambd] = [params[:lambdaL1], params[:lambdaTV]]
-    params[:regName] = ["L1", "TV"]    
+    params[:regName] = ["L1", "TV"]
   end
-  
+
   if params[:solver] == "kaczmarz"
     #params[:loadasreal] = true
     params[:lambd] = [params[:lambd], params[:lambdaL1]] #params[:lambdaTV], params[:lambdaL1]]
     params[:regName] = ["L2", "L1"] #"TV", "L1"]
-  end  
+  end
 
   firstFrame = get_gtk_property(m["adjFrame"], :value, Int64)
   lastFrame = get_gtk_property(m["adjLastFrame"], :value, Int64)
   if firstFrame > lastFrame
     lastFrame = firstFrame
-    Gtk.@sigatom set_gtk_property!(m["adjLastFrame"], :value, lastFrame)
+    @idle_add set_gtk_property!(m["adjLastFrame"], :value, lastFrame)
   end
   frames = firstFrame:lastFrame
   params[:frames] = frames
@@ -445,33 +473,33 @@ function getParams(m::RecoWidget)
 end
 
 function setParams(m::RecoWidget, params)
-  Gtk.@sigatom set_gtk_property!(m["adjLambdaL2"], :value, params[:lambd])
-  Gtk.@sigatom set_gtk_property!(m["adjLambdaL1"], :value, get(params,:lambdaL1,0.0))
-  Gtk.@sigatom set_gtk_property!(m["adjLambdaTV"], :value, get(params,:lambdaTV,0.0))
-  Gtk.@sigatom set_gtk_property!(m["adjIterations"], :value, params[:iterations])
-  Gtk.@sigatom set_gtk_property!(m["adjSNRThresh"], :value, params[:SNRThresh])
-  Gtk.@sigatom set_gtk_property!(m["adjMinFreq"], :value, params[:minFreq] / 1000)
-  Gtk.@sigatom set_gtk_property!(m["adjMaxFreq"], :value, params[:maxFreq] / 1000)
-  Gtk.@sigatom set_gtk_property!(m["adjAverages"], :value, params[:nAverages])
-  Gtk.@sigatom set_gtk_property!(m["adjFrame"], :value, first(params[:frames]))
-  Gtk.@sigatom set_gtk_property!(m["adjLastFrame"], :value, last(params[:frames]))
-  Gtk.@sigatom set_gtk_property!(m["cbSpectralCleaning"], :active, params[:spectralCleaning])
-  Gtk.@sigatom set_gtk_property!(m["cbLoadAsReal"], :active, params[:loadasreal])
-  Gtk.@sigatom set_gtk_property!(m["adjRedFactor"], :value, get(params,:redFactor,0.01))
+  @idle_add set_gtk_property!(m["adjLambdaL2"], :value, params[:lambd])
+  @idle_add set_gtk_property!(m["adjLambdaL1"], :value, get(params,:lambdaL1,0.0))
+  @idle_add set_gtk_property!(m["adjLambdaTV"], :value, get(params,:lambdaTV,0.0))
+  @idle_add set_gtk_property!(m["adjIterations"], :value, params[:iterations])
+  @idle_add set_gtk_property!(m["adjSNRThresh"], :value, params[:SNRThresh])
+  @idle_add set_gtk_property!(m["adjMinFreq"], :value, params[:minFreq] / 1000)
+  @idle_add set_gtk_property!(m["adjMaxFreq"], :value, params[:maxFreq] / 1000)
+  @idle_add set_gtk_property!(m["adjAverages"], :value, params[:nAverages])
+  @idle_add set_gtk_property!(m["adjFrame"], :value, first(params[:frames]))
+  @idle_add set_gtk_property!(m["adjLastFrame"], :value, last(params[:frames]))
+  @idle_add set_gtk_property!(m["cbSpectralCleaning"], :active, params[:spectralCleaning])
+  @idle_add set_gtk_property!(m["cbLoadAsReal"], :active, params[:loadasreal])
+  @idle_add set_gtk_property!(m["adjRedFactor"], :value, get(params,:redFactor,0.01))
 
   for (i,solver) in enumerate(linearSolverList())
     if solver == params[:solver]
-      Gtk.@sigatom set_gtk_property!(m["cbSolver"],:active, i-1)
+      @idle_add set_gtk_property!(m["cbSolver"],:active, i-1)
     end
   end
 
   sparseTrafo = get(params, :sparseTrafo, nothing)
-  Gtk.@sigatom set_gtk_property!(m["cbMatrixCompression"], :active,
+  @idle_add set_gtk_property!(m["cbMatrixCompression"], :active,
                        sparseTrafo != nothing)
   if sparseTrafo != nothing
     for (i,trafo) in enumerate(linearOperatorList())
       if trafo == sparseTrafo
-        Gtk.@sigatom set_gtk_property!(m["cbSparsityTrafo"],:active, i-1)
+        @idle_add set_gtk_property!(m["cbSparsityTrafo"],:active, i-1)
       end
     end
   end
@@ -480,8 +508,8 @@ function setParams(m::RecoWidget, params)
   set_gtk_property!(m["cbRecY"], :active, in(2,params[:recChannels]))
   set_gtk_property!(m["cbRecZ"], :active, in(3,params[:recChannels]))
 
-  Gtk.@sigatom set_gtk_property!(m["entRecoDescrip"], :text, get(params, :description,""))
-  Gtk.@sigatom set_gtk_property!(m["cbSubtractInternalBG"], :active, get(params, :bgCorrectionInternal, false))
+  @idle_add set_gtk_property!(m["entRecoDescrip"], :text, get(params, :description,""))
+  @idle_add set_gtk_property!(m["cbSubtractInternalBG"], :active, get(params, :bgCorrectionInternal, false))
 
 
   if haskey(params, :SFPath)
@@ -489,13 +517,11 @@ function setParams(m::RecoWidget, params)
       params[:SFPath] = String[params[:SFPath]]
     end
     numSF = length(params[:SFPath])
-    Gtk.@sigatom set_gtk_property!(m["adjNumSF"], :value, numSF)
+    @idle_add set_gtk_property!(m["adjNumSF"], :value, numSF)
     m.bSF = MPIFile(params[:SFPath])
   else
-    Gtk.@sigatom set_gtk_property!(m["adjNumSF"], :value, 1)
+    @idle_add set_gtk_property!(m["adjNumSF"], :value, 1)
     m.bSF = MPIFile[BrukerFile()]
   end
 
 end
-
-

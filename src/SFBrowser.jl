@@ -8,32 +8,37 @@ mutable struct SFBrowserWidget
   sysFuncs
   datasetStore
   selection
+  updating
 end
 
 function updateData!(m::SFBrowserWidget, d::DatasetStore)
   #generateSFDatabase(d)
+  m.updating = true
 
   sysFuncs = loadSFDatabase(d)
-
   m.datasetStore = d
 
   if sysFuncs != nothing
     updateData!(m, sysFuncs)
   end
+  m.updating = false
 end
 
 function updateData!(m::SFBrowserWidget, sysFuncs)
 
   m.sysFuncs = sysFuncs
 
-  Gtk.@sigatom empty!(m.store)
+  @idle_add begin
+      unselectall!(m.selection)
+      empty!(m.store)
 
-  for l = 2:size(sysFuncs,1)
-    push!(m.store,( split(sysFuncs[l,15],"T")[1],
-            sysFuncs[l,1],round(sysFuncs[l,2], digits=2),
-           "$(round((sysFuncs[l,3]), digits=2)) x $(round((sysFuncs[l,4]), digits=2)) x $(round((sysFuncs[l,5]), digits=2))",
-                              "$(sysFuncs[l,6]) x $(sysFuncs[l,7]) x $(sysFuncs[l,8])",
-                              sysFuncs[l,10],sysFuncs[l,11],sysFuncs[l,12],sysFuncs[l,14], true))
+      for l = 2:size(sysFuncs,1)
+        push!(m.store,( split(sysFuncs[l,15],"T")[1],
+                sysFuncs[l,1],round(sysFuncs[l,2], digits=2),
+               "$(round((sysFuncs[l,3]), digits=2)) x $(round((sysFuncs[l,4]), digits=2)) x $(round((sysFuncs[l,5]), digits=2))",
+                                  "$(sysFuncs[l,6]) x $(sysFuncs[l,7]) x $(sysFuncs[l,8])",
+                                  sysFuncs[l,10],sysFuncs[l,11],sysFuncs[l,12],sysFuncs[l,14], true))
+      end
   end
 end
 
@@ -49,7 +54,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   tv = TreeView(TreeModel(store))
   r1 = CellRendererText()
   r2 = CellRendererToggle()
-  
+
   if !smallWidth
     c1 = TreeViewColumn("Date", r1, Dict("text" => 0))
     c2 = TreeViewColumn("Name", r1, Dict("text" => 1))
@@ -77,7 +82,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
       G_.resizable(c,true)
       G_.max_width(c,80)
       push!(tv,c)
-    end  
+    end
   end
   G_.max_width(c1,200)
   G_.max_width(c2,200)
@@ -101,11 +106,11 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 
       sffilename = TreeModel(tmSorted)[currentIt,9]
 
-      Gtk.@sigatom begin
+      @idle_add begin
         if !get_gtk_property(cbOpenMeas,:active,Bool)
           if measIsCalibProcessed(MPIFile(sffilename,fastMode=true))
             if get_gtk_property(cbOpenInWindow,:active,Bool)
-              SFViewer(sffilename)   
+              SFViewer(sffilename)
             else
               updateData!(mpilab[].sfViewerWidget, sffilename)
               G_.current_page(mpilab[]["nbView"], 3)
@@ -240,22 +245,24 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   signal_connect(updateShownSF, entTracer, "changed")
 
   if gradient != nothing
-    Gtk.@sigatom set_gtk_property!(entGradient,:text,string(gradient))
+    @idle_add set_gtk_property!(entGradient,:text,string(gradient))
   end
 
   if driveField != nothing
     driveField[:].*=1000
     str = join([string(df," x ") for df in driveField])[1:end-2]
-    Gtk.@sigatom set_gtk_property!(entDF, :text, str)
+    @idle_add set_gtk_property!(entDF, :text, str)
   end
 
-  m = SFBrowserWidget(store, tv, vbox, tmSorted, nothing, nothing, selection)
+  m = SFBrowserWidget(store, tv, vbox, tmSorted, nothing, nothing, selection, false)
 
   signal_connect(m.selection, "changed") do widget
-    if hasselection(m.selection) 
+    if hasselection(m.selection) && m.updating
       currentIt = selected( m.selection )
-      Gtk.@sigatom begin
-        filename = TreeModel(m.tmSorted)[currentIt,9] 
+      @idle_add begin
+          @show "tic"
+        filename = TreeModel(m.tmSorted)[currentIt,9]
+          @show "toc"
         f = MPIFile(filename, fastMode=true)
         num = experimentNumber(f)
         name = experimentName(f)

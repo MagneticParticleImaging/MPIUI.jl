@@ -7,7 +7,7 @@ function SFViewer(filename::AbstractString)
   sfViewerWidget = SFViewerWidget()
   w = Window("SF Viewer: $(filename)",800,600)
   push!(w,sfViewerWidget)
-  showall(w) 
+  showall(w)
   updateData!(sfViewerWidget, filename)
   return sfViewerWidget
 end
@@ -56,61 +56,69 @@ function SFViewerWidget()
 
   function updateSFMixO( widget )
     if !m.updating
-      m.updating = true
-      mx = get_gtk_property(m["adjSFMixX"],:value, Int64)
-      my = get_gtk_property(m["adjSFMixY"],:value, Int64)
-      mz = get_gtk_property(m["adjSFMixZ"],:value, Int64)
+      @idle_add begin
+          m.updating = true
+          mx = get_gtk_property(m["adjSFMixX"],:value, Int64)
+          my = get_gtk_property(m["adjSFMixY"],:value, Int64)
+          mz = get_gtk_property(m["adjSFMixZ"],:value, Int64)
 
-      freq = 0
-      m_ = [mx,my,mz]
-      for d=1:length(m.mxyz)
-       freq += m_[d]*m.mxyz[d]
+          freq = 0
+          m_ = [mx,my,mz]
+          for d=1:length(m.mxyz)
+           freq += m_[d]*m.mxyz[d]
+          end
+
+          freq = clamp(freq,0,m.maxFreq-1)
+          updateFreq(m, freq)
+          updateSigOrd(m)
+          updateSF(m)
+          m.updating = false
       end
-
-      freq = clamp(freq,0,m.maxFreq-1)
-      updateFreq(m, freq)
-      updateSigOrd(m)
-      updateSF(m)
-      m.updating = false
     end
   end
 
   function updateSFSignalOrdered( widget )
     if !m.updating
-      m.updating = true
-      k = m.SNRSortedIndices[get_gtk_property(m["adjSFSignalOrdered"],:value, Int64)]
-      recChan = clamp(div(k,m.maxFreq)+1,1,3)
-      freq = clamp(mod1(k-1,m.maxFreq),0,m.maxFreq-1)      
-      updateFreq(m, freq)
-      updateRecChan(m, recChan)      
-      updateMix(m)
-      updateSF(m)
-      m.updating = false
+      @idle_add begin
+          m.updating = true
+          k = m.SNRSortedIndices[get_gtk_property(m["adjSFSignalOrdered"],:value, Int64)]
+          recChan = clamp(div(k,m.maxFreq)+1,1,3)
+          freq = clamp(mod1(k-1,m.maxFreq),0,m.maxFreq-1)
+          updateFreq(m, freq)
+          updateRecChan(m, recChan)
+          updateMix(m)
+          updateSF(m)
+          m.updating = false
+      end
     end
   end
 
   signal_connect(m["cbSFBGCorr"], :toggled) do w
-    updateSF(m)
+    @idle_add updateSF(m)
   end
   signal_connect(m["adjSFPatch"], "value_changed") do w
-    updateSF(m)
+    @idle_add updateSF(m)
   end
   signal_connect(m["adjSFRecChan"], "value_changed") do w
     if !m.updating
-      m.updating = true
-      updateMix(m)
-      updateSigOrd(m)
-      updateSF(m)
-      m.updating = false
+      @idle_add begin
+          m.updating = true
+          updateMix(m)
+          updateSigOrd(m)
+          updateSF(m)
+          m.updating = false
+      end
     end
   end
   signal_connect(m["adjSFFreq"], "value_changed") do w
     if !m.updating
-      m.updating = true
-      updateMix(m)
-      updateSigOrd(m)
-      updateSF(m)
-      m.updating = false
+      @idle_add begin
+          m.updating = true
+          updateMix(m)
+          updateSigOrd(m)
+          updateSF(m)
+          m.updating = false
+      end
     end
   end
 
@@ -125,27 +133,25 @@ end
 
 
 function updateFreq(m::SFViewerWidget, freq)
-  Gtk.@sigatom set_gtk_property!(m["adjSFFreq"],:value, freq)
+  set_gtk_property!(m["adjSFFreq"],:value, freq)
 end
 
 function updateRecChan(m::SFViewerWidget, recChan)
-  Gtk.@sigatom set_gtk_property!(m["adjSFRecChan"],:value, recChan)
+  set_gtk_property!(m["adjSFRecChan"],:value, recChan)
 end
 
 function updateSigOrd(m::SFViewerWidget)
   freq = get_gtk_property(m["adjSFFreq"],:value, Int64)+1
   recChan = get_gtk_property(m["adjSFRecChan"],:value, Int64)
   k = freq + m.maxFreq*((recChan-1))
-  Gtk.@sigatom set_gtk_property!(m["adjSFSignalOrdered"],:value, m.SNRSortedIndicesInverse[k] )
+  set_gtk_property!(m["adjSFSignalOrdered"],:value, m.SNRSortedIndicesInverse[k] )
 end
 
 function updateMix(m::SFViewerWidget)
   freq = get_gtk_property(m["adjSFFreq"],:value, Int64)+1
-  Gtk.@sigatom begin
-    set_gtk_property!(m["adjSFMixX"],:value, m.mixFac[freq,1])
-    set_gtk_property!(m["adjSFMixY"],:value, m.mixFac[freq,2])
-    set_gtk_property!(m["adjSFMixZ"],:value, m.mixFac[freq,3])
-  end
+  set_gtk_property!(m["adjSFMixX"],:value, m.mixFac[freq,1])
+  set_gtk_property!(m["adjSFMixY"],:value, m.mixFac[freq,2])
+  set_gtk_property!(m["adjSFMixZ"],:value, m.mixFac[freq,3])
 end
 
 
@@ -164,15 +170,13 @@ function updateSF(m::SFViewerWidget)
 
   sfData = reshape(sfData_, calibSize(m.bSF)...)
 
-  Gtk.@sigatom begin
-    set_gtk_property!(m["entSFSNR"],:text,string(round(m.SNR[freq,recChan,period],digits=2)))
-    set_gtk_property!(m["entSFSNR2"],:text,string(round(calcSNRF(sfData_),digits=2)))
-  end
-    
+  set_gtk_property!(m["entSFSNR"],:text,string(round(m.SNR[freq,recChan,period],digits=2)))
+  set_gtk_property!(m["entSFSNR2"],:text,string(round(calcSNRF(sfData_),digits=2)))
+
   blockSize = 900
   step = max( div(m.maxFreq, blockSize) ,1)
   f = 1:step:m.maxFreq
-  
+
   if step > 1
     snr = zeros(length(f))
     for l=1:length(f)
@@ -183,7 +187,7 @@ function updateSF(m::SFViewerWidget)
   else
     snr = vec(m.SNR[:,recChan,period])
   end
-    
+
   p = Winston.semilogy(m.frequencies[f], snr,"b-",linewidth=5)
   Winston.plot(p,[m.frequencies[freq]],[m.SNR[freq,recChan,period]],"rx",linewidth=5,ylog=true)
   Winston.xlabel("f / kHz")
@@ -263,7 +267,7 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   m.mixFac = MPIFiles.mixingFactors(m.bSF)
   mxyz, mask, freqNumber = MPIFiles.calcPrefactors(m.bSF)
   m.mxyz = mxyz
-  
+
   updateMix(m)
   updateSigOrd(m)
   updateSF(m)

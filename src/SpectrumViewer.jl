@@ -113,7 +113,7 @@ function SpectrumViewerWidget(file::MPIFile; semilogY=false)
    adjMinFreq, adjMaxFreq, adjFrame, vbox,semilogY, cbBGSubtract, bgdata)
 
   function update( widget )
-     Gtk.@sigatom showData( dw )
+     @idle_add showData( dw )
   end
 
   signal_connect(update, adjFrame, "value_changed")

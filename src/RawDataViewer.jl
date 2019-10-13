@@ -63,7 +63,7 @@ function initHarmView(m::RawDataWidget)
 
   for l=1:5
     push!(m.harmViewAdj, m["adjHarm$l",AdjustmentLeaf] )
-    Gtk.@sigatom set_gtk_property!(m["adjHarm$l",AdjustmentLeaf],:value,l+1)
+    @idle_add set_gtk_property!(m["adjHarm$l",AdjustmentLeaf],:value,l+1)
     c = Canvas()
 
     push!(m["boxHarmView", BoxLeaf],c)
@@ -111,12 +111,14 @@ function initCallbacks(m_::RawDataWidget)
 
   signal_connect(m["cbHarmonicViewer",CheckButtonLeaf], :toggled) do w
       harmViewOn = get_gtk_property(m["cbHarmonicViewer",CheckButtonLeaf], :active, Bool)
-      if harmViewOn
-        clearHarmBuff(m)
-        @Gtk.sigatom set_gtk_property!(m.winHarmView,:visible, true)
-        @Gtk.sigatom showall(m.winHarmView)
-      else
-        @Gtk.sigatom set_gtk_property!(m.winHarmView,:visible, false)
+      @idle_add begin
+        if harmViewOn
+          clearHarmBuff(m)
+          set_gtk_property!(m.winHarmView,:visible, true)
+          showall(m.winHarmView)
+        else
+          set_gtk_property!(m.winHarmView,:visible, false)
+        end
       end
   end
 
@@ -131,7 +133,7 @@ function initCallbacks(m_::RawDataWidget)
   signal_connect(m.winHarmView, "delete-event") do widget, event
     #typeof(event)
     #@show event
-    @Gtk.sigatom set_gtk_property!(m["cbHarmonicViewer",CheckButtonLeaf], :active, false)
+    @idle_add set_gtk_property!(m["cbHarmonicViewer",CheckButtonLeaf], :active, false)
   end
 
   #@time signal_connect(loadData, m["cbCorrTF"], "toggled", Nothing, (), false, m)
@@ -143,7 +145,7 @@ end
 function loadData(widgetptr::Ptr, m::RawDataWidget)
   if !m.loadingData
     m.loadingData = true
-    @Gtk.sigatom @info "Loading Data ..."
+    @info "Loading Data ..."
 
 
     if m.filenameData != "" && ispath(m.filenameData)
@@ -152,7 +154,7 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
       params["acqNumFGFrames"] = acqNumFGFrames(f)
       params["acqNumBGFrames"] = acqNumBGFrames(f)
 
-      Gtk.@sigatom set_gtk_property!(m["adjFrame",AdjustmentLeaf], :upper, acqNumFGFrames(f))
+      @idle_add set_gtk_property!(m["adjFrame",AdjustmentLeaf], :upper, acqNumFGFrames(f))
 
       if get_gtk_property(m["cbAbsFrameAverage",CheckButtonLeaf], :active, Bool)
         frame = 1:acqNumFGFrames(f)
@@ -186,12 +188,12 @@ end
 function showData(widgetptr::Ptr, m::RawDataWidget)
 
   if length(m.data) > 0 && !m.updatingData
-    chan = get_gtk_property(m["adjRxChan",AdjustmentLeaf], :value, Int64)
-    patch = get_gtk_property(m["adjPatch",AdjustmentLeaf], :value, Int64)
-    minTP = get_gtk_property(m["adjMinTP",AdjustmentLeaf], :value, Int64)
-    maxTP = get_gtk_property(m["adjMaxTP",AdjustmentLeaf], :value, Int64)
-    minFr = get_gtk_property(m["adjMinFre",AdjustmentLeaf], :value, Int64)
-    maxFr = get_gtk_property(m["adjMaxFre",AdjustmentLeaf], :value, Int64)
+    chan = max(get_gtk_property(m["adjRxChan",AdjustmentLeaf], :value, Int64),1)
+    patch = max(get_gtk_property(m["adjPatch",AdjustmentLeaf], :value, Int64),1)
+    minTP = max(get_gtk_property(m["adjMinTP",AdjustmentLeaf], :value, Int64),1)
+    maxTP = max(get_gtk_property(m["adjMaxTP",AdjustmentLeaf], :value, Int64),1)
+    minFr = max(get_gtk_property(m["adjMinFre",AdjustmentLeaf], :value, Int64),1)
+    maxFr = max(get_gtk_property(m["adjMaxFre",AdjustmentLeaf], :value, Int64),1)
 
     autoRangingTD = true
     autoRangingFD = true
@@ -306,38 +308,38 @@ function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   m.fileModus = fileModus
 
   if !fileModus
-    Gtk.@sigatom set_gtk_property!(m["adjFrame",AdjustmentLeaf],:upper,size(data,4))
+    @idle_add set_gtk_property!(m["adjFrame",AdjustmentLeaf],:upper,size(data,4))
     if !(1 <= get_gtk_property(m["adjFrame",AdjustmentLeaf],:value,Int64) <= size(data,4))
-      Gtk.@sigatom set_gtk_property!(m["adjFrame",AdjustmentLeaf],:value,1)
+      @idle_add set_gtk_property!(m["adjFrame",AdjustmentLeaf],:value,1)
     end
   end
-  Gtk.@sigatom set_gtk_property!(m["adjRxChan",AdjustmentLeaf],:upper,size(data,2))
+  @idle_add set_gtk_property!(m["adjRxChan",AdjustmentLeaf],:upper,size(data,2))
   if !(1 <= get_gtk_property(m["adjRxChan",AdjustmentLeaf],:value,Int64) <= size(data,2))
-    Gtk.@sigatom set_gtk_property!(m["adjRxChan",AdjustmentLeaf],:value,1)
+    @idle_add set_gtk_property!(m["adjRxChan",AdjustmentLeaf],:value,1)
   end
-  Gtk.@sigatom set_gtk_property!(m["adjPatch",AdjustmentLeaf],:upper,size(data,3))
+  @idle_add set_gtk_property!(m["adjPatch",AdjustmentLeaf],:upper,size(data,3))
   if !(1 <= get_gtk_property(m["adjPatch",AdjustmentLeaf],:value,Int64) <= size(data,3))
-    Gtk.@sigatom set_gtk_property!(m["adjPatch",AdjustmentLeaf],:value,1)
+    @idle_add set_gtk_property!(m["adjPatch",AdjustmentLeaf],:value,1)
   end
-  Gtk.@sigatom set_gtk_property!(m["adjMinTP",AdjustmentLeaf],:upper,size(data,1))
+  @idle_add set_gtk_property!(m["adjMinTP",AdjustmentLeaf],:upper,size(data,1))
   if !(1 <= get_gtk_property(m["adjMinTP",AdjustmentLeaf],:value,Int64) <= size(data,1))
-    Gtk.@sigatom set_gtk_property!(m["adjMinTP",AdjustmentLeaf],:value,1)
+    @idle_add set_gtk_property!(m["adjMinTP",AdjustmentLeaf],:value,1)
   end
-  Gtk.@sigatom set_gtk_property!(m["adjMaxTP",AdjustmentLeaf],:upper,size(data,1))
+  @idle_add set_gtk_property!(m["adjMaxTP",AdjustmentLeaf],:upper,size(data,1))
   if !(1 <= get_gtk_property(m["adjMaxTP",AdjustmentLeaf],:value,Int64) <= size(data,1))
-    Gtk.@sigatom set_gtk_property!(m["adjMaxTP",AdjustmentLeaf],:value,size(data,1))
+    @idle_add set_gtk_property!(m["adjMaxTP",AdjustmentLeaf],:value,size(data,1))
   end
-  Gtk.@sigatom set_gtk_property!(m["adjMinFre",AdjustmentLeaf],:upper,div(size(data,1),2)+1)
+  @idle_add set_gtk_property!(m["adjMinFre",AdjustmentLeaf],:upper,div(size(data,1),2)+1)
   if !(1 <= get_gtk_property(m["adjMinFre",AdjustmentLeaf],:value,Int64) <= div(size(data,1),2)+1)
-    Gtk.@sigatom set_gtk_property!(m["adjMinFre",AdjustmentLeaf],:value,1)
+    @idle_add set_gtk_property!(m["adjMinFre",AdjustmentLeaf],:value,1)
   end
-  Gtk.@sigatom set_gtk_property!(m["adjMaxFre",AdjustmentLeaf],:upper,div(size(data,1),2)+1)
+  @idle_add set_gtk_property!(m["adjMaxFre",AdjustmentLeaf],:upper,div(size(data,1),2)+1)
   if !(1 <= get_gtk_property(m["adjMaxFre",AdjustmentLeaf],:value,Int64) <= div(size(data,1),2)+1)
-    Gtk.@sigatom set_gtk_property!(m["adjMaxFre",AdjustmentLeaf],:value,div(size(data,1),2)+1)
+    @idle_add set_gtk_property!(m["adjMaxFre",AdjustmentLeaf],:value,div(size(data,1),2)+1)
   end
 
   for l=1:5
-    Gtk.@sigatom set_gtk_property!(m.harmViewAdj[l],:upper,div(size(data,1),2)+1)
+    @idle_add set_gtk_property!(m.harmViewAdj[l],:upper,div(size(data,1),2)+1)
   end
 
   m.updatingData = false
@@ -346,8 +348,8 @@ end
 
 function updateData(m::RawDataWidget, filename::String)
   m.filenameData = filename
-  Gtk.@sigatom set_gtk_property!(m["adjFrame",AdjustmentLeaf],:upper,1)
-  Gtk.@sigatom set_gtk_property!(m["adjFrame",AdjustmentLeaf],:value,1)
+  @idle_add set_gtk_property!(m["adjFrame",AdjustmentLeaf],:upper,1)
+  @idle_add set_gtk_property!(m["adjFrame",AdjustmentLeaf],:value,1)
   loadData(C_NULL, m)
   return nothing
 end
