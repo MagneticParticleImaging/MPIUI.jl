@@ -63,10 +63,10 @@ function DataViewerWidget()
 
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxDataViewer")
-  m = DataViewerWidget( mainBox.handle, b,  
+  m = DataViewerWidget( mainBox.handle, b,
                          G_.object(b, "gridDataViewer2D"),
                          G_.object(b, "gridDataViewer3D"),
-                         Vector{ColoringParams}(), false, 
+                         Vector{ColoringParams}(), false,
                         [0.0,0.0,0.0], [0.0,0.0,0.0], false, false,
                         nothing, nothing, nothing,nothing, nothing, nothing)
   Gtk.gobject_move_ref(m, mainBox)
@@ -209,18 +209,18 @@ function initCallbacks(m_::DataViewerWidget)
         params = getParams(m)
         # Need to convert the coloring into the old Int format
         coloring = params[:coloring]
-        
+
         coloringInt = ColoringParamsInt[]
         for c in coloring
           idx = findfirst(a->a==c.cmap,existing_cmaps())-1
           push!(coloringInt, ColoringParamsInt(c.cmin, c.cmax, idx))
         end
         params[:coloring] = coloringInt
-        
+
         c = params[:coloringBG]
         idx = findfirst(a->a==c.cmap,existing_cmaps())-1
         params[:coloringBG] = ColoringParamsInt(c.cmin, c.cmax, idx)
-        
+
         addVisu(mpilab[], params)
       catch e
         showError(e)
@@ -265,18 +265,18 @@ function updateSliceWidgets(m::DataViewerWidget)
   szw = get_gtk_property(m["adjSliceZ"],:upper,Int64)
   refdata = (m.dataBG == nothing) ? m.data[1,:,:,:,:] : m.dataBG
 
-  if refdata != nothing 
-  
+  if refdata != nothing
+
     if size(refdata,4) != sfw
       @idle_add set_gtk_property!(m["adjFrames"],:value, 1)
       @idle_add set_gtk_property!(m["adjFrames"],:upper,size(m.data,Axis{:time}))
     end
-    
+
     if size(refdata,1) != sxw || size(refdata,2) != syw || size(refdata,3) != szw
       @idle_add set_gtk_property!(m["adjSliceX"],:upper,size(refdata,1))
       @idle_add set_gtk_property!(m["adjSliceY"],:upper,size(refdata,2))
       @idle_add set_gtk_property!(m["adjSliceZ"],:upper,size(refdata,3))
-      
+
       @idle_add set_gtk_property!(m["adjSliceX"],:value,max(div(size(refdata,1),2),1))
       @idle_add set_gtk_property!(m["adjSliceY"],:value,max(div(size(refdata,2),2),1))
       @idle_add set_gtk_property!(m["adjSliceZ"],:value,max(div(size(refdata,3),2),1))
@@ -287,8 +287,8 @@ end
 
 function updateData!(m::DataViewerWidget, data::ImageMeta{T,3}, dataBG=nothing; kargs...) where T
   ax = ImageUtils.AxisArrays.axes(data)
-  dAx = AxisArray(reshape(data.data.data, 1, size(data,1), size(data,2), size(data,3), 1), 
-                        Axis{:color}(1:1), ax[1], ax[2], ax[3], 
+  dAx = AxisArray(reshape(data.data.data, 1, size(data,1), size(data,2), size(data,3), 1),
+                        Axis{:color}(1:1), ax[1], ax[2], ax[3],
                         Axis{:time}(range(0*unit(1u"s"),step=1u"s",length=1)))
   dIm = copyproperties(data, dAx)
   updateData!(m, dIm, dataBG; kargs...)
@@ -296,18 +296,18 @@ end
 
 function updateData!(m::DataViewerWidget, data::ImageMeta{T,4}, dataBG=nothing; kargs...) where T
   ax = ImageUtils.AxisArrays.axes(data)
-  
+
   if timeaxis(data) == nothing
-    dAx = AxisArray(reshape(data.data.data, size(data,1), size(data,2), 
-                            size(data,3), size(data,4), 1), 
+    dAx = AxisArray(reshape(data.data.data, size(data,1), size(data,2),
+                            size(data,3), size(data,4), 1),
                         ax[1], ax[2], ax[3], ax[4],
                         Axis{:time}(range(0*unit(1u"s"),step=1u"s",length=1)))
   else
-    dAx = AxisArray(reshape(data.data.data, 1, size(data,1), size(data,2), 
-                            size(data,3), size(data,4)), 
-                            Axis{:color}(1:1), ax[1], ax[2], ax[3], ax[4])  
-  end                   
-             
+    dAx = AxisArray(reshape(data.data.data, 1, size(data,1), size(data,2),
+                            size(data,3), size(data,4)),
+                            Axis{:color}(1:1), ax[1], ax[2], ax[3], ax[4])
+  end
+
   dIm = copyproperties(data, dAx)
   updateData!(m, dIm, dataBG; kargs...)
 end
@@ -316,7 +316,7 @@ function updateData!(m::DataViewerWidget, data::ImageMeta{T,5}, dataBG=nothing; 
   #try
     m.updating = true
     numChan = size(data,Axis{:color})
-    
+
     visible(m["mbFusion"], dataBG != nothing)
     visible(m["lbFusion"], dataBG != nothing)
     visible(m["sepFusion"], dataBG != nothing)
@@ -325,7 +325,7 @@ function updateData!(m::DataViewerWidget, data::ImageMeta{T,5}, dataBG=nothing; 
     visible(m["cbBlendChannels"], multiChannel)
     visible(m["cbChannel"], multiChannel)
     visible(m["lbChannel"], multiChannel)
-    
+
 
     if m.data == nothing || (size(m.data,Axis{:color}) != numChan)
       m.coloring = Array{ColoringParams}(undef,numChan)
@@ -347,22 +347,24 @@ function updateData!(m::DataViewerWidget, data::ImageMeta{T,5}, dataBG=nothing; 
         end
       end
 
-      @idle_add empty!(m["cbChannel"])
-      for i=1:numChan
-        push!(m["cbChannel"], "$i")
+      @idle_add begin
+          empty!(m["cbChannel"])
+          for i=1:numChan
+            push!(m["cbChannel"], "$i")
+          end
+          set_gtk_property!(m["cbChannel"],:active,0)
+          updateColoringWidgets( m )
       end
-      @idle_add set_gtk_property!(m["cbChannel"],:active,0)
 
-      updateColoringWidgets( m )
-
-      strProfile = ["x direction", "y direction", "z direction","temporal"]
-      @idle_add empty!(m["cbProfile"])
-      nd = size(data,5) > 1 ? 4 : 3
-      for i=1:nd
-        push!(m["cbProfile"], strProfile[i])
+      @idle_add begin
+          strProfile = ["x direction", "y direction", "z direction","temporal"]
+          empty!(m["cbProfile"])
+          nd = size(data,5) > 1 ? 4 : 3
+          for i=1:nd
+            push!(m["cbProfile"], strProfile[i])
+          end
+          set_gtk_property!(m["cbProfile"],:active,nd==4 ? 3 : 0)
       end
-      @idle_add set_gtk_property!(m["cbProfile"],:active,nd==4 ? 3 : 0)
-
 
       set_gtk_property!(m["cbBlendChannels"], :active, numChan>1 )
       set_gtk_property!(m["cbComplexBlending"], :active, ampPhase)
@@ -398,7 +400,7 @@ function updateColoringWidgets(m::DataViewerWidget)
   @idle_add set_gtk_property!(m["adjCMax"],:value, m.coloring[chan].cmax)
   idx = findfirst(a->a==m.coloring[chan].cmap,existing_cmaps())-1
   @idle_add set_gtk_property!(m["cbCMaps"],:active, idx)
-  m.upgradeColoringWInProgress = false  
+  m.upgradeColoringWInProgress = false
 end
 
 function updateColoring(m::DataViewerWidget)
@@ -418,7 +420,7 @@ function showData(m::DataViewerWidget)
       data_ = sliceTimeDim(m.data, params[:frameProj] == 1 ? "MIP" : params[:frame])
 
       slices = (params[:sliceX],params[:sliceY],params[:sliceZ])
-      
+
       if params[:spatialMIP]
         proj = "MIP"
       else
@@ -448,7 +450,7 @@ function showData(m::DataViewerWidget)
         slicesInRawData = slices
         dataBG = nothing
       end
-      
+
       m.currentlyShownData = data
 
       if ndims(squeeze(data[1,:,:,:])) >= 2
@@ -527,7 +529,7 @@ function getParams(m::DataViewerWidget)
 
   params[:blendChannels] = get_gtk_property(m["cbBlendChannels"], :active, Bool)
   params[:complexBlending] = get_gtk_property(m["cbComplexBlending"], :active, Bool)
-  
+
   params[:profile] = get_gtk_property(m["cbProfile"], :active, Int64)
 
   params[:activeChannel] = max(get_gtk_property(m["cbChannel"],:active, Int64) + 1,1)
@@ -544,7 +546,7 @@ function setParams(m::DataViewerWidget, params)
   m.coloring = Vector{ColoringParams}(undef,0)
   for col in params[:coloring]
     push!(m.coloring, ColoringParams(col.cmin, col.cmax, col.cmap))
-  end   
+  end
   updateColoringWidgets(m)
   @idle_add set_gtk_property!(m["entVisuName"], :text, params[:description])
   @idle_add set_gtk_property!(m["cbShowSlices"], :active, get(params,:showSlices,false))
@@ -597,5 +599,3 @@ function defaultVisuParams()
   params = Dict{Symbol,Any}()
   return params
 end
-
-
