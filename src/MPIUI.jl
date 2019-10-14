@@ -36,7 +36,7 @@ export openFileBrowser
 if VERSION >= v"1.3.0-"
     macro spawn(e)
        quote
-         @spawn esc($e)
+         Threads.@spawn esc($e)
        end
     end
 else
