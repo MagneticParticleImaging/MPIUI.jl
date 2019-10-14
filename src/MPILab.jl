@@ -33,6 +33,7 @@ mutable struct MPILab
   recoWidget
   currentAnatomRefFilename
   sfViewerWidget
+  updating
 end
 
 getindex(m::MPILab, w::AbstractString) = G_.object(m.builder, w)
@@ -63,7 +64,7 @@ function MPILab(offlineMode=false)::MPILab
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, false, false, nothing, nothing, nothing, nothing,
-              nothing, nothing, nothing, "", nothing)
+              nothing, nothing, nothing, "", nothing, false)
 
   let m=m_
 
@@ -170,8 +171,10 @@ function initStoreSwitch(m::MPILab)
 
   signal_connect(m["cbDatasetStores"], "changed") do widget...
     @info "changing dataset store"
+    
     m.activeStore = get_gtk_property(m["cbDatasetStores"], :active, Int64)+1
     @idle_add begin
+      m.updating = true
       scanDatasetDir(m)
       updateData!(m.sfBrowser,activeDatasetStore(m))
 
@@ -184,6 +187,7 @@ function initStoreSwitch(m::MPILab)
         Gtk.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
         select!(m.selectionStudy, iter)
       end
+      m.updating = false
     end
     return nothing
   end
@@ -273,8 +277,6 @@ function reinit(m::MPILab)
   scanDatasetDir(m)
 end
 
-const searchActive = Ref(false)
-
 function initStudyStore(m::MPILab)
 
   m.studyStore = ListStore(String,String,String,String,String,Bool)
@@ -324,7 +326,8 @@ function initStudyStore(m::MPILab)
   end
 
   function selectionChanged( widget )
-    if hasselection(m.selectionStudy) && !m.clearingStudyStore
+    if !m.updating && hasselection(m.selectionStudy) && !m.clearingStudyStore
+      m.updating = true
       currentIt = selected( m.selectionStudy )
 
       m.currentStudy = Study(TreeModel(m.studyStoreSorted)[currentIt,4],
@@ -333,14 +336,14 @@ function initStudyStore(m::MPILab)
                              DateTime(string(TreeModel(m.studyStoreSorted)[currentIt,1],"T",
 				             TreeModel(m.studyStoreSorted)[currentIt,5])))
 
-      @idle_add updateExperimentStore(m, m.currentStudy)
+      updateExperimentStore(m, m.currentStudy)
 
       @debug "Current Study Id: " id(m.currentStudy)
-      @idle_add updateAnatomRefStore(m)
+      updateAnatomRefStore(m)
 
       m.measurementWidget.currStudyName = m.currentStudy.name
       m.measurementWidget.currStudyDate = m.currentStudy.date
-
+      m.updating = false
     end
   end
 
@@ -349,29 +352,31 @@ function initStudyStore(m::MPILab)
   end
 
   function updateShownStudies( widget )
-    if !searchActive[]
-      searchActive[] = true
-      @idle_add unselectall!(m.selectionExp)
-      @idle_add unselectall!(m.selectionStudy)
-      @idle_add unselectall!(m.selectionVisu)
-      @idle_add unselectall!(m.selectionReco)
-      @idle_add empty!(m.experimentStore)
-      @idle_add empty!(m.reconstructionStore)
-      @idle_add empty!(m.visuStore)
+    if !m.updating
+      @idle_add begin
+        m.updating = true
+        unselectall!(m.selectionExp)
+        unselectall!(m.selectionStudy)
+        unselectall!(m.selectionVisu)
+        unselectall!(m.selectionReco)
+        empty!(m.experimentStore)
+        empty!(m.reconstructionStore)
+        empty!(m.visuStore)
 
-      studySearchText = get_gtk_property(m["entSearchStudies"], :text, String)
+        studySearchText = get_gtk_property(m["entSearchStudies"], :text, String)
 
-      for l=1:length(m.studyStore)
-        showMe = true
+        for l=1:length(m.studyStore)
+          showMe = true
 
-        if length(studySearchText) > 0
-          showMe = showMe && occursin(lowercase(studySearchText),
-                              lowercase(m.studyStore[l,2]))
+          if length(studySearchText) > 0
+            showMe = showMe && occursin(lowercase(studySearchText),
+                                lowercase(m.studyStore[l,2]))
+          end
+
+          m.studyStore[l,6] = showMe
         end
-
-        @idle_add m.studyStore[l,6] = showMe
+        m.updating = false
       end
-      searchActive[] = false
     end
   end
 
@@ -496,7 +501,7 @@ function initAnatomRefStore(m::MPILab)
   end
 
   signal_connect(m.selectionAnatomicRefs, "changed") do widget
-    if hasselection(m.selectionAnatomicRefs)
+    if !m.updating && hasselection(m.selectionAnatomicRefs)
       currentIt = selected( m.selectionAnatomicRefs )
 
       m.currentAnatomRefFilename = m.anatomRefStore[currentIt,2]
@@ -608,28 +613,22 @@ function initExperimentStore(m::MPILab)
   end
 
   signal_connect(m.selectionExp, "changed") do widget
-    if hasselection(m.selectionExp) && !m.clearingStudyStore &&
-      m.currentStudy != nothing && !m.clearingExpStore
+    if !m.updating && hasselection(m.selectionExp) && !m.clearingStudyStore &&
+       m.currentStudy != nothing && !m.clearingExpStore
 
       currentIt = selected( m.selectionExp )
-
+      
       exp = getExperiment(m.currentStudy, m.experimentStore[currentIt,1])
-      @debug "Experiment path" exp.path
-      if exp != nothing && ispath(exp.path)
-        m.currentExperiment = exp
-        #Experiment( string(m.experimentStore[currentIt,length(cols)+1]),
-        #  m.experimentStore[currentIt,1], m.experimentStore[currentIt,2],
-        #  m.experimentStore[currentIt,3],
-        #  [parse(Float64,s) for s in split( string(m.experimentStore[currentIt,4]),"x") ],
-        #  m.experimentStore[currentIt,5])
 
+      if exp != nothing && ispath(exp.path)
+         m.currentExperiment = exp
 
          @idle_add updateReconstructionStore(m)
          #@idle_add updateAnatomRefStore(m)
 
          @idle_add begin
-           exp = m.currentExperiment
-           set_gtk_property!(tv, :tooltip_text,
+         exp = m.currentExperiment
+         set_gtk_property!(tv, :tooltip_text,
              """Num: $(exp.num)\n
                 Name: $(exp.name)\n
                 NumFrames: $(exp.numFrames)\n
@@ -641,6 +640,7 @@ function initExperimentStore(m::MPILab)
 
          end
       end
+      m.updating = false
     end
   end
 
@@ -684,20 +684,23 @@ function updateExperimentStore(m::MPILab, study::Study)
      return
   end
 
-  m.clearingExpStore = true
-  @idle_add unselectall!(m.selectionExp)
+  @idle_add begin
+    m.clearingExpStore = true
+    m.updating = true  
+    unselectall!(m.selectionExp)
+    empty!(m.experimentStore)
+    empty!(m.reconstructionStore)
+    empty!(m.visuStore)
 
-  @idle_add empty!(m.experimentStore)
-  @idle_add empty!(m.reconstructionStore)
-  @idle_add empty!(m.visuStore)
+    experiments = getExperiments( activeDatasetStore(m), study)
 
-  experiments = getExperiments( activeDatasetStore(m), study)
-
-  for exp in experiments
-    @idle_add push!(m.experimentStore,(exp.num, exp.name, exp.numFrames,
+    for exp in experiments
+      push!(m.experimentStore,(exp.num, exp.name, exp.numFrames,
                 join(exp.df,"x"),exp.sfGradient, exp.path))
+    end
+    m.clearingExpStore = false
+    m.updating = false
   end
-  m.clearingExpStore = false
   return
 end
 
@@ -764,8 +767,8 @@ function initReconstructionStore(m::MPILab)
   end
 
   signal_connect(m.selectionReco, "changed") do widget
-    if hasselection(m.selectionReco) && m.currentStudy != nothing &&
-       m.currentExperiment != nothing
+    if !m.updating && hasselection(m.selectionReco) && 
+        m.currentStudy != nothing && m.currentExperiment != nothing
 
       currentIt = selected( m.selectionReco )
 
@@ -957,7 +960,7 @@ function initVisuStore(m::MPILab)
   end
 
   signal_connect(m.selectionVisu, "changed") do widget
-    if hasselection(m.selectionVisu)
+    if !m.updating && hasselection(m.selectionVisu)
       currentIt = selected( m.selectionVisu )
 
       visuNum = m.visuStore[currentIt,1]

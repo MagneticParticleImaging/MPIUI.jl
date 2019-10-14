@@ -34,7 +34,6 @@ export openFileBrowser
 
 # Just for compat, will not work always
 if VERSION >= v"1.3.0-"
-    @info "using Threads.@spawn"
     macro spawn(e)
        quote
          Threads.@spawn $(esc(e))
