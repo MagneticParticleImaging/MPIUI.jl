@@ -354,7 +354,7 @@ end
 #function performReco(widgetptr::Ptr, m::RecoWidget)
 
 function performReco(m::RecoWidget)
-  Threads.@spawn performReco_(m)
+  @spawn performReco_(m)
 end
 
 function performReco_(m::RecoWidget)

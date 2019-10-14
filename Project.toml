@@ -31,3 +31,6 @@ TOML = "191fdcea-f9f2-43e0-b922-d33f71e2abc3"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Winston = "bd07be1c-e76f-5ff0-9c0b-f51ef45303c6"
 ImageUtils = "8ad4436d-4835-5a14-8bce-3ae014d2950b"
+
+[compat]
+Gtk = ">= 0.18"
