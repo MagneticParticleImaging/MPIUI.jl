@@ -61,7 +61,8 @@ function exportImages(m::DataViewerWidget)
     if filenameImageData != ""
       pixelResizeFactor = get_gtk_property(m["adjPixelResizeFactor"],:value,Int64)
       @info "Export Image as" filenameImageData
-      exportImage(filenameImageData, m.currentlyShownImages, pixelResizeFactor=pixelResizeFactor)
+      data = [reverse(d,dims=1) for d in m.currentlyShownImages]
+      exportImage(filenameImageData, data, pixelResizeFactor=pixelResizeFactor)
     end
   end
 end
@@ -90,7 +91,8 @@ function exportMovi(m::DataViewerWidget)
     sliceMovies = getColoredSlicesMovie(m.data, m.dataBG, m.coloring, params)
     pixelResizeFactor = get_gtk_property(m["adjPixelResizeFactor"],:value, Int64)
     @info "Export Movie as" filenameMovie
-    exportMovies(filenameMovie, sliceMovies, pixelResizeFactor=pixelResizeFactor)
+    data = [reverse(d,dims=1) for d in sliceMovies]
+    exportMovies(filenameMovie, data, pixelResizeFactor=pixelResizeFactor)
   end
 end
 
