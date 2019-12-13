@@ -159,16 +159,19 @@
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjSFMixX">
+    <property name="lower">-100</property>
     <property name="upper">100</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjSFMixY">
+    <property name="lower">-100</property>
     <property name="upper">100</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjSFMixZ">
+    <property name="lower">-100</property>
     <property name="upper">100</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
