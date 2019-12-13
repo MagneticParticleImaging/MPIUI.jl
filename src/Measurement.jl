@@ -142,6 +142,7 @@ end
 function initSurveillance(m::MeasurementWidget)
   if !m.expanded
     su = getSurveillanceUnit(m.scanner)
+
     cTemp = Canvas()
     box = m["boxSurveillance",BoxLeaf]
     push!(box,cTemp)
@@ -149,25 +150,34 @@ function initSurveillance(m::MeasurementWidget)
 
     showall(box)
 
-    temp1 = zeros(0)
-    temp2 = zeros(0)
+    tempInit = getTemperatures(su)
+    L = length(tempInit)
+
+    temp = Any[]
+    for l=1:L
+      push!(temp, zeros(0))
+    end
 
     @guarded function update_(::Timer)
       begin
-        temp = getTemperatures(su)
-        str = join([ @sprintf("%.2f C ",t) for t in temp ])
+        te = getTemperatures(su)
+        str = join([ @sprintf("%.2f C ",t) for t in te ])
         set_gtk_property!(m["entTemperatures",EntryLeaf], :text, str)
 
-        push!(temp1, temp[1])
-        push!(temp2, temp[2])
-
-        if length(temp1) > 100
-          temp1 = temp1[2:end]
-          temp2 = temp2[2:end]
+        for l=1:L
+          push!(temp[l], te[l])
         end
 
-        p = Winston.plot(temp1,"b-", linewidth=10)
-        Winston.plot(p,temp2,"r-",linewidth=10)
+        if length(temp[1]) > 100
+          for l=1:L
+            temp[l] = temp[l][2:end]
+          end
+        end
+
+        p = Winston.plot(temp[1],"b-", linewidth=10)
+        for l=2:L
+          Winston.plot(p,temp[l],"-",linewidth=10)
+        end
         #Winston.ylabel("Harmonic $f")
         #Winston.xlabel("Time")
         display(cTemp ,p)
