@@ -473,7 +473,7 @@ function getParams(m::RecoWidget)
 end
 
 function setParams(m::RecoWidget, params)
-  @idle_add set_gtk_property!(m["adjLambdaL2"], :value, params[:lambd])
+  @idle_add set_gtk_property!(m["adjLambdaL2"], :value, first(params[:lambd]))
   @idle_add set_gtk_property!(m["adjLambdaL1"], :value, get(params,:lambdaL1,0.0))
   @idle_add set_gtk_property!(m["adjLambdaTV"], :value, get(params,:lambdaTV,0.0))
   @idle_add set_gtk_property!(m["adjIterations"], :value, params[:iterations])
