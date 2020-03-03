@@ -95,13 +95,14 @@ function MeasurementWidget(filenameConfig="")
 
   @debug "Online / Offline"
   if m.scanner != nothing
+    isRobRef = isReferenced(getRobot(m.scanner))
     setInfoParams(m)
     setParams(m, merge!(getGeneralParams(m.scanner),toDict(getDAQ(m.scanner).params)))
     @idle_add set_gtk_property!(m["entConfig",EntryLeaf],:text,filenameConfig)
-    @idle_add set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isReferenced(getRobot(m.scanner)))
-    enableRobotMoveButtons(m,isReferenced(getRobot(m.scanner)))
+    @idle_add set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isRobRef)
+    enableRobotMoveButtons(m,isRobRef)
 
-    if isReferenced(getRobot(m.scanner))
+    if isRobRef
       try
         rob = getRobot(m.scanner)
         isValid = checkCoords(getRobotSetupUI(m), getPos(rob), getMinMaxPosX(rob))
@@ -113,10 +114,12 @@ function MeasurementWidget(filenameConfig="")
 
     @idle_add updateCalibTime(C_NULL, m)
   else
-    @idle_add set_gtk_property!(m["tbMeasure",ToolButtonLeaf],:sensitive,false)
-    @idle_add set_gtk_property!(m["tbMeasureBG",ToolButtonLeaf],:sensitive,false)
-    @idle_add set_gtk_property!(m["tbContinous",ToggleToolButtonLeaf],:sensitive,false)
-    @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
+    @idle_add begin
+      set_gtk_property!(m["tbMeasure",ToolButtonLeaf],:sensitive,false)
+      set_gtk_property!(m["tbMeasureBG",ToolButtonLeaf],:sensitive,false)
+      set_gtk_property!(m["tbContinous",ToggleToolButtonLeaf],:sensitive,false)
+      set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
+    end
   end
 
   @idle_add set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
@@ -184,8 +187,6 @@ function infoMessage(m::MeasurementWidget, message::String, color::String="green
 end
 
 function initCallbacks(m::MeasurementWidget)
-
-  @debug "CAAALLLLBACK"
 
   # TODO This currently does not work!
   @time signal_connect(m["expSurveillance",ExpanderLeaf], :activate) do w
@@ -268,7 +269,7 @@ function initCallbacks(m::MeasurementWidget)
          if ask_dialog(message, "Cancle", "Ok", mpilab[]["mainWindow"])
             prepareRobot(robot)
             message = """The robot is now referenced.
-               You can mount your sample. Press \"Ok\" to proceed. """
+               You can mount your sample. Press \"Close\" to proceed. """
             info_dialog(message, mpilab[]["mainWindow"])
             enableRobotMoveButtons(m,true)
             @idle_add set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,false)
@@ -339,7 +340,7 @@ function initCallbacks(m::MeasurementWidget)
 
   @time signal_connect(m["tbCancel",ToolButtonLeaf], :clicked) do w
     if calibState != nothing
-      cancel(calibState)
+      MPIMeasurements.cancel(calibState)
     end
   end
 
@@ -415,7 +416,7 @@ function initCallbacks(m::MeasurementWidget)
         calibState = performCalibration(m.scanner, calibObj, m.mdfstore, params)
 
         @idle_add set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
-        @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
+        #@idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
         @idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
 
         function update_(::Timer)
@@ -464,9 +465,13 @@ function initCallbacks(m::MeasurementWidget)
         end
         timerCalibration = Timer(update_, 0.0, interval=0.001)
       end
-      calibState.calibrationActive = true
+      if calibState != nothing
+        calibState.calibrationActive = true
+      end
     else
-      calibState.calibrationActive = false
+      if calibState != nothing # due to idle_add
+        calibState.calibrationActive = false
+      end
     end
     catch ex
       showError(ex)
@@ -737,8 +742,14 @@ end
 
 
 function enableRobotMoveButtons(m::MeasurementWidget, enable::Bool)
-  @idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,enable)
-  @idle_add set_gtk_property!(m["btnMoveAssemblePos",ButtonLeaf],:sensitive,enable)
-  @idle_add set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,enable)
-  @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,enable)
+  @idle_add begin
+    set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,enable)
+    @info 111
+    set_gtk_property!(m["btnMoveAssemblePos",ButtonLeaf],:sensitive,enable)
+    @info 2222
+    set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,enable)
+    @info 3333
+    set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,enable)
+    @info 4444
+  end
 end
