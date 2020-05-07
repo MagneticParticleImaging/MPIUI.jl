@@ -177,9 +177,13 @@ function initSurveillance(m::MeasurementWidget)
           end
         end
 
-        p = Winston.plot(temp[1],"b-", linewidth=10)
+        L = min(L,7)
+
+        colors = ["b", "r", "g", "y", "k", "c", "m"]
+
+        p = Winston.plot(temp[1], colors[1], linewidth=10)
         for l=2:L
-          Winston.plot(p,temp[l],"-",linewidth=10)
+          Winston.plot(p, temp[l], colors[l], linewidth=10)
         end
         #Winston.ylabel("Harmonic $f")
         #Winston.xlabel("Time")
@@ -233,8 +237,11 @@ function initCallbacks(m::MeasurementWidget)
     end
     pos = get.(pos_).*1Unitful.mm
     try
+      @info "enabeling robot"
       setEnabled(getRobot(m.scanner), true)
+      @info "move robot"
       moveAbs(getRobot(m.scanner),getRobotSetupUI(m), pos)
+      @info "move robot done"
     catch ex
       showError(ex)
     end
@@ -754,12 +761,8 @@ end
 function enableRobotMoveButtons(m::MeasurementWidget, enable::Bool)
   @idle_add begin
     set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,enable)
-    @info 111
     set_gtk_property!(m["btnMoveAssemblePos",ButtonLeaf],:sensitive,enable)
-    @info 2222
     set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,enable)
-    @info 3333
     set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,enable)
-    @info 4444
   end
 end
