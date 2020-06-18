@@ -123,10 +123,10 @@ function sweepAndShow(m::LCRMeterUI)
         sleep(0.005)
         readline(instr)
         global rawdata = readline(instr)
-        global n = split(n,',') #re.search("(.+),(.+),.+", rawdata)
-        global z_str = n[1] #n[:group](1)
+        global n = split(rawdata, ',')
+        global z_str = n[1]
         global  z = parse(Float64,z_str)
-        global d_str = n[2] #n[:group](2)
+        global d_str = n[2]
         global d = parse(Float64,d_str)
         global x_samples=[x_samples;z]
         global y_samples = [y_samples;d]
