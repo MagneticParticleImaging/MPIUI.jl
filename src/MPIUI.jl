@@ -11,6 +11,7 @@ using FFTW
 using Pkg
 using InteractiveUtils
 using ImageUtils: converttometer, ColoringParams
+using MPIMeasurements.Sockets
 
 ENV["MPILIB_UI"] = "Nothing"
 
@@ -44,7 +45,7 @@ else
        quote
          @async $(esc(e))
        end
-    end  
+    end
 end
 
 function object_(builder::Builder,name::AbstractString, T::Type)::T
