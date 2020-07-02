@@ -151,8 +151,8 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
     if m.filenameData != "" && ispath(m.filenameData)
       f = MPIFile(m.filenameData)#, isCalib=false)
       params = MPIFiles.loadMetadata(f)
-      params["acqNumFGFrames"] = acqNumFGFrames(f)
-      params["acqNumBGFrames"] = acqNumBGFrames(f)
+      params[:acqNumFGFrames] = acqNumFGFrames(f)
+      params[:acqNumBGFrames] = acqNumBGFrames(f)
 
       @idle_add set_gtk_property!(m["adjFrame",AdjustmentLeaf], :upper, acqNumFGFrames(f))
 
