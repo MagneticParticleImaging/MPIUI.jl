@@ -259,7 +259,9 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
 
     freqdata = abs.(rfft(data)) / length(data)
 
-    p1 = Winston.plot(timePoints[minTP:maxTP],data[minTP:maxTP],"b-",linewidth=5)
+    maxPoints = 300
+    sp = length(minTP:maxTP) > maxPoints ? round(Int,length(minTP:maxTP) / maxPoints)  : 1
+    p1 = Winston.plot(timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP],"b-",linewidth=5)
     Winston.ylabel("u / V")
     Winston.xlabel("t / ms")
     if !autoRangingTD
@@ -281,7 +283,6 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     end
     display(m.cTD ,p1)
     display(m.cFD ,p2)
-
 
     ### Harmonic Viewer ###
     if  get_gtk_property(m["cbHarmonicViewer",CheckButtonLeaf], :active, Bool)
