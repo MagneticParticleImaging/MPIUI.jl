@@ -146,6 +146,15 @@ function MPILab(offlineMode=false)::MPILab
     end
   end
 
+
+  
+  signal_connect(w, "delete-event") do widget, event
+    if m.measurementWidget != nothing && m.measurementWidget.scanner != nothing
+      close(m.measurementWidget.scanner)
+    end
+    return false
+  end
+
   @info "Finished starting MPILab"
 
   end
