@@ -215,7 +215,9 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     end
 
 
+    showFD = true
     if get_gtk_property(m["cbShowAllPatches",CheckButtonLeaf], :active, Bool)
+      showFD = false
       minTP = 1
       maxTP = size(m.data,1)*size(m.data,3)
 
@@ -255,9 +257,6 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
 
     timePoints = (0:(length(data)-1)).*m.deltaT
     numFreq = floor(Int, length(data) ./ 2 .+ 1)
-    freq = collect(0:(numFreq-1))./(numFreq-1)./m.deltaT./2.0
-
-    freqdata = abs.(rfft(data)) / length(data)
 
     maxPoints = 300
     sp = length(minTP:maxTP) > maxPoints ? round(Int,length(minTP:maxTP) / maxPoints)  : 1
@@ -267,25 +266,36 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     if !autoRangingTD
       Winston.ylim(minValTD, maxValTD)
     end
-    ls = "b-" #length(minFr:maxFr) > 150 ? "b-" : "b-o"
-    p2 = Winston.semilogy(freq[minFr:maxFr],freqdata[minFr:maxFr],ls,linewidth=5)
-    #Winston.ylabel("u / V")
-    Winston.xlabel("f / kHz")
-    if !autoRangingFD
-        Winston.ylim(minValFD, maxValFD)
+ 
+    if showFD
+      freq = collect(0:(numFreq-1))./(numFreq-1)./m.deltaT./2.0
+      freqdata = abs.(rfft(data)) / length(data)
+
+      ls = "b-" #length(minFr:maxFr) > 150 ? "b-" : "b-o"
+      p2 = Winston.semilogy(freq[minFr:maxFr],freqdata[minFr:maxFr],ls,linewidth=5)
+      #Winston.ylabel("u / V")
+      Winston.xlabel("f / kHz")
+      if !autoRangingFD
+          Winston.ylim(minValFD, maxValFD)
+      end
     end
 
     if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG",CheckButtonLeaf], :active, Bool)
       Winston.plot(p1,timePoints[minTP:maxTP],dataBG[minTP:maxTP],"k--",linewidth=2)
-      ls = length(minFr:maxFr) > 150 ? "k-" : "k-x"
-      Winston.plot(p2,freq[minFr:maxFr],abs.(rfft(dataBG)[minFr:maxFr]) / length(dataBG),
+
+      if showFD
+        ls = length(minFr:maxFr) > 150 ? "k-" : "k-x"
+        Winston.plot(p2,freq[minFr:maxFr],abs.(rfft(dataBG)[minFr:maxFr]) / length(dataBG),
                   ls, linewidth=2, ylog=true)
+      end
     end
-    display(m.cTD ,p1)
-    display(m.cFD ,p2)
+    display(m.cTD, p1)
+    if showFD
+      display(m.cFD, p2)
+    end
 
     ### Harmonic Viewer ###
-    if  get_gtk_property(m["cbHarmonicViewer",CheckButtonLeaf], :active, Bool)
+    if  get_gtk_property(m["cbHarmonicViewer",CheckButtonLeaf], :active, Bool) && showFD
       for l=1:5
         f = get_gtk_property(m.harmViewAdj[l], :value, Int64)
         push!(m.harmBuff[l], freqdata[f])
