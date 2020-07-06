@@ -532,6 +532,7 @@ function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
   shpString = get_gtk_property(m["entGridShape",EntryLeaf], :text, String)
   shp_ = tryparse.(Int64,split(shpString,"x"))
   numBGMeas = get_gtk_property(m["adjNumBGMeasurements",AdjustmentLeaf], :value, Int64)
+  numBGFrames = get_gtk_property(m["adjNumBGFrames",AdjustmentLeaf], :value, Int64)
 
   if any(shp_ .== nothing) length(shp_) != 3
     return
@@ -539,13 +540,21 @@ function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
 
   shp = get.(shp_)
 
-  robotMoveTime = 1.8
+  robotMoveTime = 0.8
+  robotMoveTimePark = 13.8
 
-  calibTime = (get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
-              (get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64)+1) *
-              get_gtk_property(m["adjNumPeriods",AdjustmentLeaf], :value, Int64) *
-              daq.params.dfCycle + get_gtk_property(m["adjPause",AdjustmentLeaf],:value,Float64) + robotMoveTime) *
-              (prod(shp) + numBGMeas)
+  daqTime_ = get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
+             get_gtk_property(m["adjNumPeriods",AdjustmentLeaf], :value, Int64) *
+            daq.params.dfCycle
+
+  daqTime = daqTime_ * (get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64)+1)
+
+  daqTimeBG = daqTime_ * (numBGFrames + 1)
+
+  pauseTime = get_gtk_property(m["adjPause",AdjustmentLeaf],:value,Float64)
+
+  calibTime = (daqTime + pauseTime + robotMoveTime) * prod(shp) +
+              (daqTimeBG + pauseTime + robotMoveTimePark) * numBGMeas
 
   calibTimeMin = calibTime/60
 
