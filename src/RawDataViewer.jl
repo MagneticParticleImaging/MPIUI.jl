@@ -151,8 +151,8 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
     if m.filenameData != "" && ispath(m.filenameData)
       f = MPIFile(m.filenameData)#, isCalib=false)
       params = MPIFiles.loadMetadata(f)
-      params["acqNumFGFrames"] = acqNumFGFrames(f)
-      params["acqNumBGFrames"] = acqNumBGFrames(f)
+      params[:acqNumFGFrames] = acqNumFGFrames(f)
+      params[:acqNumBGFrames] = acqNumBGFrames(f)
 
       @idle_add set_gtk_property!(m["adjFrame",AdjustmentLeaf], :upper, acqNumFGFrames(f))
 
@@ -259,7 +259,9 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
 
     freqdata = abs.(rfft(data)) / length(data)
 
-    p1 = Winston.plot(timePoints[minTP:maxTP],data[minTP:maxTP],"b-",linewidth=5)
+    maxPoints = 300
+    sp = length(minTP:maxTP) > maxPoints ? round(Int,length(minTP:maxTP) / maxPoints)  : 1
+    p1 = Winston.plot(timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP],"b-",linewidth=5)
     Winston.ylabel("u / V")
     Winston.xlabel("t / ms")
     if !autoRangingTD
@@ -281,7 +283,6 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     end
     display(m.cTD ,p1)
     display(m.cFD ,p2)
-
 
     ### Harmonic Viewer ###
     if  get_gtk_property(m["cbHarmonicViewer",CheckButtonLeaf], :active, Bool)

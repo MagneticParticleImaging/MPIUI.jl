@@ -12,7 +12,17 @@ mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   sequences::Vector{String}
   expanded::Bool
   message::String
+  calibState::CalibState
+  measState::MeasState
 end
+
+include("Measurement.jl")
+include("Calibration.jl")
+include("Surveillance.jl")
+include("Robot.jl")
+
+
+
 
 getindex(m::MeasurementWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
@@ -26,8 +36,7 @@ end
 
 function MeasurementWidget(filenameConfig="")
   @info "Starting MeasurementWidget"
-  uifile = joinpath(@__DIR__,"builder","measurementWidget.ui")
-
+  uifile = joinpath(@__DIR__,"..","builder","measurementWidget.ui")
   #filenameConfig=nothing
 
   if filenameConfig != ""
@@ -44,7 +53,7 @@ function MeasurementWidget(filenameConfig="")
 
   m = MeasurementWidget( mainBox.handle, b,
                   scanner, zeros(Float32,0,0,0,0), mdfstore, "", now(),
-                  "", RawDataWidget(), String[], false, "")
+                  "", RawDataWidget(), String[], false, "", CalibState(), MeasState())
   Gtk.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
@@ -142,58 +151,6 @@ function reloadConfig(m::MeasurementWidget)
   m.mdfstore = MDFDatasetStore( getGeneralParams(m.scanner)["datasetStore"] )
 end
 
-function initSurveillance(m::MeasurementWidget)
-  if !m.expanded
-    su = getSurveillanceUnit(m.scanner)
-
-    cTemp = Canvas()
-    box = m["boxSurveillance",BoxLeaf]
-    push!(box,cTemp)
-    set_gtk_property!(box,:expand,cTemp,true)
-
-    showall(box)
-
-    tempInit = getTemperatures(su)
-    L = length(tempInit)
-
-    temp = Any[]
-    for l=1:L
-      push!(temp, zeros(0))
-    end
-
-    @guarded function update_(::Timer)
-      begin
-        te = getTemperatures(su)
-        str = join([ @sprintf("%.2f C ",t) for t in te ])
-        set_gtk_property!(m["entTemperatures",EntryLeaf], :text, str)
-
-        for l=1:L
-          push!(temp[l], te[l])
-        end
-
-        if length(temp[1]) > 100
-          for l=1:L
-            temp[l] = temp[l][2:end]
-          end
-        end
-
-        L = min(L,7)
-
-        colors = ["b", "r", "g", "y", "k", "c", "m"]
-
-        p = Winston.plot(temp[1], colors[1], linewidth=10)
-        for l=2:L
-          Winston.plot(p, temp[l], colors[l], linewidth=10)
-        end
-        #Winston.ylabel("Harmonic $f")
-        #Winston.xlabel("Time")
-        display(cTemp ,p)
-      end
-    end
-    timer = Timer(update_, 0.0, interval=1.5)
-    m.expanded = true
-  end
-end
 
 function infoMessage(m::MeasurementWidget, message::String, color::String="green")
   m.message = """<span foreground="$color" font_weight="bold" size="x-large">$message</span>"""
@@ -224,75 +181,27 @@ function initCallbacks(m::MeasurementWidget)
   end
 
   @time signal_connect(m["btnRobotMove",ButtonLeaf], :clicked) do w
-    if !isReferenced(getRobot(m.scanner))
-      info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
-      return
-    end
-
-    posString = get_gtk_property(m["entCurrPos",EntryLeaf], :text, String)
-    pos_ = tryparse.(Float64,split(posString,"x"))
-
-    if any(pos_ .== nothing) || length(pos_) != 3
-      return
-    end
-    pos = get.(pos_).*1Unitful.mm
-    try
-      @info "enabeling robot"
-      setEnabled(getRobot(m.scanner), true)
-      @info "move robot"
-      moveAbs(getRobot(m.scanner),getRobotSetupUI(m), pos)
-      @info "move robot done"
-    catch ex
-      showError(ex)
-    end
-    #infoMessage(m, "move to $posString")
+    robotMove(m)
   end
 
   @time signal_connect(m["btLoadArbPos",ButtonLeaf],:clicked) do w
-      filter = Gtk.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
-      filename = open_dialog("Select Arbitrary Position File", GtkNullContainer(), (filter, ))
-      @idle_add set_gtk_property!(m["entArbitraryPos",EntryLeaf],:text,filename)
+    loadArbPos(m)
   end
 
   @time signal_connect(m["btnMovePark",ButtonLeaf], :clicked) do w
-      if !isReferenced(getRobot(m.scanner))
-        info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
-        return
+      try
+        movePark(m)
+      catch ex
+       showError(ex)
       end
-      setEnabled(getRobot(m.scanner), true)
-      movePark(getRobot(m.scanner))
-      enableRobotMoveButtons(m, true)
   end
 
   @time signal_connect(m["btnMoveAssemblePos",ButtonLeaf], :clicked) do w
-      if !isReferenced(getRobot(m.scanner))
-        info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
-        return
-      end
-      moveAssemble(getRobot(m.scanner))
-      @idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
-      @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
+    moveAssemblePos(m)
   end
 
   @time signal_connect(m["btnReferenceDrive",ButtonLeaf], :clicked) do w
-    robot = getRobot(m.scanner)
-    if !isReferenced(robot)
-      message = """IselRobot is NOT referenced and needs to be referenced! \n
-             Remove all attached devices from the robot before the robot will be referenced and move around!\n
-             Press \"Ok\" if you have done so """
-      if ask_dialog(message, "Cancle", "Ok", mpilab[]["mainWindow"])
-          message = """Are you sure you have removed everything and the robot can move
-            freely without damaging anything? Press \"Ok\" if you want to continue"""
-         if ask_dialog(message, "Cancle", "Ok", mpilab[]["mainWindow"])
-            prepareRobot(robot)
-            message = """The robot is now referenced.
-               You can mount your sample. Press \"Close\" to proceed. """
-            info_dialog(message, mpilab[]["mainWindow"])
-            enableRobotMoveButtons(m,true)
-            @idle_add set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,false)
-         end
-      end
-    end
+    referenceDrive(m)
   end
 
   timer = nothing
@@ -353,146 +262,39 @@ function initCallbacks(m::MeasurementWidget)
     end
   end
 
-  calibState = nothing
-
   @time signal_connect(m["tbCancel",ToolButtonLeaf], :clicked) do w
-    if calibState != nothing
-      MPIMeasurements.cancel(calibState)
+    try
+       MPIMeasurements.cancel(m.calibState)
+    catch ex
+      showError(ex)
     end
   end
 
-  timerCalibration = nothing
 
   @time signal_connect(m["tbCalibration",ToggleToolButtonLeaf], :toggled) do w
-    try
-    su = getSurveillanceUnit(m.scanner)
-
+   try
     if !isReferenced(getRobot(m.scanner))
       info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
       @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
       return
     end
 
-    daq = getDAQ(m.scanner)
     if get_gtk_property(m["tbCalibration",ToggleToolButtonLeaf], :active, Bool)
-
-      if calibState == nothing
-        shpString = get_gtk_property(m["entGridShape",EntryLeaf], :text, String)
-        shp_ = tryparse.(Int64,split(shpString,"x"))
-        fovString = get_gtk_property(m["entFOV",EntryLeaf], :text, String)
-        fov_ = tryparse.(Float64,split(fovString,"x"))
-        centerString = get_gtk_property(m["entCenter",EntryLeaf], :text, String)
-        center_ = tryparse.(Float64,split(centerString,"x"))
-
-        velRobString = get_gtk_property(m["entVelRob",EntryLeaf], :text, String)
-        velRob_ = tryparse.(Int64,split(velRobString,"x"))
-
-        numBGMeas = get_gtk_property(m["adjNumBGMeasurements",AdjustmentLeaf], :value, Int64)
-
-        if any(shp_ .== nothing) || any(fov_ .== nothing) || any(center_ .== nothing) || any(velRob_ .== nothing) ||
-           length(shp_) != 3 || length(fov_) != 3 || length(center_) != 3 || length(velRob_) != 3
-          @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
-          return
-        end
-
-        shp = get.(shp_)
-        fov = get.(fov_) .*1Unitful.mm
-        ctr = get.(center_) .*1Unitful.mm
-        velRob = get.(velRob_)
-
-        if get_gtk_property(m["cbUseArbitraryPos",CheckButtonLeaf], :active, Bool) == false
-            cartGrid = RegularGridPositions(shp,fov,ctr)#
-        else
-            filename = get_gtk_property(m["entArbitraryPos"],EntryLeaf,:text,String)
-            if filename != ""
-                cartGrid = h5open(filename, "r") do file
-                    positions = Positions(file)
-                end
-            else
-              error("Filename Arbitrary Positions empty!")
-            end
-        end
-        if numBGMeas == 0
-          positions = cartGrid
-        else
-          bgIdx = round.(Int64, range(1, stop=length(cartGrid)+numBGMeas, length=numBGMeas ) )
-          bgPos = parkPos(getRobot(m.scanner))
-          positions = BreakpointGridPositions(cartGrid, bgIdx, bgPos)
-        end
-
-        for pos in positions
-          isValid = checkCoords(getRobotSetupUI(m), pos, getMinMaxPosX(getRobot(m.scanner)))
-        end
-
-        params = merge!(getGeneralParams(m.scanner),getParams(m))
-        calibObj = SystemMatrixRobotMeas(m.scanner, getRobotSetupUI(m), positions, params,
-                  waitTime = get_gtk_property(m["adjPause",AdjustmentLeaf],:value,Float64))
-
-        # the following spawns a task
-        @info "perform calibration"
-        calibState = performCalibration(m.scanner, calibObj, m.mdfstore, params)
-
-        @idle_add set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
-        #@idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,false)
-        @idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
-
-        function update_(::Timer)
-          try
-            if calibState.calibrationActive
-              if 1 <= calibState.currPos <= calibState.numPos
-                pos = Float64.(ustrip.(uconvert.(Unitful.mm, positions[calibState.currPos])))
-                posStr = @sprintf("%.2f x %.2f x %.2f", pos[1],pos[2],pos[3])
-                infoMessage(m, "$(calibState.currPos) / $(calibState.numPos) ($posStr mm)", "green")
-
-                deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
-                if !calibState.consumed && !isempty(calibState.currentMeas)
-                  uMeas = calibState.currentMeas
-                  #@idle_add
-                  updateData(m.rawDataWidget, uMeas, deltaT)
-                  calibState.consumed = true
-                end
-
-                #Lauft nicht
-
-                temp = getTemperatures(su)
-                while maximum(temp[1:2]) > params["maxTemperature"]
-                 infoMessage(m, "System Cooling Down! $(calibState.currPos) / $(calibState.numPos) ($posStr mm)", "red")
-                 sleep(20)
-                 temp = getTemperatures(su)
-                 @info "Temp = $temp"
-                end
-              end
-              if istaskdone(calibState.task)
-                infoMessage(m, "", "red")
-                @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
-
-                close(timerCalibration)
-                @idle_add set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
-                @idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
-
-                updateData!(mpilab[].sfBrowser, m.mdfstore)
-                updateExperimentStore(mpilab[], mpilab[].currentStudy)
-                calibState = nothing
-              end
-            end
-            sleep(0.5)
-          catch ex
-            showError(ex)
-          end
-        end
-        timerCalibration = Timer(update_, 0.0, interval=0.001)
-      end
-      if calibState != nothing
-        calibState.calibrationActive = true
+      if isStarted(m.calibState)
+        m.calibState.calibrationActive = true
+      else
+        # start bg calibration
+        doCalibration(m)
+        # start display thread
+        #g_timeout_add( ()->displayCalibration(m), 1)
+        timerCalibration = Timer( timer -> displayCalibration(m, timer), 0.0, interval=0.1)
       end
     else
-      if calibState != nothing # due to idle_add
-        calibState.calibrationActive = false
-      end
+      m.calibState.calibrationActive = false
     end
     catch ex
-      showError(ex)
-    end
+     showError(ex)
+   end
   end
 
 
@@ -530,15 +332,13 @@ function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
   daq = getDAQ(m.scanner)
 
   shpString = get_gtk_property(m["entGridShape",EntryLeaf], :text, String)
-  shp_ = tryparse.(Int64,split(shpString,"x"))
+  shp = tryparse.(Int64,split(shpString,"x"))
   numBGMeas = get_gtk_property(m["adjNumBGMeasurements",AdjustmentLeaf], :value, Int64)
   numBGFrames = get_gtk_property(m["adjNumBGFrames",AdjustmentLeaf], :value, Int64)
 
-  if any(shp_ .== nothing) length(shp_) != 3
+  if any(shp .== nothing) length(shp) != 3
     return
   end
-
-  shp = get.(shp_)
 
   robotMoveTime = 0.8
   robotMoveTimePark = 13.8
@@ -589,78 +389,6 @@ function setInfoParams(m::MeasurementWidget)
               get_gtk_property(m["adjNumPeriods",AdjustmentLeaf], :value, Int64) *
               daq.params.dfCycle
   @idle_add set_gtk_property!(m["entFramePeriod",EntryLeaf],:text,"$(@sprintf("%.5f",framePeriod)) s")
-end
-
-
-function measurement(widgetptr::Ptr, m::MeasurementWidget)
-  try
-    @idle_add @info "Calling measurement"
-
-    daq = getDAQ(m.scanner)
-
-    params = merge!(getGeneralParams(m.scanner),getParams(m))
-    params["acqNumFrames"] = params["acqNumFGFrames"]
-
-    bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
-
-    measState = asyncMeasurement(m.scanner, m.mdfstore, params, bgdata)
-    deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
-
-    timerMeas = nothing
-    function update_(::Timer)
-      try
-        if Base.istaskfailed(measState.task)
-          close(timerMeas)
-          @async showError(measState.task.exception,measState.task.backtrace)
-          return
-        end
-        infoMessage(m, "Frame $(measState.currFrame) / $(measState.numFrames)", "green")
-        fr = measState.currFrame
-        if fr > 0 && !measState.consumed
-          updateData(m.rawDataWidget, measState.buffer[:,:,:,fr:fr], deltaT)
-          measState.consumed = true
-        end
-        if istaskdone(measState.task)
-          close(timerMeas)
-          infoMessage(m, "", "green")
-          m.filenameExperiment = measState.filename
-          updateData(m.rawDataWidget, m.filenameExperiment)
-          updateExperimentStore(mpilab[], mpilab[].currentStudy)
-        end
-        sleep(0.1)
-      catch ex
-        close(timerMeas)
-        showError(ex)
-      end
-      return
-    end
-    timerMeas = Timer(update_, 0.0, interval=0.1)
-  catch ex
-   showError(ex)
-  end
-  return nothing
-end
-
-function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
-  try
-    @idle_add @info "Calling BG measurement"
-    params = merge!(getGeneralParams(m.scanner),getParams(m))
-    params["acqNumFrames"] = params["acqNumBGFrames"]
-
-    setEnabled(getRobot(m.scanner), false)
-    enableACPower(getSurveillanceUnit(m.scanner))
-    uMeas, uSlowADC = MPIMeasurements.measurement(getDAQ(m.scanner), params)
-    disableACPower(getSurveillanceUnit(m.scanner))
-    setEnabled(getRobot(m.scanner), true)
-
-    m.dataBGStore = uMeas
-    #updateData(m, u)
-
-    infoMessage(m, "", "green")
-  catch ex
-   showError(ex)
-  end
-  return nothing
 end
 
 
@@ -762,16 +490,6 @@ end
 function getCustomPhatom(m::MeasurementWidget)
     cPStr = get_gtk_property(m["entSafetyObj",EntryLeaf],:text,String)
     cP_ = tryparse.(Float64,split(cPStr,"x"))
-    cP= get.(cP_) .*1Unitful.mm
+    cP= cP_ .*1Unitful.mm
     return Cuboid(Rectangle(cP[2],cP[3], "UI Custom Phantom"),cP[1],"UI Custom Phantom 3D")
-end
-
-
-function enableRobotMoveButtons(m::MeasurementWidget, enable::Bool)
-  @idle_add begin
-    set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,enable)
-    set_gtk_property!(m["btnMoveAssemblePos",ButtonLeaf],:sensitive,enable)
-    set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,enable)
-    set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf],:sensitive,enable)
-  end
 end
