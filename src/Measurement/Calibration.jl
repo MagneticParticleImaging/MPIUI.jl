@@ -71,7 +71,7 @@ function displayCalibration(m::MeasurementWidget, timerCalibration::Timer)
             pos = Float64.(ustrip.(uconvert.(Unitful.mm, positions[calibState.currPos])))
             posStr = @sprintf("%.2f x %.2f x %.2f", pos[1],pos[2],pos[3])
             infoMessage(m, "$(calibState.currPos) / $(calibState.numPos) ($posStr mm)", "green")
-
+ 
             daq = calibState.calibObj.daq
             deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
             if !calibState.consumed && !isempty(calibState.currentMeas)
