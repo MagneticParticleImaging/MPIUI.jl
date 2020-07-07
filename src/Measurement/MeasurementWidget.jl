@@ -297,7 +297,7 @@ function initCallbacks(m::MeasurementWidget)
         # start bg calibration
         prepareCalibration(m)
 
-        if isfile("/tmp/sysObj.h5")
+        if isfile("/tmp/sysObj.toml")
           message = """Found existing calibration file! \n
                        Should it be resumed?"""
           if ask_dialog(message, "No", "Yes", mpilab[]["mainWindow"])

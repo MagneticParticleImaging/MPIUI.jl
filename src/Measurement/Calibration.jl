@@ -87,7 +87,7 @@ function displayCalibration(m::MeasurementWidget, timerCalibration::Timer)
        m.calibInProgress = false
      end
 
-     if !m.calibInProgress
+     if !m.calibInProgress && (calibState.task == nothing || istaskdone(calibState.task))
      #if istaskdone(calibState.task) || !m.calibInProgress
        infoMessage(m, "", "red")
         @idle_add begin
