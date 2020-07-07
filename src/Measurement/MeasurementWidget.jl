@@ -12,8 +12,9 @@ mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   sequences::Vector{String}
   expanded::Bool
   message::String
-  calibState::CalibState
+  calibState::SystemMatrixRobotMeas
   measState::MeasState
+  calibInProgress::Bool
 end
 
 include("Measurement.jl")
@@ -53,7 +54,8 @@ function MeasurementWidget(filenameConfig="")
 
   m = MeasurementWidget( mainBox.handle, b,
                   scanner, zeros(Float32,0,0,0,0), mdfstore, "", now(),
-                  "", RawDataWidget(), String[], false, "", CalibState(), MeasState())
+                  "", RawDataWidget(), String[], false, "",
+                  SystemMatrixRobotMeas(scanner, mdfstore), MeasState(), false)
   Gtk.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
@@ -267,7 +269,11 @@ function initCallbacks(m::MeasurementWidget)
 
   @time signal_connect(m["tbCancel",ToolButtonLeaf], :clicked) do w
     try
-       MPIMeasurements.cancel(m.calibState)
+       @idle_add begin
+         MPIMeasurements.stop(m.calibState)
+         m.calibState.task = nothing
+         m.calibInProgress = false
+       end
     catch ex
       showError(ex)
     end
@@ -283,17 +289,29 @@ function initCallbacks(m::MeasurementWidget)
     end
 
     if get_gtk_property(m["tbCalibration",ToggleToolButtonLeaf], :active, Bool)
-      if isStarted(m.calibState)
-        m.calibState.calibrationActive = true
+      if m.calibInProgress #isStarted(m.calibState)
+        #m.calibState.calibrationActive = true
+
+        doCalibration(m)
       else
         # start bg calibration
+        prepareCalibration(m)
+
+        if isfile("/tmp/sysObj.h5")
+          message = """Found existing calibration file! \n
+                       Should it be resumed?"""
+          if ask_dialog(message, "No", "Yes", mpilab[]["mainWindow"])
+            MPIMeasurements.restore(m.calibState)
+          end
+        end
+
         doCalibration(m)
         # start display thread
-        #g_timeout_add( ()->displayCalibration(m), 1)
         timerCalibration = Timer( timer -> displayCalibration(m, timer), 0.0, interval=0.1)
+        m.calibInProgress = true
       end
     else
-      m.calibState.calibrationActive = false
+      MPIMeasurements.stop(m.calibState)
     end
     catch ex
      showError(ex)
