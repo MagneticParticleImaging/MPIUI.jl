@@ -34,4 +34,4 @@ ImageUtils = "8ad4436d-4835-5a14-8bce-3ae014d2950b"
 [compat]
 Gtk = ">= 0.18"
 MPIReco = "0.3"
-MPIFiles = "0.9.2"
+MPIFiles = "0.9.3"
