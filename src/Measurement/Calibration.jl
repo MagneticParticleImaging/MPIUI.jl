@@ -102,7 +102,7 @@ function displayCalibration(m::MeasurementWidget, timerCalibration::Timer)
         updateExperimentStore(mpilab[], mpilab[].currentStudy)
       end
 
-      sleep(0.1)
+      sleep(0.5)
     catch ex
       close(timerCalibration)
       showError(ex)
