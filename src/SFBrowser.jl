@@ -33,7 +33,10 @@ function updateData!(m::SFBrowserWidget, sysFuncs)
       empty!(m.store)
 
       for l = 2:size(sysFuncs,1)
-        push!(m.store,( split(sysFuncs[l,15],"T")[1],
+
+        num = size(sysFuncs,2) == 16 ? 0 : sysFuncs[l,17]
+
+        push!(m.store,( num, split(sysFuncs[l,15],"T")[1],
                 sysFuncs[l,1],round(sysFuncs[l,2], digits=2),
                "$(round((sysFuncs[l,3]), digits=2)) x $(round((sysFuncs[l,4]), digits=2)) x $(round((sysFuncs[l,5]), digits=2))",
                                   "$(sysFuncs[l,6]) x $(sysFuncs[l,7]) x $(sysFuncs[l,8])",
@@ -48,7 +51,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
  #Name,Gradient,DFx,DFy,DFz,Size x,Size y,Size z,Bandwidth,Tracer,TracerBatch,DeltaSampleConcentration,DeltaSampleVolume,Path
 
 
-  store = ListStore(String,String,Float64,String,String,
+  store = ListStore(Int,String,String,Float64,String,String,
                      String,String,String,String, Bool)
 
   tv = TreeView(TreeModel(store))
@@ -56,28 +59,30 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   r2 = CellRendererToggle()
 
   if !smallWidth
-    c1 = TreeViewColumn("Date", r1, Dict("text" => 0))
-    c2 = TreeViewColumn("Name", r1, Dict("text" => 1))
-    c3 = TreeViewColumn("Gradient", r1, Dict("text" => 2))
-    c4 = TreeViewColumn("DF", r1, Dict("text" => 3))
-    c5 = TreeViewColumn("Size", r1, Dict("text" => 4))
-    c6 = TreeViewColumn("Tracer", r1, Dict("text" => 5))
-    c7 = TreeViewColumn("Batch", r1, Dict("text" => 6))
-    c8 = TreeViewColumn("Conc.", r1, Dict("text" => 7))
-    c9 = TreeViewColumn("Path", r1, Dict("text" => 8))
+    c0 = TreeViewColumn("Num", r1, Dict("text" => 0))
+    c1 = TreeViewColumn("Date", r1, Dict("text" => 1))
+    c2 = TreeViewColumn("Name", r1, Dict("text" => 2))
+    c3 = TreeViewColumn("Gradient", r1, Dict("text" => 3))
+    c4 = TreeViewColumn("DF", r1, Dict("text" => 4))
+    c5 = TreeViewColumn("Size", r1, Dict("text" => 5))
+    c6 = TreeViewColumn("Tracer", r1, Dict("text" => 6))
+    c7 = TreeViewColumn("Batch", r1, Dict("text" => 7))
+    c8 = TreeViewColumn("Conc.", r1, Dict("text" => 8))
+    c9 = TreeViewColumn("Path", r1, Dict("text" => 9))
 
-    for (i,c) in enumerate((c1,c2,c3,c4,c5,c6,c7,c8,c9))
+    for (i,c) in enumerate((c0,c1,c2,c3,c4,c5,c6,c7,c8,c9))
       G_.sort_column_id(c,i-1)
       G_.resizable(c,true)
       G_.max_width(c,80)
       push!(tv,c)
     end
   else
-    c1 = TreeViewColumn("Date", r1, Dict("text" => 0))
-    c2 = TreeViewColumn("Name", r1, Dict("text" => 1))
-    c3 = TreeViewColumn("Path", r1, Dict("text" => 8))
+    c0 = TreeViewColumn("Num", r1, Dict("text" => 0))
+    c1 = TreeViewColumn("Date", r1, Dict("text" => 1))
+    c2 = TreeViewColumn("Name", r1, Dict("text" => 2))
+    c3 = TreeViewColumn("Path", r1, Dict("text" => 9))
 
-    for (i,c) in enumerate((c1,c2,c3))
+    for (i,c) in enumerate((c0,c1,c2,c3))
       G_.sort_column_id(c,i-1)
       G_.resizable(c,true)
       G_.max_width(c,80)
@@ -88,7 +93,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   G_.max_width(c2,200)
 
   tmFiltered = TreeModelFilter(store)
-  G_.visible_column(tmFiltered,9)
+  G_.visible_column(tmFiltered,10)
   tmSorted = TreeModelSort(tmFiltered)
   G_.model(tv, tmSorted)
 
@@ -104,7 +109,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     if hasselection(selection)
       currentIt = selected(selection)
 
-      sffilename = TreeModel(tmSorted)[currentIt,9]
+      sffilename = TreeModel(tmSorted)[currentIt,10]
 
       @idle_add begin
         if !get_gtk_property(cbOpenMeas,:active,Bool)
@@ -223,19 +228,19 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     for l=1:length(store)
       showMe = true
       if G != nothing
-        showMe = showMe && (G == store[l,3])
+        showMe = showMe && (G == store[l,4])
       end
       if length(df_) == 3
-        showMe = showMe && ([parse(Float64,dv) for dv in split(store[l,4],"x")] == df_ )
+        showMe = showMe && ([parse(Float64,dv) for dv in split(store[l,5],"x")] == df_ )
       end
       if length(s_) == 3
-        showMe = showMe && ([parse(Int64,sv) for sv in split(store[l,5],"x")] == s_ )
+        showMe = showMe && ([parse(Int64,sv) for sv in split(store[l,6],"x")] == s_ )
       end
       if length(tracer) > 0
-        showMe = showMe && occursin(lowercase(tracer),lowercase(store[l,6]))
+        showMe = showMe && occursin(lowercase(tracer),lowercase(store[l,7]))
       end
 
-      store[l,10] = showMe
+      store[l,11] = showMe
     end
   end
 
@@ -257,12 +262,10 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   m = SFBrowserWidget(store, tv, vbox, tmSorted, nothing, nothing, selection, false)
 
   signal_connect(m.selection, "changed") do widget
-    if hasselection(m.selection) && m.updating
+    if hasselection(m.selection) && !m.updating
       currentIt = selected( m.selection )
       @idle_add begin
-          @show "tic"
-        filename = TreeModel(m.tmSorted)[currentIt,9]
-          @show "toc"
+        filename = TreeModel(m.tmSorted)[currentIt,10]
         f = MPIFile(filename, fastMode=true)
         num = experimentNumber(f)
         name = experimentName(f)
@@ -320,7 +323,7 @@ end
 
 function getSelectedSF(dlg::SFSelectionDialog)
   currentItTM = selected(dlg.selection)
-  sffilename =  TreeModel(dlg.tmSorted)[currentItTM,9]
+  sffilename =  TreeModel(dlg.tmSorted)[currentItTM,10]
   return sffilename
 end
 
