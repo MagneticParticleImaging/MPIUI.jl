@@ -13,7 +13,6 @@ end
 
 function updateData!(m::SFBrowserWidget, d::DatasetStore)
   #generateSFDatabase(d)
-  m.updating = true
 
   sysFuncs = loadSFDatabase(d)
   m.datasetStore = d
@@ -21,7 +20,6 @@ function updateData!(m::SFBrowserWidget, d::DatasetStore)
   if sysFuncs != nothing
     updateData!(m, sysFuncs)
   end
-  m.updating = false
 end
 
 function updateData!(m::SFBrowserWidget, sysFuncs)
@@ -29,16 +27,21 @@ function updateData!(m::SFBrowserWidget, sysFuncs)
   m.sysFuncs = sysFuncs
 
   @idle_add begin
+      m.updating = true
       unselectall!(m.selection)
       empty!(m.store)
 
       for l = 2:size(sysFuncs,1)
-        push!(m.store,( split(sysFuncs[l,15],"T")[1],
+
+        num = size(sysFuncs,2) == 16 ? 0 : sysFuncs[l,17]
+
+        push!(m.store,( num, split(sysFuncs[l,15],"T")[1],
                 sysFuncs[l,1],round(sysFuncs[l,2], digits=2),
                "$(round((sysFuncs[l,3]), digits=2)) x $(round((sysFuncs[l,4]), digits=2)) x $(round((sysFuncs[l,5]), digits=2))",
                                   "$(sysFuncs[l,6]) x $(sysFuncs[l,7]) x $(sysFuncs[l,8])",
                                   sysFuncs[l,10],sysFuncs[l,11],sysFuncs[l,12],sysFuncs[l,14], true))
       end
+      m.updating = false
   end
 end
 
@@ -48,7 +51,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
  #Name,Gradient,DFx,DFy,DFz,Size x,Size y,Size z,Bandwidth,Tracer,TracerBatch,DeltaSampleConcentration,DeltaSampleVolume,Path
 
 
-  store = ListStore(String,String,Float64,String,String,
+  store = ListStore(Int,String,String,Float64,String,String,
                      String,String,String,String, Bool)
 
   tv = TreeView(TreeModel(store))
@@ -56,28 +59,30 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   r2 = CellRendererToggle()
 
   if !smallWidth
-    c1 = TreeViewColumn("Date", r1, Dict("text" => 0))
-    c2 = TreeViewColumn("Name", r1, Dict("text" => 1))
-    c3 = TreeViewColumn("Gradient", r1, Dict("text" => 2))
-    c4 = TreeViewColumn("DF", r1, Dict("text" => 3))
-    c5 = TreeViewColumn("Size", r1, Dict("text" => 4))
-    c6 = TreeViewColumn("Tracer", r1, Dict("text" => 5))
-    c7 = TreeViewColumn("Batch", r1, Dict("text" => 6))
-    c8 = TreeViewColumn("Conc.", r1, Dict("text" => 7))
-    c9 = TreeViewColumn("Path", r1, Dict("text" => 8))
+    c0 = TreeViewColumn("Num", r1, Dict("text" => 0))
+    c1 = TreeViewColumn("Date", r1, Dict("text" => 1))
+    c2 = TreeViewColumn("Name", r1, Dict("text" => 2))
+    c3 = TreeViewColumn("Gradient", r1, Dict("text" => 3))
+    c4 = TreeViewColumn("DF", r1, Dict("text" => 4))
+    c5 = TreeViewColumn("Size", r1, Dict("text" => 5))
+    c6 = TreeViewColumn("Tracer", r1, Dict("text" => 6))
+    c7 = TreeViewColumn("Batch", r1, Dict("text" => 7))
+    c8 = TreeViewColumn("Conc.", r1, Dict("text" => 8))
+    c9 = TreeViewColumn("Path", r1, Dict("text" => 9))
 
-    for (i,c) in enumerate((c1,c2,c3,c4,c5,c6,c7,c8,c9))
+    for (i,c) in enumerate((c0,c1,c2,c3,c4,c5,c6,c7,c8,c9))
       G_.sort_column_id(c,i-1)
       G_.resizable(c,true)
       G_.max_width(c,80)
       push!(tv,c)
     end
   else
-    c1 = TreeViewColumn("Date", r1, Dict("text" => 0))
-    c2 = TreeViewColumn("Name", r1, Dict("text" => 1))
-    c3 = TreeViewColumn("Path", r1, Dict("text" => 8))
+    c0 = TreeViewColumn("Num", r1, Dict("text" => 0))
+    c1 = TreeViewColumn("Date", r1, Dict("text" => 1))
+    c2 = TreeViewColumn("Name", r1, Dict("text" => 2))
+    c3 = TreeViewColumn("Path", r1, Dict("text" => 9))
 
-    for (i,c) in enumerate((c1,c2,c3))
+    for (i,c) in enumerate((c0,c1,c2,c3))
       G_.sort_column_id(c,i-1)
       G_.resizable(c,true)
       G_.max_width(c,80)
@@ -88,7 +93,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   G_.max_width(c2,200)
 
   tmFiltered = TreeModelFilter(store)
-  G_.visible_column(tmFiltered,9)
+  G_.visible_column(tmFiltered,10)
   tmSorted = TreeModelSort(tmFiltered)
   G_.model(tv, tmSorted)
 
@@ -99,12 +104,11 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   cbOpenMeas = CheckButton("Open as Meas")
   cbOpenInWindow = CheckButton("Open in Window")
 
-
   signal_connect(tv, "row-activated") do treeview, path, col, other...
     if hasselection(selection)
       currentIt = selected(selection)
 
-      sffilename = TreeModel(tmSorted)[currentIt,9]
+      sffilename = TreeModel(tmSorted)[currentIt,10]
 
       @idle_add begin
         if !get_gtk_property(cbOpenMeas,:active,Bool)
@@ -142,11 +146,15 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   end
 
   btnSFUpdate = Button("Update")
+  btnSFConvert = Button("Convert")
+  btnOpenCalibrationFolder = Button("Open File Browser")
 
   if smallWidth
     grid = Grid()
     push!(vbox, grid)
     #set_gtk_property!(vbox, :expand, grid, true)
+    set_gtk_property!(grid, :row_spacing, 5)
+    set_gtk_property!(grid, :column_spacing, 5)
 
     grid[1,1] = Label("Grad.")
     grid[2,1] = entGradient
@@ -159,6 +167,8 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     grid[1:2,3] = cbOpenMeas
     grid[3:4,3] = btnSFUpdate
     grid[1:2,4] = cbOpenInWindow
+    grid[3:4,4] = btnSFConvert
+    grid[3:4,5] = btnOpenCalibrationFolder
   else
     hbox = Box(:h)
     push!(vbox, hbox)
@@ -187,7 +197,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   showall(tv)
   showall(vbox)
 
-  function updateSFDB( widget )
+  function updateSFDB(widget)
     if m.datasetStore != nothing
       MPIFiles.generateSFDatabase(m.datasetStore)
       updateData!(m, m.datasetStore)
@@ -195,6 +205,22 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   end
 
   signal_connect(updateSFDB, btnSFUpdate, "clicked")
+
+  function convSF(widget)
+    if m.datasetStore != nothing && hasselection(m.selection)
+      currentIt = selected( m.selection )
+      filename = TreeModel(m.tmSorted)[currentIt,10]
+      conversionDialog(m, filename)
+    end
+  end
+
+  signal_connect(convSF, btnSFConvert, "clicked")
+
+  signal_connect(btnOpenCalibrationFolder, "clicked") do widget
+    @idle_add begin
+        openFileBrowser(calibdir(m.datasetStore))
+    end
+  end
 
   function updateShownSF( widget )
     G = tryparse(Float64,get_gtk_property(entGradient,:text,String))
@@ -223,19 +249,19 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     for l=1:length(store)
       showMe = true
       if G != nothing
-        showMe = showMe && (G == store[l,3])
+        showMe = showMe && (G == store[l,4])
       end
       if length(df_) == 3
-        showMe = showMe && ([parse(Float64,dv) for dv in split(store[l,4],"x")] == df_ )
+        showMe = showMe && ([parse(Float64,dv) for dv in split(store[l,5],"x")] == df_ )
       end
       if length(s_) == 3
-        showMe = showMe && ([parse(Int64,sv) for sv in split(store[l,5],"x")] == s_ )
+        showMe = showMe && ([parse(Int64,sv) for sv in split(store[l,6],"x")] == s_ )
       end
       if length(tracer) > 0
-        showMe = showMe && occursin(lowercase(tracer),lowercase(store[l,6]))
+        showMe = showMe && occursin(lowercase(tracer),lowercase(store[l,7]))
       end
 
-      store[l,10] = showMe
+      store[l,11] = showMe
     end
   end
 
@@ -257,12 +283,10 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   m = SFBrowserWidget(store, tv, vbox, tmSorted, nothing, nothing, selection, false)
 
   signal_connect(m.selection, "changed") do widget
-    if hasselection(m.selection) && m.updating
-      currentIt = selected( m.selection )
+    if hasselection(m.selection) && !m.updating
       @idle_add begin
-          @show "tic"
-        filename = TreeModel(m.tmSorted)[currentIt,9]
-          @show "toc"
+        currentIt = selected( m.selection )
+        filename = TreeModel(m.tmSorted)[currentIt,10]
         f = MPIFile(filename, fastMode=true)
         num = experimentNumber(f)
         name = experimentName(f)
@@ -270,12 +294,18 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
         path1 = filepath(f)
         path2 = filename
         time = acqStartTime(f)
+        numPeriods = acqNumPeriodsPerFrame(f)
+        numAverages = acqNumAverages(f)
+        sizeSF =  TreeModel(m.tmSorted)[currentIt,6]
         str =   """Num: $(num)\n
                 Name: $(name)\n
                 Tracer: $(tname)\n
                 Path 1: $(path1)\n
                 Path 2: $(path2)\n
-                Time: $(time)"""
+                Time: $(time)\n
+                Averages: $(numAverages)\n
+                Periods: $(numPeriods)\n
+                Size: $(sizeSF)"""
         set_gtk_property!(m.tv, :tooltip_text, str)
       end
     end
@@ -320,8 +350,79 @@ end
 
 function getSelectedSF(dlg::SFSelectionDialog)
   currentItTM = selected(dlg.selection)
-  sffilename =  TreeModel(dlg.tmSorted)[currentItTM,9]
+  sffilename =  TreeModel(dlg.tmSorted)[currentItTM,10]
   return sffilename
+end
+
+
+
+
+
+function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
+  try
+    f = MPIFile(filename)
+
+    dialog = Dialog("Convert System Function", mpilab[]["mainWindow"], GtkDialogFlags.MODAL,
+                    Dict("gtk-cancel" => GtkResponseType.CANCEL,
+                    "gtk-ok"=> GtkResponseType.ACCEPT) )
+
+    #resize!(dialog, 1024, 1024)
+
+    box = G_.content_area(dialog)
+
+    grid = Grid()
+    push!(box, grid)
+    set_gtk_property!(box, :expand, grid, true)
+    set_gtk_property!(grid, :row_spacing, 5)
+    set_gtk_property!(grid, :column_spacing, 5)
+  
+    grid[1,1] = Label("Num Period Averages")
+    grid[2,1] = SpinButton(1:acqNumPeriodsPerFrame(f))
+    adjNumPeriodAverages = Adjustment(grid[2,1])
+
+    grid[1,2] = Label("Num Period Grouping")
+    grid[2,2] = SpinButton(1:acqNumPeriodsPerFrame(f))
+    adjNumPeriodGrouping = Adjustment(grid[2,2])
+
+    showall(box)
+    ret = run(dialog)
+
+
+    if ret == GtkResponseType.ACCEPT
+      numPeriodAverages = get_gtk_property(adjNumPeriodAverages,:value,Int64)
+      numPeriodGrouping = get_gtk_property(adjNumPeriodGrouping,:value,Int64)
+
+      @info numPeriodAverages  numPeriodGrouping
+
+      calibNum = getNewCalibNum(m.datasetStore)
+
+      filenameNew = joinpath(calibdir(m.datasetStore),string(calibNum+1)*".mdf")
+      @info "Start converting System Matrix"
+      saveasMDF(filenameNew, f, applyCalibPostprocessing=true, experimentNumber=calibNum,
+                numPeriodAverages = numPeriodAverages, numPeriodGrouping = numPeriodGrouping)
+
+      updateData!(m, m.datasetStore)
+    end
+    destroy(dialog)
+  catch ex
+    showError(ex)
+  end
+end
+
+function ()
+
+
+
+  grid[1,2] = Label("DF Str.")
+  grid[2,2] = entDF
+  grid[3,1] = Label("Size")
+  grid[4,1] = entSize
+  grid[3,2] = Label("Tracer")
+  grid[4,2] = entTracer
+  grid[1:2,3] = cbOpenMeas
+  grid[3:4,3] = btnSFUpdate
+  grid[1:2,4] = cbOpenInWindow
+
 end
 
 

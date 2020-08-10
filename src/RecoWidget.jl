@@ -178,6 +178,7 @@ function initCallbacks(m_::RecoWidget)
     signal_connect(updateSFParamsChanged_, m["adjMinFreq"], "value_changed")
     signal_connect(updateSFParamsChanged_, m["adjMaxFreq"], "value_changed")
     signal_connect(updateSFParamsChanged_, m["adjSNRThresh"], "value_changed")
+    signal_connect(updateSFParamsChanged_, m["adjMaxMixOrder"], "value_changed")
     signal_connect(updateSFParamsChanged_, m["cbLoadAsReal"], "toggled")
     signal_connect(updateSFParamsChanged_, m["cbSolver"], "changed")
     signal_connect(updateSFParamsChanged_, m["cbSubtractBG"], "toggled")
@@ -188,6 +189,8 @@ function initCallbacks(m_::RecoWidget)
     signal_connect(updateSFParamsChanged_, m["cbMatrixCompression"], "toggled")
     signal_connect(updateSFParamsChanged_, m["adjRedFactor"], "value_changed")
     signal_connect(updateSFParamsChanged_, m["cbSparsityTrafo"], "changed")
+    signal_connect(updateSFParamsChanged_, m["adjPeriodAverages"], "value_changed")
+    signal_connect(updateSFParamsChanged_, m["adjPeriodGrouping"], "value_changed")
 
     signal_connect((w)->saveReco(m), m["tbSaveReco"], "clicked")
     signal_connect((w)->updateBGMeas(m), m["cbBGMeasurements"], "changed")
@@ -315,7 +318,10 @@ function updateSF(m::RecoWidget)
                  get_gtk_property(m["cbSubtractInternalBG"], :active, Bool)
 
   m.freq = filterFrequencies(m.bSF, minFreq=params[:minFreq], maxFreq=params[:maxFreq],
-                             SNRThresh=params[:SNRThresh], recChannels=params[:recChannels])
+                             SNRThresh=params[:SNRThresh], recChannels=params[:recChannels],
+                             numPeriodAverages = params[:numPeriodAverages], 
+                             numPeriodGrouping = params[:numPeriodGrouping],
+                             maxMixingOrder = params[:maxMixingOrder])
 
   #@idle_add set_gtk_property!(m["entNumFreq"], :text, string(length(m.freq)))
 
@@ -335,7 +341,8 @@ function updateSF(m::RecoWidget)
 
   m.sysMatrix, m.recoGrid = getSF(m.bSF, m.freq, params[:sparseTrafo], params[:solver], bgcorrection=bgcorrection,
                       loadasreal = params[:loadasreal], loadas32bit = params[:loadas32bit],
-                      redFactor = params[:redFactor])
+                      redFactor = params[:redFactor], numPeriodAverages = params[:numPeriodAverages], 
+                      numPeriodGrouping = params[:numPeriodGrouping])
 
 
   @idle_add infoMessage(m, "")
@@ -406,6 +413,7 @@ function getParams(m::RecoWidget)
   params[:lambdaTV] = get_gtk_property(m["adjLambdaTV"], :value, Float64)
   params[:iterations] = get_gtk_property(m["adjIterations"], :value, Int64)
   params[:SNRThresh] = get_gtk_property(m["adjSNRThresh"], :value, Float64)
+  params[:maxMixingOrder] = get_gtk_property(m["adjMaxMixOrder"], :value, Int64)
   params[:minFreq] = get_gtk_property(m["adjMinFreq"], :value, Float64) * 1000
   params[:maxFreq] = get_gtk_property(m["adjMaxFreq"], :value, Float64) * 1000
   params[:nAverages] = get_gtk_property(m["adjAverages"], :value, Int64)
@@ -469,23 +477,31 @@ function getParams(m::RecoWidget)
 
   params[:SFPath] = String[ filepath(b) for b in m.bSF]
 
+  params[:numPeriodAverages] = get_gtk_property(m["adjPeriodAverages"], :value, Int64)
+  params[:numPeriodGrouping] = get_gtk_property(m["adjPeriodGrouping"], :value, Int64)
+
   return params
 end
 
 function setParams(m::RecoWidget, params)
-  @idle_add set_gtk_property!(m["adjLambdaL2"], :value, first(params[:lambd]))
-  @idle_add set_gtk_property!(m["adjLambdaL1"], :value, get(params,:lambdaL1,0.0))
-  @idle_add set_gtk_property!(m["adjLambdaTV"], :value, get(params,:lambdaTV,0.0))
-  @idle_add set_gtk_property!(m["adjIterations"], :value, params[:iterations])
-  @idle_add set_gtk_property!(m["adjSNRThresh"], :value, params[:SNRThresh])
-  @idle_add set_gtk_property!(m["adjMinFreq"], :value, params[:minFreq] / 1000)
-  @idle_add set_gtk_property!(m["adjMaxFreq"], :value, params[:maxFreq] / 1000)
-  @idle_add set_gtk_property!(m["adjAverages"], :value, params[:nAverages])
-  @idle_add set_gtk_property!(m["adjFrame"], :value, first(params[:frames]))
-  @idle_add set_gtk_property!(m["adjLastFrame"], :value, last(params[:frames]))
-  @idle_add set_gtk_property!(m["cbSpectralCleaning"], :active, params[:spectralCleaning])
-  @idle_add set_gtk_property!(m["cbLoadAsReal"], :active, params[:loadasreal])
-  @idle_add set_gtk_property!(m["adjRedFactor"], :value, get(params,:redFactor,0.01))
+  @idle_add begin
+    set_gtk_property!(m["adjLambdaL2"], :value, first(params[:lambd]))
+    set_gtk_property!(m["adjLambdaL1"], :value, get(params,:lambdaL1,0.0))
+    set_gtk_property!(m["adjLambdaTV"], :value, get(params,:lambdaTV,0.0))
+    set_gtk_property!(m["adjIterations"], :value, params[:iterations])
+    set_gtk_property!(m["adjSNRThresh"], :value, params[:SNRThresh])
+    set_gtk_property!(m["adjMaxMixOrder"], :value, get(params,:maxMixingOrder,-1))
+    set_gtk_property!(m["adjMinFreq"], :value, params[:minFreq] / 1000)
+    set_gtk_property!(m["adjMaxFreq"], :value, params[:maxFreq] / 1000)
+    set_gtk_property!(m["adjAverages"], :value, params[:nAverages])
+    set_gtk_property!(m["adjFrame"], :value, first(params[:frames]))
+    set_gtk_property!(m["adjLastFrame"], :value, last(params[:frames]))
+    set_gtk_property!(m["cbSpectralCleaning"], :active, params[:spectralCleaning])
+    set_gtk_property!(m["cbLoadAsReal"], :active, params[:loadasreal])
+    set_gtk_property!(m["adjRedFactor"], :value, get(params,:redFactor,0.01))
+    set_gtk_property!(m["adjPeriodAverages"], :value, get(params,:numPeriodAverages,1))
+    set_gtk_property!(m["adjPeriodGrouping"], :value, get(params,:numPeriodGrouping,1))
+  end
 
   for (i,solver) in enumerate(linearSolverList())
     if solver == params[:solver]
