@@ -38,10 +38,10 @@ function RawDataWidget(filenameConfig=nothing)
 
   @debug "Type constructed"
 
-  push!(m["boxTD",BoxLeaf],m.cTD)
+  push!(m["boxTD"],m.cTD)
   set_gtk_property!(m["boxTD"],:expand,m.cTD,true)
 
-  push!(m["boxFD",BoxLeaf],m.cFD)
+  push!(m["boxFD"],m.cFD)
   set_gtk_property!(m["boxFD"],:expand,m.cFD,true)
 
   @debug "InitCallbacks"
@@ -66,7 +66,7 @@ function initHarmView(m::RawDataWidget)
     @idle_add set_gtk_property!(m["adjHarm$l"],:value,l+1)
     c = Canvas()
 
-    push!(m["boxHarmView", BoxLeaf],c)
+    push!(m["boxHarmView"],c)
     set_gtk_property!(m["boxHarmView"],:expand,c,true)
     push!(m.harmViewCanvas, c)
     push!(m.harmBuff, zeros(Float32,0))
