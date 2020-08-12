@@ -32,12 +32,12 @@ function LCRMeterUI()
   end
   set_gtk_property!(m["cbFunction"],:active,0)
 
-  @time signal_connect(m["btnSweep"], :clicked) do w
+  signal_connect(m["btnSweep"], :clicked) do w
     @info "start sweep"
     sweepAndShow(m)
   end
 
-  #@time signal_connect(m["btnSave"], :clicked) do w
+  #signal_connect(m["btnSave"], :clicked) do w
   #  save(m)
   #end
 

@@ -240,9 +240,9 @@ end
 
 
 function updateData!(m::SFViewerWidget, filenameSF::String)
-  @time m.bSF = MPIFile(filenameSF, fastMode=true)
-  @time m.maxChan = rxNumChannels(m.bSF)
-  @time m.frequencies = rxFrequencies(m.bSF)./1000
+  m.bSF = MPIFile(filenameSF, fastMode=true)
+  m.maxChan = rxNumChannels(m.bSF)
+  m.frequencies = rxFrequencies(m.bSF)./1000
   m.maxFreq = length(m.frequencies)
   m.updating = true
   set_gtk_property!(m["adjSFFreq"],:value, 2  )
@@ -260,10 +260,10 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   set_gtk_property!(m["adjSFPatch"],:value, 1 )
   set_gtk_property!(m["adjSFPatch"],:upper, acqNumPeriodsPerFrame(m.bSF) )
 
-  @time m.SNR = calibSNR(m.bSF)[:,:,:]
+  m.SNR = calibSNR(m.bSF)[:,:,:]
   #m.SNR = calculateSystemMatrixSNR(m.bSF)
-  @time m.SNRSortedIndices = reverse(sortperm(vec(m.SNR)))
-  @time m.SNRSortedIndicesInverse = sortperm(m.SNRSortedIndices)
+  m.SNRSortedIndices = reverse(sortperm(vec(m.SNR)))
+  m.SNRSortedIndicesInverse = sortperm(m.SNRSortedIndices)
   m.mixFac = MPIFiles.mixingFactors(m.bSF)
   mxyz, mask, freqNumber = MPIFiles.calcPrefactors(m.bSF)
   m.mxyz = mxyz

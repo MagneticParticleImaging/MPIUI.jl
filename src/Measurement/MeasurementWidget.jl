@@ -137,7 +137,7 @@ function MeasurementWidget(filenameConfig="")
 
   @debug "InitCallbacks"
 
-  @time initCallbacks(m)
+  initCallbacks(m)
 
   # Dummy plotting for warmstart during measurement
   @idle_add updateData(m.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
@@ -165,35 +165,35 @@ end
 function initCallbacks(m::MeasurementWidget)
 
   # TODO This currently does not work!
-  @time signal_connect(m["expSurveillance",ExpanderLeaf], :activate) do w
+  signal_connect(m["expSurveillance",ExpanderLeaf], :activate) do w
     initSurveillance(m)
   end
 
-  #@time signal_connect(measurement, m["tbMeasure",ToolButtonLeaf], "clicked", Nothing, (), false, m )
-  #@time signal_connect(measurementBG, m["tbMeasureBG",ToolButtonLeaf], "clicked", Nothing, (), false, m)
+  #signal_connect(measurement, m["tbMeasure",ToolButtonLeaf], "clicked", Nothing, (), false, m )
+  #signal_connect(measurementBG, m["tbMeasureBG",ToolButtonLeaf], "clicked", Nothing, (), false, m)
 
 
-  @time signal_connect(m["tbMeasure",ToolButtonLeaf], :clicked) do w
+  signal_connect(m["tbMeasure",ToolButtonLeaf], :clicked) do w
     measurement(C_NULL, m)
   end
 
-  @time signal_connect(m["tbMeasureBG",ToolButtonLeaf], :clicked) do w
+  signal_connect(m["tbMeasureBG",ToolButtonLeaf], :clicked) do w
     measurementBG(C_NULL, m)
   end
 
-  @time signal_connect(m["btnReloadConfig",ButtonLeaf], :clicked) do w
+  signal_connect(m["btnReloadConfig",ButtonLeaf], :clicked) do w
     reloadConfig(m)
   end
 
-  @time signal_connect(m["btnRobotMove",ButtonLeaf], :clicked) do w
+  signal_connect(m["btnRobotMove",ButtonLeaf], :clicked) do w
     robotMove(m)
   end
 
-  @time signal_connect(m["btLoadArbPos",ButtonLeaf],:clicked) do w
+  signal_connect(m["btLoadArbPos",ButtonLeaf],:clicked) do w
     loadArbPos(m)
   end
 
-  @time signal_connect(m["btnMovePark",ButtonLeaf], :clicked) do w
+  signal_connect(m["btnMovePark",ButtonLeaf], :clicked) do w
       try
         movePark(m)
       catch ex
@@ -201,17 +201,17 @@ function initCallbacks(m::MeasurementWidget)
       end
   end
 
-  @time signal_connect(m["btnMoveAssemblePos",ButtonLeaf], :clicked) do w
+  signal_connect(m["btnMoveAssemblePos",ButtonLeaf], :clicked) do w
     moveAssemblePos(m)
   end
 
-  @time signal_connect(m["btnReferenceDrive",ButtonLeaf], :clicked) do w
+  signal_connect(m["btnReferenceDrive",ButtonLeaf], :clicked) do w
     referenceDrive(m)
   end
 
   timer = nothing
   timerActive = false
-  @time signal_connect(m["tbContinous",ToggleToolButtonLeaf], :toggled) do w
+  signal_connect(m["tbContinous",ToggleToolButtonLeaf], :toggled) do w
     daq = getDAQ(m.scanner)
     if get_gtk_property(m["tbContinous",ToggleToolButtonLeaf], :active, Bool)
       params = merge!(getGeneralParams(m.scanner),getParams(m))
@@ -267,7 +267,7 @@ function initCallbacks(m::MeasurementWidget)
     end
   end
 
-  @time signal_connect(m["tbCancel",ToolButtonLeaf], :clicked) do w
+  signal_connect(m["tbCancel",ToolButtonLeaf], :clicked) do w
     try
        @idle_add begin
          MPIMeasurements.stop(m.calibState)
@@ -280,7 +280,7 @@ function initCallbacks(m::MeasurementWidget)
   end
 
 
-  @time signal_connect(m["tbCalibration",ToggleToolButtonLeaf], :toggled) do w
+  signal_connect(m["tbCalibration",ToggleToolButtonLeaf], :toggled) do w
    try
     if !isReferenced(getRobot(m.scanner))
       info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
@@ -319,29 +319,29 @@ function initCallbacks(m::MeasurementWidget)
   end
 
 
-  #@time signal_connect(invalidateBG, m["adjDFStrength"], "value_changed", Nothing, (), false, m)
-  #@time signal_connect(invalidateBG, m["adjNumPatches"], "value_changed", Nothing, (), false, m)
-  #@time signal_connect(invalidateBG, m["adjNumPeriods"], , Nothing, (), false, m)
+  #signal_connect(invalidateBG, m["adjDFStrength"], "value_changed", Nothing, (), false, m)
+  #signal_connect(invalidateBG, m["adjNumPatches"], "value_changed", Nothing, (), false, m)
+  #signal_connect(invalidateBG, m["adjNumPeriods"], , Nothing, (), false, m)
 
   for adj in ["adjNumPeriods","adjDFStrength", "adjNumSubperiods"]
-    @time signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
+    signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
       invalidateBG(C_NULL, m)
     end
   end
 
   for adj in ["adjNumBGMeasurements","adjPause","adjNumPeriods","adjNumAverages"]
-    @time signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
+    signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
       updateCalibTime(C_NULL, m)
       setInfoParams(m)
     end
   end
-  @time signal_connect(m["entGridShape",EntryLeaf], "changed") do w
+  signal_connect(m["entGridShape",EntryLeaf], "changed") do w
     updateCalibTime(C_NULL, m)
   end
 
 
-  #@time signal_connect(reinitDAQ, m["adjNumPeriods"], "value_changed", Nothing, (), false, m)
-  @time signal_connect(m["cbSeFo",ComboBoxTextLeaf], :changed) do w
+  #signal_connect(reinitDAQ, m["adjNumPeriods"], "value_changed", Nothing, (), false, m)
+  signal_connect(m["cbSeFo",ComboBoxTextLeaf], :changed) do w
     seq = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
     val = readdlm(joinpath(sequenceDir(), seq*".csv"),',')
     @idle_add set_gtk_property!(m["adjNumPeriods",AdjustmentLeaf], :value, size(val,2))

@@ -11,6 +11,7 @@ end
 const settingspath = joinpath(homedir(),".mpilab")
 const settingsfile = joinpath(settingspath, "Settings.toml")
 const cachefile = joinpath(settingspath, "Cache.jld")
+const logpath = joinpath(homedir(),".mpilab/logs/")
 
 function loadcache()
   if isfile(cachefile)

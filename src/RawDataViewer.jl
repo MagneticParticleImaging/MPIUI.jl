@@ -82,7 +82,7 @@ end
 
 function initCallbacks(m_::RawDataWidget)
  let m=m_
-  @time for sl in ["adjPatch","adjRxChan","adjMinTP","adjMaxTP",
+  for sl in ["adjPatch","adjRxChan","adjMinTP","adjMaxTP",
                    "adjMinFre","adjMaxFre"]
     signal_connect(m[sl], "value_changed") do w
       showData(C_NULL, m)
@@ -90,20 +90,20 @@ function initCallbacks(m_::RawDataWidget)
     #signal_connect(showData, m[sl], "value_changed", Nothing, (), false, m )
   end
 
-  @time for cb in ["cbShowBG","cbSubtractBG","cbShowAllPatches"]
+  for cb in ["cbShowBG","cbSubtractBG","cbShowAllPatches"]
     signal_connect(m[cb], :toggled) do w
       showData(C_NULL, m)
     end
     #signal_connect(showData, m[cb], "toggled", Nothing, (), false, m)
   end
 
-  @time for cb in ["cbCorrTF","cbSLCorr","cbAbsFrameAverage"]
+  for cb in ["cbCorrTF","cbSLCorr","cbAbsFrameAverage"]
     signal_connect(m[cb], :toggled) do w
       loadData(C_NULL, m)
     end
   end
 
-  @time for cb in ["adjFrame"]
+  for cb in ["adjFrame"]
     signal_connect(m[cb], "value_changed") do w
       loadData(C_NULL, m)
     end
@@ -122,7 +122,7 @@ function initCallbacks(m_::RawDataWidget)
       end
   end
 
-  @time for sl in ["entTDMinVal","entTDMaxVal","entFDMinVal","entFDMaxVal"]
+  for sl in ["entTDMinVal","entTDMaxVal","entFDMinVal","entFDMaxVal"]
     signal_connect(m[sl], "changed") do w
       showData(C_NULL, m)
     end
@@ -136,7 +136,7 @@ function initCallbacks(m_::RawDataWidget)
     @idle_add set_gtk_property!(m["cbHarmonicViewer"], :active, false)
   end
 
-  #@time signal_connect(loadData, m["cbCorrTF"], "toggled", Nothing, (), false, m)
+  #signal_connect(loadData, m["cbCorrTF"], "toggled", Nothing, (), false, m)
  end
 end
 

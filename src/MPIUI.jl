@@ -12,6 +12,7 @@ using Pkg
 using InteractiveUtils
 using ImageUtils: converttometer, ColoringParams
 using MPIMeasurements.Sockets
+using Logging, LoggingExtras
 
 ENV["MPILIB_UI"] = "Nothing"
 

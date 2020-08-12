@@ -36,6 +36,8 @@ mutable struct MPILab
   updating
 end
 
+Base.show(io::IO, f::MPILab) = print(io, "MPILab")
+
 getindex(m::MPILab, w::AbstractString) = G_.object(m.builder, w)
 
 mpilab = Ref{MPILab}()
@@ -55,6 +57,16 @@ end
 
 
 function MPILab(offlineMode=false)::MPILab
+
+  mkpath(logpath)
+  logger = TeeLogger(
+    MinLevelLogger(ConsoleLogger(), Logging.Info),
+    MinLevelLogger(
+      DatetimeRotatingFileLogger(logpath, raw"\m\p\i\l\a\b-YYYY-mm-dd.\l\o\g"), 
+        Logging.Debug)
+  );
+  global_logger(logger)
+
   @info "Starting MPILab"
 
   uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
