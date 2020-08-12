@@ -396,7 +396,7 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
 
       calibNum = getNewCalibNum(m.datasetStore)
 
-      filenameNew = joinpath(calibdir(m.datasetStore),string(calibNum+1)*".mdf")
+      filenameNew = joinpath(calibdir(m.datasetStore),string(calibNum)*".mdf")
       @info "Start converting System Matrix"
       saveasMDF(filenameNew, f, applyCalibPostprocessing=true, experimentNumber=calibNum,
                 numPeriodAverages = numPeriodAverages, numPeriodGrouping = numPeriodGrouping)
