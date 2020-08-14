@@ -68,7 +68,7 @@ function MeasurementWidget(filenameConfig="")
 
   @debug "Read Sequences"
   @idle_add empty!(m["cbSeFo",ComboBoxTextLeaf])
-  m.sequences = String[ splitext(seq)[1] for seq in readdir(sequenceDir())]
+  m.sequences = sequenceList()
   for seq in m.sequences
     @idle_add push!(m["cbSeFo",ComboBoxTextLeaf], seq)
   end
@@ -323,13 +323,13 @@ function initCallbacks(m::MeasurementWidget)
   #signal_connect(invalidateBG, m["adjNumPatches"], "value_changed", Nothing, (), false, m)
   #signal_connect(invalidateBG, m["adjNumPeriods"], , Nothing, (), false, m)
 
-  for adj in ["adjNumPeriods","adjDFStrength", "adjNumSubperiods"]
+  for adj in ["adjDFStrength", "adjNumSubperiods"]
     signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
       invalidateBG(C_NULL, m)
     end
   end
 
-  for adj in ["adjNumBGMeasurements","adjPause","adjNumPeriods","adjNumAverages"]
+  for adj in ["adjNumBGMeasurements","adjPause","adjNumAverages"]
     signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
       updateCalibTime(C_NULL, m)
       setInfoParams(m)
@@ -343,8 +343,13 @@ function initCallbacks(m::MeasurementWidget)
   #signal_connect(reinitDAQ, m["adjNumPeriods"], "value_changed", Nothing, (), false, m)
   signal_connect(m["cbSeFo",ComboBoxTextLeaf], :changed) do w
     seq = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
-    val = readdlm(joinpath(sequenceDir(), seq*".csv"),',')
-    @idle_add set_gtk_property!(m["adjNumPeriods",AdjustmentLeaf], :value, size(val,2))
+
+    s = Sequence(seq)
+
+    @idle_add begin
+      set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
+      set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
+    end
   end
 
 end
@@ -364,9 +369,11 @@ function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
   robotMoveTime = 0.8
   robotMoveTimePark = 13.8
 
+  numPeriods = tryparse(Int64, get_gtk_property(m["entNumPeriods", EntryLeaf], :text, String))
+  numPeriods = numPeriods == nothing ? 1 : numPeriods
+
   daqTime_ = get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
-             get_gtk_property(m["adjNumPeriods",AdjustmentLeaf], :value, Int64) *
-            daq.params.dfCycle
+                     numPeriods * daq.params.dfCycle
 
   daqTime = daqTime_ * (get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64)+1)
 
@@ -406,9 +413,11 @@ function setInfoParams(m::MeasurementWidget)
   end
   @idle_add set_gtk_property!(m["entDFFreq",EntryLeaf],:text,freqStr)
   @idle_add set_gtk_property!(m["entDFPeriod",EntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")
+  numPeriods = tryparse(Int64, get_gtk_property(m["entNumPeriods", EntryLeaf], :text, String))
+
   framePeriod = get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
-              get_gtk_property(m["adjNumPeriods",AdjustmentLeaf], :value, Int64) *
-              daq.params.dfCycle
+                  (numPeriods == nothing ? 1 : numPeriods)  *
+                  daq.params.dfCycle
   @idle_add set_gtk_property!(m["entFramePeriod",EntryLeaf],:text,"$(@sprintf("%.5f",framePeriod)) s")
 end
 
@@ -422,7 +431,7 @@ function getParams(m::MeasurementWidget)
 
   params["acqNumFGFrames"] = get_gtk_property(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64)
   params["acqNumBGFrames"] = get_gtk_property(m["adjNumBGFrames",AdjustmentLeaf], :value, Int64)
-  params["acqNumPeriodsPerFrame"] = get_gtk_property(m["adjNumPeriods",AdjustmentLeaf], :value, Int64)
+  params["acqNumPeriodsPerFrame"] = parse(Int64, get_gtk_property(m["entNumPeriods", EntryLeaf], :text, String))
   params["studyName"] = m.currStudyName
   params["studyDate"] = m.currStudyDate
   params["studyDescription"] = ""
@@ -471,7 +480,7 @@ function setParams(m::MeasurementWidget, params)
       @idle_add set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf], :active,idx-1)
     end
   else
-      @idle_add set_gtk_property!(m["adjNumPeriods",AdjustmentLeaf], :value, params["acqNumPeriodsPerFrame"])
+      @idle_add set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, params["acqNumPeriodsPerFrame"])
   end
 
   @idle_add set_gtk_property!(m["cbFFInterpolation",CheckButtonLeaf], :active, params["acqFFLinear"])
