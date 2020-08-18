@@ -240,10 +240,10 @@ function initCallbacks(m::MeasurementWidget)
                              zeros(numTxChannels(daq)))
           end
 
-          currFr = enableSlowDAC(daq, true, 1,
+          currFr = enableSlowDAC(daq, true, params["acqNumFGFrames"],
                   daq.params.ffRampUpTime, daq.params.ffRampUpFraction)
 
-          uMeas, uRef = readData(daq, 1, currFr)
+          uMeas, uRef = readData(daq, params["acqNumFGFrames"], currFr)
           MPIMeasurements.setTxParams(daq, daq.params.currTxAmp*0.0, daq.params.currTxPhase*0.0)
 
           deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
