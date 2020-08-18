@@ -1,4 +1,11 @@
 
+mutable struct TemperatureLog
+  temperatures::Vector{Float64}
+  times::Vector{DateTime}
+  numChan::Int64
+end
+
+
 mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder::Builder
@@ -15,6 +22,7 @@ mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   calibState::SystemMatrixRobotMeas
   measState::MeasState
   calibInProgress::Bool
+  temperatureLog::TemperatureLog
 end
 
 include("Measurement.jl")
@@ -55,7 +63,7 @@ function MeasurementWidget(filenameConfig="")
   m = MeasurementWidget( mainBox.handle, b,
                   scanner, zeros(Float32,0,0,0,0), mdfstore, "", now(),
                   "", RawDataWidget(), String[], false, "",
-                  SystemMatrixRobotMeas(scanner, mdfstore), MeasState(), false)
+                  SystemMatrixRobotMeas(scanner, mdfstore), MeasState(), false, TemperatureLog())
   Gtk.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
