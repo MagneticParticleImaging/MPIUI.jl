@@ -1,9 +1,4 @@
 
-mutable struct TemperatureLog
-  temperatures::Vector{Float64}
-  times::Vector{DateTime}
-  numChan::Int64
-end
 
 function TemperatureLog(numChan::Int=1)
   TemperatureLog(Float64[], DateTime[], numChan)
@@ -25,7 +20,7 @@ function Base.push!(log::TemperatureLog, temp, t)
     error("Num Temperature sensors is not correct!")
   end
 
-  push!(log.temperatures, temp)
+  append!(log.temperatures, temp)
   push!(log.times, t)
 end
 
@@ -43,6 +38,9 @@ function saveTemperatureLog(filename::String, log::TemperatureLog)
   end
 end
 
+const _tempTimer = Ref{Timer}()
+const _updatingTimer = Ref{Bool}(false)
+
 function initSurveillance(m::MeasurementWidget)
   if !m.expanded
     su = getSurveillanceUnit(m.scanner)
@@ -59,8 +57,27 @@ function initSurveillance(m::MeasurementWidget)
 
     clear(m.temperatureLog, L)
 
-    @guarded function update_(::Timer)
-      begin
+    signal_connect(m["btnResetTemp",ButtonLeaf], :clicked) do w
+      _updatingTimer[] = true
+      sleep(2.0)
+      clear(m.temperatureLog, L)
+      _updatingTimer[] = false
+    end
+
+    signal_connect(m["btnSaveTemp",ButtonLeaf], :clicked) do w
+      _updatingTimer[] = true
+      filter = Gtk.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
+      filename = save_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
+      if filename != ""
+        filenamebase, ext = splitext(filename)
+        saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
+      end
+      _updatingTimer[] = false
+    end    
+
+    @guarded function update_(timer::Timer)
+
+      if !(_updatingTimer[]) 
         te = getTemperatures(su)
         time = Dates.now()
         str = join([ @sprintf("%.2f C ",t) for t in te ])
@@ -68,28 +85,23 @@ function initSurveillance(m::MeasurementWidget)
 
         push!(m.temperatureLog, te, time)
 
-        #=if length(temp[1]) > 100
-          for l=1:L
-            temp[l] = temp[l][2:end]
-          end
-        end=#
-
         L = min(L,7)
 
         colors = ["b", "r", "g", "y", "k", "c", "m"]
 
+        T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
+
         @idle_add begin
-          p = Winston.plot(m.temperatureLog.temperatures[1,:], colors[1], linewidth=10)
+          p = Winston.plot(T[1,:], colors[1], linewidth=10)
           for l=2:L
-            Winston.plot(p, m.temperatureLog.temperatures[l,:], colors[l], linewidth=10)
+            Winston.plot(p, T[l,:], colors[l], linewidth=10)
           end
-          #Winston.ylabel("Harmonic $f")
           #Winston.xlabel("Time")
           display(cTemp ,p)
         end
       end
     end
-    timer = Timer(update_, 0.0, interval=1.5)
+    _tempTimer[] = Timer(update_, 0.0, interval=1.5)
     m.expanded = true
   end
 end

@@ -1,4 +1,11 @@
 
+mutable struct TemperatureLog
+  temperatures::Vector{Float64}
+  times::Vector{DateTime}
+  numChan::Int64
+end
+
+
 mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder::Builder
