@@ -101,8 +101,10 @@ function initCallbacks(m_::RawDataWidget)
     @idle_add begin
       m.updatingData = true
       showAllPatches = get_gtk_property(m["cbShowAllPatches"], :active, Bool)
+      patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
+      numPatches = div(size(m.data,3), patchAv)
 
-      maxVal = showAllPatches ? size(m.data,1)*size(m.data,3) : size(m.data,1)
+      maxVal = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
 
       set_gtk_property!(m["adjMinTP"],:upper,maxVal)
       set_gtk_property!(m["adjMinTP"],:value,1)
@@ -212,6 +214,8 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     maxTP = max(get_gtk_property(m["adjMaxTP"], :value, Int64),1)
     minFr = max(get_gtk_property(m["adjMinFre"], :value, Int64),1)
     maxFr = max(get_gtk_property(m["adjMaxFre"], :value, Int64),1)
+    patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
+    numPatches = div(size(m.data,3), patchAv)
 
     autoRangingTD = true
     autoRangingFD = true
@@ -237,13 +241,13 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     if get_gtk_property(m["cbShowAllPatches"], :active, Bool)
       showFD = false
 
-      data = vec(m.data[:,chan,:,1])
+      data = vec( mean( reshape(m.data[:,chan,:,1],:, patchAv, numPatches), dims=2) )
 
       minFr = 1
       maxFr = (div(length(data),2)+1)
 
       if length(m.dataBG) > 0 && get_gtk_property(m["cbSubtractBG"], :active, Bool)
-        data[:] .-=  vec(mean(m.dataBG[:,chan,:,:],dims=3))
+        data[:] .-= vec(mean(reshape(m.dataBG[:,chan,:,:],size(m.dataBG,1), patchAv, numPatches,:), dims=(2,4)) )
       end
     else
       if get_gtk_property(m["cbAbsFrameAverage"], :active, Bool)
@@ -334,6 +338,11 @@ function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   m.deltaT = deltaT .* 1000 # convert to ms and kHz
   m.fileModus = fileModus
 
+  showAllPatches = get_gtk_property(m["cbShowAllPatches"], :active, Bool) 
+  patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
+  numPatches = div(size(m.data,3), patchAv)
+  maxVal = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
+
   if !fileModus
     @idle_add set_gtk_property!(m["adjFrame"],:upper,size(data,4))
     if !(1 <= get_gtk_property(m["adjFrame"],:value,Int64) <= size(data,4))
@@ -348,12 +357,12 @@ function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   if !(1 <= get_gtk_property(m["adjPatch"],:value,Int64) <= size(data,3))
     @idle_add set_gtk_property!(m["adjPatch"],:value,1)
   end
-  @idle_add set_gtk_property!(m["adjMinTP"],:upper,size(data,1))
-  if !(1 <= get_gtk_property(m["adjMinTP"],:value,Int64) <= size(data,1))
+  @idle_add set_gtk_property!(m["adjMinTP"],:upper,maxVal)
+  if !(1 <= get_gtk_property(m["adjMinTP"],:value,Int64) <= maxVal)
     @idle_add set_gtk_property!(m["adjMinTP"],:value,1)
   end
-  @idle_add set_gtk_property!(m["adjMaxTP"],:upper,size(data,1))
-  if !(1 <= get_gtk_property(m["adjMaxTP"],:value,Int64) <= size(data,1))
+  @idle_add set_gtk_property!(m["adjMaxTP"],:upper,maxVal)
+  if !(1 <= get_gtk_property(m["adjMaxTP"],:value,Int64) <= maxVal)
     @idle_add set_gtk_property!(m["adjMaxTP"],:value,size(data,1))
   end
   @idle_add set_gtk_property!(m["adjMinFre"],:upper,div(size(data,1),2)+1)
@@ -380,3 +389,4 @@ function updateData(m::RawDataWidget, filename::String)
   loadData(C_NULL, m)
   return nothing
 end
+s

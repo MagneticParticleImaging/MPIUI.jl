@@ -219,6 +219,7 @@ function initCallbacks(m::MeasurementWidget)
 
   timer = nothing
   timerActive = false
+  counter = 0
   signal_connect(m["tbContinous",ToggleToolButtonLeaf], :toggled) do w
     daq = getDAQ(m.scanner)
     if get_gtk_property(m["tbContinous",ToggleToolButtonLeaf], :active, Bool)
@@ -236,6 +237,7 @@ function initCallbacks(m::MeasurementWidget)
       end
 
       timerActive = true
+      counter = 0
       #@idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
 
       function update_(::Timer)
@@ -259,6 +261,15 @@ function initCallbacks(m::MeasurementWidget)
           @idle_add updateData(m.rawDataWidget, uMeas, deltaT)
 
           sleep(get_gtk_property(m["adjPause",AdjustmentLeaf],:value,Float64))
+
+          if mod(counter,20) == 0
+            # This is a hack. The RP gets issues when measuring to long (about 30 minutes)
+            # it seems to help to restart
+            stopTx(daq)
+            startTx(daq)
+          end
+
+          counter += 1
         else
           MPIMeasurements.enableSlowDAC(daq, false)
           setEnabled(getRobot(m.scanner), true)
