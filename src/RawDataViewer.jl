@@ -90,12 +90,30 @@ function initCallbacks(m_::RawDataWidget)
     #signal_connect(showData, m[sl], "value_changed", Nothing, (), false, m )
   end
 
-  for cb in ["cbShowBG","cbSubtractBG","cbShowAllPatches"]
+  for cb in ["cbShowBG", "cbSubtractBG"]
     signal_connect(m[cb], :toggled) do w
       showData(C_NULL, m)
     end
     #signal_connect(showData, m[cb], "toggled", Nothing, (), false, m)
   end
+
+  signal_connect(m["cbShowAllPatches"], :toggled) do w
+    @idle_add begin
+      m.updatingData = true
+      showAllPatches = get_gtk_property(m["cbShowAllPatches"], :active, Bool)
+
+      maxVal = showAllPatches ? size(m.data,1)*size(m.data,3) : size(m.data,1)
+
+      set_gtk_property!(m["adjMinTP"],:upper,maxVal)
+      set_gtk_property!(m["adjMinTP"],:value,1)
+      set_gtk_property!(m["adjMaxTP"],:upper,maxVal)
+      set_gtk_property!(m["adjMaxTP"],:value,maxVal)
+      m.updatingData = false
+
+      showData(C_NULL, m)
+    end
+  end
+
 
   for cb in ["cbCorrTF","cbSLCorr","cbAbsFrameAverage"]
     signal_connect(m[cb], :toggled) do w
@@ -218,8 +236,6 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     showFD = true
     if get_gtk_property(m["cbShowAllPatches"], :active, Bool)
       showFD = false
-      minTP = 1
-      maxTP = size(m.data,1)*size(m.data,3)
 
       data = vec(m.data[:,chan,:,1])
 
