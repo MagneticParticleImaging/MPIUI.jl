@@ -89,28 +89,37 @@ function MeasurementWidget(filenameConfig="")
   #set_gtk_property!(cells[1],"ellipsize_set", 2)
 
   @debug "Read safety parameters"
-  @idle_add empty!(m["cbSafeCoil", ComboBoxTextLeaf])
-  for coil in getValidHeadScannerGeos()
-      @idle_add push!(m["cbSafeCoil",ComboBoxTextLeaf], coil.name)
-  end
-  @idle_add set_gtk_property!(m["cbSafeCoil",ComboBoxTextLeaf], :active, 0)
-  @idle_add empty!(m["cbSafeObject", ComboBoxTextLeaf])
-  for obj in getValidHeadObjects()
-      @idle_add push!(m["cbSafeObject",ComboBoxTextLeaf], name(obj))
-  end
-  @idle_add set_gtk_property!(m["cbSafeObject",ComboBoxTextLeaf], :active, 0)
+  @idle_add begin
+    empty!(m["cbSafeCoil", ComboBoxTextLeaf])
+    for coil in getValidHeadScannerGeos()
+        push!(m["cbSafeCoil",ComboBoxTextLeaf], coil.name)
+    end
+    set_gtk_property!(m["cbSafeCoil",ComboBoxTextLeaf], :active, 0)
+    empty!(m["cbSafeObject", ComboBoxTextLeaf])
+    for obj in getValidHeadObjects()
+        push!(m["cbSafeObject",ComboBoxTextLeaf], name(obj))
+    end
+    set_gtk_property!(m["cbSafeObject",ComboBoxTextLeaf], :active, 0)
 
-  @idle_add signal_connect(m["cbSafeObject",ComboBoxTextLeaf], :changed) do w
-      ind = get_gtk_property(m["cbSafeObject",ComboBoxTextLeaf],:active,Int)+1
-      if getValidHeadObjects()[ind].name==customPhantom3D.name
-          sObjStr = @sprintf("%.2f x %.2f x %.2f", ustrip(customPhantom3D.length), ustrip(crosssection(customPhantom3D).width),ustrip(crosssection(customPhantom3D).height))
-          @idle_add set_gtk_property!(m["entSafetyObj", EntryLeaf],:text, sObjStr)
-          @idle_add set_gtk_property!(m["entSafetyObj", EntryLeaf],:sensitive,true)
-      else
-          @idle_add set_gtk_property!(m["entSafetyObj", EntryLeaf],:sensitive,false)
+    signal_connect(m["cbSafeObject",ComboBoxTextLeaf], :changed) do w
+        ind = get_gtk_property(m["cbSafeObject",ComboBoxTextLeaf],:active,Int)+1
+        if getValidHeadObjects()[ind].name==customPhantom3D.name
+            sObjStr = @sprintf("%.2f x %.2f x %.2f", ustrip(customPhantom3D.length), ustrip(crosssection(customPhantom3D).width),ustrip(crosssection(customPhantom3D).height))
+            set_gtk_property!(m["entSafetyObj", EntryLeaf],:text, sObjStr)
+            set_gtk_property!(m["entSafetyObj", EntryLeaf],:sensitive,true)
+        else
+            set_gtk_property!(m["entSafetyObj", EntryLeaf],:sensitive,false)
+        end
+    end
+
+    @idle_add begin
+      empty!(m["cbWaveform", ComboBoxTextLeaf])
+      for w in RedPitayaDAQServer.waveforms()
+        push!(m["cbWaveform",ComboBoxTextLeaf], w)
       end
+      set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, 0)  
+    end
   end
-
 
   @debug "Online / Offline"
   if m.scanner != nothing
@@ -361,16 +370,20 @@ function initCallbacks(m::MeasurementWidget)
 
   #signal_connect(reinitDAQ, m["adjNumPeriods"], "value_changed", Nothing, (), false, m)
   signal_connect(m["cbSeFo",ComboBoxTextLeaf], :changed) do w
-    seq = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
-
-    s = Sequence(seq)
-
-    @idle_add begin
-      set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
-      set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
-    end
+    updateSequence(m)
   end
 
+end
+
+function updateSequence(m::MeasurementWidget)
+  seq = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
+
+  s = Sequence(seq)
+
+  @idle_add begin
+    set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
+    set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
+  end
 end
 
 function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
@@ -466,9 +479,12 @@ function getParams(m::MeasurementWidget)
 
   dfString = get_gtk_property(m["entDFStrength",EntryLeaf], :text, String)
   params["dfStrength"] = parse.(Float64,split(dfString," x "))*1e-3
+  dfDividerStr = get_gtk_property(m["entDFDivider",EntryLeaf], :text, String)
+  params["dfDivider"] = parse.(Int64,split(dfDividerStr," x "))
 
   params["acqFFSequence"] = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
-  params["acqFFLinear"] = get_gtk_property(m["cbFFInterpolation",CheckButtonLeaf], :active, Bool)
+  params["dfWaveform"] = RedPitayaDAQServer.waveforms()[get_gtk_property(m["cbWaveform",ComboBoxTextLeaf], :active, Int)+1]
+
   params["storeAsSystemMatrix"] = get_gtk_property(m["cbStoreAsSystemMatrix",CheckButtonLeaf],:active, Bool)
 
   return params
@@ -485,6 +501,8 @@ function setParams(m::MeasurementWidget, params)
   @idle_add set_gtk_property!(m["entOperator",EntryLeaf], :text, params["scannerOperator"])
   dfString = *([ string(x*1e3," x ") for x in params["dfStrength"] ]...)[1:end-3]
   @idle_add set_gtk_property!(m["entDFStrength",EntryLeaf], :text, dfString)
+  dfDividerStr = *([ string(x," x ") for x in params["dfDivider"] ]...)[1:end-3]
+  @idle_add set_gtk_property!(m["entDFDivider",EntryLeaf], :text, dfDividerStr)
 
   @idle_add set_gtk_property!(m["entTracerName",EntryLeaf], :text, params["tracerName"][1])
   @idle_add set_gtk_property!(m["entTracerBatch",EntryLeaf], :text, params["tracerBatch"][1])
@@ -497,12 +515,21 @@ function setParams(m::MeasurementWidget, params)
     idx = findfirst_(m.sequences, params["acqFFSequence"])
     if idx > 0
       @idle_add set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf], :active,idx-1)
+      updateSequence(m)
     end
   else
       @idle_add set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, params["acqNumPeriodsPerFrame"])
+      @idle_add set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "1")
   end
 
-  @idle_add set_gtk_property!(m["cbFFInterpolation",CheckButtonLeaf], :active, params["acqFFLinear"])
+  if haskey(params,"dfWaveform")
+    idx = findfirst_(RedPitayaDAQServer.waveforms(), params["dfWaveform"])
+    if idx > 0
+      @idle_add set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, idx-1)
+    end
+  else
+      @idle_add set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, 0)
+  end  
 
   p = getGeneralParams(m.scanner)
   if haskey(p, "calibGridShape") && haskey(p, "calibGridFOV") && haskey(p, "calibGridCenter") &&
@@ -523,7 +550,7 @@ function setParams(m::MeasurementWidget, params)
   @idle_add set_gtk_property!(m["entVelRob",EntryLeaf], :text, velRobStr)
   @idle_add set_gtk_property!(m["entCurrPos",EntryLeaf], :text, "0.0 x 0.0 x 0.0")
 
-  @idle_add set_gtk_property!(m["adjPause",AdjustmentLeaf], :value, 2.0)
+  @idle_add set_gtk_property!(m["adjPause",AdjustmentLeaf], :value, get(p, "pauseTime", 2.0) )
 end
 
 function getRobotSetupUI(m::MeasurementWidget)

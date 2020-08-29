@@ -334,6 +334,8 @@ end
 function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   m.updatingData = true
 
+  maxValOld = get_gtk_property(m["adjMinTP"],:upper, Int64)
+
   m.data = data
   m.deltaT = deltaT .* 1000 # convert to ms and kHz
   m.fileModus = fileModus
@@ -343,43 +345,46 @@ function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   numPatches = div(size(m.data,3), patchAv)
   maxVal = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
 
-  if !fileModus
-    @idle_add set_gtk_property!(m["adjFrame"],:upper,size(data,4))
-    if !(1 <= get_gtk_property(m["adjFrame"],:value,Int64) <= size(data,4))
-      @idle_add set_gtk_property!(m["adjFrame"],:value,1)
+  @idle_add begin
+
+    if !fileModus
+      set_gtk_property!(m["adjFrame"],:upper,size(data,4))
+      if !(1 <= get_gtk_property(m["adjFrame"],:value,Int64) <= size(data,4))
+        set_gtk_property!(m["adjFrame"],:value,1)
+      end
     end
-  end
-  @idle_add set_gtk_property!(m["adjRxChan"],:upper,size(data,2))
-  if !(1 <= get_gtk_property(m["adjRxChan"],:value,Int64) <= size(data,2))
-    @idle_add set_gtk_property!(m["adjRxChan"],:value,1)
-  end
-  @idle_add set_gtk_property!(m["adjPatch"],:upper,size(data,3))
-  if !(1 <= get_gtk_property(m["adjPatch"],:value,Int64) <= size(data,3))
-    @idle_add set_gtk_property!(m["adjPatch"],:value,1)
-  end
-  @idle_add set_gtk_property!(m["adjMinTP"],:upper,maxVal)
-  if !(1 <= get_gtk_property(m["adjMinTP"],:value,Int64) <= maxVal)
-    @idle_add set_gtk_property!(m["adjMinTP"],:value,1)
-  end
-  @idle_add set_gtk_property!(m["adjMaxTP"],:upper,maxVal)
-  if !(1 <= get_gtk_property(m["adjMaxTP"],:value,Int64) <= maxVal)
-    @idle_add set_gtk_property!(m["adjMaxTP"],:value,size(data,1))
-  end
-  @idle_add set_gtk_property!(m["adjMinFre"],:upper,div(size(data,1),2)+1)
-  if !(1 <= get_gtk_property(m["adjMinFre"],:value,Int64) <= div(size(data,1),2)+1)
-    @idle_add set_gtk_property!(m["adjMinFre"],:value,1)
-  end
-  @idle_add set_gtk_property!(m["adjMaxFre"],:upper,div(size(data,1),2)+1)
-  if !(1 <= get_gtk_property(m["adjMaxFre"],:value,Int64) <= div(size(data,1),2)+1)
-    @idle_add set_gtk_property!(m["adjMaxFre"],:value,div(size(data,1),2)+1)
-  end
+    set_gtk_property!(m["adjRxChan"],:upper,size(data,2))
+    if !(1 <= get_gtk_property(m["adjRxChan"],:value,Int64) <= size(data,2))
+      set_gtk_property!(m["adjRxChan"],:value,1)
+    end
+    set_gtk_property!(m["adjPatch"],:upper,size(data,3))
+    if !(1 <= get_gtk_property(m["adjPatch"],:value,Int64) <= size(data,3))
+      set_gtk_property!(m["adjPatch"],:value,1)
+    end
+    set_gtk_property!(m["adjMinTP"],:upper,maxVal)
+    if !(1 <= get_gtk_property(m["adjMinTP"],:value,Int64) <= maxVal) || maxVal != maxValOld
+      set_gtk_property!(m["adjMinTP"],:value,1)
+    end
+    set_gtk_property!(m["adjMaxTP"],:upper,maxVal)
+    if !(1 <= get_gtk_property(m["adjMaxTP"],:value,Int64) <= maxVal) || maxVal != maxValOld
+      set_gtk_property!(m["adjMaxTP"],:value,size(data,1))
+    end
+    set_gtk_property!(m["adjMinFre"],:upper,div(size(data,1),2)+1)
+    if !(1 <= get_gtk_property(m["adjMinFre"],:value,Int64) <= div(size(data,1),2)+1)
+      set_gtk_property!(m["adjMinFre"],:value,1)
+    end
+    set_gtk_property!(m["adjMaxFre"],:upper,div(size(data,1),2)+1)
+    if !(1 <= get_gtk_property(m["adjMaxFre"],:value,Int64) <= div(size(data,1),2)+1)
+      set_gtk_property!(m["adjMaxFre"],:value,div(size(data,1),2)+1)
+    end
 
-  for l=1:5
-    @idle_add set_gtk_property!(m.harmViewAdj[l],:upper,div(size(data,1),2)+1)
-  end
+    for l=1:5
+      set_gtk_property!(m.harmViewAdj[l],:upper,div(size(data,1),2)+1)
+    end
 
-  m.updatingData = false
-  showData(C_NULL,m)
+    m.updatingData = false
+    showData(C_NULL,m)
+  end
 end
 
 function updateData(m::RawDataWidget, filename::String)
