@@ -129,6 +129,7 @@ function MeasurementWidget(filenameConfig="")
     @idle_add set_gtk_property!(m["entConfig",EntryLeaf],:text,filenameConfig)
     @idle_add set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isRobRef)
     enableRobotMoveButtons(m,isRobRef)
+    enableDFWaveformControls(m, get(getGeneralParams(m.scanner), "allowDFWaveformChanges", false))
 
     if isRobRef
       try
@@ -376,13 +377,17 @@ function initCallbacks(m::MeasurementWidget)
 end
 
 function updateSequence(m::MeasurementWidget)
-  seq = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
+  selection = get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1
+  
+  if selection > 0
+    seq = m.sequences[selection]
 
-  s = Sequence(seq)
+    s = Sequence(seq)
 
-  @idle_add begin
-    set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
-    set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
+    @idle_add begin
+      set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
+      set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
+    end
   end
 end
 

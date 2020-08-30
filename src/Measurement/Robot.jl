@@ -8,6 +8,13 @@ function enableRobotMoveButtons(m::MeasurementWidget, enable::Bool)
   end
 end
 
+function enableDFWaveformControls(m::MeasurementWidget, enable::Bool)
+  @idle_add begin
+    set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf],:sensitive,enable)
+    set_gtk_property!(m["entDFDivider",EntryLeaf],:sensitive,enable)
+  end
+end
+
 function robotMove(m::MeasurementWidget)
     if !isReferenced(getRobot(m.scanner))
       info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
