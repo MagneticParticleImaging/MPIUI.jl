@@ -83,7 +83,7 @@ end
 function initCallbacks(m_::RawDataWidget)
  let m=m_
   for sl in ["adjPatch","adjRxChan","adjMinTP","adjMaxTP",
-                   "adjMinFre","adjMaxFre"]
+                   "adjMinFre","adjMaxFre", "adjPatchAv"]
     signal_connect(m[sl], "value_changed") do w
       showData(C_NULL, m)
     end
@@ -278,9 +278,9 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     timePoints = (0:(length(data)-1)).*m.deltaT
     numFreq = floor(Int, length(data) ./ 2 .+ 1)
 
-    maxPoints = 300
+    maxPoints = 1000
     sp = length(minTP:maxTP) > maxPoints ? round(Int,length(minTP:maxTP) / maxPoints)  : 1
-    p1 = Winston.plot(timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP],"b-",linewidth=5)
+    p1 = Winston.plot(timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP],"b-",linewidth=3)
     Winston.ylabel("u / V")
     Winston.xlabel("t / ms")
     if !autoRangingTD
@@ -292,7 +292,7 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       freqdata = abs.(rfft(data)) / length(data)
 
       ls = "b-" #length(minFr:maxFr) > 150 ? "b-" : "b-o"
-      p2 = Winston.semilogy(freq[minFr:maxFr],freqdata[minFr:maxFr],ls,linewidth=5)
+      p2 = Winston.semilogy(freq[minFr:maxFr],freqdata[minFr:maxFr],ls,linewidth=3)
       #Winston.ylabel("u / V")
       Winston.xlabel("f / kHz")
       if !autoRangingFD
@@ -320,7 +320,7 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
         f = get_gtk_property(m.harmViewAdj[l], :value, Int64)
         push!(m.harmBuff[l], freqdata[f])
 
-        p = Winston.semilogy(m.harmBuff[l],"b-o", linewidth=5)
+        p = Winston.semilogy(m.harmBuff[l],"b-o", linewidth=3)
         Winston.ylabel("Harmonic $f")
         Winston.xlabel("Time")
         display(m.harmViewCanvas[l] ,p)
