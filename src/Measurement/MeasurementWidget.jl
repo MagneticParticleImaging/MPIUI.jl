@@ -490,6 +490,9 @@ function getParams(m::MeasurementWidget)
   params["acqFFSequence"] = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
   params["dfWaveform"] = RedPitayaDAQServer.waveforms()[get_gtk_property(m["cbWaveform",ComboBoxTextLeaf], :active, Int)+1]
 
+  jump = get_gtk_property(m["entDFJumpSharpness",EntryLeaf], :text, String)
+  params["jumpSharpness"] = parse(Float64, jump)
+
   params["storeAsSystemMatrix"] = get_gtk_property(m["cbStoreAsSystemMatrix",CheckButtonLeaf],:active, Bool)
 
   return params
@@ -508,6 +511,8 @@ function setParams(m::MeasurementWidget, params)
   @idle_add set_gtk_property!(m["entDFStrength",EntryLeaf], :text, dfString)
   dfDividerStr = *([ string(x," x ") for x in params["dfDivider"] ]...)[1:end-3]
   @idle_add set_gtk_property!(m["entDFDivider",EntryLeaf], :text, dfDividerStr)
+
+  @idle_add set_gtk_property!(m["entDFJumpSharpness",EntryLeaf], :text, "$(get(params,"jumpSharpness", 0.1))")
 
   @idle_add set_gtk_property!(m["entTracerName",EntryLeaf], :text, params["tracerName"][1])
   @idle_add set_gtk_property!(m["entTracerBatch",EntryLeaf], :text, params["tracerBatch"][1])
