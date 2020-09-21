@@ -68,9 +68,9 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
     params["acqNumFrames"] = params["acqNumBGFrames"]
 
     setEnabled(getRobot(m.scanner), false)
-    enableACPower(getSurveillanceUnit(m.scanner))
+    enableACPower(getSurveillanceUnit(m.scanner), m.scanner)
     uMeas, uSlowADC = MPIMeasurements.measurement(getDAQ(m.scanner), params)
-    disableACPower(getSurveillanceUnit(m.scanner))
+    disableACPower(getSurveillanceUnit(m.scanner), m.scanner)
     setEnabled(getRobot(m.scanner), true)
 
     m.dataBGStore = uMeas
