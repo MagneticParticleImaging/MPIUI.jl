@@ -3,6 +3,7 @@ import Base: getindex
 mutable struct LCRMeterUI
   builder
   data
+  datay
   freq
   c1
   c2
@@ -10,13 +11,13 @@ end
 
 getindex(m::LCRMeterUI, w::AbstractString) = G_.object(m.builder, w)
 
-function LCRMeterUI()
+function LCRMeterUI(;minFre=20000,maxFre=30000,samples=50,average=1,volt=2.0,ip="10.167.6.187")
   @info "Starting LCRMeterUI"
   uifile = joinpath(@__DIR__,"builder","lcrMeter.ui")
 
   b = Builder(filename=uifile)
 
-  m = LCRMeterUI( b, nothing, nothing, nothing, nothing)
+  m = LCRMeterUI( b, nothing, nothing, nothing, nothing, nothing)
 
   m.c1 = Canvas()
   m.c2 = Canvas()
@@ -31,7 +32,13 @@ function LCRMeterUI()
     push!(m["cbFunction"], c)
   end
   set_gtk_property!(m["cbFunction"],:active,0)
-
+  set_gtk_property!(m["adjMinFreq"],:value,minFre)
+  set_gtk_property!(m["adjMaxFreq"],:value,maxFre) 
+  set_gtk_property!(m["adjNumSamples"],:value,samples) 
+  set_gtk_property!(m["adjNumAverages"],:value,average)  
+  set_gtk_property!(m["adjVoltage"],:value,volt)       
+  set_gtk_property!(m["entIP"],:text,ip)
+  
   signal_connect(m["btnSweep"], :clicked) do w
     @info "start sweep"
     sweepAndShow(m)
@@ -144,10 +151,13 @@ function sweepAndShow(m::LCRMeterUI)
 
   freq=freqs
   data = x_list
+  datay = y_list
   m.data = data
+  m.datay = datay
   m.freq = freq
   @info m.freq
   @info m.data
+  @info m.datay
 
 
  p1 = Winston.plot(freq,x_list,"b-o", linewidth=2)
