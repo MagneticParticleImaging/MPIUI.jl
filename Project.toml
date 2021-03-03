@@ -36,5 +36,5 @@ Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 [compat]
 Gtk = ">= 0.18"
 MPIReco = "0.3"
-MPIFiles = "0.9.3"
+MPIFiles = "0.9.3, 0.10.0"
 LoggingExtras = ">= 0.4.2"
