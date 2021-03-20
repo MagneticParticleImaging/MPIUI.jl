@@ -372,6 +372,11 @@ function initCallbacks(m::MeasurementWidget)
   #signal_connect(reinitDAQ, m["adjNumPeriods"], "value_changed", Nothing, (), false, m)
   signal_connect(m["cbSeFo",ComboBoxTextLeaf], :changed) do w
     updateSequence(m)
+    invalidateBG(C_NULL, m)
+  end
+
+  signal_connect(m["cbWaveform",ComboBoxTextLeaf], :changed) do w
+    invalidateBG(C_NULL, m)
   end
 
 end
