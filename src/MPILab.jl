@@ -684,7 +684,7 @@ function initExperimentStore(m::MPILab)
         @idle_add m.experimentStore[currentIt,2] = string(text)
         Base.GC.gc() # This is important to run all finalizers of MPIFile
         h5open(m.currentExperiment.path, "r+") do file
-          if exists(file, "/experiment/name")
+          if haskey(file, "/experiment/name")
             o_delete(file, "/experiment/name")
           end
           write(file, "/experiment/name", string(text) )
