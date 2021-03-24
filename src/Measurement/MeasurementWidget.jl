@@ -383,16 +383,14 @@ end
 
 function updateSequence(m::MeasurementWidget)
   selection = get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1
-  
+ 
   if selection > 0
     seq = m.sequences[selection]
 
     s = Sequence(seq)
 
-    @idle_add begin
-      set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
-      set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
-    end
+    set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
+    set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
   end
 end
 
@@ -529,7 +527,7 @@ function setParams(m::MeasurementWidget, params)
   if haskey(params,"acqFFSequence")
     idx = findfirst_(m.sequences, params["acqFFSequence"])
     if idx > 0
-      @idle_add set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf], :active,idx-1)
+      set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf], :active,idx-1)
       updateSequence(m)
     end
   else
