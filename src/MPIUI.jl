@@ -104,4 +104,11 @@ include("MPILab.jl")
 include("LCRMeter.jl")
 include("ArduinoDataLogger.jl")
 include("OnlineReco/OnlineReco.jl")
+
+function __init__()
+  if Threads.nthreads() == 1
+    error("MPIUI needs Julia to be started with at least two threads. Do the with `julia -t 2`.")
+  end
+end
+
 end # module
