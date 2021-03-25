@@ -155,7 +155,8 @@ function initCallbacks(m_::DataViewerWidget)
 
     widgets = ["cbSpatialMIP", "cbShowSlices", "cbHideFG", "cbHideBG",
                "cbBlendChannels", "cbTranslucentBlending",
-                "cbSpatialBGMIP", "cbShowDFFOV", "cbComplexBlending"]
+               "cbSpatialBGMIP", "cbShowDFFOV", "cbComplexBlending",
+		           "cbShowAxes"]
     for w in widgets
       signal_connect(update, m[w], "toggled")
     end
@@ -457,9 +458,10 @@ function showData(m::DataViewerWidget)
         cdata_zx, cdata_zy, cdata_xy = getColoredSlices(data, dataBG, m.coloring, minval, maxval, params)
         isDrawSectionalLines = params[:showSlices] && proj != "MIP"
         isDrawRectangle = params[:showDFFOV]
+        isDrawAxes = params[:showAxes]
         pixelSpacingBG = (dataBG==nothing) ? [0.002,0.002,0.001] : collect(converttometer(pixelspacing(dataBG)))
         sizeBG = (dataBG==nothing) ? [128,128,64] : collect(size(dataBG))
-        drawImages(m,slices, isDrawSectionalLines, isDrawRectangle, cdata_zx, cdata_zy, cdata_xy,
+        drawImages(m,slices, isDrawSectionalLines, isDrawRectangle, isDrawAxes, cdata_zx, cdata_zy, cdata_xy,
                    [params[:transX], params[:transY], params[:transZ]], pixelSpacingBG, sizeBG)
 
         if ndims(m.data) >= 3 && slicesInRawData != (0,0,0)
@@ -529,6 +531,7 @@ function getParams(m::DataViewerWidget)
 
   params[:blendChannels] = get_gtk_property(m["cbBlendChannels"], :active, Bool)
   params[:complexBlending] = get_gtk_property(m["cbComplexBlending"], :active, Bool)
+  params[:showAxes] = get_gtk_property(m["cbShowAxes"], :active, Bool)
 
   params[:profile] = get_gtk_property(m["cbProfile"], :active, Int64)
 
@@ -589,6 +592,7 @@ function setParams(m::DataViewerWidget, params)
   @idle_add set_gtk_property!(m["cbFrameProj"], :active, get(params,:frameProj, 0))
 
   @idle_add set_gtk_property!(m["cbBlendChannels"], :active, get(params,:blendChannels, false))
+  @idle_add set_gtk_property!(m["cbShowAxes"], :active, get(params,:showAxes, false))
 
   @idle_add set_gtk_property!(m["cbProfile"], :active, get(params,:profile, 0))
 

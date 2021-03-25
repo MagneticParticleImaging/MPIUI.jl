@@ -97,12 +97,12 @@ function getDFFov(im::ImageMeta)
   return dfFov
 end
 
-function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectangle,
+function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectangle,isDrawAxes,
                     cdata_zx, cdata_zy, cdata_xy, trans, pixelSpacingBG, sizeBG)
    
   xy,zx,zy,offsetxy,offsetzx,offsetzy = calcDFFovRectangle(m, trans, pixelSpacingBG)
    
-  drawSlice(m,slices,isDrawSectionalLines,isDrawRectangle, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
+  drawSlice(m,slices,isDrawSectionalLines,isDrawRectangle,isDrawAxes, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
 
   m.grid3D[1,1].mouse.button3press = @guarded (widget, event) -> begin
     @guarded Gtk.draw(widget) do widget
@@ -118,7 +118,7 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
         pXY = [m.cacheSelectedFovXYZ[2], ZXtoXYforX]
         imSizeZY,imSizeZX,imSizeXY= getImSizes(cdata_zy,cdata_zx,cdata_xy)
         @debug "" pZX zx offsetzy imSizeZY
-        drawSlice(m,slices,isDrawSectionalLines,isDrawRectangle, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
+        drawSlice(m,slices,isDrawSectionalLines,isDrawRectangle,isDrawAxes, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
         drawRectangle(ctxZY, hZY,wZY, pZY, imSizeZY, zy, offsetzy, rgb=[1,0,0],lineWidth=3.0)
         drawRectangle(ctxZX, hZX,wZX, pZX, imSizeZX, zx, offsetzx, rgb=[1,0,0],lineWidth=3.0)
         drawRectangle(ctxXY, hXY,wXY, pXY, imSizeXY, xy, offsetxy, rgb=[1,0,0],lineWidth=3.0)
@@ -139,7 +139,7 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
        pXY = [pZY[1],m.cacheSelectedFovXYZ[1]]
        imSizeZY,imSizeZX,imSizeXY= getImSizes(cdata_zy,cdata_zx,cdata_xy)
        @debug "" pZY zy offsetzy imSizeZY
-       drawSlice(m,slices,isDrawSectionalLines,isDrawRectangle, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
+       drawSlice(m,slices,isDrawSectionalLines,isDrawRectangle,isDrawAxes, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
        drawRectangle(ctxZY, hZY,wZY, pZY, imSizeZY, zy, offsetzy, rgb=[1,0,0],lineWidth=3.0)
        drawRectangle(ctxZX, hZX,wZX, pZX, imSizeZX, zx, offsetzx, rgb=[1,0,0],lineWidth=3.0)
        drawRectangle(ctxXY, hXY,wXY, pXY, imSizeXY, xy, offsetxy, rgb=[1,0,0],lineWidth=3.0)
@@ -160,7 +160,7 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
        pZX = [XYtoZXforX, m.cacheSelectedFovXYZ[3]]
        imSizeZY,imSizeZX,imSizeXY= getImSizes(cdata_zy,cdata_zx,cdata_xy)
        @debug pXY xy offsetzy imSizeZY
-       drawSlice(m,slices,isDrawSectionalLines,isDrawRectangle, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
+       drawSlice(m,slices,isDrawSectionalLines,isDrawRectangle,isDrawAxes, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
        drawRectangle(ctxZY, hZY,wZY, pZY, imSizeZY, zy, offsetzy, rgb=[1,0,0],lineWidth=3.0)
        drawRectangle(ctxZX, hZX,wZX, pZX, imSizeZX, zx, offsetzx, rgb=[1,0,0],lineWidth=3.0)
        drawRectangle(ctxXY, hXY,wXY, pXY, imSizeXY, xy, offsetxy, rgb=[1,0,0],lineWidth=3.0)
@@ -170,17 +170,17 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
   return nothing
 end
 
-function drawSlice(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectangle, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
-  drawImageCairo(m.grid3D[2,1], cdata_zy, isDrawSectionalLines,
-                 slices[2], slices[3], false, true, m["adjSliceY"], m["adjSliceZ"], isDrawRectangle,zy, offsetzy)
-  drawImageCairo(m.grid3D[1,1], cdata_zx, isDrawSectionalLines,
-                 slices[1], slices[3], true, true, m["adjSliceX"], m["adjSliceZ"], isDrawRectangle,zx, offsetzx)
-  drawImageCairo(m.grid3D[2,2], cdata_xy, isDrawSectionalLines,
-                 slices[2], slices[1], false, false, m["adjSliceY"], m["adjSliceX"], isDrawRectangle,xy, offsetxy)
+function drawSlice(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectangle,isDrawAxes, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
+  drawImageCairo(m.grid3D[2,1], cdata_zy, isDrawSectionalLines, isDrawAxes,
+                 slices[2], slices[3], false, true, m["adjSliceY"], m["adjSliceZ"], isDrawRectangle,zy, offsetzy, "yz")
+  drawImageCairo(m.grid3D[1,1], cdata_zx, isDrawSectionalLines, isDrawAxes,
+                 slices[1], slices[3], true, true, m["adjSliceX"], m["adjSliceZ"], isDrawRectangle,zx, offsetzx, "xz")
+  drawImageCairo(m.grid3D[2,2], cdata_xy, isDrawSectionalLines, isDrawAxes,
+                 slices[2], slices[1], false, false, m["adjSliceY"], m["adjSliceX"], isDrawRectangle,xy, offsetxy, "xy")
 end
 
-function drawImageCairo(c, image, isDrawSectionalLines, xsec, ysec,
-                        flipX, flipY, adjX, adjY, isDrawRectangle, xy, xyOffset)
+function drawImageCairo(c, image, isDrawSectionalLines, isDrawAxes, xsec, ysec,
+                        flipX, flipY, adjX, adjY, isDrawRectangle, xy, xyOffset, slide)
  @guarded Gtk.draw(c) do widget
   #c = reshape(c,size(c,1), size(c,2))
   ctx = getgc(c)
@@ -202,13 +202,16 @@ function drawImageCairo(c, image, isDrawSectionalLines, xsec, ysec,
     line_to(ctx, w, yy)
     #set_line_width(ctx, 3.0)
     # Cairo.stroke(ctx)
-   end
+  end
   imSize = size(im)
   if isDrawRectangle
     @debug "" imSize
     drawRectangle(ctx,h,w,[w/2,h/2], imSize, xy, xyOffset)
   end
-  if isDrawSectionalLines || isDrawRectangle
+  if isDrawAxes
+    drawAxes(ctx,slide)
+  end 
+  if isDrawSectionalLines || isDrawRectangle || isDrawAxes
     set_line_width(ctx, 3.0)
     Cairo.stroke(ctx)
   end
@@ -228,6 +231,62 @@ function drawImageCairo(c, image, isDrawSectionalLines, xsec, ysec,
    @idle_add set_gtk_property!(adjY, :value, round(Int64,yy))
   #end
  end
+end
+
+## Draw coordinate system
+function drawAxes(ctx,slide; rgb=[1,1,1])
+    h = height(ctx)
+    w = width(ctx)
+
+    center = h/40
+    if slide == "xy"
+      posx = center
+      posy = center
+      tox = [h/4, posy]
+      toy = [posx, h/4]
+      si = [-1,-1]
+      la = ["y","x"]
+    elseif slide == "xz"
+      posx = w-center
+      posy = h-center
+      tox = [posx-h/4, posy]
+      toy = [posx, posy-h/4]
+      si = [1, 1]
+      la = ["x","z"]
+    else # slide == "yz"
+      posx = center
+      posy = h-center
+      tox = [h/4, posy]
+      toy = [posx, posy-h/4]
+      si = [-1, 1]
+      la = ["y","z"]
+    end
+
+    set_source_rgb(ctx, rgb...)
+    select_font_face(ctx, "Sans", Cairo.FONT_SLANT_NORMAL,
+                     Cairo.FONT_WEIGHT_BOLD);
+    set_font_size(ctx, h/20);
+    scale = h/64
+    # x-axis
+    move_to(ctx, posx, posy)
+    line_to(ctx, tox[1], tox[2])
+    rel_move_to(ctx, si[1]*(2*scale), -scale)
+    line_to(ctx, tox[1], tox[2])
+    rel_line_to(ctx, si[1]*(2*scale), scale)
+    # xlabel
+    extents = text_extents(ctx, la[1])
+    move_to(ctx, tox[1] - (extents[3]/2 + extents[1]) - si[1]*(2*scale), tox[2]-(extents[4]/2 + extents[2]))
+    show_text(ctx,la[1])
+    # y-axis
+    move_to(ctx, posx, posy)
+    line_to(ctx, toy[1], toy[2])
+    rel_move_to(ctx, -scale, si[2]*(2*scale))
+    line_to(ctx, toy[1], toy[2])
+    rel_line_to(ctx, scale, si[2]*(2*scale))
+    # ylabel
+    extents = text_extents(ctx, la[2])
+    move_to(ctx, toy[1] - (extents[3]/2 + extents[1]), toy[2]-(extents[4]/2 + extents[2]) - si[2]*(2*scale))
+    show_text(ctx,la[2])
 end
 
 

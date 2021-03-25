@@ -1,11 +1,11 @@
 # MPIUI
 
-dev https://github.com/tknopp/RegularizedLeastSquares.jl.git
-dev https://github.com/tknopp/RedPitayaDAQServer.jl.git
-dev https://github.com/MagneticParticleImaging/MPIFiles.jl.git
-dev https://github.com/MagneticParticleImaging/MPIReco.jl.git
-dev https://github.com/wildart/TOML.jl.git
-dev https://github.com/andrewadare/LibSerialPort.jl.git
-dev https://github.com/tknopp/MPIMeasurements.jl.git
-dev https://github.com/tknopp/MPILib.jl.git
-dev https://github.com/tknopp/MPIUI.jl.git
+[![CI](https://github.com/tknopp/MPIUI.jl/workflows/CI/badge.svg)](https://github.com/tknopp/MPIUI.jl/actions?query=workflow%3ACI)
+[![codecov.io](https://codecov.io/github/tknopp/MPIUI.jl/coverage.svg?branch=master)](https://codecov.io/github/tknopp/MPIUI.jl?branch=master)
+
+## Installation
+```julia
+using Pkg
+Pkg.add(url="https://github.com/MagneticParticleImaging/MPIMeasurements.jl.git")
+Pkg.add(url="https://github.com/tknopp/MPIUI.jl.git")
+```
