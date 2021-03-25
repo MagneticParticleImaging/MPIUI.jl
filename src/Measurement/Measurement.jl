@@ -15,7 +15,7 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
 
     # start display thread
     #g_timeout_add( ()->displayMeasurement(m), 1)
-    #ä@tspawnat 1 displayMeasurement(m)
+    #@tspawnat 1 displayMeasurement(m)
 
     timerMeas = Timer( timer -> displayMeasurement(m, timer), 0.0, interval=0.1)
   catch ex
