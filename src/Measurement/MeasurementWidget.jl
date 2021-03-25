@@ -239,12 +239,7 @@ function initCallbacks(m::MeasurementWidget)
       setEnabled(getRobot(m.scanner), false)
       startTx(daq)
 
-      if daq.params.controlPhase
-        MPIMeasurements.controlLoop(daq)
-      else
-        MPIMeasurements.setTxParams(daq, daq.params.calibFieldToVolt.*daq.params.dfStrength,
-                         zeros(numTxChannels(daq)))
-      end
+      MPIMeasurements.controlLoop(daq)
 
       timerActive = true
       counter = 0
@@ -253,18 +248,13 @@ function initCallbacks(m::MeasurementWidget)
       function update_(::Timer)
         if timerActive
 
-          if daq.params.controlPhase
-            MPIMeasurements.controlLoop(daq)
-          else
-            MPIMeasurements.setTxParams(daq, daq.params.calibFieldToVolt.*daq.params.dfStrength,
-                             zeros(numTxChannels(daq)))
-          end
+          MPIMeasurements.controlLoop(daq)
 
           currFr = enableSlowDAC(daq, true, params["acqNumFGFrames"],
                   daq.params.ffRampUpTime, daq.params.ffRampUpFraction)
 
           uMeas, uRef = readData(daq, params["acqNumFGFrames"], currFr)
-          MPIMeasurements.setTxParams(daq, daq.params.currTxAmp*0.0, daq.params.currTxPhase*0.0)
+          MPIMeasurements.setTxParams(daq, daq.params.currTx*0.0)
 
           deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
 
