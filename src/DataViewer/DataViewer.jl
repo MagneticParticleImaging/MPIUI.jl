@@ -2,35 +2,6 @@ using Gtk, Gtk.ShortNames, Cairo
 
 export DataViewer, DataViewerWidget
 
-function DataViewer(imFG::ImageMeta, imBG=nothing; params=nothing)
-  dw = DataViewer()
-  updateData!(dw,imFG,imBG)
-  if params!=nothing
-    setParams(dw,params)
-  end
-  dw
-end
-
-function DataViewer()
-  w = Window("Data Viewer",800,600)
-  dw = DataViewerWidget()
-  push!(w,dw)
-  showall(w)
-
-  signal_connect(w, "key-press-event") do widget, event
-    if event.keyval ==  Gtk.GConstants.GDK_KEY_c
-      if event.state & 0x04 != 0x00 # Control key is pressed
-        @debug "copy visu params to clipboard..."
-        str = string( getParams(dw) )
-        str_ = replace(str,",Pair",",\n  Pair")
-        clipboard( str_ )
-      end
-    end
-  end
-
-  dw
-end
-
 ########### DataViewerWidget #################
 
 mutable struct DataViewerWidget <: Gtk.GtkBox
@@ -53,6 +24,40 @@ mutable struct DataViewerWidget <: Gtk.GtkBox
 end
 
 getindex(m::DataViewerWidget, w::AbstractString) = G_.object(m.builder, w)
+
+mutable struct DataViewer
+  w::Window
+  dvw::DataViewerWidget
+end
+
+function DataViewer(imFG::ImageMeta, imBG=nothing; params=nothing)
+  dv = DataViewer()
+  updateData!(dv.dvw,imFG,imBG)
+  if params!=nothing
+    setParams(dv.dvw,params)
+  end
+  return dv
+end
+
+function DataViewer()
+  w = Window("Data Viewer",800,600)
+  dw = DataViewerWidget()
+  push!(w,dw)
+  showall(w)
+
+  signal_connect(w, "key-press-event") do widget, event
+    if event.keyval ==  Gtk.GConstants.GDK_KEY_c
+      if event.state & 0x04 != 0x00 # Control key is pressed
+        @debug "copy visu params to clipboard..."
+        str = string( getParams(dw) )
+        str_ = replace(str,",Pair",",\n  Pair")
+        clipboard( str_ )
+      end
+    end
+  end
+
+  return DataViewer(w,dw)
+end
 
 include("Export.jl")
 include("Drawing.jl")

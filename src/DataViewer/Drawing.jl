@@ -208,10 +208,12 @@ function drawImageCairo(c, image, isDrawSectionalLines, isDrawAxes, xsec, ysec,
     @debug "" imSize
     drawRectangle(ctx,h,w,[w/2,h/2], imSize, xy, xyOffset)
   end
+  if isDrawSectionalLines || isDrawRectangle
+    set_line_width(ctx, 3.0)
+    Cairo.stroke(ctx)
+  end
   if isDrawAxes
     drawAxes(ctx,slide)
-  end 
-  if isDrawSectionalLines || isDrawRectangle || isDrawAxes
     set_line_width(ctx, 3.0)
     Cairo.stroke(ctx)
   end
