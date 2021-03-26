@@ -6,6 +6,5 @@
 ## Installation
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/MagneticParticleImaging/MPIMeasurements.jl.git")
 Pkg.add(url="https://github.com/tknopp/MPIUI.jl.git")
 ```
