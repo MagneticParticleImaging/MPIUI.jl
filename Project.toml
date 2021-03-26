@@ -45,7 +45,9 @@ MPIReco = "0.3"
 Winston = "0.15"
 
 [extras]
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+ImageMagick = "6218d12a-5da1-5696-b52f-db25d2ecc6d1"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Test", "HTTP", "ImageMagick"]
