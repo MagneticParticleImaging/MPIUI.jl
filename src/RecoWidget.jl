@@ -6,18 +6,6 @@ function linearSolverList()
   Any["kaczmarz", "cgnr", "fusedlasso"]
 end
 
-function RecoWindow(filenameMeas=nothing; params = defaultRecoParams())
-  w = Window("Reconstruction",800,600)
-  dw = RecoWidget(filenameMeas, params=params)
-  push!(w,dw)
-
-  G_.transient_for(w, mpilab[]["mainWindow"])
-  G_.modal(w,true)
-  showall(w)
-
-  dw
-end
-
 mutable struct RecoWidget<: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
   builder
@@ -37,6 +25,25 @@ mutable struct RecoWidget<: Gtk.GtkGrid
 end
 
 getindex(m::RecoWidget, w::AbstractString) = G_.object(m.builder, w)
+
+mutable struct RecoWindow
+  w::Window
+  rw::RecoWidget
+end
+
+function RecoWindow(filenameMeas=nothing; params = defaultRecoParams())
+  w = Window("Reconstruction",800,600)
+  dw = RecoWidget(filenameMeas, params=params)
+  push!(w,dw)
+
+  if isassigned(mpilab)
+    G_.transient_for(w, mpilab[]["mainWindow"])
+  end
+  G_.modal(w,true)
+  showall(w)
+
+  return RecoWindow(w,dw)
+end
 
 function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
 
@@ -249,26 +256,27 @@ function selectSF(m::RecoWidget)
 end
 
 function initBGSubtractionWidgets(m::RecoWidget)
+  if isassigned(mpilab)
+    if mpilab[].currentStudy != nothing
+      empty!(m["cbBGMeasurements"])
+      empty!(m.bgExperiments)
 
-  if mpilab[].currentStudy != nothing
-    empty!(m["cbBGMeasurements"])
-    empty!(m.bgExperiments)
+      experiments = getExperiments( activeDatasetStore(mpilab[]), mpilab[].currentStudy)
 
-    experiments = getExperiments( activeDatasetStore(mpilab[]), mpilab[].currentStudy)
+      idxFG = 0
 
-    idxFG = 0
+      for (i,exp) in enumerate(experiments)
 
-    for (i,exp) in enumerate(experiments)
+        m.bgExperiments[exp.num] = exp.path
+        push!(m["cbBGMeasurements"], string(exp.num))
 
-      m.bgExperiments[exp.num] = exp.path
-      push!(m["cbBGMeasurements"], string(exp.num))
-
-      if m.bMeas != nothing && filepath(m.bMeas) == exp.path
-        idxFG = i-1
+        if m.bMeas != nothing && filepath(m.bMeas) == exp.path
+          idxFG = i-1
+        end
       end
-    end
 
-    @idle_add set_gtk_property!(m["cbBGMeasurements"],:active, idxFG)
+      @idle_add set_gtk_property!(m["cbBGMeasurements"],:active, idxFG)
+    end
   end
 end
 
@@ -281,7 +289,7 @@ function setSF(m::RecoWidget, filename)
   set_gtk_property!(m["adjMaxFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
 
   m.sfParamsChanged = true
-  nothing
+  return nothing
 end
 
 function updateData!(m::RecoWidget, filenameMeas, params::Dict,
@@ -308,7 +316,7 @@ function updateData!(m::RecoWidget, filenameMeas, study=nothing, experiment=noth
     m.currentStudy = study
     m.currentExperiment = experiment
   end
-  nothing
+  return nothing
 end
 
 function updateSF(m::RecoWidget)
@@ -347,15 +355,21 @@ function updateSF(m::RecoWidget)
 
   @idle_add infoMessage(m, "")
   m.sfParamsChanged = false
+
+  return nothing
 end
 
 function infoMessage(m::RecoWidget, message::String="", color::String="green")
   message = """<span foreground="$color" font_weight="bold" size="x-large">$message</span>"""
-  infoMessage(mpilab[], message)
+  if isassigned(mpilab)
+    infoMessage(mpilab[], message)
+  end
 end
 
 function progress(m::RecoWidget, startStop::Bool)
-  progress(mpilab[], startStop)
+  if isassigned(mpilab)
+    progress(mpilab[], startStop)
+  end
 end
 
 #function performReco(widgetptr::Ptr, m::RecoWidget)
@@ -403,7 +417,7 @@ function performReco_(m::RecoWidget)
   catch ex
     showError(ex)
   end
-  nothing
+  return nothing
 end
 
 function getParams(m::RecoWidget)
@@ -539,5 +553,5 @@ function setParams(m::RecoWidget, params)
     @idle_add set_gtk_property!(m["adjNumSF"], :value, 1)
     m.bSF = MPIFile[BrukerFile()]
   end
-
+  return nothing
 end
