@@ -15,7 +15,7 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
 
     # start display thread
     #g_timeout_add( ()->displayMeasurement(m), 1)
-    #ä@tspawnat 1 displayMeasurement(m)
+    #@tspawnat 1 displayMeasurement(m)
 
     timerMeas = Timer( timer -> displayMeasurement(m, timer), 0.0, interval=0.1)
   catch ex
@@ -68,9 +68,9 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
     params["acqNumFrames"] = params["acqNumBGFrames"]
 
     setEnabled(getRobot(m.scanner), false)
-    enableACPower(getSurveillanceUnit(m.scanner))
+    enableACPower(getSurveillanceUnit(m.scanner), m.scanner)
     uMeas, uSlowADC = MPIMeasurements.measurement(getDAQ(m.scanner), params)
-    disableACPower(getSurveillanceUnit(m.scanner))
+    disableACPower(getSurveillanceUnit(m.scanner), m.scanner)
     setEnabled(getRobot(m.scanner), true)
 
     m.dataBGStore = uMeas

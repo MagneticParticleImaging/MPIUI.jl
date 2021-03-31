@@ -34,21 +34,6 @@ import MPIFiles: addReco, getVisu, id, addVisu
 import MPIMeasurements #: measurement
 export openFileBrowser
 
-# Just for compat, will not work always
-if VERSION >= v"1.3.0-"
-    macro spawn(e)
-       quote
-         Threads.@spawn $(esc(e))
-       end
-    end
-else
-   macro spawn(e)
-       quote
-         @async $(esc(e))
-       end
-    end
-end
-
 function object_(builder::Builder,name::AbstractString, T::Type)::T
    return convert(T,ccall((:gtk_builder_get_object,Gtk.libgtk),Ptr{Gtk.GObject},(Ptr{Gtk.GObject},Ptr{UInt8}),builder,name))
 end
@@ -104,4 +89,11 @@ include("MPILab.jl")
 include("LCRMeter.jl")
 include("ArduinoDataLogger.jl")
 include("OnlineReco/OnlineReco.jl")
+
+function __init__()
+  #if Threads.nthreads() == 1
+  #  error("MPIUI needs Julia to be started with at least two threads. Do the with `julia -t 2`.")
+  #end
+end
+
 end # module

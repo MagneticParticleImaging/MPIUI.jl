@@ -11,16 +11,16 @@ end
 
 getindex(m::LCRMeterUI, w::AbstractString) = G_.object(m.builder, w)
 
-function LCRMeterUI()
+function LCRMeterUI(;minFre=20000,maxFre=30000,samples=50,average=1,volt=2.0,ip="10.167.6.187")
   @info "Starting LCRMeterUI"
   uifile = joinpath(@__DIR__,"builder","lcrMeter.ui")
 
   b = Builder(filename=uifile)
 
   m = LCRMeterUI( b, nothing, nothing, nothing, nothing, nothing)
-
+ 
   m.c1 = Canvas()
-  m.c2 = Canvas()
+  m.c2 = Canvas() 
 
   push!(m["boxMain"],m.c1)
   set_gtk_property!(m["boxMain"],:expand,m.c1,true)
@@ -32,13 +32,29 @@ function LCRMeterUI()
     push!(m["cbFunction"], c)
   end
   set_gtk_property!(m["cbFunction"],:active,0)
+  set_gtk_property!(m["adjMinFreq"],:value,minFre)
+  set_gtk_property!(m["adjMaxFreq"],:value,maxFre)
+  set_gtk_property!(m["adjNumSamples"],:value,samples)
+  set_gtk_property!(m["adjNumAverages"],:value,average)
+  set_gtk_property!(m["adjVoltage"],:value,volt)
+  set_gtk_property!(m["entIP"],:text,ip)
 
-  signal_connect(m["btnSweep"], :clicked) do w
+  @time signal_connect(m["btnSweep"], :clicked) do w
     @info "start sweep"
     sweepAndShow(m)
   end
 
-  #signal_connect(m["btnSave"], :clicked) do w
+
+  signal_connect(m["btnSave"], :clicked) do w
+    filter = Gtk.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
+    filename = save_dialog("Select Data File", GtkNullContainer(), (filter, ))
+    if filename != ""
+      filenamebase, ext = splitext(filename)
+      save(filenamebase*".toml", m)
+    end
+  end
+
+  #@time signal_connect(m["btnSave"], :clicked) do w
   #  save(m)
   #end
 
@@ -49,6 +65,20 @@ function LCRMeterUI()
 end
 
 
+function save(filename::String, m::LCRMeterUI)
+  func = get_gtk_property(m["cbFunction"], :active, Int64)
+  measFunc, ylabel1, ylabel2 = setFunction(func)
+  p = Dict{String,Any}()
+  p["frequency"] = m.freq
+  p["xtype"] = ylabel1
+  p["ytype"] = ylabel2
+  p["xvalues"] = m.data
+  p["yvalues"] = m.datay
+
+  open(filename, "w") do f
+    TOML.print(f, p)
+  end
+end
 
 function setFunction(varFunc)
     if varFunc == 0

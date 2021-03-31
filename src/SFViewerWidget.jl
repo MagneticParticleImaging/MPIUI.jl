@@ -3,16 +3,6 @@ export SFViewer
 import Base: getindex
 
 
-function SFViewer(filename::AbstractString)
-  sfViewerWidget = SFViewerWidget()
-  w = Window("SF Viewer: $(filename)",800,600)
-  push!(w,sfViewerWidget)
-  showall(w)
-  updateData!(sfViewerWidget, filename)
-  return sfViewerWidget
-end
-
-
 mutable struct SFViewerWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder::GtkBuilder
@@ -30,8 +20,21 @@ mutable struct SFViewerWidget <: Gtk.GtkBox
   grid::GtkGridLeaf
 end
 
-
 getindex(m::SFViewerWidget, w::AbstractString) = G_.object(m.builder, w)
+
+mutable struct SFViewer
+  w::Window
+  sf::SFViewerWidget
+end
+
+function SFViewer(filename::AbstractString)
+  sfViewerWidget = SFViewerWidget()
+  w = Window("SF Viewer: $(filename)",800,600)
+  push!(w,sfViewerWidget)
+  showall(w)
+  updateData!(sfViewerWidget, filename)
+  return SFViewer(w, sfViewerWidget)
+end
 
 function SFViewerWidget()
   uifile = joinpath(@__DIR__,"builder","mpiLab.ui")

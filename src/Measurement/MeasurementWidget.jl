@@ -235,16 +235,11 @@ function initCallbacks(m::MeasurementWidget)
     if get_gtk_property(m["tbContinous",ToggleToolButtonLeaf], :active, Bool)
       params = merge!(getGeneralParams(m.scanner),getParams(m))
       MPIMeasurements.updateParams!(daq, params)
-      enableACPower(getSurveillanceUnit(m.scanner))
+      enableACPower(getSurveillanceUnit(m.scanner), m.scanner)
       setEnabled(getRobot(m.scanner), false)
       startTx(daq)
 
-      if daq.params.controlPhase
-        MPIMeasurements.controlLoop(daq)
-      else
-        MPIMeasurements.setTxParams(daq, daq.params.calibFieldToVolt.*daq.params.dfStrength,
-                         zeros(numTxChannels(daq)))
-      end
+      MPIMeasurements.controlLoop(daq)
 
       timerActive = true
       counter = 0
@@ -253,18 +248,13 @@ function initCallbacks(m::MeasurementWidget)
       function update_(::Timer)
         if timerActive
 
-          if daq.params.controlPhase
-            MPIMeasurements.controlLoop(daq)
-          else
-            MPIMeasurements.setTxParams(daq, daq.params.calibFieldToVolt.*daq.params.dfStrength,
-                             zeros(numTxChannels(daq)))
-          end
+          MPIMeasurements.controlLoop(daq)
 
           currFr = enableSlowDAC(daq, true, params["acqNumFGFrames"],
                   daq.params.ffRampUpTime, daq.params.ffRampUpFraction)
 
           uMeas, uRef = readData(daq, params["acqNumFGFrames"], currFr)
-          MPIMeasurements.setTxParams(daq, daq.params.currTxAmp*0.0, daq.params.currTxPhase*0.0)
+          MPIMeasurements.setTxParams(daq, daq.params.currTx*0.0)
 
           deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
 
@@ -284,7 +274,7 @@ function initCallbacks(m::MeasurementWidget)
           MPIMeasurements.enableSlowDAC(daq, false)
           setEnabled(getRobot(m.scanner), true)
           stopTx(daq)
-          disableACPower(getSurveillanceUnit(m.scanner))
+          disableACPower(getSurveillanceUnit(m.scanner), m.scanner)
           MPIMeasurements.disconnect(daq)
           #@idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
           close(timer)
@@ -372,22 +362,25 @@ function initCallbacks(m::MeasurementWidget)
   #signal_connect(reinitDAQ, m["adjNumPeriods"], "value_changed", Nothing, (), false, m)
   signal_connect(m["cbSeFo",ComboBoxTextLeaf], :changed) do w
     updateSequence(m)
+    invalidateBG(C_NULL, m)
+  end
+
+  signal_connect(m["cbWaveform",ComboBoxTextLeaf], :changed) do w
+    invalidateBG(C_NULL, m)
   end
 
 end
 
 function updateSequence(m::MeasurementWidget)
   selection = get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1
-  
+ 
   if selection > 0
     seq = m.sequences[selection]
 
     s = Sequence(seq)
 
-    @idle_add begin
-      set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
-      set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
-    end
+    set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
+    set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
   end
 end
 
@@ -490,6 +483,9 @@ function getParams(m::MeasurementWidget)
   params["acqFFSequence"] = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
   params["dfWaveform"] = RedPitayaDAQServer.waveforms()[get_gtk_property(m["cbWaveform",ComboBoxTextLeaf], :active, Int)+1]
 
+  jump = get_gtk_property(m["entDFJumpSharpness",EntryLeaf], :text, String)
+  params["jumpSharpness"] = parse(Float64, jump)
+
   params["storeAsSystemMatrix"] = get_gtk_property(m["cbStoreAsSystemMatrix",CheckButtonLeaf],:active, Bool)
 
   return params
@@ -509,6 +505,8 @@ function setParams(m::MeasurementWidget, params)
   dfDividerStr = *([ string(x," x ") for x in params["dfDivider"] ]...)[1:end-3]
   @idle_add set_gtk_property!(m["entDFDivider",EntryLeaf], :text, dfDividerStr)
 
+  @idle_add set_gtk_property!(m["entDFJumpSharpness",EntryLeaf], :text, "$(get(params,"jumpSharpness", 0.1))")
+
   @idle_add set_gtk_property!(m["entTracerName",EntryLeaf], :text, params["tracerName"][1])
   @idle_add set_gtk_property!(m["entTracerBatch",EntryLeaf], :text, params["tracerBatch"][1])
   @idle_add set_gtk_property!(m["entTracerVendor",EntryLeaf], :text, params["tracerVendor"][1])
@@ -519,7 +517,7 @@ function setParams(m::MeasurementWidget, params)
   if haskey(params,"acqFFSequence")
     idx = findfirst_(m.sequences, params["acqFFSequence"])
     if idx > 0
-      @idle_add set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf], :active,idx-1)
+      set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf], :active,idx-1)
       updateSequence(m)
     end
   else
