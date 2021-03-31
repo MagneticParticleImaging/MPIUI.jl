@@ -3,6 +3,7 @@ import Base: getindex
 mutable struct LCRMeterUI
   builder
   data
+  datay
   freq
   c1
   c2
@@ -16,7 +17,7 @@ function LCRMeterUI()
 
   b = Builder(filename=uifile)
 
-  m = LCRMeterUI( b, nothing, nothing, nothing, nothing)
+  m = LCRMeterUI( b, nothing, nothing, nothing, nothing, nothing)
 
   m.c1 = Canvas()
   m.c2 = Canvas()
@@ -144,10 +145,13 @@ function sweepAndShow(m::LCRMeterUI)
 
   freq=freqs
   data = x_list
+  datay = y_list
   m.data = data
+  m.datay = datay
   m.freq = freq
   @info m.freq
   @info m.data
+  @info m.datay
 
 
  p1 = Winston.plot(freq,x_list,"b-o", linewidth=2)
