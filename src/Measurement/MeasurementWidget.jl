@@ -345,7 +345,7 @@ function initCallbacks(m::MeasurementWidget)
 
 
   signal_connect(m["btnSelectSequence",ButtonLeaf], :clicked) do w
-    dlg = SequenceSelectionDialog()
+    dlg = SequenceSelectionDialog(getParams(m))
     ret = run(dlg)
     if ret == GtkResponseType.ACCEPT
       if hasselection(dlg.selection)

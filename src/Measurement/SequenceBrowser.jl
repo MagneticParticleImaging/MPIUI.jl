@@ -7,12 +7,13 @@ mutable struct SequenceSelectionDialog <: Gtk.GtkDialog
   tv
   selection
   box::Box
+  canvas
   sequences::Vector{String}
   updating::Bool
 end
 
 
-function SequenceSelectionDialog()
+function SequenceSelectionDialog(params::Dict)
 
   dialog = Dialog("Select Sequence", mpilab[]["mainWindow"], GtkDialogFlags.MODAL,
                         Dict("gtk-cancel" => GtkResponseType.CANCEL,
@@ -69,9 +70,13 @@ function SequenceSelectionDialog()
   push!(box, sw)
   set_gtk_property!(box, :expand, sw, true)
 
+  canvas = Canvas()
+  push!(box,canvas)
+  set_gtk_property!(box,:expand, canvas, true)
+
   sequences = sequenceList()
 
-  dlg = SequenceSelectionDialog(dialog.handle, store, tmSorted, tv, selection, box, sequences, false)
+  dlg = SequenceSelectionDialog(dialog.handle, store, tmSorted, tv, selection, box, canvas, sequences, false)
 
   updateData!(dlg)
 
@@ -79,6 +84,33 @@ function SequenceSelectionDialog()
   showall(box)
 
   Gtk.gobject_move_ref(dlg, dialog)
+
+
+  signal_connect(selection, "changed") do widget
+    if hasselection(selection)
+      currentIt = selected(selection)
+
+      seq = TreeModel(tmSorted)[currentIt,1]
+
+      @idle_add begin
+        s = Sequence(seq)
+
+        p = Winston.FramedPlot(xlabel="time / s", ylabel="field / ???")
+        
+        t = (1:acqNumPatches(s)) .* (acqNumPeriodsPerFrame(s) * params["dfCycle"] / acqNumPatches(s)) 
+
+        colors = ["blue","green","red", "magenta", "cyan", "black", "gray"]
+        for i=1:size(s.values,1)
+          Winston.add(p, Winston.Curve(t, s.values[i,:], color=colors[i], linewidth=4))
+        end
+        display(canvas, p)
+
+      end
+
+    end
+    return
+  end
+
   return dlg
 end
 
