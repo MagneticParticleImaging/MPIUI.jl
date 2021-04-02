@@ -1,4 +1,4 @@
-export MPILab
+export MPILab, scanner
 
 mutable struct MPILab
   builder
@@ -336,7 +336,7 @@ function initStudyStore(m::MPILab)
   m.selectionStudy = G_.selection(tv)
 
   #G_.sort_column_id(TreeSortable(m.studyStore),0,GtkSortType.ASCENDING)
-  G_.sort_column_id(TreeSortable(m.studyStoreSorted),0,GtkSortType.ASCENDING)
+  G_.sort_column_id(TreeSortable(m.studyStoreSorted),0,GtkSortType.DESCENDING)
 
 
   if length(m.studyStore) > 0
@@ -1116,4 +1116,8 @@ end
 
 function progress(m::MPILab, startStop::Bool)
   @idle_add set_gtk_property!(m["spProgress"],:active, startStop)
+end
+
+function scanner(m::MPILab)
+  return m.measurementWidget.scanner
 end
