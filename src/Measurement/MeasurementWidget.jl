@@ -16,7 +16,6 @@ mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   currStudyDate::DateTime
   filenameExperiment::String
   rawDataWidget::RawDataWidget
-  sequences::Vector{String}
   expanded::Bool
   message::String
   calibState::SystemMatrixRobotMeas
@@ -29,7 +28,7 @@ include("Measurement.jl")
 include("Calibration.jl")
 include("Surveillance.jl")
 include("Robot.jl")
-
+include("SequenceBrowser.jl")
 
 
 
@@ -62,7 +61,7 @@ function MeasurementWidget(filenameConfig="")
 
   m = MeasurementWidget( mainBox.handle, b,
                   scanner, zeros(Float32,0,0,0,0), mdfstore, "", now(),
-                  "", RawDataWidget(), String[], false, "",
+                  "", RawDataWidget(), false, "",
                   SystemMatrixRobotMeas(scanner, mdfstore), MeasState(), false, TemperatureLog())
   Gtk.gobject_move_ref(m, mainBox)
 
@@ -73,20 +72,6 @@ function MeasurementWidget(filenameConfig="")
 
   push!(m["boxMeasTabVisu",BoxLeaf],m.rawDataWidget)
   set_gtk_property!(m["boxMeasTabVisu",BoxLeaf],:expand,m.rawDataWidget,true)
-
-  @debug "Read Sequences"
-  @idle_add empty!(m["cbSeFo",ComboBoxTextLeaf])
-  m.sequences = sequenceList()
-  for seq in m.sequences
-    @idle_add push!(m["cbSeFo",ComboBoxTextLeaf], seq)
-  end
-  @idle_add set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf],:active,0)
-  combo = m["cbSeFo",ComboBoxTextLeaf]
-  cells = Gtk.GLib.GList(ccall((:gtk_cell_layout_get_cells, Gtk.libgtk),
-               Ptr{Gtk._GList{Gtk.GtkCellRenderer}}, (Ptr{GObject},), combo))
-  set_gtk_property!(cells[1],"max_width_chars", 14)
-  set_gtk_property!(combo,"wrap_width", 2)
-  #set_gtk_property!(cells[1],"ellipsize_set", 2)
 
   @debug "Read safety parameters"
   @idle_add begin
@@ -359,11 +344,22 @@ function initCallbacks(m::MeasurementWidget)
   end
 
 
-  #signal_connect(reinitDAQ, m["adjNumPeriods"], "value_changed", Nothing, (), false, m)
-  signal_connect(m["cbSeFo",ComboBoxTextLeaf], :changed) do w
-    updateSequence(m)
-    invalidateBG(C_NULL, m)
+  signal_connect(m["btnSelectSequence",ButtonLeaf], :clicked) do w
+    dlg = SequenceSelectionDialog()
+    ret = run(dlg)
+    if ret == GtkResponseType.ACCEPT
+      if hasselection(dlg.selection)
+        seq = getSelectedSequence(dlg)
+        updateSequence(m, seq)
+      end
+    end
+    destroy(dlg)
   end
+
+
+  
+  
+
 
   signal_connect(m["cbWaveform",ComboBoxTextLeaf], :changed) do w
     invalidateBG(C_NULL, m)
@@ -371,12 +367,10 @@ function initCallbacks(m::MeasurementWidget)
 
 end
 
-function updateSequence(m::MeasurementWidget)
-  selection = get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1
+function updateSequence(m::MeasurementWidget, seq::AbstractString)
+  set_gtk_property!(m["entSequenceName",EntryLeaf], :text, seq)
  
-  if selection > 0
-    seq = m.sequences[selection]
-
+  if seq in sequenceList()
     s = Sequence(seq)
 
     set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
@@ -480,7 +474,7 @@ function getParams(m::MeasurementWidget)
   dfDividerStr = get_gtk_property(m["entDFDivider",EntryLeaf], :text, String)
   params["dfDivider"] = parse.(Int64,split(dfDividerStr," x "))
 
-  params["acqFFSequence"] = m.sequences[get_gtk_property(m["cbSeFo",ComboBoxTextLeaf], :active, Int)+1]
+  params["acqFFSequence"] = get_gtk_property(m["entSequenceName",EntryLeaf], :text, String)
   params["dfWaveform"] = RedPitayaDAQServer.waveforms()[get_gtk_property(m["cbWaveform",ComboBoxTextLeaf], :active, Int)+1]
 
   jump = get_gtk_property(m["entDFJumpSharpness",EntryLeaf], :text, String)
@@ -515,10 +509,9 @@ function setParams(m::MeasurementWidget, params)
   @idle_add set_gtk_property!(m["entTracerSolute",EntryLeaf], :text, params["tracerSolute"][1])
 
   if haskey(params,"acqFFSequence")
-    idx = findfirst_(m.sequences, params["acqFFSequence"])
-    if idx > 0
-      set_gtk_property!(m["cbSeFo",ComboBoxTextLeaf], :active,idx-1)
-      updateSequence(m)
+    seq = params["acqFFSequence"]
+    if seq in sequenceList()
+      updateSequence(m, seq)
     end
   else
       @idle_add set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, params["acqNumPeriodsPerFrame"])
