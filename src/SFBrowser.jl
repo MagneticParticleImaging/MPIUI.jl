@@ -104,34 +104,34 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   cbOpenMeas = CheckButton("Open as Meas")
   cbOpenInWindow = CheckButton("Open in Window")
 
-  signal_connect(tv, "row-activated") do treeview, path, col, other...
-    if hasselection(selection)
-      currentIt = selected(selection)
+  if !smallWidth
+    signal_connect(tv, "row-activated") do treeview, path, col, other...
+      if hasselection(selection)
+        currentIt = selected(selection)
 
-      sffilename = TreeModel(tmSorted)[currentIt,10]
+        sffilename = TreeModel(tmSorted)[currentIt,10]
 
-      @idle_add begin
-        if !get_gtk_property(cbOpenMeas,:active,Bool)
-          if measIsCalibProcessed(MPIFile(sffilename,fastMode=true))
-            if get_gtk_property(cbOpenInWindow,:active,Bool)
-              SFViewer(sffilename)
+        @idle_add begin
+          if !get_gtk_property(cbOpenMeas,:active,Bool)
+            if measIsCalibProcessed(MPIFile(sffilename,fastMode=true))
+              if get_gtk_property(cbOpenInWindow,:active,Bool)
+                SFViewer(sffilename)
+              else
+                updateData!(mpilab[].sfViewerWidget, sffilename)
+                G_.current_page(mpilab[]["nbView"], 3)
+              end
             else
-              updateData!(mpilab[].sfViewerWidget, sffilename)
-              G_.current_page(mpilab[]["nbView"], 3)
+              @show sffilename
+              info_dialog("The calibration file $(sffilename) is not yet processed!", mpilab[]["mainWindow"])
             end
           else
-            @show sffilename
-            info_dialog("The calibration file $(sffilename) is not yet processed!", mpilab[]["mainWindow"])
+            updateData(mpilab[].rawDataWidget, sffilename)
+            G_.current_page(mpilab[]["nbView"], 0)
           end
-        else
-          updateData(mpilab[].rawDataWidget, sffilename)
-          G_.current_page(mpilab[]["nbView"], 0)
         end
-
       end
-
+      false
     end
-    false
   end
 
   vbox = Box(:v)
