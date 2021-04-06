@@ -52,19 +52,6 @@ function SequenceSelectionDialog(params::Dict)
   G_.sort_column_id(TreeSortable(tmSorted),0,GtkSortType.DESCENDING)
   selection = G_.selection(tv)
 
-#=
-  vbox = Box(:v)
-
-    hbox = Box(:h)
-    push!(vbox, hbox)
-    set_gtk_property!(hbox,:spacing,5)
-    set_gtk_property!(hbox,:margin_left,5)
-    set_gtk_property!(hbox,:margin_right,5)
-    set_gtk_property!(hbox,:margin_top,5)
-    set_gtk_property!(hbox,:margin_bottom,5)=#
-
-
-
   sw = ScrolledWindow()
   push!(sw, tv)
   push!(box, sw)
@@ -84,7 +71,6 @@ function SequenceSelectionDialog(params::Dict)
   showall(box)
 
   Gtk.gobject_move_ref(dlg, dialog)
-
 
   signal_connect(selection, "changed") do widget
     if hasselection(selection)
