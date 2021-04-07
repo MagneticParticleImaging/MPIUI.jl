@@ -104,7 +104,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   cbOpenMeas = CheckButton("Open as Meas")
   cbOpenInWindow = CheckButton("Open in Window")
 
-  if !smallWidth
+  if smallWidth
     signal_connect(tv, "row-activated") do treeview, path, col, other...
       if hasselection(selection)
         currentIt = selected(selection)
