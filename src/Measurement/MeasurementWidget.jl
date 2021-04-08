@@ -48,8 +48,7 @@ function MeasurementWidget(filenameConfig="")
   #filenameConfig=nothing
 
   if filenameConfig != ""
-    scanner = MPIScanner(filenameConfig)
-    scanner.params["Robot"]["doReferenceCheck"] = false
+    scanner = MPIScanner(filenameConfig, guimode=true)
     mdfstore = MDFDatasetStore( getGeneralParams(scanner)["datasetStore"] )
   else
     scanner = nothing
