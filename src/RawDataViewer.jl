@@ -298,6 +298,17 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       if !autoRangingFD
           Winston.ylim(minValFD, maxValFD)
       end
+    else
+      @guarded Gtk.draw(m.cFD) do widget
+        
+        ctx = getgc(m.cFD)
+        h = height(ctx)
+        w = width(ctx)
+        Cairo.set_source_rgb(ctx,1.0,1.0,1.0)
+        Cairo.rectangle(ctx, 0,0,w,h)
+        Cairo.paint(ctx)
+        Cairo.stroke(ctx)
+      end
     end
 
     if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
