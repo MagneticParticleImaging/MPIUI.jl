@@ -222,14 +222,14 @@ function initViewSwitch(m::MPILab)
     if page_num == 0
       infoMessage(m, "")
       if m.currentExperiment != nothing
-        @idle_add updateData(m.rawDataWidget, m.currentExperiment.path)
+        @idle_add updateData(m.rawDataWidget, path(m.currentExperiment))
       end
     elseif page_num == 1
       infoMessage(m, "")
     elseif page_num == 2
       infoMessage(m, "")
       if m.currentExperiment != nothing
-        @idle_add updateData!(m.recoWidget, m.currentExperiment.path )
+        @idle_add updateData!(m.recoWidget, path(m.currentExperiment) )
       end
     elseif page_num == 4
       @idle_add unselectall!(m.selectionExp)
@@ -347,15 +347,16 @@ function initStudyStore(m::MPILab)
   end
 
   function selectionChanged( widget )
-    if !m.updating && hasselection(m.selectionStudy) && !m.clearingStudyStore
+    if !m.updating && hasselection(m.selectionStudy) && !m.clearingStudyStore 
       m.updating = true
       currentIt = selected( m.selectionStudy )
 
-      m.currentStudy = Study(TreeModel(m.studyStoreSorted)[currentIt,4],
-                             TreeModel(m.studyStoreSorted)[currentIt,2],
-                             TreeModel(m.studyStoreSorted)[currentIt,3],
-                             DateTime(string(TreeModel(m.studyStoreSorted)[currentIt,1],"T",
-				             TreeModel(m.studyStoreSorted)[currentIt,5])))
+      m.currentStudy = Study(activeDatasetStore(m), 
+                             TreeModel(m.studyStoreSorted)[currentIt,2];
+                             foldername = TreeModel(m.studyStoreSorted)[currentIt,4],
+                             subject = TreeModel(m.studyStoreSorted)[currentIt,3],
+                             date = DateTime(string(TreeModel(m.studyStoreSorted)[currentIt,1],"T",
+				                           TreeModel(m.studyStoreSorted)[currentIt,5])))
 
       updateExperimentStore(m, m.currentStudy)
 
@@ -420,7 +421,7 @@ function initStudyStore(m::MPILab)
 
   signal_connect(m["tbAddStudy"], "clicked") do widget
     name = get_gtk_property(m["entSearchStudies"], :text, String)
-    study = Study("", name, "", now())
+    study = Study(activeDatasetStore(m), name)
     addStudy(activeDatasetStore(m), study)
     @idle_add scanDatasetDir(m)
 
@@ -454,7 +455,7 @@ function scanDatasetDir(m::MPILab)
 
   for study in studies
     push!(m.studyStore, (split(string(study.date),"T")[1], study.name, study.subject,
-			  study.path, split(string(study.date),"T")[2], true))
+			  study.foldername, split(string(study.date),"T")[2], true))
   end
 end
 
@@ -595,7 +596,7 @@ function initExperimentStore(m::MPILab)
   signal_connect(m["tbRawData"], "clicked") do widget
     if hasselection( m.selectionExp)
       @idle_add begin
-        updateData(m.rawDataWidget, m.currentExperiment.path)
+        updateData(m.rawDataWidget, path(m.currentExperiment))
         G_.current_page(m["nbView"], 0)
       end
     end
@@ -606,7 +607,7 @@ function initExperimentStore(m::MPILab)
     if hasselection(m.selectionExp)
       @idle_add begin
         if m.settings["enableRecoStore", true]
-          updateData!(m.recoWidget, m.currentExperiment.path, m.currentStudy, m.currentExperiment )
+          updateData!(m.recoWidget, path(m.currentExperiment), m.currentStudy, m.currentExperiment )
           G_.current_page(m["nbView"], 2)
         end
       end
@@ -616,7 +617,7 @@ function initExperimentStore(m::MPILab)
   signal_connect(m["tbOpenExperimentFolder"], "clicked") do widget
     if hasselection(m.selectionStudy)
       @idle_add begin
-        openFileBrowser(m.currentStudy.path)
+        openFileBrowser(path(m.currentStudy))
       end
     end
   end
@@ -625,8 +626,8 @@ function initExperimentStore(m::MPILab)
   signal_connect(tv, "row-activated") do treeview, path, col, other...
     if hasselection(m.selectionExp)
       @idle_add begin
-        #updateData!(m.recoWidget, m.currentExperiment.path )
-        updateData(m.rawDataWidget, m.currentExperiment.path)
+        #updateData!(m.recoWidget, path(m.currentExperiment) )
+        updateData(m.rawDataWidget, path(m.currentExperiment))
         G_.current_page(m["nbView"], 0)
       end
     end
@@ -641,7 +642,7 @@ function initExperimentStore(m::MPILab)
       
       exp = getExperiment(m.currentStudy, m.experimentStore[currentIt,1])
 
-      if exp != nothing && ispath(exp.path)
+      if exp != nothing && ispath(path(exp))
          m.currentExperiment = exp
 
          @idle_add updateReconstructionStore(m)
@@ -680,10 +681,10 @@ function initExperimentStore(m::MPILab)
     try
     if hasselection(m.selectionExp)
       currentIt = selected( m.selectionExp )
-      if splitext(m.currentExperiment.path)[2] == ".mdf"
+      if splitext(path(m.currentExperiment))[2] == ".mdf"
         @idle_add m.experimentStore[currentIt,2] = string(text)
         Base.GC.gc() # This is important to run all finalizers of MPIFile
-        h5open(m.currentExperiment.path, "r+") do file
+        h5open(path(m.currentExperiment), "r+") do file
           if haskey(file, "/experiment/name")
             o_delete(file, "/experiment/name")
           end
@@ -713,11 +714,11 @@ function updateExperimentStore(m::MPILab, study::Study)
     empty!(m.reconstructionStore)
     empty!(m.visuStore)
 
-    experiments = getExperiments( activeDatasetStore(m), study)
+    experiments = getExperiments(study)
 
     for exp in experiments
       push!(m.experimentStore,(exp.num, exp.name, exp.numFrames,
-                join(exp.df,"x"),exp.sfGradient, exp.path))
+                join(exp.df,"x"),exp.sfGradient, path(exp)))
     end
     m.clearingExpStore = false
     m.updating = false
@@ -828,7 +829,7 @@ function initReconstructionStore(m::MPILab)
       params = m.currentReco.params
 
       @idle_add begin
-        updateData!(m.recoWidget, m.currentExperiment.path, params, m.currentStudy, m.currentExperiment)
+        updateData!(m.recoWidget, path(m.currentExperiment), params, m.currentStudy, m.currentExperiment)
         G_.current_page(m["nbView"], 2)
       end
     end
