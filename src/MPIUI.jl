@@ -30,7 +30,7 @@ import Winston
 using Colors
 
 import Base: getindex
-import MPIFiles: addReco, getVisu, id, addVisu
+import MPIFiles: addReco, getVisu, addVisu
 import MPIMeasurements #: measurement
 export openFileBrowser
 

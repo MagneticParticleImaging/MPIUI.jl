@@ -360,7 +360,7 @@ function initStudyStore(m::MPILab)
 
       updateExperimentStore(m, m.currentStudy)
 
-      @debug "Current Study Id: " id(m.currentStudy)
+      @debug "Current Study Id: " m.currentStudy.name
       updateAnatomRefStore(m)
 
       m.measurementWidget.currStudyName = m.currentStudy.name
@@ -504,7 +504,7 @@ function initAnatomRefStore(m::MPILab)
 
   end
 
-  signal_connect(tv, "row-activated") do treeview, path, col, other...
+  signal_connect(tv, "row-activated") do treeview, path_, col, other...
     try
       if hasselection(selection)
         currentIt = selected( selection )
@@ -623,10 +623,11 @@ function initExperimentStore(m::MPILab)
   end
 
 
-  signal_connect(tv, "row-activated") do treeview, path, col, other...
+  signal_connect(tv, "row-activated") do treeview, path_, col, other...
     if hasselection(m.selectionExp)
       @idle_add begin
         #updateData!(m.recoWidget, path(m.currentExperiment) )
+        @info path(m.currentExperiment)
         updateData(m.rawDataWidget, path(m.currentExperiment))
         G_.current_page(m["nbView"], 0)
       end
@@ -677,7 +678,7 @@ function initExperimentStore(m::MPILab)
     end
   end
 
-  signal_connect(r2, "edited") do widget, path, text
+  signal_connect(r2, "edited") do widget, path_, text
     try
     if hasselection(m.selectionExp)
       currentIt = selected( m.selectionExp )
@@ -686,7 +687,7 @@ function initExperimentStore(m::MPILab)
         Base.GC.gc() # This is important to run all finalizers of MPIFile
         h5open(path(m.currentExperiment), "r+") do file
           if haskey(file, "/experiment/name")
-            o_delete(file, "/experiment/name")
+            delete_object(file, "/experiment/name")
           end
           write(file, "/experiment/name", string(text) )
           @info "changed experiment name"
@@ -764,7 +765,7 @@ function initReconstructionStore(m::MPILab)
 
   m.selectionReco = G_.selection(tv)
 
-  signal_connect(tv, "row-activated") do treeview, path, col, other...
+  signal_connect(tv, "row-activated") do treeview, path_, col, other...
     if hasselection(m.selectionReco)
       im = loaddata(m.currentReco.path)
       #@idle_add DataViewer(im)
@@ -776,7 +777,7 @@ function initReconstructionStore(m::MPILab)
     false
   end
 
-  signal_connect(r2, "edited") do widget, path, text
+  signal_connect(r2, "edited") do widget, path_, text
     @debug "" text
     if hasselection(m.selectionReco)
       currentIt = selected( m.selectionReco )
@@ -937,7 +938,7 @@ function initVisuStore(m::MPILab)
 
   m.selectionVisu = G_.selection(tv)
 
-  signal_connect(tv, "row-activated") do treeview, path, col, other...
+  signal_connect(tv, "row-activated") do treeview, path_, col, other...
     if hasselection(m.selectionReco)
       if hasselection(m.selectionVisu)
 
@@ -965,7 +966,7 @@ function initVisuStore(m::MPILab)
     false
   end
 
-  signal_connect(r2, "edited") do widget, path, text
+  signal_connect(r2, "edited") do widget, path_, text
     if hasselection(m.selectionVisu)
       currentIt = selected( m.selectionVisu )
       m.currentVisu.params[:description] = string(text)
