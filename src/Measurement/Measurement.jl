@@ -70,6 +70,7 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
     setEnabled(getRobot(m.scanner), false)
     enableACPower(getSurveillanceUnit(m.scanner), m.scanner)
     uMeas, uSlowADC = MPIMeasurements.measurement(getDAQ(m.scanner), params)
+    sleep(2)
     disableACPower(getSurveillanceUnit(m.scanner), m.scanner)
     setEnabled(getRobot(m.scanner), true)
 
