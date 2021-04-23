@@ -40,52 +40,57 @@ end
 
 const _tempTimer = Ref{Timer}()
 const _updatingTimer = Ref{Bool}(false)
+const _cTemp = Ref{CanvasLeaf}()
 
 function initSurveillance(m::MeasurementWidget)
-  if !m.expanded
-    su = getSurveillanceUnit(m.scanner)
+  su = getSurveillanceUnit(m.scanner)
 
-    cTemp = Canvas()
-    box = m["boxSurveillance",BoxLeaf]
-    push!(box,cTemp)
-    set_gtk_property!(box,:expand,cTemp,true)
+  _cTemp[] = Canvas()
+  box = m["boxSurveillance",BoxLeaf]
+  push!(box,_cTemp[])
+  set_gtk_property!(box,:expand,_cTemp[],true)
 
-    showall(box)
+  showall(box)
 
-    tempInit = getTemperatures(su)
-    L = length(tempInit)
+  tempInit = getTemperatures(su)
+  L = length(tempInit)
 
+  clear(m.temperatureLog, L)
+
+  signal_connect(m["btnResetTemp",ButtonLeaf], :clicked) do w
+    _updatingTimer[] = true
+    sleep(2.0)
     clear(m.temperatureLog, L)
+    _updatingTimer[] = false
+  end
 
-    signal_connect(m["btnResetTemp",ButtonLeaf], :clicked) do w
-      _updatingTimer[] = true
-      sleep(2.0)
-      clear(m.temperatureLog, L)
-      _updatingTimer[] = false
+  signal_connect(m["btnSaveTemp",ButtonLeaf], :clicked) do w
+    _updatingTimer[] = true
+    filter = Gtk.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
+    filename = save_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
+    if filename != ""
+      filenamebase, ext = splitext(filename)
+      saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
     end
+    _updatingTimer[] = false
+  end    
+end
 
-    signal_connect(m["btnSaveTemp",ButtonLeaf], :clicked) do w
-      _updatingTimer[] = true
-      filter = Gtk.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
-      filename = save_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
-      if filename != ""
-        filenamebase, ext = splitext(filename)
-        saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
-      end
-      _updatingTimer[] = false
-    end    
 
-    @guarded function update_(timer::Timer)
+function startSurveillance(m)
+  su = getSurveillanceUnit(m.scanner)
 
-      if !(_updatingTimer[]) 
-        te = getTemperatures(su)
+  @guarded function update_(timer::Timer)
+    if !(_updatingTimer[]) 
+      te = getTemperatures(su)
+      if sum(te) > 0.0
         time = Dates.now()
         str = join([ @sprintf("%.2f C ",t) for t in te ])
         set_gtk_property!(m["entTemperatures",EntryLeaf], :text, str)
 
         push!(m.temperatureLog, te, time)
 
-        L = min(L,7)
+        L = min(m.temperatureLog.numChan,7)
 
         colors = ["b", "r", "g", "y", "k", "c", "m"]
 
@@ -97,11 +102,16 @@ function initSurveillance(m::MeasurementWidget)
             Winston.plot(p, T[l,:], colors[l], linewidth=10)
           end
           #Winston.xlabel("Time")
-          display(cTemp ,p)
+          display(_cTemp[] ,p)
         end
       end
     end
-    _tempTimer[] = Timer(update_, 0.0, interval=1.5)
-    m.expanded = true
+  end
+  _tempTimer[] = Timer(update_, 0.0, interval=1.5)
+end
+
+function stopSurveillance(m)
+  if isassigned(_tempTimer)
+    close(_tempTimer[])  
   end
 end

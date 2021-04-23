@@ -167,9 +167,20 @@ end
 function initCallbacks(m::MeasurementWidget)
 
   # TODO This currently does not work!
-  signal_connect(m["expSurveillance",ExpanderLeaf], :activate) do w
-    initSurveillance(m)
+#  signal_connect(m["expSurveillance",ExpanderLeaf], :activate) do w
+#    initSurveillance(m)
+#  end
+
+  initSurveillance(m)
+  signal_connect(m["tbStartTemp",ToggleButtonLeaf], :toggled) do w
+    if get_gtk_property(m["tbStartTemp",ToggleButtonLeaf], :active, Bool)
+      startSurveillance(m)
+    else
+      stopSurveillance(m)
+    end
   end
+
+  
 
   #signal_connect(measurement, m["tbMeasure",ToolButtonLeaf], "clicked", Nothing, (), false, m )
   #signal_connect(measurementBG, m["tbMeasureBG",ToolButtonLeaf], "clicked", Nothing, (), false, m)

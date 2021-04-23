@@ -254,16 +254,16 @@ function initBGSubtractionWidgets(m::RecoWidget)
     empty!(m["cbBGMeasurements"])
     empty!(m.bgExperiments)
 
-    experiments = getExperiments( activeDatasetStore(mpilab[]), mpilab[].currentStudy)
+    experiments = getExperiments(mpilab[].currentStudy)
 
     idxFG = 0
 
     for (i,exp) in enumerate(experiments)
 
-      m.bgExperiments[exp.num] = exp.path
+      m.bgExperiments[exp.num] = path(exp)
       push!(m["cbBGMeasurements"], string(exp.num))
 
-      if m.bMeas != nothing && filepath(m.bMeas) == exp.path
+      if m.bMeas != nothing && filepath(m.bMeas) == path(exp)
         idxFG = i-1
       end
     end
