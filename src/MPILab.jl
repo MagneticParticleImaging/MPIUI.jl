@@ -163,6 +163,7 @@ function MPILab(offlineMode=false)::MPILab
   signal_connect(w, "delete-event") do widget, event
     if m.measurementWidget != nothing && m.measurementWidget.scanner != nothing
       close(m.measurementWidget.scanner)
+      stopSurveillance(m.measurementWidget)
     end
     return false
   end
