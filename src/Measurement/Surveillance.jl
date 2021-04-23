@@ -83,25 +83,27 @@ function startSurveillance(m)
   @guarded function update_(timer::Timer)
     if !(_updatingTimer[]) 
       te = getTemperatures(su)
-      time = Dates.now()
-      str = join([ @sprintf("%.2f C ",t) for t in te ])
-      set_gtk_property!(m["entTemperatures",EntryLeaf], :text, str)
+      if sum(te) > 0.0
+        time = Dates.now()
+        str = join([ @sprintf("%.2f C ",t) for t in te ])
+        set_gtk_property!(m["entTemperatures",EntryLeaf], :text, str)
 
-      push!(m.temperatureLog, te, time)
+        push!(m.temperatureLog, te, time)
 
-      L = min(m.temperatureLog.numChan,7)
+        L = min(m.temperatureLog.numChan,7)
 
-      colors = ["b", "r", "g", "y", "k", "c", "m"]
+        colors = ["b", "r", "g", "y", "k", "c", "m"]
 
-      T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
+        T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
 
-      @idle_add begin
-        p = Winston.plot(T[1,:], colors[1], linewidth=10)
-        for l=2:L
-          Winston.plot(p, T[l,:], colors[l], linewidth=10)
+        @idle_add begin
+          p = Winston.plot(T[1,:], colors[1], linewidth=10)
+          for l=2:L
+            Winston.plot(p, T[l,:], colors[l], linewidth=10)
+          end
+          #Winston.xlabel("Time")
+          display(_cTemp[] ,p)
         end
-        #Winston.xlabel("Time")
-        display(_cTemp[] ,p)
       end
     end
   end
