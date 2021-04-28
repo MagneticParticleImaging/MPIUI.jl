@@ -10,6 +10,7 @@ mutable struct SequenceSelectionDialog <: Gtk.GtkDialog
   canvas
   sequences::Vector{String}
   updating::Bool
+  dfCycle::Float64
 end
 
 
@@ -22,7 +23,7 @@ function SequenceSelectionDialog(params::Dict)
   resize!(dialog, 1024, 600)
   box = G_.content_area(dialog)
 
-  store = ListStore(String,Int,Int,Int,Bool)
+  store = ListStore(String,Int,Int,Int,Float64,Bool)
 
   tv = TreeView(TreeModel(store))
   r1 = CellRendererText()
@@ -32,8 +33,9 @@ function SequenceSelectionDialog(params::Dict)
   c1 = TreeViewColumn("#Periods", r1, Dict("text" => 1))
   c2 = TreeViewColumn("#Patches", r1, Dict("text" => 2))
   c3 = TreeViewColumn("#PeriodsPerPatch", r1, Dict("text" => 3))
+  c4 = TreeViewColumn("FramePeriod", r1, Dict("text" => 4))
 
-  for (i,c) in enumerate((c0,c1,c2,c3))
+  for (i,c) in enumerate((c0,c1,c2,c3,c4))
     G_.sort_column_id(c,i-1)
     G_.resizable(c,true)
     G_.max_width(c,80)
@@ -43,9 +45,10 @@ function SequenceSelectionDialog(params::Dict)
   G_.max_width(c0,300)
   G_.max_width(c1,200)
   G_.max_width(c2,200)
+  G_.max_width(c3,200)
 
   tmFiltered = TreeModelFilter(store)
-  G_.visible_column(tmFiltered,4)
+  G_.visible_column(tmFiltered,5)
   tmSorted = TreeModelSort(tmFiltered)
   G_.model(tv, tmSorted)
 
@@ -63,7 +66,8 @@ function SequenceSelectionDialog(params::Dict)
 
   sequences = sequenceList()
 
-  dlg = SequenceSelectionDialog(dialog.handle, store, tmSorted, tv, selection, box, canvas, sequences, false)
+  dlg = SequenceSelectionDialog(dialog.handle, store, tmSorted, tv, selection, 
+                                box, canvas, sequences, false, params["dfCycle"])
 
   updateData!(dlg)
 
@@ -109,8 +113,9 @@ function updateData!(m::SequenceSelectionDialog)
 
       for seq in m.sequences
         s = Sequence(seq)
-
-        push!(m.store, (seq, acqNumPeriodsPerFrame(s), acqNumPatches(s), acqNumPeriodsPerPatch(s), true))
+        
+        time = m.dfCycle * acqNumPeriodsPerFrame(s)
+        push!(m.store, (seq, acqNumPeriodsPerFrame(s), acqNumPatches(s), acqNumPeriodsPerPatch(s), time, true))
       end
       m.updating = false
   end
