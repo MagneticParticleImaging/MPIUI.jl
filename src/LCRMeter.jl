@@ -39,9 +39,34 @@ function LCRMeterUI(;minFre=20000,maxFre=30000,samples=50,average=1,volt=2.0,ip=
   set_gtk_property!(m["adjVoltage"],:value,volt)
   set_gtk_property!(m["entIP"],:text,ip)
 
+  # single sweep
   @time signal_connect(m["btnSweep"], :clicked) do w
     @info "start sweep"
     sweepAndShow(m)
+  end
+
+  # continous sweeps
+  timerActive = false
+  signal_connect(m["tbContinuous"], :toggled) do w
+    if get_gtk_property(m["tbContinuous"], :active, Bool)
+      @info "Start continuous measurement"
+      # get measurement time
+      numSamp = get_gtk_property(m["adjNumSamples"], :value, Int64)
+      numAverages = get_gtk_property(m["adjNumAverages"], :value, Int64)
+      duration=numSamp*(numAverages*4*0.043+0.005)
+      # timer
+      timerActive = true
+      function update_(::Timer) 
+        if timerActive
+          sweepAndShow(m)
+        else
+          close(timer)
+        end
+      end
+      timer = Timer(update_, 0.0, interval=duration)
+    else
+      timerActive = false
+    end
   end
 
 
@@ -134,7 +159,7 @@ function sweepAndShow(m::LCRMeterUI)
   sleep(0.005)
   @info "Voltage set to: " , voltage
   duration=numSamp*(numAverages*4*0.043+0.005)
-  @info "Measurementtime will be abaut $(duration) seconds"
+  @info "Measurement time will be about $(duration) seconds"
   readline(instr)
 
   write(instr, ":FUNCtion:IMPedance:TYPE $(measFunc)\r")
@@ -196,7 +221,7 @@ function sweepAndShow(m::LCRMeterUI)
   #               linewidth=2, ylog=true)
 
 
-  display(m.c1 ,p1)
-  display(m.c2 ,p2)
+  @idle_add display(m.c1 ,p1)
+  @idle_add display(m.c2 ,p2)
 
 end
