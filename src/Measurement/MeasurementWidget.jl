@@ -349,6 +349,13 @@ function initCallbacks(m::MeasurementWidget)
       setInfoParams(m)
     end
   end
+
+  for adj in ["adjNumFGFrames","adjNumFrameAverages"]
+    signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
+      setInfoParams(m)
+    end
+  end
+
   signal_connect(m["entGridShape",EntryLeaf], "changed") do w
     updateCalibTime(C_NULL, m)
   end
@@ -385,6 +392,7 @@ function updateSequence(m::MeasurementWidget, seq::AbstractString)
 
     set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
     set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
+    setInfoParams(m)
   end
 end
 
@@ -440,19 +448,27 @@ end
 
 function setInfoParams(m::MeasurementWidget)
   daq = getDAQ(m.scanner)
-  if length(daq.params.dfFreq) > 1
-    freqStr = "$(join([ " $(round(x, digits=2)) x" for x in daq.params.dfFreq ])[2:end-2]) Hz"
-  else
-    freqStr = "$(round(daq.params.dfFreq[1], digits=2)) Hz"
-  end
-  @idle_add set_gtk_property!(m["entDFFreq",EntryLeaf],:text,freqStr)
-  @idle_add set_gtk_property!(m["entDFPeriod",EntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")
+  #if length(daq.params.dfFreq) > 1
+  #  freqStr = "$(join([ " $(round(x, digits=2)) x" for x in daq.params.dfFreq ])[2:end-2]) Hz"
+  #else
+  #  freqStr = "$(round(daq.params.dfFreq[1], digits=2)) Hz"
+  #end
+  #@idle_add set_gtk_property!(m["entDFFreq",EntryLeaf],:text,freqStr)
+  #@idle_add set_gtk_property!(m["entDFPeriod",EntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")
   numPeriods = tryparse(Int64, get_gtk_property(m["entNumPeriods", EntryLeaf], :text, String))
 
   framePeriod = get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
                   (numPeriods == nothing ? 1 : numPeriods)  *
                   daq.params.dfCycle
-  @idle_add set_gtk_property!(m["entFramePeriod",EntryLeaf],:text,"$(@sprintf("%.5f",framePeriod)) s")
+
+  totalPeriod = framePeriod * get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64) *
+                              get_gtk_property(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64)
+
+  @idle_add begin
+    set_gtk_property!(m["entFramePeriod",EntryLeaf],:text,"$(@sprintf("%.5f",framePeriod)) s")
+
+    set_gtk_property!(m["entTotalPeriod",EntryLeaf],:text,"$(@sprintf("%.2f",totalPeriod)) s")
+  end
 end
 
 
