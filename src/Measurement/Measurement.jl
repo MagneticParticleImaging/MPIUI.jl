@@ -17,7 +17,7 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
     #g_timeout_add( ()->displayMeasurement(m), 1)
     #@tspawnat 1 displayMeasurement(m)
 
-    timerMeas = Timer( timer -> displayMeasurement(m, timer), 0.0, interval=0.1)
+    timerMeas = Timer( timer -> displayMeasurement(m, timer), 0.0, interval=0.001)
   catch ex
     showError(ex)
   end
@@ -34,18 +34,19 @@ function displayMeasurement(m::MeasurementWidget, timerMeas::Timer)
     deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
 
       if Base.istaskfailed(measState.task)
+        @info "Task Failed"
         close(timerMeas)
         @async showError(measState.task.exception,measState.task.backtrace)
         return
       end
-      infoMessage(m, "Frame $(measState.currFrame) / $(measState.numFrames)", "green")
+      #
       #@info "Frame $(measState.currFrame) / $(measState.numFrames)"
       fr = measState.currFrame
       if fr > 0 && !measState.consumed
+        infoMessage(m, "Frame $(measState.currFrame) / $(measState.numFrames)", "green")
         updateData(m.rawDataWidget, measState.buffer[:,:,:,fr:fr], deltaT)
         measState.consumed = true
       end
-      #@info "Frame $(measState.currFrame) / $(measState.numFrames)"
       if istaskdone(measState.task)
         close(timerMeas)
         infoMessage(m, "", "green")
@@ -53,7 +54,7 @@ function displayMeasurement(m::MeasurementWidget, timerMeas::Timer)
         updateData(m.rawDataWidget, m.filenameExperiment)
         updateExperimentStore(mpilab[], mpilab[].currentStudy)
       end
-      sleep(0.1)
+      #sleep(0.1)
     catch ex
       close(timerMeas)
       showError(ex)
