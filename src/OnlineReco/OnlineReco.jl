@@ -52,7 +52,7 @@ end
 
 
 
-const dv = Ref{Union{DataViewerWidget,Nothing}}(nothing)
+const dv = Ref{Union{DataViewer,Nothing}}(nothing)
 
 # Important parameter is "skipFrames"
 function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
@@ -71,13 +71,13 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
    end
 
    canvasHist = Canvas()
-   dv[].grid3D[1:2,3] = canvasHist
+   dv[].dvw.grid3D[1:2,3] = canvasHist
 
    #pb = ProgressBar()
    #dv[].grid3D[1:2,4] = pb
    #set_gtk_property!(pb,:fraction,0.1)
    
-   showall(dv[])
+   showall(dv[].dvw)
 
   frequencies = filterFrequencies(bSF, minFreq=minFreq, maxFreq=maxFreq,
                                   recChannels=recChannels, SNRThresh=SNRThresh, sortBySNR=sortBySNR)
@@ -114,7 +114,7 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
       frame = skipFrames==0 ? currFrame : min.(frame+skipFrames, currFrame) #skip frames, if measurement is fast enough
       newframe = true
       #set_gtk_property!(pb,:fraction, currFrame / acqNumFrames(b))
-      #showall(dv[])
+      #showall(dv[].dvw)
       
     end
 
@@ -154,7 +154,7 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
         images = cat(cF, images, dims=5)
         image = makeAxisArray(images, spacing(grid), grid.center, 1.0) 
 
-        updateData!(dv[], ImageMeta(image))
+        updateData!(dv[].dvw, ImageMeta(image))
         profile = reverse(vec(maximum(arraydata(image),dims=1:4)))
         p = Winston.plot(profile, "b-", linewidth=7)
         Winston.ylabel("c")
