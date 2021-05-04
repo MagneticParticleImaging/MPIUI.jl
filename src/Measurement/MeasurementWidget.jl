@@ -139,7 +139,9 @@ function MeasurementWidget(filenameConfig="")
 
   @debug "InitCallbacks"
 
-  initCallbacks(m)
+  if m.scanner != nothing
+    initCallbacks(m)
+  end
 
   # Dummy plotting for warmstart during measurement
   @idle_add updateData(m.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
