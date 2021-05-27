@@ -207,9 +207,21 @@ function initCallbacks(m_::RecoWidget)
 end
 
 function saveReco(m::RecoWidget)
-  if m.recoResult != nothing
-    m.recoResult["recoParams"][:description] = get_gtk_property(m["entRecoDescrip"], :text, String)
-    @idle_add addReco(mpilab[], m.recoResult, m.currentStudy, m.currentExperiment)
+  if m.recoResult !== nothing
+    m.recoResult.recoParams[:description] = get_gtk_property(m["entRecoDescrip"], :text, String)
+    if isassigned(mpilab)
+      @idle_add addReco(mpilab[], m.recoResult, m.currentStudy, m.currentExperiment)
+    else
+      if m.currentStudy !== nothing && m.currentExperiment !== nothing
+        # using MDFDatasetStore
+        addReco(getMDFStore(m.currentStudy), m.currentStudy, m.currentExperiment, m.recoResult)
+      else
+        # no DatasetStore -> save reco in the same folder as the measurement
+        pathfile = joinpath(split(filepath(m.bMeas),"/")[1:end-1]...,"reco")
+        saveRecoData(pathfile*".mdf",m.recoResult)
+        @info "Reconstruction saved at $(pathfile).mdf"
+      end
+    end
   end
 end
 
@@ -267,14 +279,15 @@ function initBGSubtractionWidgets(m::RecoWidget)
 
       for (i,exp) in enumerate(experiments)
 
-      m.bgExperiments[exp.num] = path(exp)
-      push!(m["cbBGMeasurements"], string(exp.num))
+        m.bgExperiments[exp.num] = path(exp)
+        push!(m["cbBGMeasurements"], string(exp.num))
 
-      if m.bMeas != nothing && filepath(m.bMeas) == path(exp)
-        idxFG = i-1
+        if m.bMeas != nothing && filepath(m.bMeas) == path(exp)
+          idxFG = i-1
+        end
+
+        @idle_add set_gtk_property!(m["cbBGMeasurements"],:active, idxFG)
       end
-
-      @idle_add set_gtk_property!(m["cbBGMeasurements"],:active, idxFG)
     end
   end
 end
@@ -407,7 +420,7 @@ function performReco_(m::RecoWidget)
       conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
     end
     m.recoResult = conc
-    m.recoResult["recoParams"] = getParams(m)
+    m.recoResult.recoParams = getParams(m)
     @idle_add begin
       updateData!(m.dv, m.recoResult)
       infoMessage(m, "")

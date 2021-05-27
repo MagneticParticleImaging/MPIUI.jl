@@ -1,9 +1,10 @@
 @testset "SFViewer" begin
     # Download data
-    download_("calibrations/17.mdf", "data/SF.mdf")
+    pathSF = joinpath(calibdir(datasetstore),"1.mdf")
+    download_("calibrations/17.mdf", pathSF)
 
     # Start SFViewer
-    s = SFViewer("data/SF.mdf")
+    s = SFViewer(pathSF)
     sleep(35)
     sf = s.sf     # SFViewerWidget
     dv = s.sf.dv  # DataViewerWidget

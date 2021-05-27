@@ -4,7 +4,7 @@ using HTTP, ImageMagick
 using Gtk, Cairo
 
 # download test data
-mkpath("./data/")
+datasetstore = MDFDatasetStore("./data")
 function download_(filenameServer, filenameLocal)
     if !isfile(filenameLocal)
       @info "download $(filenameLocal)..."
@@ -35,3 +35,4 @@ end
 
 # tests
 include("SFViewer.jl")
+include("RecoWidget.jl")

@@ -187,7 +187,7 @@ function drawImageCairo(c, image, isDrawSectionalLines, isDrawAxes, xsec, ysec,
   h = height(ctx)
   w = width(ctx)
 
-  im = copy(reverse(convert(ImageMeta{RGB{N0f8}},image).data,dims=1))
+  im = copy(reverse(arraydata(convert(ImageMeta{RGB{N0f8}},image)),dims=1))
   xsec_ = !flipX ? xsec : (size(im,2)-xsec+1)
   ysec_ = !flipY ? ysec : (size(im,1)-ysec+1)
   xx = w*(xsec_-0.5)/size(im,2)
