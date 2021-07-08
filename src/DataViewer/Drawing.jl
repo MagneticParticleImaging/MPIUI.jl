@@ -300,14 +300,17 @@ function showProfile(m::DataViewerWidget, params, slicesInRawData)
   prof = get_gtk_property(m["cbProfile"],:active, Int64) + 1
   if prof == 1
     m.currentProfile = vec(m.data[chan,:,slicesInRawData[2],slicesInRawData[3],params[:frame]])
+    showWinstonPlot(m, m.currentProfile, "x", "c")
   elseif prof == 2
     m.currentProfile = vec(m.data[chan,slicesInRawData[1],:,slicesInRawData[3],params[:frame]])
+    showWinstonPlot(m, m.currentProfile, "y", "c")
   elseif prof == 3
     m.currentProfile = vec(m.data[chan,slicesInRawData[1],slicesInRawData[2],:,params[:frame]])
+    showWinstonPlot(m, m.currentProfile, "z", "c")
   else
     m.currentProfile = vec(m.data[chan,slicesInRawData[1],slicesInRawData[2],slicesInRawData[3],:])
+    showWinstonPlot(m, m.currentProfile, "t", "c")
   end
-  showWinstonPlot(m, m.currentProfile, "c", "xyzt")
 end
 
 function showWinstonPlot(m::DataViewerWidget, data, xLabel::String, yLabel::String)

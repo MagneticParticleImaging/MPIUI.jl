@@ -103,8 +103,13 @@
 
     ## Line plots
     @testset "Line plots" begin
-        write_to_png(getgc(dv.grid3D[1,2]).surface,"img/xyzt.png")
-        @testImg("xyzt.png")
+        write_to_png(getgc(dv.grid3D[1,2]).surface,"img/cbProfile_x.png")
+        @testImg("cbProfile_x.png")
+        set_gtk_property!(dv["cbProfile"],:active, 1) # change to profile along y-axis
+        set_gtk_property!(dv["cbShowAxes"],:active, true) #updates profile plot
+        write_to_png(getgc(dv.grid3D[1,2]).surface,"img/cbProfile_y.png")
+        @testImg("cbProfile_y.png")
+        write_to_png(getgc(dv.grid3D[1,2]).surface,"img/cbProfile_y.png")
         write_to_png(getgc(sf.grid[1,2]).surface,"img/SNR.png")
         @testImg("SNR.png")
     end
