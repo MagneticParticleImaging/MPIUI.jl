@@ -1,9 +1,10 @@
 @testset "SFViewer" begin
     # Download data
-    download_("calibrations/17.mdf", "data/SF.mdf")
+    pathSF = joinpath(calibdir(datasetstore),"1.mdf")
+    download_("calibrations/17.mdf", pathSF)
 
     # Start SFViewer
-    s = SFViewer("data/SF.mdf")
+    s = SFViewer(pathSF)
     sleep(35)
     sf = s.sf     # SFViewerWidget
     dv = s.sf.dv  # DataViewerWidget
@@ -102,8 +103,13 @@
 
     ## Line plots
     @testset "Line plots" begin
-        write_to_png(getgc(dv.grid3D[1,2]).surface,"img/xyzt.png")
-        @testImg("xyzt.png")
+        write_to_png(getgc(dv.grid3D[1,2]).surface,"img/cbProfile_x.png")
+        @testImg("cbProfile_x.png")
+        set_gtk_property!(dv["cbProfile"],:active, 1) # change to profile along y-axis
+        set_gtk_property!(dv["cbShowAxes"],:active, true) #updates profile plot
+        write_to_png(getgc(dv.grid3D[1,2]).surface,"img/cbProfile_y.png")
+        @testImg("cbProfile_y.png")
+        write_to_png(getgc(dv.grid3D[1,2]).surface,"img/cbProfile_y.png")
         write_to_png(getgc(sf.grid[1,2]).surface,"img/SNR.png")
         @testImg("SNR.png")
     end
