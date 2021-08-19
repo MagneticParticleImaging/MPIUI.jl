@@ -33,10 +33,18 @@ function displayMeasurement(m::MeasurementWidget, timerMeas::Timer)
     daq = getDAQ(m.scanner)
     deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
 
-      if Base.istaskfailed(measState.task)
-        @info "Task Failed"
+      if Base.istaskfailed(measState.producer)
+        @info "Producer failed"
+        close(measState.channel)
         close(timerMeas)
-        @async showError(measState.task.exception,measState.task.backtrace)
+        @async showError(measState.producer.exception,measState.producer.backtrace)
+        return
+      end
+      if Base.istaskfailed(measState.consumer)
+        @info "Consumer failed"
+        close(measState.channel)
+        close(timerMeas)
+        @async showError(measState.consumer.exception,measState.consumer.backtrace)
         return
       end
       #
@@ -49,7 +57,7 @@ function displayMeasurement(m::MeasurementWidget, timerMeas::Timer)
         end
         measState.consumed = true
       end
-      if istaskdone(measState.task)
+      if istaskdone(measState.consumer)
         close(timerMeas)
         infoMessage(m, "", "green")
         m.filenameExperiment = measState.filename
