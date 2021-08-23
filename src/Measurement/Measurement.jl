@@ -11,7 +11,7 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
     bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
 
     # start measuremnt thread
-    m.measState = asyncMeasurement(m.scanner, m.mdfstore, params, bgdata)
+    m.measState = asyncMeasurement(m.scanner, params, bgdata, store = m.mdfstore)
 
     # start display thread
     #g_timeout_add( ()->displayMeasurement(m), 1)
@@ -78,12 +78,7 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
     params = merge!(getGeneralParams(m.scanner),getParams(m))
     params["acqNumFrames"] = params["acqNumBGFrames"]
 
-    setEnabled(getRobot(m.scanner), false)
-    enableACPower(getSurveillanceUnit(m.scanner), m.scanner)
-    uMeas = MPIMeasurements.measurement(getDAQ(m.scanner), params)
-    sleep(2)
-    disableACPower(getSurveillanceUnit(m.scanner), m.scanner)
-    setEnabled(getRobot(m.scanner), true)
+    uMeas = MPIMeasurements.measurement(m.scanner, params)
 
     m.dataBGStore = uMeas
     #updateData(m, u)
