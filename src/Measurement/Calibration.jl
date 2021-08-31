@@ -76,10 +76,10 @@ function displayCalibration(m::MeasurementWidget, timerCalibration::Timer)
 
         daq = getDAQ(m.scanner)
         deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
-        if !isempty(calibState.currentSignal)
-          uMeas = calibState.currentSignal
-          updateData(m.rawDataWidget, uMeas, deltaT)
-        end
+        #if !isempty(calibState.currentSignal)
+        #  uMeas = calibState.currentSignal
+        #  updateData(m.rawDataWidget, uMeas, deltaT)
+        #end
 
      end
 
