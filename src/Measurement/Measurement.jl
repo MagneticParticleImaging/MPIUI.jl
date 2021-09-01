@@ -51,9 +51,9 @@ function displayMeasurement(m::MeasurementWidget, timerMeas::Timer)
       #@info "Frame $(measState.currFrame) / $(measState.numFrames)"
       fr = measState.currFrame
       if fr > 0 && !measState.consumed
+        infoMessage(m, "Frame $(measState.currFrame) / $(measState.numFrames)", "green")
         if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf],:active, Bool)
-          #infoMessage(m, "Frame $(measState.currFrame) / $(measState.numFrames)", "green")
-          #updateData(m.rawDataWidget, measState.buffer[:,:,:,fr:fr], deltaT)
+          updateData(m.rawDataWidget, measState.buffer[:,:,:,fr:fr], deltaT)
         end
         measState.consumed = true
       end

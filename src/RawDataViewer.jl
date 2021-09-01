@@ -320,9 +320,9 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
                   ls, linewidth=2, ylog=true)
       end
     end
-    display(m.cTD, p1)
+    @idle_add display(m.cTD, p1)
     if showFD
-      display(m.cFD, p2)
+      @idle_add display(m.cFD, p2)
     end
 
     ### Harmonic Viewer ###
@@ -343,8 +343,6 @@ end
 
 
 function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
-  m.updatingData = true
-
   maxValOld = get_gtk_property(m["adjMinTP"],:upper, Int64)
 
   m.data = data
@@ -357,7 +355,7 @@ function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   maxVal = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
 
   @idle_add begin
-
+    m.updatingData = true
     if !fileModus
       set_gtk_property!(m["adjFrame"],:upper,size(data,4))
       if !(1 <= get_gtk_property(m["adjFrame"],:value,Int64) <= size(data,4))

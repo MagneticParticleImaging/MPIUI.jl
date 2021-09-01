@@ -1114,8 +1114,7 @@ function infoMessage(m::MPILab, message::String, color::String)
 end
 
 function infoMessage(m::MPILab, message::String)
-  #@idle_add 
-  set_gtk_property!(m["lbInfo"],:label, message)
+  @idle_add set_gtk_property!(m["lbInfo"],:label, message)
 end
 
 function progress(m::MPILab, startStop::Bool)
