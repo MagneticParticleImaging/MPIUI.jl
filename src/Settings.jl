@@ -1,5 +1,6 @@
 
 import FileIO: load, save
+using Pkg.TOML
 
 mutable struct Settings
   builder

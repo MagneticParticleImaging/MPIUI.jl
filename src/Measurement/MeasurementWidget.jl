@@ -6,6 +6,16 @@ mutable struct TemperatureLog
 end
 
 
+mutable struct SystemMatrixRobotMeas
+end
+
+function SystemMatrixRobotMeas(scanner, mdfstore)
+  return SystemMatrixRobotMeas()
+end
+
+mutable struct MeasState
+end
+
 mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder::Builder
@@ -49,7 +59,7 @@ function MeasurementWidget(filenameConfig="")
 
   if filenameConfig != ""
     scanner = MPIScanner(filenameConfig, guimode=true)
-    mdfstore = MDFDatasetStore( getGeneralParams(scanner)["datasetStore"] )
+    mdfstore = MDFDatasetStore( generalParams(scanner).datasetStore )
   else
     scanner = nothing
     mdfstore = MDFDatasetStore( "Dummy" )
@@ -97,11 +107,11 @@ function MeasurementWidget(filenameConfig="")
     end
 
     @idle_add begin
-      empty!(m["cbWaveform", ComboBoxTextLeaf])
+      #=empty!(m["cbWaveform", ComboBoxTextLeaf])
       for w in RedPitayaDAQServer.waveforms()
         push!(m["cbWaveform",ComboBoxTextLeaf], w)
       end
-      set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, 0)  
+      set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, 0) =# 
     end
   end
 
@@ -109,11 +119,11 @@ function MeasurementWidget(filenameConfig="")
   if m.scanner != nothing
     isRobRef = isReferenced(getRobot(m.scanner))
     setInfoParams(m)
-    setParams(m, merge!(getGeneralParams(m.scanner),toDict(getDAQ(m.scanner).params)))
+    # TODO setParams(m, merge!(generalParams(m.scanner),toDict(getDAQ(m.scanner).params)))
     @idle_add set_gtk_property!(m["entConfig",EntryLeaf],:text,filenameConfig)
     @idle_add set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isRobRef)
     enableRobotMoveButtons(m,isRobRef)
-    enableDFWaveformControls(m, get(getGeneralParams(m.scanner), "allowDFWaveformChanges", false))
+    # TODO enableDFWaveformControls(m, get(getGeneralParams(m.scanner), "allowDFWaveformChanges", false))
 
     if isRobRef
       try
@@ -461,7 +471,7 @@ function setInfoParams(m::MeasurementWidget)
 
   framePeriod = get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
                   (numPeriods == nothing ? 1 : numPeriods)  *
-                  daq.params.dfCycle
+                  1 #TODO daq.params.dfCycle
 
   totalPeriod = framePeriod * get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64) *
                               get_gtk_property(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64)
@@ -503,7 +513,7 @@ function getParams(m::MeasurementWidget)
   params["dfDivider"] = parse.(Int64,split(dfDividerStr," x "))
 
   params["acqFFSequence"] = get_gtk_property(m["entSequenceName",EntryLeaf], :text, String)
-  params["dfWaveform"] = RedPitayaDAQServer.waveforms()[get_gtk_property(m["cbWaveform",ComboBoxTextLeaf], :active, Int)+1]
+  #params["dfWaveform"] = RedPitayaDAQServer.waveforms()[get_gtk_property(m["cbWaveform",ComboBoxTextLeaf], :active, Int)+1]
 
   jump = get_gtk_property(m["entDFJumpSharpness",EntryLeaf], :text, String)
   params["jumpSharpness"] = parse(Float64, jump)
@@ -547,10 +557,10 @@ function setParams(m::MeasurementWidget, params)
   end
 
   if haskey(params,"dfWaveform")
-    idx = findfirst_(RedPitayaDAQServer.waveforms(), params["dfWaveform"])
+    #=idx = findfirst_(RedPitayaDAQServer.waveforms(), params["dfWaveform"])
     if idx > 0
       @idle_add set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, idx-1)
-    end
+    end=#
   else
       @idle_add set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, 0)
   end  

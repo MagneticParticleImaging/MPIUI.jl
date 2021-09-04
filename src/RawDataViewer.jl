@@ -403,4 +403,4 @@ function updateData(m::RawDataWidget, filename::String)
   loadData(C_NULL, m)
   return nothing
 end
-s
+
