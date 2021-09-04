@@ -8,13 +8,14 @@ mutable struct SequenceSelectionDialog <: Gtk.GtkDialog
   selection
   box::Box
   canvas
+  scanner::MPIScanner
   sequences::Vector{String}
   updating::Bool
   dfCycle::Float64
 end
 
 
-function SequenceSelectionDialog(params::Dict)
+function SequenceSelectionDialog(scanner::MPIScanner, params::Dict)
 
   dialog = Dialog("Select Sequence", mpilab[]["mainWindow"], GtkDialogFlags.MODAL,
                         Dict("gtk-cancel" => GtkResponseType.CANCEL,
@@ -64,10 +65,10 @@ function SequenceSelectionDialog(params::Dict)
   push!(box,canvas)
   set_gtk_property!(box,:expand, canvas, true)
 
-  sequences = sequenceList()
+  sequences = getSequenceList(scanner)
 
   dlg = SequenceSelectionDialog(dialog.handle, store, tmSorted, tv, selection, 
-                                box, canvas, sequences, false, params["dfCycle"])
+                                box, canvas, scanner, sequences, false, 1.0)
 
   updateData!(dlg)
 
@@ -83,16 +84,16 @@ function SequenceSelectionDialog(params::Dict)
       seq = TreeModel(tmSorted)[currentIt,1]
 
       @idle_add begin
-        s = Sequence(seq)
+        s = Sequence(scanner, seq)
 
         p = Winston.FramedPlot(xlabel="time / s", ylabel="field / ???")
         
-        t = (1:acqNumPatches(s)) .* (acqNumPeriodsPerFrame(s) * params["dfCycle"] / acqNumPatches(s)) 
+        t = (1:acqNumPatches(s)) .* (acqNumPeriodsPerFrame(s) * ustrip(dfCycle(s)) / acqNumPatches(s)) 
 
-        colors = ["blue","green","red", "magenta", "cyan", "black", "gray"]
-        for i=1:size(s.values,1)
-          Winston.add(p, Winston.Curve(t, s.values[i,:], color=colors[i], linewidth=4))
-        end
+        #colors = ["blue","green","red", "magenta", "cyan", "black", "gray"]
+        #for i=1:size(s.values,1)
+        #  Winston.add(p, Winston.Curve(t, s.values[i,:], color=colors[i], linewidth=4))
+        #end
         display(canvas, p)
 
       end
@@ -112,9 +113,10 @@ function updateData!(m::SequenceSelectionDialog)
       empty!(m.store)
 
       for seq in m.sequences
-        s = Sequence(seq)
+        s = Sequence(m.scanner, seq)
         
-        time = m.dfCycle * acqNumPeriodsPerFrame(s)
+        time = ustrip(dfCycle(s)) * acqNumPeriodsPerFrame(s)
+        @info (acqNumPeriodsPerFrame(s), acqNumPatches(s), acqNumPeriodsPerPatch(s), time, true)
         push!(m.store, (seq, acqNumPeriodsPerFrame(s), acqNumPatches(s), acqNumPeriodsPerPatch(s), time, true))
       end
       m.updating = false
