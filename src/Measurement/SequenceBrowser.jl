@@ -11,7 +11,6 @@ mutable struct SequenceSelectionDialog <: Gtk.GtkDialog
   scanner::MPIScanner
   sequences::Vector{String}
   updating::Bool
-  dfCycle::Float64
 end
 
 
@@ -24,7 +23,7 @@ function SequenceSelectionDialog(scanner::MPIScanner, params::Dict)
   resize!(dialog, 1024, 600)
   box = G_.content_area(dialog)
 
-  store = ListStore(String,Int,Int,Int,Float64,Bool)
+  store = ListStore(String,Int,Int,Int,Float64,String,Bool)
 
   tv = TreeView(TreeModel(store))
   r1 = CellRendererText()
@@ -35,8 +34,9 @@ function SequenceSelectionDialog(scanner::MPIScanner, params::Dict)
   c2 = TreeViewColumn("#Patches", r1, Dict("text" => 2))
   c3 = TreeViewColumn("#PeriodsPerPatch", r1, Dict("text" => 3))
   c4 = TreeViewColumn("FramePeriod", r1, Dict("text" => 4))
+  c5 = TreeViewColumn("DFStrength", r1, Dict("text" => 5))
 
-  for (i,c) in enumerate((c0,c1,c2,c3,c4))
+  for (i,c) in enumerate((c0,c1,c2,c3,c4,c5))
     G_.sort_column_id(c,i-1)
     G_.resizable(c,true)
     G_.max_width(c,80)
@@ -47,9 +47,10 @@ function SequenceSelectionDialog(scanner::MPIScanner, params::Dict)
   G_.max_width(c1,200)
   G_.max_width(c2,200)
   G_.max_width(c3,200)
+  G_.max_width(c4,200)
 
   tmFiltered = TreeModelFilter(store)
-  G_.visible_column(tmFiltered,5)
+  G_.visible_column(tmFiltered,6)
   tmSorted = TreeModelSort(tmFiltered)
   G_.model(tv, tmSorted)
 
@@ -68,7 +69,7 @@ function SequenceSelectionDialog(scanner::MPIScanner, params::Dict)
   sequences = getSequenceList(scanner)
 
   dlg = SequenceSelectionDialog(dialog.handle, store, tmSorted, tv, selection, 
-                                box, canvas, scanner, sequences, false, 1.0)
+                                box, canvas, scanner, sequences, false)
 
   updateData!(dlg)
 
@@ -90,10 +91,11 @@ function SequenceSelectionDialog(scanner::MPIScanner, params::Dict)
         
         t = (1:acqNumPatches(s)) .* (acqNumPeriodsPerFrame(s) * ustrip(dfCycle(s)) / acqNumPatches(s)) 
 
-        #colors = ["blue","green","red", "magenta", "cyan", "black", "gray"]
-        #for i=1:size(s.values,1)
-        #  Winston.add(p, Winston.Curve(t, s.values[i,:], color=colors[i], linewidth=4))
-        #end
+        channels = acyclicElectricalTxChannels(s)
+        colors = ["blue","green","red", "magenta", "cyan", "black", "gray"]
+        for i=1:length(channels)
+          Winston.add(p, Winston.Curve(t, ustrip.(MPIFiles.values(channels[i])), color=colors[i], linewidth=4))
+        end
         display(canvas, p)
 
       end
@@ -116,8 +118,9 @@ function updateData!(m::SequenceSelectionDialog)
         s = Sequence(m.scanner, seq)
         
         time = ustrip(dfCycle(s)) * acqNumPeriodsPerFrame(s)
+        dfString = *([ string(x*1e3," x ") for x in diag(ustrip.(dfStrength(s)[1,:,:])) ]...)[1:end-3]
         @info (acqNumPeriodsPerFrame(s), acqNumPatches(s), acqNumPeriodsPerPatch(s), time, true)
-        push!(m.store, (seq, acqNumPeriodsPerFrame(s), acqNumPatches(s), acqNumPeriodsPerPatch(s), time, true))
+        push!(m.store, (seq, acqNumPeriodsPerFrame(s), acqNumPatches(s), acqNumPeriodsPerPatch(s), time, dfString, true))
       end
       m.updating = false
   end

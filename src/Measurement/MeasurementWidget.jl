@@ -401,15 +401,18 @@ end
 
 function updateSequence(m::MeasurementWidget, seq::AbstractString)
   set_gtk_property!(m["entSequenceName",EntryLeaf], :text, seq)
-  m.scanner.currentSequence = Sequence(m.scanner, seq)
+  s = m.scanner.currentSequence = Sequence(m.scanner, seq)
 
-  #if seq in sequenceList()
-  #  s = Sequence(seq)
+  set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
+  set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
 
-  set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(m.scanner.currentSequence))")
-  set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(m.scanner.currentSequence))")
+  dfString = *([ string(x*1e3," x ") for x in diag(ustrip.(dfStrength(s)[1,:,:])) ]...)[1:end-3]
+  set_gtk_property!(m["entDFStrength",EntryLeaf], :text, dfString)
+  dfDividerStr = *([ string(x," x ") for x in unique(vec(dfDivider(s))) ]...)[1:end-3]
+  set_gtk_property!(m["entDFDivider",EntryLeaf], :text, dfDividerStr)
+
   setInfoParams(m)
-  #end
+
 end
 
 function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
@@ -489,8 +492,6 @@ end
 
 
 function getParams(m::MeasurementWidget)
-  @info "Test"
-
   params = Dict{String,Any}() # TODO toDict(getDAQ(m.scanner).params)
 
   params["acqNumAverages"] = get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64)
@@ -513,16 +514,10 @@ function getParams(m::MeasurementWidget)
   params["tracerConcentration"] = [1e-3*get_gtk_property(m["adjTracerConcentration",AdjustmentLeaf], :value, Float64)]
   params["tracerSolute"] = [get_gtk_property(m["entTracerSolute",EntryLeaf], :text, String)]
 
-  @info "Allo"
-
   dfString = get_gtk_property(m["entDFStrength",EntryLeaf], :text, String)
   params["dfStrength"] = parse.(Float64,split(dfString," x "))*1e-3
   dfDividerStr = get_gtk_property(m["entDFDivider",EntryLeaf], :text, String)
   params["dfDivider"] = parse.(Int64,split(dfDividerStr," x "))
-
-
-  @info "Allo"
-
 
   params["acqFFSequence"] = get_gtk_property(m["entSequenceName",EntryLeaf], :text, String)
   #params["dfWaveform"] = RedPitayaDAQServer.waveforms()[get_gtk_property(m["cbWaveform",ComboBoxTextLeaf], :active, Int)+1]
@@ -532,7 +527,6 @@ function getParams(m::MeasurementWidget)
 
   params["storeAsSystemMatrix"] = get_gtk_property(m["cbStoreAsSystemMatrix",CheckButtonLeaf],:active, Bool)
 
-  @info "MoinMoin"
   return params
 end
 
