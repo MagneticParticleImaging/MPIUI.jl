@@ -59,7 +59,7 @@ function displayMeasurement(m::MeasurementWidget, timerMeas::Timer)
     if fr > 0 && !measController.measState.consumed
       infoMessage(m, "Frame $(measController.measState.currFrame) / $(measController.measState.numFrames)", "green")
       if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
-        #updateData(m.rawDataWidget, measController.measState.buffer[:,:,:,fr:fr], deltaT)
+        updateData(m.rawDataWidget, measController.measState.buffer[:,:,:,fr:fr], deltaT)
       end
       measController.measState.consumed = true
     end
@@ -68,7 +68,7 @@ function displayMeasurement(m::MeasurementWidget, timerMeas::Timer)
       infoMessage(m, "", "green")
       # TODO update storage
       #m.filenameExperiment = measController.filename
-      #updateData(m.rawDataWidget, m.filenameExperiment)
+      updateData(m.rawDataWidget, m.filenameExperiment)
       #updateExperimentStore(mpilab[], mpilab[].currentStudy)
     end
     # sleep(0.1)
@@ -88,9 +88,8 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
       uMeas = MPIMeasurements.measurement(m.measController, m.scanner.currentSequence)
 
       if !isnothing(uMeas)
-        #TODO implement
-        #m.dataBGStore = uMeas
-        #updateData(m, uMeas)
+        m.dataBGStore = uMeas
+        updateData(m.rawDataWidget, uMeas)
       end
     end
 
