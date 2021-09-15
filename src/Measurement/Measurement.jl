@@ -89,6 +89,7 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
 
       if !isnothing(uMeas)
         m.dataBGStore = uMeas
+        # TODO comment out later
         updateData(m.rawDataWidget, uMeas)
       end
     end

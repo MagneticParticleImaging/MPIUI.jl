@@ -159,6 +159,14 @@ function MeasurementWidget(filenameConfig="")
   # Dummy plotting for warmstart during measurement
   @idle_add updateData(m.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
 
+  if !isnothing(m.scanner) && !isnothing(m.scanner.currentSequence)
+    @idle_add begin
+      set_gtk_property!(m["adjNumFGFrames", AdjustmentLeaf], :value, acqNumFrames(scanner.currentSequence))
+      set_gtk_property!(m["adjNumFrameAverages", AdjustmentLeaf], :value, acqNumFrameAverages(scanner.currentSequence))
+      set_gtk_property!(m["adjNumAverages", AdjustmentLeaf], :value, acqNumAverages(scanner.currentSequence))
+    end
+  end
+
   @info "Finished starting MeasurementWidget"
 
   return m
@@ -420,22 +428,25 @@ function initCallbacks(m::MeasurementWidget)
 end
 
 function updateSequence(m::MeasurementWidget, seq::AbstractString)
-  set_gtk_property!(m["entSequenceName",EntryLeaf], :text, seq)
   s = m.scanner.currentSequence = Sequence(m.scanner, seq)
-
-  set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
-  set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
-
-  @idle_add set_gtk_property!(m["adjNumFGFrames", AdjustmentLeaf], :value, acqNumFrames(s))
-  @idle_add set_gtk_property!(m["adjNumFrameAverages", AdjustmentLeaf], :value, acqNumFrameAverages(s))
-  @idle_add set_gtk_property!(m["adjNumAverages", AdjustmentLeaf], :value, acqNumAverages(s))
-
   dfString = *([ string(x*1e3," x ") for x in diag(ustrip.(dfStrength(s)[1,:,:])) ]...)[1:end-3]
-  set_gtk_property!(m["entDFStrength",EntryLeaf], :text, dfString)
   dfDividerStr = *([ string(x," x ") for x in unique(vec(dfDivider(s))) ]...)[1:end-3]
-  set_gtk_property!(m["entDFDivider",EntryLeaf], :text, dfDividerStr)
 
-  setInfoParams(m)
+  @idle_add begin
+    set_gtk_property!(m["entSequenceName",EntryLeaf], :text, seq)
+
+    set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
+    set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
+
+    set_gtk_property!(m["adjNumFGFrames", AdjustmentLeaf], :value, acqNumFrames(s))
+    set_gtk_property!(m["adjNumFrameAverages", AdjustmentLeaf], :value, acqNumFrameAverages(s))
+    set_gtk_property!(m["adjNumAverages", AdjustmentLeaf], :value, acqNumAverages(s))
+
+    set_gtk_property!(m["entDFStrength",EntryLeaf], :text, dfString)
+    set_gtk_property!(m["entDFDivider",EntryLeaf], :text, dfDividerStr)
+
+    setInfoParams(m)
+  end
 
 end
 
