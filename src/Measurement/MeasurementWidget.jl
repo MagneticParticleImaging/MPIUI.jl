@@ -371,6 +371,24 @@ function initCallbacks(m::MeasurementWidget)
     end
   end
 
+  # Update sequence
+  signal_connect(m["adjNumFGFrames", AdjustmentLeaf], "value_changed") do w
+    if !isnothing(m.scanner.currentSequence)
+      acqNumFrames(m.scanner.currentSequence, get_gtk_property(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64))
+    end
+  end
+  signal_connect(m["adjNumFrameAverages",AdjustmentLeaf], "value_changed") do w
+    if !isnothing(m.scanner.currentSequence)
+      acqNumFrameAverages(m.scanner.currentSequence, get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64))
+    end
+
+  end
+  signal_connect(m["adjNumAverages",AdjustmentLeaf], "value_changed") do w
+    if !isnothing(m.scanner.currentSequence)
+      acqNumAverages(m.scanner.currentSequence, get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64))
+    end
+  end
+
   signal_connect(m["entGridShape",EntryLeaf], "changed") do w
     updateCalibTime(C_NULL, m)
   end

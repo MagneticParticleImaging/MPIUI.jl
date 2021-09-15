@@ -80,7 +80,7 @@ end
 
 
 function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
-        try
+  try
     @idle_add @info "Calling BG measurement"
 
     # TODO add background paramter/triggers
