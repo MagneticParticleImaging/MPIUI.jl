@@ -26,7 +26,7 @@ function prepareCalibration(m::MeasurementWidget)
     if get_gtk_property(m["cbUseArbitraryPos",CheckButtonLeaf], :active, Bool) == false
         cartGrid = RegularGridPositions(shp,fov,ctr)#
     else
-        filename = get_gtk_property(m["entArbitraryPos"],EntryLeaf,:text,String)
+        filename = get_gtk_property(m["entArbitraryPos",EntryLeaf],:text,String)
         if filename != ""
             cartGrid = h5open(filename, "r") do file
                 positions = Positions(file)
@@ -44,7 +44,7 @@ function prepareCalibration(m::MeasurementWidget)
     end
 
     for pos in positions
-      isValid = checkCoords(getRobotSetupUI(m), pos, getMinMaxPosX(getRobot(m.scanner)))
+      isValid = checkCoords(getRobotSetupUI(m), uconvert.(Unitful.mm,pos), getMinMaxPosX(getRobot(m.scanner)))
     end
 
     params = merge!(getGeneralParams(m.scanner),getParams(m))
