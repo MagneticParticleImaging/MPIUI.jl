@@ -5,8 +5,9 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
     try
       @idle_add @info "Calling measurement"
 
-        #params = merge!(getGeneralParams(m.scanner), getParams(m))
-        #params["acqNumFrames"] = params["acqNumFGFrames"]
+      params = getParams(m)
+      m.scanner.currentSequence.acquisition.numFrames = params["acqNumFGFrames"]
+      m.scanner.currentSequence.acquisition.numFrameAverages = params["acqNumFrameAverages"]
 
       bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
 
@@ -37,7 +38,7 @@ function displayMeasurement(m::MeasurementWidget, timerMeas::Timer)
 
     if Base.istaskfailed(measController.producer)
       @info "Producer failed"
-      close(measController.state.channel)
+      close(measController.measState.channel)
       close(timerMeas)
       stack = Base.catch_stack(measController.producer)[1]
       @error stack[1]
@@ -66,10 +67,16 @@ function displayMeasurement(m::MeasurementWidget, timerMeas::Timer)
     if istaskdone(measController.consumer)
       close(timerMeas)
       infoMessage(m, "", "green")
-      # TODO update storage
-      #m.filenameExperiment = measController.filename
+
+      params = Dict{Symbol, Any}()
+      params[:studyName] = m.currStudyName
+      params[:studyDate] = m.currStudyDate
+      params[:bgdata] = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore 
+
+      m.filenameExperiment = MPIFiles.saveasMDF(m.mdfstore, m.scanner, measController, params)
+      
       updateData(m.rawDataWidget, m.filenameExperiment)
-      #updateExperimentStore(mpilab[], mpilab[].currentStudy)
+      updateExperimentStore(mpilab[], mpilab[].currentStudy)
     end
     # sleep(0.1)
   catch ex
@@ -85,6 +92,11 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
 
     # TODO add background paramter/triggers
     if !isnothing(m.measController)
+
+      params = getParams(m)
+      m.scanner.currentSequence.acquisition.numFrames = params["acqNumBGFrames"]
+      m.scanner.currentSequence.acquisition.numFrameAverages = params["acqNumFrameAverages"]
+
       uMeas = MPIMeasurements.measurement(m.measController, m.scanner.currentSequence)
 
       if !isnothing(uMeas)
