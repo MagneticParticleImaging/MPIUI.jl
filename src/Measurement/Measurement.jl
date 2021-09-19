@@ -68,13 +68,12 @@ function displayMeasurement(m::MeasurementWidget, timerMeas::Timer)
       close(timerMeas)
       infoMessage(m, "", "green")
 
-      params = Dict{Symbol, Any}()
-      params[:studyName] = m.currStudyName
-      params[:studyDate] = m.currStudyDate
-      params[:bgdata] = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore 
+      params = getParams(m)
+      bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore 
 
-      m.filenameExperiment = MPIFiles.saveasMDF(m.mdfstore, m.scanner, measController, params)
-      
+      m.filenameExperiment = MPIFiles.saveasMDF(m.mdfstore, m.scanner, 
+                                  measController.measState.buffer, params; bgdata=bgdata)
+
       updateData(m.rawDataWidget, m.filenameExperiment)
       updateExperimentStore(mpilab[], mpilab[].currentStudy)
     end
