@@ -639,13 +639,13 @@ function getRobotSetupUI(m::MeasurementWidget)
     coil = getValidHeadScannerGeos()[get_gtk_property(m["cbSafeCoil",ComboBoxTextLeaf], :active, Int)+1]
     obj = getValidHeadObjects()[get_gtk_property(m["cbSafeObject",ComboBoxTextLeaf], :active, Int)+1]
     if obj.name == customPhantom3D.name
-        obj = getCustomPhatom(m)
+        obj = getCustomPhantom(m)
     end
     setup = RobotSetup("UIRobotSetup",obj,coil,clearance)
     return setup
 end
 
-function getCustomPhatom(m::MeasurementWidget)
+function getCustomPhantom(m::MeasurementWidget)
     cPStr = get_gtk_property(m["entSafetyObj",EntryLeaf],:text,String)
     cP_ = tryparse.(Float64,split(cPStr,"x"))
     cP= cP_ .*1Unitful.mm
