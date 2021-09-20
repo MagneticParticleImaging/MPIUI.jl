@@ -581,6 +581,7 @@ function setParams(m::MeasurementWidget, scanner::MPIScanner)
   @idle_add set_gtk_property!(m["entDFStrength",EntryLeaf], :text, dfString)
   dfDividerStr = *([ string(x," x ") for x in unique(vec(dfDivider(seq))) ]...)[1:end-3]
   @idle_add set_gtk_property!(m["entDFDivider",EntryLeaf], :text, dfDividerStr)
+  @idle_add set_gtk_property!(m["entSequenceName", EntryLeaf], :text, MPIFiles.name(seq))
 
   #TODO @idle_add set_gtk_property!(m["entDFJumpSharpness",EntryLeaf], :text, "$(get(params,"jumpSharpness", 0.1))")
 
