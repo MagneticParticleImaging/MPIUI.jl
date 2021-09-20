@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.22.1 -->
+<!-- Generated with glade 3.20.0 -->
 <interface>
   <requires lib="gtk+" version="3.12"/>
   <object class="GtkAdjustment" id="adjAverages">
@@ -716,81 +716,16 @@
     <property name="can_focus">False</property>
     <property name="stock">gtk-media-record</property>
   </object>
+  <object class="GtkImage" id="imScanner">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-preferences</property>
+  </object>
   <object class="GtkWindow" id="mainWindow">
     <property name="can_focus">False</property>
     <property name="default_width">1024</property>
     <property name="default_height">768</property>
     <property name="icon_name">MPILab</property>
-    <child type="titlebar">
-      <object class="GtkHeaderBar">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="title" translatable="yes">MPILab</property>
-        <property name="show_close_button">True</property>
-        <child>
-          <object class="GtkComboBoxText" id="cbDatasetStores">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkToggleButton" id="tbDataTab">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="image">imData</property>
-            <property name="always_show_image">True</property>
-          </object>
-          <packing>
-            <property name="position">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkToggleButton" id="tbCalibrationTab">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="image">imCalib</property>
-            <property name="always_show_image">True</property>
-          </object>
-          <packing>
-            <property name="position">2</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkToggleButton" id="tbMeasurementTab">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="image">imMeas</property>
-            <property name="always_show_image">True</property>
-          </object>
-          <packing>
-            <property name="position">4</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkSpinner" id="spProgress">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-          </object>
-          <packing>
-            <property name="pack_type">end</property>
-            <property name="position">3</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkLabel" id="lbInfo">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-          </object>
-          <packing>
-            <property name="pack_type">end</property>
-            <property name="position">5</property>
-          </packing>
-        </child>
-      </object>
-    </child>
     <child>
       <object class="GtkPaned">
         <property name="visible">True</property>
@@ -1370,6 +1305,30 @@
                     <property name="tab_fill">False</property>
                   </packing>
                 </child>
+                <child>
+                  <object class="GtkBox" id="boxScanner">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child type="tab">
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Scanner Settings</property>
+                  </object>
+                  <packing>
+                    <property name="position">2</property>
+                    <property name="tab_fill">False</property>
+                  </packing>
+                </child>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -1509,7 +1468,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkBox" id="boxSettings">
+              <object class="GtkBox" id="boxScannerTab">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="orientation">vertical</property>
@@ -1525,7 +1484,7 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Settings</property>
+                <property name="label" translatable="yes">Scanner</property>
               </object>
               <packing>
                 <property name="position">5</property>
@@ -1540,6 +1499,88 @@
         </child>
       </object>
     </child>
+    <child type="titlebar">
+      <object class="GtkHeaderBar">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="title">MPILab</property>
+        <property name="show_close_button">True</property>
+        <child>
+          <object class="GtkComboBoxText" id="cbDatasetStores">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkToggleButton" id="tbDataTab">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">imData</property>
+            <property name="always_show_image">True</property>
+          </object>
+          <packing>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkToggleButton" id="tbCalibrationTab">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">imCalib</property>
+            <property name="always_show_image">True</property>
+          </object>
+          <packing>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkToggleButton" id="tbMeasurementTab">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">imMeas</property>
+            <property name="always_show_image">True</property>
+          </object>
+          <packing>
+            <property name="position">4</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkToggleButton" id="tbScannerTab">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">imScanner</property>
+            <property name="always_show_image">True</property>
+          </object>
+          <packing>
+            <property name="position">4</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSpinner" id="spProgress">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="pack_type">end</property>
+            <property name="position">3</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="lbInfo">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="pack_type">end</property>
+            <property name="position">5</property>
+          </packing>
+        </child>
+      </object>
+    </child>
   </object>
   <object class="GtkWindow" id="recoWindow">
     <property name="can_focus">False</property>
@@ -1549,16 +1590,10 @@
     <child>
       <placeholder/>
     </child>
-    <child>
-      <placeholder/>
-    </child>
   </object>
   <object class="GtkDialog" id="sfSelectorDialog">
     <property name="can_focus">False</property>
     <property name="type_hint">dialog</property>
-    <child>
-      <placeholder/>
-    </child>
     <child internal-child="vbox">
       <object class="GtkBox" id="dialog-vbox1">
         <property name="can_focus">False</property>
