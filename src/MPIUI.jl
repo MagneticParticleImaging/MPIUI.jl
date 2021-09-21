@@ -13,6 +13,7 @@ using InteractiveUtils
 using ImageUtils: converttometer, ColoringParams
 using MPIMeasurements.Sockets
 using Logging, LoggingExtras
+using ThreadPools
 
 ENV["MPILIB_UI"] = "Nothing"
 

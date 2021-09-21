@@ -94,7 +94,37 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
       m.scanner.currentSequence.acquisition.numFrames = params["acqNumBGFrames"]
       m.scanner.currentSequence.acquisition.numFrameAverages = params["acqNumFrameAverages"]
 
-      uMeas = MPIMeasurements.measurement(m.scanner)
+      # Get Acquisition Protocol
+      protocol = Protocol("MPIMeasurement", m.scanner)
+      channel = init(protocol) # Atm init sets protocol.sequence, but we want to overwrite it to the current sequence
+      protocol.sequence = m.scanner.currentSequence
+      @tspawnat m.scanner.generalParams.consumerThreadID execute(protocol)
+
+      uMeas = nothing
+      while isopen(channel) || isready(channel)
+        while isready(channel)
+          event = take!(channel)
+          if event isa DecisionEvent
+            @info "Received question from protocol"
+            reply = ask_dialog(event.message, "No", "Yes", mpilab[]["mainWindow"])
+            # We ask for result before we answer as the protocol blocks atm
+            query = DataQueryEvent("This string is not used atm")
+            put!(channel, query)
+            answerEvent = AnswerEvent(reply, event)
+            put!(channel, answerEvent)
+          elseif event isa DataAnswerEvent
+            @info "Received data answer"
+            uMeas = event.data
+          else
+            @info "Unexpected event $event"
+          end
+        end
+        sleep(0.01)
+      end
+
+      cleanup(protocol)
+
+      #uMeas = MPIMeasurements.measurement(m.scanner)
 
       if !isnothing(uMeas)
         m.dataBGStore = uMeas
