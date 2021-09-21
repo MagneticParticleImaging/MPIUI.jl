@@ -96,22 +96,18 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
 
       # Get Acquisition Protocol
       protocol = Protocol("MPIMeasurement", m.scanner)
-      channel = init(protocol) # Atm init sets protocol.sequence, but we want to overwrite it to the current sequence
-      protocol.sequence = m.scanner.currentSequence
-      @tspawnat m.scanner.generalParams.consumerThreadID execute(protocol)
+      channel = init(protocol)
+      @tspawnat 1 execute(protocol)
 
       uMeas = nothing
       while isopen(channel) || isready(channel)
         while isready(channel)
           event = take!(channel)
-          if event isa DecisionEvent
-            @info "Received question from protocol"
-            reply = ask_dialog(event.message, "No", "Yes", mpilab[]["mainWindow"])
-            # We ask for result before we answer as the protocol blocks atm
+          if event isa FinishedNotificationEvent
             query = DataQueryEvent("This string is not used atm")
             put!(channel, query)
-            answerEvent = AnswerEvent(reply, event)
-            put!(channel, answerEvent)
+            ackEvent = FinishedAckEvent()
+            put!(channel, ackEvent)
           elseif event isa DataAnswerEvent
             @info "Received data answer"
             uMeas = event.data
