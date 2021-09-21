@@ -12,10 +12,8 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
       bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
 
       # start measuremnt thread
-      if !isnothing(m.measController)
-       asyncMeasurement(m.measController, m.scanner.currentSequence)
+      asyncMeasurement(m.scanner)
         # m.measState = asyncMeasurement(m.scanner, params, bgdata, store = m.mdfstore)
-      end
     # start display thread
     # g_timeout_add( ()->displayMeasurement(m), 1)
     # @tspawnat 1 displayMeasurement(m)
@@ -31,40 +29,40 @@ end
 
 function displayMeasurement(m::MeasurementWidget, timerMeas::Timer)
   try
-    measController = m.measController
-
     seq = m.scanner.currentSequence
     deltaT = dfCycle(seq) / rxNumSamplesPerPeriod(seq)
 
-    if Base.istaskfailed(measController.producer)
+    if Base.istaskfailed(m.scanner.seqMeasState.producer)
       @info "Producer failed"
-      close(measController.measState.channel)
+      close(m.scanner.seqMeasState.channel)
       close(timerMeas)
-      stack = Base.catch_stack(measController.producer)[1]
+      stack = Base.catch_stack(m.scanner.seqMeasState.producer)[1]
       @error stack[1]
       @error stacktrace(stack[2])
         return
     end
-    if Base.istaskfailed(measController.consumer)
+    if Base.istaskfailed(m.scanner.seqMeasState.consumer)
       @info "Consumer failed"
-      close(measController.measState.channel)
+      close(m.scanner.seqMeasState.channel)
       close(timerMeas)
-      stack = Base.catch_stack(measController.consumer)[1]
+      stack = Base.catch_stack(m.scanner.seqMeasState.consumer)[1]
       @error stack[1]
       @error stacktrace(stack[2])
         return
     end
     #
     # @info "Frame $(measState.currFrame) / $(measState.numFrames)"
-    fr = measController.measState.currFrame
-    if fr > 0 && !measController.measState.consumed
-      infoMessage(m, "Frame $(measController.measState.currFrame) / $(measController.measState.numFrames)", "green")
+    #fr = measController.measState.currFrame TODO implement live update
+    fr = 0
+    if fr > 0 
+      #&& !measController.measState.consumed
+      #infoMessage(m, "Frame $(measController.measState.currFrame) / $(measController.measState.numFrames)", "green")
       if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
-        updateData(m.rawDataWidget, measController.measState.buffer[:,:,:,fr:fr], deltaT)
+        updateData(m.rawDataWidget, m.scanner.seqMeasState.buffer[:,:,:,fr:fr], deltaT)
       end
-      measController.measState.consumed = true
+      #measController.measState.consumed = true
     end
-    if istaskdone(measController.consumer)
+    if istaskdone(m.scanner.seqMeasState.consumer)
       close(timerMeas)
       infoMessage(m, "", "green")
 
@@ -72,7 +70,7 @@ function displayMeasurement(m::MeasurementWidget, timerMeas::Timer)
       bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore 
 
       m.filenameExperiment = MPIFiles.saveasMDF(m.mdfstore, m.scanner, 
-                                  measController.measState.buffer, params; bgdata=bgdata)
+                                  m.scanner.seqMeasState.buffer, params; bgdata=bgdata)
 
       updateData(m.rawDataWidget, m.filenameExperiment)
       updateExperimentStore(mpilab[], mpilab[].currentStudy)
@@ -96,7 +94,7 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
       m.scanner.currentSequence.acquisition.numFrames = params["acqNumBGFrames"]
       m.scanner.currentSequence.acquisition.numFrameAverages = params["acqNumFrameAverages"]
 
-      uMeas = MPIMeasurements.measurement(m.measController, m.scanner.currentSequence)
+      uMeas = MPIMeasurements.measurement(m.scanner)
 
       if !isnothing(uMeas)
         m.dataBGStore = uMeas

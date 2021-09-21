@@ -29,7 +29,6 @@ mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   expanded::Bool
   message::String
   calibState::SystemMatrixRobotMeas
-  measController::Union{MeasurementController, Nothing}
   calibInProgress::Bool
   temperatureLog::TemperatureLog
 end
@@ -58,12 +57,10 @@ function MeasurementWidget(filenameConfig="")
   #filenameConfig=nothing
 
   if filenameConfig != ""
-    scanner = MPIScanner(filenameConfig, guimode=true)
-    measCont = getDevices(scanner, MeasurementController)[1]
+    scanner = MPIScanner(filenameConfig)
     mdfstore = MDFDatasetStore( generalParams(scanner).datasetStore )
   else
     scanner = nothing
-    measCont = nothing
     mdfstore = MDFDatasetStore( "Dummy" )
   end
 
@@ -73,7 +70,7 @@ function MeasurementWidget(filenameConfig="")
   m = MeasurementWidget( mainBox.handle, b,
                   scanner, zeros(Float32,0,0,0,0), mdfstore, "", now(),
                   "", RawDataWidget(), false, "",
-                  SystemMatrixRobotMeas(scanner, mdfstore), measCont, false, TemperatureLog())
+                  SystemMatrixRobotMeas(scanner, mdfstore), false, TemperatureLog())
   Gtk.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
