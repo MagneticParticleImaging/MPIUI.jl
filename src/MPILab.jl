@@ -1081,7 +1081,7 @@ end
 
 function initScannerTab(m::MPILab)
 
-  m.scannerBrowser = ScannerBrowser(m.measurementWidget.scanner)
+  m.scannerBrowser = ScannerBrowser(m.measurementWidget.scanner, m["boxScannerTab"])
 
   boxScannerTab = m["boxScanner"]
   push!(boxScannerTab,m.scannerBrowser)

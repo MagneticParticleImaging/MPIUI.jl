@@ -1,4 +1,7 @@
 
+include("RobotWidget.jl")
+include("SurveillanceWidget.jl")
+
 mutable struct ScannerBrowser <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   store
@@ -6,11 +9,13 @@ mutable struct ScannerBrowser <: Gtk.GtkBox
   tv
   selection
   updating
+  deviceBox
+  scanner
 end
 
 getindex(m::ScannerBrowser, w::AbstractString) = G_.object(m.builder, w)
 
-function ScannerBrowser(scanner=nothing)
+function ScannerBrowser(scanner, deviceBox)
   @info "Starting ScannerBrowser"
   #uifile = joinpath(@__DIR__,"builder","rawDataViewer.ui")
 
@@ -52,7 +57,7 @@ function ScannerBrowser(scanner=nothing)
 
   # TODO Add widget that shows properties of selected Device
 
-  m = ScannerBrowser(mainBox.handle, store, tmSorted, tv, selection, false)
+  m = ScannerBrowser(mainBox.handle, store, tmSorted, tv, selection, false, deviceBox, scanner)
   Gtk.gobject_move_ref(m, mainBox)
 
   updateData!(m, scanner)
@@ -60,8 +65,43 @@ function ScannerBrowser(scanner=nothing)
   showall(tv)
   showall(m)
 
+  initCallbacks(m)
+
   @info "Finished starting ScannerBrowser"
   return m
+end
+
+function initCallbacks(m::ScannerBrowser)
+
+  signal_connect(m.selection, "changed") do widget
+    @idle_add if !m.updating && hasselection(m.selection) 
+      m.updating = true
+      currentIt = selected( m.selection )
+
+      name = TreeModel(m.tmSorted)[currentIt,1]
+      @info name
+
+      # Remove all currently loaded widgets
+      empty!(m.deviceBox)
+
+      if typeof(m.scanner.devices[name]) <: Robot
+        w = RobotWidget(m.scanner.devices[name])
+        push!(m.deviceBox, w)
+        set_gtk_property!(m.deviceBox, :expand, w, true)
+      elseif typeof(m.scanner.devices[name]) <: SurveillanceUnit
+          w = SurveillanceWidget(m.scanner.devices[name])
+          push!(m.deviceBox, w)
+          set_gtk_property!(m.deviceBox, :expand, w, true)
+      else
+        info_dialog("Device $(typeof(m.scanner.devices[name])) not yet implemented.", 
+                  mpilab[]["mainWindow"])
+      end
+
+      showall(m.deviceBox)
+      m.updating = false
+    end
+  end
+
 end
 
 function updateData!(m::ScannerBrowser, scanner=nothing)

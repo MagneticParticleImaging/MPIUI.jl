@@ -1,10 +1,4 @@
 
-mutable struct TemperatureLog
-  temperatures::Vector{Float64}
-  times::Vector{DateTime}
-  numChan::Int64
-end
-
 
 mutable struct SystemMatrixRobotMeas
 end
@@ -30,13 +24,10 @@ mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   message::String
   calibState::SystemMatrixRobotMeas
   calibInProgress::Bool
-  temperatureLog::TemperatureLog
 end
 
 include("Measurement.jl")
 include("Calibration.jl")
-include("Surveillance.jl")
-include("Robot.jl")
 include("SequenceBrowser.jl")
 
 
@@ -70,7 +61,7 @@ function MeasurementWidget(filenameConfig="")
   m = MeasurementWidget( mainBox.handle, b,
                   scanner, zeros(Float32,0,0,0,0), mdfstore, "", now(),
                   "", RawDataWidget(), false, "",
-                  SystemMatrixRobotMeas(scanner, mdfstore), false, TemperatureLog())
+                  SystemMatrixRobotMeas(scanner, mdfstore), false)
   Gtk.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
@@ -81,7 +72,7 @@ function MeasurementWidget(filenameConfig="")
   push!(m["boxMeasTabVisu",BoxLeaf],m.rawDataWidget)
   set_gtk_property!(m["boxMeasTabVisu",BoxLeaf],:expand,m.rawDataWidget,true)
 
-  @debug "Read safety parameters"
+  #= TODO @debug "Read safety parameters"
   @idle_add begin
     empty!(m["cbSafeCoil", ComboBoxTextLeaf])
     for coil in getValidHeadScannerGeos()
@@ -106,13 +97,13 @@ function MeasurementWidget(filenameConfig="")
     end
 
     @idle_add begin
-      #=empty!(m["cbWaveform", ComboBoxTextLeaf])
+      empty!(m["cbWaveform", ComboBoxTextLeaf])
       for w in RedPitayaDAQServer.waveforms()
         push!(m["cbWaveform",ComboBoxTextLeaf], w)
       end
-      set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, 0) =# 
+      set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, 0) 
     end
-  end
+  end =#
 
   @debug "Online / Offline"
   if m.scanner != nothing
@@ -121,8 +112,8 @@ function MeasurementWidget(filenameConfig="")
     # TODO setParams(m, merge!(generalParams(m.scanner),toDict(getDAQ(m.scanner).params)))
     setParams(m, m.scanner)
     @idle_add set_gtk_property!(m["entConfig",EntryLeaf],:text,filenameConfig)
-    @idle_add set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isRobRef)
-    enableRobotMoveButtons(m,isRobRef)
+    #@idle_add set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isRobRef)
+    # TODO enableRobotMoveButtons(m,isRobRef)
     # TODO enableDFWaveformControls(m, get(getGeneralParams(m.scanner), "allowDFWaveformChanges", false))
 
     if isRobRef
@@ -130,8 +121,8 @@ function MeasurementWidget(filenameConfig="")
         rob = getRobot(m.scanner)
         isValid = checkCoords(getRobotSetupUI(m), getPos(rob), getMinMaxPosX(rob))
       catch
-        enableRobotMoveButtons(m,false)
-        @idle_add set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,true)
+        # TODO enableRobotMoveButtons(m,false)
+        #@idle_add set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,true)
       end
     end
 
@@ -186,22 +177,6 @@ end
 
 function initCallbacks(m::MeasurementWidget)
 
-  # TODO This currently does not work!
-#  signal_connect(m["expSurveillance",ExpanderLeaf], :activate) do w
-#    initSurveillance(m)
-#  end
-
-  initSurveillance(m)
-  signal_connect(m["tbStartTemp",ToggleButtonLeaf], :toggled) do w
-    if get_gtk_property(m["tbStartTemp",ToggleButtonLeaf], :active, Bool)
-      startSurveillance(m)
-    else
-      stopSurveillance(m)
-    end
-  end
-
-  
-
   #signal_connect(measurement, m["tbMeasure",ToolButtonLeaf], "clicked", Nothing, (), false, m )
   #signal_connect(measurementBG, m["tbMeasureBG",ToolButtonLeaf], "clicked", Nothing, (), false, m)
 
@@ -218,29 +193,11 @@ function initCallbacks(m::MeasurementWidget)
     reloadConfig(m)
   end
 
-  signal_connect(m["btnRobotMove",ButtonLeaf], :clicked) do w
-    robotMove(m)
-  end
 
   signal_connect(m["btLoadArbPos",ButtonLeaf],:clicked) do w
     loadArbPos(m)
   end
 
-  signal_connect(m["btnMovePark",ButtonLeaf], :clicked) do w
-      try
-        movePark(m)
-      catch ex
-       showError(ex)
-      end
-  end
-
-  signal_connect(m["btnMoveAssemblePos",ButtonLeaf], :clicked) do w
-    moveAssemblePos(m)
-  end
-
-  signal_connect(m["btnReferenceDrive",ButtonLeaf], :clicked) do w
-    referenceDrive(m)
-  end
 
   timer = nothing
   timerActive = false
@@ -648,4 +605,20 @@ function getCustomPhantom(m::MeasurementWidget)
     cP_ = tryparse.(Float64,split(cPStr,"x"))
     cP= cP_ .*1Unitful.mm
     return Cuboid(Rectangle(cP[2],cP[3], "UI Custom Phantom"),cP[1],"UI Custom Phantom 3D")
+end
+
+
+
+function enableDFWaveformControls(m::MeasurementWidget, enable::Bool)
+  @idle_add begin
+    set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf],:sensitive,enable)
+    set_gtk_property!(m["entDFDivider",EntryLeaf],:sensitive,enable)
+  end
+end
+
+
+function loadArbPos(m::MeasurementWidget)
+      filter = Gtk.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
+      filename = open_dialog("Select Arbitrary Position File", GtkNullContainer(), (filter, ))
+      @idle_add set_gtk_property!(m["entArbitraryPos",EntryLeaf],:text,filename)
 end
