@@ -240,7 +240,7 @@ function initViewSwitch(m::MPILab)
       m.currentExperiment = nothing
       infoMessage(m, m.measurementWidget.message)
     elseif page_num == 5
-      infoMessage(m, "Scanner")
+      
     end
     return nothing
   end

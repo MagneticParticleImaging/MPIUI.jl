@@ -1,6 +1,7 @@
 
 include("RobotWidget.jl")
 include("SurveillanceWidget.jl")
+include("DAQWidget.jl")
 
 mutable struct ScannerBrowser <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
@@ -90,6 +91,10 @@ function initCallbacks(m::ScannerBrowser)
         set_gtk_property!(m.deviceBox, :expand, w, true)
       elseif typeof(m.scanner.devices[name]) <: SurveillanceUnit
           w = SurveillanceWidget(m.scanner.devices[name])
+          push!(m.deviceBox, w)
+          set_gtk_property!(m.deviceBox, :expand, w, true)
+      elseif typeof(m.scanner.devices[name]) <: AbstractDAQ
+          w = DAQWidget(m.scanner.devices[name])
           push!(m.deviceBox, w)
           set_gtk_property!(m.deviceBox, :expand, w, true)
       else
