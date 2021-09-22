@@ -10,10 +10,17 @@ end
 mutable struct MeasState
 end
 
+mutable struct ProtocolStatus
+  waitingOnReply::Union{ProtocolEvent, Nothing}
+end
+
 mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder::Builder
   scanner::T
+  biChannel::Union{BidirectionalChannel{ProtocolEvent}, Nothing}
+  progress::Union{ProgressEvent, Nothing}
+  protocolStatus::ProtocolStatus
   dataBGStore::Array{Float32,4}
   mdfstore::MDFDatasetStore
   currStudyName::String
@@ -58,8 +65,9 @@ function MeasurementWidget(filenameConfig="")
   b = Builder(filename=uifile)
   mainBox = object_(b, "boxMeasurement",BoxLeaf)
 
+  proto = ProtocolStatus(nothing)
   m = MeasurementWidget( mainBox.handle, b,
-                  scanner, zeros(Float32,0,0,0,0), mdfstore, "", now(),
+                  scanner, nothing, nothing, proto, zeros(Float32,0,0,0,0), mdfstore, "", now(),
                   "", RawDataWidget(), false, "",
                   SystemMatrixRobotMeas(scanner, mdfstore), false)
   Gtk.gobject_move_ref(m, mainBox)
@@ -621,4 +629,8 @@ function loadArbPos(m::MeasurementWidget)
       filter = Gtk.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
       filename = open_dialog("Select Arbitrary Position File", GtkNullContainer(), (filter, ))
       @idle_add set_gtk_property!(m["entArbitraryPos",EntryLeaf],:text,filename)
+end
+
+function clear(proto::ProtocolStatus)
+  proto.waitingOnReply = nothing
 end

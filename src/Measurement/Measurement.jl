@@ -8,17 +8,15 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
       params = getParams(m)
       m.scanner.currentSequence.acquisition.numFrames = params["acqNumFGFrames"]
       m.scanner.currentSequence.acquisition.numFrameAverages = params["acqNumFrameAverages"]
+      protocol = Protocol("OnlineMeasurement", m.scanner)
+      m.scanner.currentProtocol = protocol
+      clear(m.protocolStatus)
+      m.biChannel = MPIMeasurements.init(protocol)
+      @tspawnat 4 execute(protocol)
 
-      bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
+      #bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
 
-      # start measuremnt thread
-      asyncMeasurement(m.scanner)
-        # m.measState = asyncMeasurement(m.scanner, params, bgdata, store = m.mdfstore)
-    # start display thread
-    # g_timeout_add( ()->displayMeasurement(m), 1)
-    # @tspawnat 1 displayMeasurement(m)
-
-    timerMeas = Timer(timer -> displayMeasurement(m, timer), 0.0, interval=0.001)
+      timerMeas = Timer(timer -> displayMeasurement(m, timer), 0.0, interval=0.01)
   catch ex
     showError(ex)
   end
@@ -30,52 +28,72 @@ end
 function displayMeasurement(m::MeasurementWidget, timerMeas::Timer)
   try
     seq = m.scanner.currentSequence
-    deltaT = dfCycle(seq) / rxNumSamplesPerPeriod(seq)
-
-    if Base.istaskfailed(m.scanner.seqMeasState.producer)
-      @info "Producer failed"
-      close(m.scanner.seqMeasState.channel)
-      close(timerMeas)
-      stack = Base.catch_stack(m.scanner.seqMeasState.producer)[1]
-      @error stack[1]
-      @error stacktrace(stack[2])
-        return
-    end
-    if Base.istaskfailed(m.scanner.seqMeasState.consumer)
-      @info "Consumer failed"
-      close(m.scanner.seqMeasState.channel)
-      close(timerMeas)
-      stack = Base.catch_stack(m.scanner.seqMeasState.consumer)[1]
-      @error stack[1]
-      @error stacktrace(stack[2])
-        return
-    end
-    #
-    # @info "Frame $(measState.currFrame) / $(measState.numFrames)"
-    #fr = measController.measState.currFrame TODO implement live update
+    channel = m.biChannel
+    deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
     fr = 0
-    if fr > 0 
-      #&& !measController.measState.consumed
-      #infoMessage(m, "Frame $(measController.measState.currFrame) / $(measController.measState.numFrames)", "green")
-      if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
-        updateData(m.rawDataWidget, m.scanner.seqMeasState.buffer[:,:,:,fr:fr], deltaT)
+
+    if isready(channel)
+      event = take!(channel)
+      if event isa FinishedNotificationEvent
+        # We noticed end and overwrite the query we are waiting for
+        @info "Received finish notification"
+        bufferRequest = DataQueryEvent("BUFFER")
+        put!(channel, bufferRequest)
+        m.protocolStatus.waitingOnReply = bufferRequest  
+      elseif event isa DataAnswerEvent && event.query == m.protocolStatus.waitingOnReply
+        # We were waiting on the last buffer request
+        if event.query.message == "BUFFER"
+          @info "Finishing measurement"
+          close(timerMeas)
+          infoMessage(m, "", "green")    
+          params = getParams(m)
+          bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore 
+          buffer = event.data
+          m.filenameExperiment = MPIFiles.saveasMDF(m.mdfstore, m.scanner, buffer, params; bgdata=bgdata)
+          updateData(m.rawDataWidget, m.filenameExperiment)
+          updateExperimentStore(mpilab[], mpilab[].currentStudy)
+          put!(channel, FinishedAckEvent())
+        # We were waiting on a new frame
+        elseif startswith(event.query.message, "FRAME")
+          @info "Received frame"
+          frame = event.data
+          if !isnothing(frame)
+            infoMessage(m, "$(m.progress.unit) $(m.progress.done) / $(m.progress.total)", "green")
+            if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
+              updateData(m.rawDataWidget, frame, deltaT)
+            end
+          end
+          # Ask for next progress
+          progressQuery = ProgressQueryEvent()
+          put!(channel, progressQuery)
+          m.protocolStatus.waitingOnReply = progressQuery
+        end
+      elseif event isa ProgressEvent && typeof(m.protocolStatus.waitingOnReply) == ProgressQueryEvent
+        # New Progress noticed
+        if isnothing(m.progress) || m.progress != event
+          @info "New progress, asking for frame $(event.done)"
+          m.progress = event
+          dataQuery = DataQueryEvent("FRAME:$(event.done)")
+          put!(channel, dataQuery)
+          m.protocolStatus.waitingOnReply = dataQuery
+        else
+          # Ask for next progress
+          progressQuery = ProgressQueryEvent()
+          put!(channel, progressQuery)
+          m.protocolStatus.waitingOnReply = progressQuery
+        end
+      else
+        @info "Discard event $(typeof(event))"
       end
-      #measController.measState.consumed = true
     end
-    if istaskdone(m.scanner.seqMeasState.consumer)
-      close(timerMeas)
-      infoMessage(m, "", "green")
 
-      params = getParams(m)
-      bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore 
-
-      m.filenameExperiment = MPIFiles.saveasMDF(m.mdfstore, m.scanner, 
-                                  m.scanner.seqMeasState.buffer, params; bgdata=bgdata)
-
-      updateData(m.rawDataWidget, m.filenameExperiment)
-      updateExperimentStore(mpilab[], mpilab[].currentStudy)
+    if isnothing(m.protocolStatus.waitingOnReply)
+      @info "Asking for first progress"
+      progressQuery = ProgressQueryEvent()
+      put!(channel, progressQuery)
+      m.protocolStatus.waitingOnReply = progressQuery
     end
-    # sleep(0.1)
+
   catch ex
     close(timerMeas)
     showError(ex)
@@ -96,7 +114,8 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
 
       # Get Acquisition Protocol
       protocol = Protocol("MPIMeasurement", m.scanner)
-      channel = init(protocol)
+      m.scanner.currentProtocol = protocol
+      channel = MPIMeasurements.init(protocol)
       @tspawnat 1 execute(protocol)
 
       uMeas = nothing
