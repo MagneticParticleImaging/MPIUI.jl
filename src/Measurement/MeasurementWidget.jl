@@ -281,36 +281,29 @@ function initCallbacks(m::MeasurementWidget)
 
   signal_connect(m["tbCalibration",ToggleToolButtonLeaf], :toggled) do w
    try
-    if !isReferenced(getRobot(m.scanner))
-      info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
-      @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
-      return
-    end
 
     if get_gtk_property(m["tbCalibration",ToggleToolButtonLeaf], :active, Bool)
-      if m.calibInProgress #isStarted(m.calibState)
-        #m.calibState.calibrationActive = true
-
-        doCalibration(m)
+      if m.calibInProgress
+        @info "Resume protocol"
+        isnothing(m.biChannel) || isready(m.biChannel) ||put!(m.biChannel, ResumeEvent())
       else
         # start bg calibration
-        prepareCalibration(m)
-
-        if isfile("/tmp/sysObj.toml")
-          message = """Found existing calibration file! \n
-                       Should it be resumed?"""
-          if ask_dialog(message, "No", "Yes", mpilab[]["mainWindow"])
-            MPIMeasurements.restore(m.calibState)
-          end
-        end
-
-        doCalibration(m)
+        executeCalibrationProtocol(m)
+        @info "hello from after execute"
         # start display thread
-        timerCalibration = Timer( timer -> displayCalibration(m, timer), 0.0, interval=0.1)
-        m.calibInProgress = true
+        if !isnothing(m.biChannel)
+          @info "Start display timer"
+          timerCalibration = Timer( timer -> displayCalibration(m, timer), 0.0, interval=0.1)
+          m.calibInProgress = true
+        else 
+          return
+        end
       end
+      @idle_add set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
+      #@idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
     else
-      MPIMeasurements.stop(m.calibState)
+      @info "Stop protocol"
+      isnothing(m.biChannel) || isready(m.biChannel) || put!(m.biChannel, StopEvent())
     end
     catch ex
      showError(ex)

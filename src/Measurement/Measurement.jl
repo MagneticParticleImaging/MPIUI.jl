@@ -31,9 +31,7 @@ end
 
 function displayMeasurement(m::MeasurementWidget, timerMeas::Timer)
   try
-    seq = m.scanner.currentSequence
     channel = m.biChannel
-    deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
     finished = false
 
     if isready(channel)
@@ -89,6 +87,8 @@ function handleAsyncEvent(m::MeasurementWidget, event::DataAnswerEvent, ::Wanted
     if !isnothing(frame)
       infoMessage(m, "$(m.progress.unit) $(m.progress.done) / $(m.progress.total)", "green")
       if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
+        seq = m.scanner.currentSequence
+        deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
         updateData(m.rawDataWidget, frame, deltaT)
       end
     end
