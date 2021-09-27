@@ -269,8 +269,9 @@ function initCallbacks(m::MeasurementWidget)
   signal_connect(m["tbCancel",ToolButtonLeaf], :clicked) do w
     try
        @idle_add begin
+         isnothing(m.biChannel) || !isopen(m.biChannel) || put!(m.biChannel, CancelEvent())
          MPIMeasurements.stop(m.calibState)
-         m.calibState.task = nothing
+         #m.calibState.task = nothing
          m.calibInProgress = false
        end
     catch ex
@@ -300,10 +301,9 @@ function initCallbacks(m::MeasurementWidget)
         end
       end
       @idle_add set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
-      #@idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
     else
       @info "Stop protocol"
-      isnothing(m.biChannel) || isready(m.biChannel) || put!(m.biChannel, StopEvent())
+      isnothing(m.biChannel) || !isopen(m.biChannel) || put!(m.biChannel, StopEvent())
     end
     catch ex
      showError(ex)

@@ -1,6 +1,6 @@
 
 function executeCalibrationProtocol(m::MeasurementWidget)
-  @info "Gettomg positions"
+  @info "Getting positions"
   shpString = get_gtk_property(m["entGridShape",EntryLeaf], :text, String)
   shp_ = tryparse.(Int64,split(shpString,"x"))
   fovString = get_gtk_property(m["entFOV",EntryLeaf], :text, String)
@@ -151,6 +151,13 @@ end
 
 function handleCalibEvent(m::MeasurementWidget, event::ProtocolEvent, ::UnwantedEvent)
   @info "Discard event $(typeof(event))"
+  return false
+end
+
+function handleCalibEvent(m::MeasurementWidget, event::DecisionEvent, ::UnwantedEvent)
+  reply = ask_dialog(event.message, "No", "Yes", mpilab[]["mainWindow"])
+  answerEvent = AnswerEvent(reply, event)
+  put!(m.biChannel, answerEvent)
   return false
 end
 
