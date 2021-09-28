@@ -13,11 +13,10 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
       params = getParams(m)
       m.scanner.currentSequence.acquisition.numFrames = params["acqNumFGFrames"]
       m.scanner.currentSequence.acquisition.numFrameAverages = params["acqNumFrameAverages"]
-      protocol = Protocol("OnlineMeasurement", m.scanner)
-      m.scanner.currentProtocol = protocol
+      protocol = setProtocol(m.scanner, "AsyncMeasurement")
       clear(m.protocolStatus)
       m.biChannel = MPIMeasurements.init(protocol)
-      @tspawnat 4 execute(protocol)
+      execute(m.scanner)
 
       #bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
 

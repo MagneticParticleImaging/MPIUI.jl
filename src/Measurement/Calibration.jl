@@ -15,6 +15,7 @@ function executeCalibrationProtocol(m::MeasurementWidget)
 
   if any(shp_ .== nothing) || any(fov_ .== nothing) || any(center_ .== nothing) || any(velRob_ .== nothing) ||
      length(shp_) != 3 || length(fov_) != 3 || length(center_) != 3 || length(velRob_) != 3
+    @warn "Mismatch dimension for positions"
     @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
     return
   end
@@ -49,10 +50,13 @@ function executeCalibrationProtocol(m::MeasurementWidget)
   #end
 
   clear(m.protocolStatus)
+  @info "Set protocol"
   protocol = setProtocol(m.scanner, "RobotBasedSystemMatrix")
   protocol.params.positions = positions
   protocol.params.bgFrames = numBGMeas
+  @info "Init"
   m.biChannel = MPIMeasurements.init(protocol)
+  @info "Execute"
   execute(m.scanner)
   return m.biChannel
 end
