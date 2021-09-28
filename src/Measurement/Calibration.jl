@@ -106,6 +106,14 @@ function handleCalibEvent(m::MeasurementWidget, event::IllegaleStateEvent, ::Unw
   return true
 end
 
+function handleCalibEvent(m::MeasurementWidget, event::ExceptionEvent, ::UnwantedEvent)
+  @error "Protocol error"
+  stack = Base.catch_stack(m.scanner.currentProtocol.executeTask)[1]
+  @error stack[1]
+  @error stacktrace(stack[2])
+  return true
+end
+
 function handleCalibEvent(m::MeasurementWidget, event::ProgressEvent, ::WantedEvent)
   channel = m.biChannel
   # New Progress noticed
@@ -164,10 +172,16 @@ end
 function handleCalibEvent(m::MeasurementWidget, event::FinishedNotificationEvent, ::UnwantedEvent)
   channel = m.biChannel
   # We noticed end and overwrite the query we are waiting for
-  @info "Received finish notification, normally ask for storage but we just finish in this version"
-  #bufferRequest = DataQueryEvent("BUFFER")
-  #put!(channel, bufferRequest)
-  #m.protocolStatus.waitingOnReply = bufferRequest
+  request = DatasetStoreStorageRequestEvent(m.mdfstore, getParams(m))
+  put!(channel, request)
+  m.protocolStatus.waitingOnReply = request
+  return false
+end
+
+function handleCalibEvent(m::MeasurementWidget, event::StorageSuccessEvent, ::WantedEvent)
+  channel = m.biChannel
+  @info "Received storage success event"
   put!(channel, FinishedAckEvent())
+  cleanup(m.scanner.currentProtocol)
   return true
 end

@@ -2,8 +2,9 @@ abstract type EventType end
 struct UnwantedEvent <: EventType end
 struct WantedEvent <: EventType end
 EventType(m::MeasurementWidget, event::ProtocolEvent) = UnwantedEvent()
-EventType(m::MeasurementWidget, event::ProgressEvent) = typeof(m.protocolStatus.waitingOnReply) == ProgressQueryEvent ? WantedEvent() : UnwantedEvent()
+EventType(m::MeasurementWidget, event::ProgressEvent) = m.protocolStatus.waitingOnReply isa ProgressQueryEvent ? WantedEvent() : UnwantedEvent()
 EventType(m::MeasurementWidget, event::DataAnswerEvent) = event.query == m.protocolStatus.waitingOnReply ? WantedEvent() : UnwantedEvent()
+EventType(m::MeasurementWidget, event::StorageSuccessEvent) = m.protocolStatus.waitingOnReply isa StorageRequestEvent ? WantedEvent() : UnwantedEvent()
 
 function measurement(widgetptr::Ptr, m::MeasurementWidget)
     try
