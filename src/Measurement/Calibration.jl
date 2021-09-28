@@ -63,7 +63,7 @@ function executeCalibrationProtocol(m::MeasurementWidget)
   return m.biChannel
 end
 
-function displayCalibration(m::MeasurementWidget, timerCalibration::Timer)
+function calibEventHandler(m::MeasurementWidget, timerCalibration::Timer)
   try
     channel = m.biChannel
     finished = false
@@ -75,6 +75,8 @@ function displayCalibration(m::MeasurementWidget, timerCalibration::Timer)
     if isready(channel)
       event = take!(channel)
       finished = handleCalibEvent(m, event, EventType(m, event))
+    elseif !isopen(channel)
+      finished = true
     end
 
     if isnothing(m.protocolStatus.waitingOnReply) && !finished
@@ -113,17 +115,19 @@ end
 function handleCalibEvent(m::MeasurementWidget, event::ProgressEvent, ::WantedEvent)
   channel = m.biChannel
   # New Progress noticed
-  if isnothing(m.progress) || m.progress != event
-    @info "New progress, asking for frame $(event.done)"
-    m.progress = event
-    dataQuery = DataQueryEvent("SIGNAL")
-    put!(channel, dataQuery)
-    m.protocolStatus.waitingOnReply = dataQuery
-  else
-    # Ask for next progress
-    progressQuery = ProgressQueryEvent()
-    put!(channel, progressQuery)
-    m.protocolStatus.waitingOnReply = progressQuery
+  if isopen(channel)
+    if isnothing(m.progress) || m.progress != event
+      @info "New progress, asking for frame $(event.done)"
+      m.progress = event
+      dataQuery = DataQueryEvent("SIGNAL")
+      put!(channel, dataQuery)
+      m.protocolStatus.waitingOnReply = dataQuery
+    else
+      # Ask for next progress
+      progressQuery = ProgressQueryEvent()
+      put!(channel, progressQuery)
+      m.protocolStatus.waitingOnReply = progressQuery
+    end
   end
   return false
 end
@@ -143,8 +147,10 @@ function handleCalibEvent(m::MeasurementWidget, event::DataAnswerEvent, ::Wanted
     end
     # Ask for next progress
     progressQuery = ProgressQueryEvent()
-    put!(channel, progressQuery)
-    m.protocolStatus.waitingOnReply = progressQuery
+    isopen(channel) && begin 
+      put!(channel, progressQuery)
+      m.protocolStatus.waitingOnReply = progressQuery
+    end
   end
   return false
 end
