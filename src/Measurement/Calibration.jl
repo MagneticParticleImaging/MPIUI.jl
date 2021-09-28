@@ -48,22 +48,16 @@ function executeCalibrationProtocol(m::MeasurementWidget)
   #  isValid = checkCoords(getRobotSetupUI(m), uconvert.(Unitful.mm,pos), getMinMaxPosX(getRobot(m.scanner)))
   #end
 
-  protocol = Protocol("RobotBasedSystemMatrix", m.scanner)
   clear(m.protocolStatus)
-  m.scanner.currentProtocol = protocol
-
+  protocol = setProtocol(m.scanner, "RobotBasedSystemMatrix")
   protocol.params.positions = positions
   protocol.params.bgFrames = numBGMeas
-  @info "Init protocol"
   m.biChannel = MPIMeasurements.init(protocol)
-  @show m.biChannel
-  @info "Execute protocol"
-  @tspawnat 4 execute(protocol)
-  @info "Return channel"
+  execute(m.scanner)
   return m.biChannel
 end
 
-function displayCalibration(m::MeasurementWidget, timerCalibration::Timer)
+function calibEventHandler(m::MeasurementWidget, timerCalibration::Timer)
   try
     channel = m.biChannel
     finished = false
@@ -75,6 +69,8 @@ function displayCalibration(m::MeasurementWidget, timerCalibration::Timer)
     if isready(channel)
       event = take!(channel)
       finished = handleCalibEvent(m, event, EventType(m, event))
+    elseif !isopen(channel)
+      finished = true
     end
 
     if isnothing(m.protocolStatus.waitingOnReply) && !finished
@@ -105,7 +101,7 @@ function displayCalibration(m::MeasurementWidget, timerCalibration::Timer)
   end
 end
 
-function handleCalibEvent(m::MeasurementWidget, event::ExceptionEvent, ::UnwantedEvent)
+function handleCalibEvent(m::MeasurementWidget, event::IllegaleStateEvent, ::UnwantedEvent)
   @idle_add info_dialog(event.message, mpilab[]["mainWindow"])
   return true
 end
@@ -113,17 +109,19 @@ end
 function handleCalibEvent(m::MeasurementWidget, event::ProgressEvent, ::WantedEvent)
   channel = m.biChannel
   # New Progress noticed
-  if isnothing(m.progress) || m.progress != event
-    @info "New progress, asking for frame $(event.done)"
-    m.progress = event
-    dataQuery = DataQueryEvent("SIGNAL")
-    put!(channel, dataQuery)
-    m.protocolStatus.waitingOnReply = dataQuery
-  else
-    # Ask for next progress
-    progressQuery = ProgressQueryEvent()
-    put!(channel, progressQuery)
-    m.protocolStatus.waitingOnReply = progressQuery
+  if isopen(channel)
+    if isnothing(m.progress) || m.progress != event
+      @info "New progress, asking for frame $(event.done)"
+      m.progress = event
+      dataQuery = DataQueryEvent("SIGNAL")
+      put!(channel, dataQuery)
+      m.protocolStatus.waitingOnReply = dataQuery
+    else
+      # Ask for next progress
+      progressQuery = ProgressQueryEvent()
+      put!(channel, progressQuery)
+      m.protocolStatus.waitingOnReply = progressQuery
+    end
   end
   return false
 end
@@ -143,8 +141,10 @@ function handleCalibEvent(m::MeasurementWidget, event::DataAnswerEvent, ::Wanted
     end
     # Ask for next progress
     progressQuery = ProgressQueryEvent()
-    put!(channel, progressQuery)
-    m.protocolStatus.waitingOnReply = progressQuery
+    isopen(channel) && begin 
+      put!(channel, progressQuery)
+      m.protocolStatus.waitingOnReply = progressQuery
+    end
   end
   return false
 end

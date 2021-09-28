@@ -270,8 +270,6 @@ function initCallbacks(m::MeasurementWidget)
     try
        @idle_add begin
          isnothing(m.biChannel) || !isopen(m.biChannel) || put!(m.biChannel, CancelEvent())
-         MPIMeasurements.stop(m.calibState)
-         #m.calibState.task = nothing
          m.calibInProgress = false
        end
     catch ex
@@ -286,15 +284,12 @@ function initCallbacks(m::MeasurementWidget)
     if get_gtk_property(m["tbCalibration",ToggleToolButtonLeaf], :active, Bool)
       if m.calibInProgress
         @info "Resume protocol"
-        isnothing(m.biChannel) || isready(m.biChannel) ||put!(m.biChannel, ResumeEvent())
+        isnothing(m.biChannel) || !isopen(m.biChannel) || isfull(m.biChannel) || put!(m.biChannel, ResumeEvent())
       else
-        # start bg calibration
         executeCalibrationProtocol(m)
-        @info "hello from after execute"
-        # start display thread
         if !isnothing(m.biChannel)
-          @info "Start display timer"
-          timerCalibration = Timer( timer -> displayCalibration(m, timer), 0.0, interval=0.1)
+          @info "Start event handler"
+          timerCalibration = Timer( timer -> calibEventHandler(m, timer), 0.0, interval=0.1)
           m.calibInProgress = true
         else 
           return
@@ -303,7 +298,7 @@ function initCallbacks(m::MeasurementWidget)
       @idle_add set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
     else
       @info "Stop protocol"
-      isnothing(m.biChannel) || !isopen(m.biChannel) || put!(m.biChannel, StopEvent())
+      isnothing(m.biChannel) || !isopen(m.biChannel) || isfull(m.biChannel) || put!(m.biChannel, StopEvent())
     end
     catch ex
      showError(ex)
