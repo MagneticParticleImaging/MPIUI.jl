@@ -424,7 +424,7 @@ function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
   numPeriods = numPeriods == nothing ? 1 : numPeriods
 
   daqTime_ = get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
-                     numPeriods * daq.params.dfCycle
+                     numPeriods * ustrip.(dfCycle(m.scanner.currentSequence))
 
   daqTime = daqTime_ * (get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64)+1)
 
@@ -569,26 +569,25 @@ function setParams(m::MeasurementWidget, scanner::MPIScanner)
       @idle_add set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, 0)
   end  =#
 
-  #= p is now named gp
-  if haskey(p, "calibGridShape") && haskey(p, "calibGridFOV") && haskey(p, "calibGridCenter") &&
-     haskey(p, "calibNumBGMeasurements")
-    shp = p["calibGridShape"]
+  calibProtocol = Protocol("RobotBasedSystemMatrix", m.scanner)
+  if calibProtocol.params.positions != nothing
+    shp = MPIFiles.shape(calibProtocol.params.positions)
     shpStr = @sprintf("%d x %d x %d", shp[1],shp[2],shp[3])
-    fov = p["calibGridFOV"]*1000 # convert to mm
+    fov = Float64.(ustrip.(uconvert.(Unitful.mm,MPIFiles.fieldOfView(calibProtocol.params.positions)))) # convert to mm
     fovStr = @sprintf("%.2f x %.2f x %.2f", fov[1],fov[2],fov[3])
-    ctr = p["calibGridCenter"]*1000 # convert to mm
+    ctr = Float64.(ustrip.(uconvert.(Unitful.mm,MPIFiles.fieldOfViewCenter( calibProtocol.params.positions)))) # convert to mm
     ctrStr = @sprintf("%.2f x %.2f x %.2f", ctr[1],ctr[2],ctr[3])
     @idle_add set_gtk_property!(m["entGridShape",EntryLeaf], :text, shpStr)
     @idle_add set_gtk_property!(m["entFOV",EntryLeaf], :text, fovStr)
     @idle_add set_gtk_property!(m["entCenter",EntryLeaf], :text, ctrStr)
-    @idle_add set_gtk_property!(m["adjNumBGMeasurements",AdjustmentLeaf], :value, p["calibNumBGMeasurements"])
+    # TODO @idle_add set_gtk_property!(m["adjNumBGMeasurements",AdjustmentLeaf], :value, p["calibNumBGMeasurements"])
   end
-  velRob = getDefaultVelocity(getRobot(m.scanner))
+  #=velRob = getDefaultVelocity(getRobot(m.scanner))
   velRobStr = @sprintf("%.d x %.d x %.d", velRob[1],velRob[2],velRob[3])
   @idle_add set_gtk_property!(m["entVelRob",EntryLeaf], :text, velRobStr)
-  @idle_add set_gtk_property!(m["entCurrPos",EntryLeaf], :text, "0.0 x 0.0 x 0.0")
+  @idle_add set_gtk_property!(m["entCurrPos",EntryLeaf], :text, "0.0 x 0.0 x 0.0")=#
 
-  @idle_add set_gtk_property!(m["adjPause",AdjustmentLeaf], :value, get(p, "pauseTime", 2.0) )=#
+  @idle_add set_gtk_property!(m["adjPause",AdjustmentLeaf], :value, calibProtocol.params.waitTime )
 end
 
 function getRobotSetupUI(m::MeasurementWidget)
