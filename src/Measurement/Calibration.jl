@@ -48,18 +48,12 @@ function executeCalibrationProtocol(m::MeasurementWidget)
   #  isValid = checkCoords(getRobotSetupUI(m), uconvert.(Unitful.mm,pos), getMinMaxPosX(getRobot(m.scanner)))
   #end
 
-  protocol = Protocol("RobotBasedSystemMatrix", m.scanner)
   clear(m.protocolStatus)
-  m.scanner.currentProtocol = protocol
-
+  protocol = setProtocol(m.scanner, "RobotBasedSystemMatrix")
   protocol.params.positions = positions
   protocol.params.bgFrames = numBGMeas
-  @info "Init protocol"
   m.biChannel = MPIMeasurements.init(protocol)
-  @show m.biChannel
-  @info "Execute protocol"
-  @tspawnat 4 execute(protocol)
-  @info "Return channel"
+  execute(m.scanner)
   return m.biChannel
 end
 
@@ -107,7 +101,7 @@ function calibEventHandler(m::MeasurementWidget, timerCalibration::Timer)
   end
 end
 
-function handleCalibEvent(m::MeasurementWidget, event::ExceptionEvent, ::UnwantedEvent)
+function handleCalibEvent(m::MeasurementWidget, event::IllegaleStateEvent, ::UnwantedEvent)
   @idle_add info_dialog(event.message, mpilab[]["mainWindow"])
   return true
 end
