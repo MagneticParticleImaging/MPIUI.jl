@@ -14,14 +14,14 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
       acqNumFrames(m.protocol.params.sequence, params["acqNumFGFrames"])
       acqNumFrameAverages(m.protocol.params.sequence, params["acqNumFrameAverages"])
       
-      protocol = setProtocol(m.scanner, "AsyncMeasurement")
+      protocol = Protocol("AsyncMeasurement", m.scanner)
       clear(m.protocolStatus)
 
       # Override protocol default sequence, not very nice solution but will vanish with protocol widget
       protocol.params.sequence = m.protocol.params.sequence 
       m.protocol = protocol
       m.biChannel = MPIMeasurements.init(protocol)
-      execute(m.scanner)
+      execute(m.scanner, m.protocol)
 
       #bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore
 
@@ -143,7 +143,7 @@ function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
 
       # Get Acquisition Protocol
       protocol = Protocol("MPIMeasurement", m.scanner)
-      m.scanner.currentProtocol = protocol
+      #m.scanner.currentProtocol = protocol
       channel = MPIMeasurements.init(protocol)
       @tspawnat 1 execute(protocol)
 

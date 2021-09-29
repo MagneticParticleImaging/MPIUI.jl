@@ -53,7 +53,7 @@ function executeCalibrationProtocol(m::MeasurementWidget)
 
   clear(m.protocolStatus)
   @info "Set protocol"
-  protocol = setProtocol(m.scanner, "RobotBasedSystemMatrix")
+  protocol = Protocol("RobotBasedSystemMatrix", m.scanner)
   protocol.params.positions = positions
   protocol.params.bgFrames = numBGFrames
   protocol.params.fgFrameAverages = numFGAverages
@@ -62,7 +62,7 @@ function executeCalibrationProtocol(m::MeasurementWidget)
   @info "Init"
   m.biChannel = MPIMeasurements.init(protocol)
   @info "Execute"
-  execute(m.scanner)
+  execute(m.scanner, m.protocol)
   return m.biChannel
 end
 
@@ -117,7 +117,7 @@ end
 
 function handleCalibEvent(m::MeasurementWidget, event::ExceptionEvent, ::UnwantedEvent)
   @error "Protocol error"
-  stack = Base.catch_stack(m.scanner.currentProtocol.executeTask)[1]
+  stack = Base.catch_stack(m.protocol.executeTask)[1]
   @error stack[1]
   @error stacktrace(stack[2])
   return true
@@ -191,6 +191,6 @@ function handleCalibEvent(m::MeasurementWidget, event::StorageSuccessEvent, ::Wa
   channel = m.biChannel
   @info "Received storage success event"
   put!(channel, FinishedAckEvent())
-  cleanup(m.scanner.currentProtocol)
+  cleanup(m.protocol)
   return true
 end
