@@ -13,6 +13,7 @@ function executeCalibrationProtocol(m::MeasurementWidget)
 
   numBGMeas = get_gtk_property(m["adjNumBGMeasurements",AdjustmentLeaf], :value, Int64)
   numFGAverages = get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64)
+  numBGFrames = get_gtk_property(m["adjNumBGFrames",AdjustmentLeaf], :value, Int64)
 
   if any(shp_ .== nothing) || any(fov_ .== nothing) || any(center_ .== nothing) || any(velRob_ .== nothing) ||
      length(shp_) != 3 || length(fov_) != 3 || length(center_) != 3 || length(velRob_) != 3
@@ -54,7 +55,7 @@ function executeCalibrationProtocol(m::MeasurementWidget)
   @info "Set protocol"
   protocol = setProtocol(m.scanner, "RobotBasedSystemMatrix")
   protocol.params.positions = positions
-  protocol.params.bgFrames = numBGMeas
+  protocol.params.bgFrames = numBGFrames
   protocol.params.fgFrameAverages = numFGAverages
   @info "Init"
   m.biChannel = MPIMeasurements.init(protocol)
