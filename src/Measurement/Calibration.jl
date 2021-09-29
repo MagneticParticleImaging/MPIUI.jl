@@ -41,7 +41,7 @@ function executeCalibrationProtocol(m::MeasurementWidget)
     positions = cartGrid
   else
     bgIdx = round.(Int64, range(1, stop=length(cartGrid)+numBGMeas, length=numBGMeas ) )
-    bgPos = parkPos(getRobot(m.scanner))
+    bgPos = namedPosition(getRobot(m.scanner),"park")
     positions = BreakpointGridPositions(cartGrid, bgIdx, bgPos)
   end
 
