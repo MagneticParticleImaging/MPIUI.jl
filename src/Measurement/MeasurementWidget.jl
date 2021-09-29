@@ -18,6 +18,7 @@ mutable struct MeasurementWidget{T} <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder::Builder
   scanner::T
+  protocol::Union{Protocol, Nothing}
   biChannel::Union{BidirectionalChannel{ProtocolEvent}, Nothing}
   progress::Union{ProgressEvent, Nothing}
   protocolStatus::ProtocolStatus
@@ -57,9 +58,11 @@ function MeasurementWidget(filenameConfig="")
   if filenameConfig != ""
     scanner = MPIScanner(filenameConfig)
     mdfstore = MDFDatasetStore( generalParams(scanner).datasetStore )
+    protocol = Protocol(scanner.generalParams.defaultProtocol, scanner)
   else
     scanner = nothing
     mdfstore = MDFDatasetStore( "Dummy" )
+    protocol = nothing
   end
 
   b = Builder(filename=uifile)
@@ -67,7 +70,7 @@ function MeasurementWidget(filenameConfig="")
 
   proto = ProtocolStatus(nothing)
   m = MeasurementWidget( mainBox.handle, b,
-                  scanner, nothing, nothing, proto, zeros(Float32,0,0,0,0), mdfstore, "", now(),
+                  scanner, protocol, nothing, nothing, proto, zeros(Float32,0,0,0,0), mdfstore, "", now(),
                   "", RawDataWidget(), false, "",
                   SystemMatrixRobotMeas(scanner, mdfstore), false)
   Gtk.gobject_move_ref(m, mainBox)
@@ -155,11 +158,11 @@ function MeasurementWidget(filenameConfig="")
   # Dummy plotting for warmstart during measurement
   @idle_add updateData(m.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
 
-  if !isnothing(m.scanner) && !isnothing(m.scanner.currentSequence)
+  if !isnothing(m.scanner) && !isnothing(m.protocol.params.sequence)
     @idle_add begin
-      set_gtk_property!(m["adjNumFGFrames", AdjustmentLeaf], :value, acqNumFrames(scanner.currentSequence))
-      set_gtk_property!(m["adjNumFrameAverages", AdjustmentLeaf], :value, acqNumFrameAverages(scanner.currentSequence))
-      set_gtk_property!(m["adjNumAverages", AdjustmentLeaf], :value, acqNumAverages(scanner.currentSequence))
+      set_gtk_property!(m["adjNumFGFrames", AdjustmentLeaf], :value, acqNumFrames(protocol.params.sequence))
+      set_gtk_property!(m["adjNumFrameAverages", AdjustmentLeaf], :value, acqNumFrameAverages(protocol.params.sequence))
+      set_gtk_property!(m["adjNumAverages", AdjustmentLeaf], :value, acqNumAverages(protocol.params.sequence))
     end
   end
 
@@ -331,19 +334,19 @@ function initCallbacks(m::MeasurementWidget)
 
   # Update sequence
   signal_connect(m["adjNumFGFrames", AdjustmentLeaf], "value_changed") do w
-    if !isnothing(m.scanner.currentSequence)
-      acqNumFrames(m.scanner.currentSequence, get_gtk_property(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64))
+    if !isnothing(m.protocol.params.sequence)
+      acqNumFrames(m.protocol.params.sequence, get_gtk_property(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64))
     end
   end
   signal_connect(m["adjNumFrameAverages",AdjustmentLeaf], "value_changed") do w
-    if !isnothing(m.scanner.currentSequence)
-      acqNumFrameAverages(m.scanner.currentSequence, get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64))
+    if !isnothing(m.protocol.params.sequence)
+      acqNumFrameAverages(m.protocol.params.sequence, get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64))
     end
 
   end
   signal_connect(m["adjNumAverages",AdjustmentLeaf], "value_changed") do w
-    if !isnothing(m.scanner.currentSequence)
-      acqNumAverages(m.scanner.currentSequence, get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64))
+    if !isnothing(m.protocol.params.sequence)
+      acqNumAverages(m.protocol.params.sequence, get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64))
     end
   end
 
@@ -378,7 +381,7 @@ function initCallbacks(m::MeasurementWidget)
 end
 
 function updateSequence(m::MeasurementWidget, seq::AbstractString)
-  s = m.scanner.currentSequence = Sequence(m.scanner, seq)
+  s = m.protocol.params.sequence = Sequence(m.scanner, seq)
   dfString = *([ string(x*1e3," x ") for x in diag(ustrip.(dfStrength(s)[1,:,:])) ]...)[1:end-3]
   dfDividerStr = *([ string(x," x ") for x in unique(vec(dfDivider(s))) ]...)[1:end-3]
 
@@ -419,7 +422,7 @@ function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
   numPeriods = numPeriods == nothing ? 1 : numPeriods
 
   daqTime_ = get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
-                     numPeriods * ustrip.(dfCycle(m.scanner.currentSequence))
+                     numPeriods * ustrip.(dfCycle(m.protocol.params.sequence))
 
   daqTime = daqTime_ * (get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64)+1)
 
@@ -463,7 +466,7 @@ function setInfoParams(m::MeasurementWidget)
 
   framePeriod = get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
                   (numPeriods == nothing ? 1 : numPeriods)  *
-                  ustrip(dfCycle(m.scanner.currentSequence))
+                  ustrip(dfCycle(m.protocol.params.sequence))
 
   totalPeriod = framePeriod * get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64) *
                               get_gtk_property(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64)
@@ -516,7 +519,7 @@ function getParams(m::MeasurementWidget)
 end
 
 function setParams(m::MeasurementWidget, scanner::MPIScanner)
-  seq = scanner.currentSequence
+  seq = m.protocol.params.sequence
   gen = scanner.generalParams 
 
   @idle_add set_gtk_property!(m["adjNumAverages",AdjustmentLeaf], :value, 1 ) # TODO params["acqNumAverages"])

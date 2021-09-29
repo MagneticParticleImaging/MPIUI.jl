@@ -11,10 +11,15 @@ function measurement(widgetptr::Ptr, m::MeasurementWidget)
       @idle_add @info "Calling measurement"
 
       params = getParams(m)
-      m.scanner.currentSequence.acquisition.numFrames = params["acqNumFGFrames"]
-      m.scanner.currentSequence.acquisition.numFrameAverages = params["acqNumFrameAverages"]
+      acqNumFrames(m.protocol.params.sequence, params["acqNumFGFrames"])
+      acqNumFrameAverages(m.protocol.params.sequence, params["acqNumFrameAverages"])
+      
       protocol = setProtocol(m.scanner, "AsyncMeasurement")
       clear(m.protocolStatus)
+
+      # Override protocol default sequence, not very nice solution but will vanish with protocol widget
+      protocol.params.sequence = m.protocol.params.sequence 
+      m.protocol = protocol
       m.biChannel = MPIMeasurements.init(protocol)
       execute(m.scanner)
 
@@ -75,7 +80,7 @@ function handleAsyncEvent(m::MeasurementWidget, event::DataAnswerEvent, ::Wanted
     params = getParams(m)
     bgdata = length(m.dataBGStore) == 0 ? nothing : m.dataBGStore 
     buffer = event.data
-    m.filenameExperiment = MPIFiles.saveasMDF(m.mdfstore, m.scanner, buffer, params; bgdata=bgdata)
+    m.filenameExperiment = MPIFiles.saveasMDF(m.mdfstore, m.scanner, m.protocol.params.sequence, buffer, params; bgdata=bgdata)
     updateData(m.rawDataWidget, m.filenameExperiment)
     updateExperimentStore(mpilab[], mpilab[].currentStudy)
     put!(channel, FinishedAckEvent())

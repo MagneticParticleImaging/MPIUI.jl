@@ -57,6 +57,8 @@ function executeCalibrationProtocol(m::MeasurementWidget)
   protocol.params.positions = positions
   protocol.params.bgFrames = numBGFrames
   protocol.params.fgFrameAverages = numFGAverages
+  protocol.params.sequence = m.protocol.params.sequence
+  m.protocol = protocol
   @info "Init"
   m.biChannel = MPIMeasurements.init(protocol)
   @info "Execute"
