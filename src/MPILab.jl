@@ -28,6 +28,7 @@ mutable struct MPILab
   robotScanner
   multiPatchRobot
   measurementWidget
+  protocolWidget
   dataViewerWidget
   rawDataWidget
   recoWidget
@@ -77,7 +78,7 @@ function MPILab(offlineMode=false)::MPILab
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, false, false, nothing, nothing, nothing, nothing,
-              nothing, nothing, nothing, nothing, "", nothing, false)
+              nothing, nothing, nothing, nothing, nothing, "", nothing, false)
 
   let m=m_
 
@@ -91,6 +92,8 @@ function MPILab(offlineMode=false)::MPILab
   initMeasurementTab(m, offlineMode)
   @debug "## Init Scanner Tab ..."
   initScannerTab(m)
+  @debug "## Init Protocol Tab ..."
+  initProtocolTab(m, offlineMode)
   @debug "## Init Store switch ..."
   initStoreSwitch(m)
 
@@ -241,6 +244,8 @@ function initViewSwitch(m::MPILab)
       infoMessage(m, m.measurementWidget.message)
     elseif page_num == 5
       
+    elseif page_num == 6
+      # TODO
     end
     return nothing
   end
@@ -257,6 +262,7 @@ function initViewSwitch(m::MPILab)
           set_gtk_property!(m["tbCalibrationTab"], :active, false)
           set_gtk_property!(m["tbMeasurementTab"], :active, false)
           set_gtk_property!(m["tbScannerTab"], :active, false)
+          set_gtk_property!(m["tbProtocolTab"], :active, false)
           visible(m["panedReco"],true)
           updatingTab = false
       end
@@ -273,6 +279,7 @@ function initViewSwitch(m::MPILab)
           set_gtk_property!(m["tbCalibrationTab"], :active, true)
           set_gtk_property!(m["tbMeasurementTab"], :active, false)
           set_gtk_property!(m["tbScannerTab"], :active, false)
+          set_gtk_property!(m["tbProtocolTab"], :active, false)
           visible(m["panedReco"],false)
           updatingTab = false
       end
@@ -289,6 +296,7 @@ function initViewSwitch(m::MPILab)
           set_gtk_property!(m["tbCalibrationTab"], :active, false)
           set_gtk_property!(m["tbMeasurementTab"], :active, true)
           set_gtk_property!(m["tbScannerTab"], :active, false)
+          set_gtk_property!(m["tbProtocolTab"], :active, false)
           visible(m["panedReco"],false)
           updatingTab = false
       end
@@ -306,6 +314,24 @@ function initViewSwitch(m::MPILab)
           set_gtk_property!(m["tbCalibrationTab"], :active, false)
           set_gtk_property!(m["tbMeasurementTab"], :active, false)
           set_gtk_property!(m["tbScannerTab"], :active, true)
+          set_gtk_property!(m["tbProtocolTab"], :active, false)
+          updatingTab = false
+      end
+    end
+  end
+
+  signal_connect(m["tbProtocolTab"], "clicked") do widget
+    if !updatingTab
+      @idle_add begin
+          updatingTab = true
+          G_.current_page(m["nbView"], 6)
+          G_.current_page(m["nbData"], 0)
+          set_gtk_property!(m["tbDataTab"], :active, false)
+          set_gtk_property!(m["tbCalibrationTab"], :active, false)
+          set_gtk_property!(m["tbMeasurementTab"], :active, false)
+          set_gtk_property!(m["tbScannerTab"], :active, false)
+          set_gtk_property!(m["tbProtocolTab"], :active, true)
+          visible(m["panedReco"],false) # is this necessary?
           updatingTab = false
       end
     end
@@ -1087,6 +1113,18 @@ function initScannerTab(m::MPILab)
   push!(boxScannerTab,m.scannerBrowser)
   set_gtk_property!(boxScannerTab, :expand, m.scannerBrowser, true)
   showall(boxScannerTab)
+end
+
+### Protocol Tab ###
+
+function initProtocolTab(m::MPILab, offlineMode)
+  settings = offlineMode ? "" : m.settings["scanner"]
+  m.protocolWidget = ProtocolWidget(settings)
+
+  boxProtoTab = m["boxProtocolTab"]
+  push!(boxProtoTab, m.protocolWidget)
+  set_gtk_property!(boxProtoTab, :expand, m.protocolWidget, true)
+  showall(boxProtoTab)
 end
 
 ### Image Tab ###
