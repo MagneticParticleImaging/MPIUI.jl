@@ -10,20 +10,20 @@ mutable struct ProtocolWidget{T} <: Gtk.GtkBox
     # Storage
     mdfstore::MDFDatasetStore
     dataBGStore::Array{Float32,4}
+    currStudyName::String
+    currStudyDate::DateTime
 end
 
 getindex(m::ProtocolWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
-function ProtocolWidget(filenameConfig="")
+function ProtocolWidget(scanner=nothing)
     @info "Starting ProtocolWidget"
     uifile = joinpath(@__DIR__,"..","builder","protocolWidget.ui")
     
-    if filenameConfig != ""
-        scanner = MPIScanner(filenameConfig)
+    if !isnothing(scanner)
         mdfstore = MDFDatasetStore( generalParams(scanner).datasetStore )
         protocol = Protocol(scanner.generalParams.defaultProtocol, scanner)
     else
-        scanner = nothing
         mdfstore = MDFDatasetStore( "Dummy" )
         protocol = nothing
     end
@@ -32,7 +32,8 @@ function ProtocolWidget(filenameConfig="")
     mainBox = object_(b, "boxProtocol",BoxLeaf)
 
     pw = ProtocolWidget(mainBox.handle, b, scanner, protocol, nothing, nothing, 
-        mdfstore, zeros(Float32,0,0,0,0))
+        mdfstore, zeros(Float32,0,0,0,0), "", now())
+    Gtk.gobject_move_ref(pw, mainBox)
 
     if isnothing(pw.scanner)
         @idle_add begin
@@ -52,3 +53,11 @@ end
 function initCallbacks(pw::ProtocolWidget)
 
 end
+
+function isMeasurementStore(m::ProtocolWidget, d::DatasetStore)
+    if isnothing(m.mdfstore)
+      return false
+    else
+      return d.path == m.mdfstore.path
+    end
+  end
