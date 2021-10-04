@@ -17,6 +17,84 @@ end
 
 getindex(m::ProtocolWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
+abstract type ParameterType end
+struct GenericParameterType <: ParameterType end
+struct SequenceParameterType <: ParameterType end
+struct PositionParameterType <: ParameterType end
+struct BoolParameterType <: ParameterType end
+function parameterType(field::Symbol, value)
+    if field == :sequence
+        return SequenceParameterType()
+    elseif field == :positions
+        return PositionParameterType()
+    else
+        return GenericParameterType()
+    end
+end
+function parameterType(::Symbol, value::Bool)
+    return BoolParameterType()
+end
+mutable struct GenericParameter <: Gtk.GtkGrid
+    handle::Ptr{Gtk.GObject}
+    field::Symbol
+    label::GtkLabel
+    entry::GtkEntry
+
+    function GenericParameter(field::Symbol, label::AbstractString, value::AbstractString)
+        grid = GtkGrid()
+        entry = GtkEntry()
+        label = GtkLabel(label)
+        set_gtk_property!(entry, :text, value)
+        grid[1, 1] = label
+        grid[2, 1] = entry
+        set_gtk_property!(grid, :column_homogeneous, true)
+        generic = new(grid.handle, field, label, entry)
+        return Gtk.gobject_move_ref(generic, grid)
+    end
+end
+
+mutable struct UnitfulParameter <: Gtk.GtkGrid
+    handle::Ptr{Gtk.GObject}
+    field::Symbol
+    label::GtkLabel
+    entry::GtkEntry
+    unit::AbstractString
+
+    function UnitfulParameter(field::Symbol, label::AbstractString, value::T) where {T<:Quantity}
+        grid = GtkGrid()
+        
+        entryGrid = GtkGrid()
+        entry = GtkEntry()
+        set_gtk_property!(entry, :text, ustrip(value))
+        unitText = string(unit(value))
+        unitLabel = GtkLabel(unitText)
+        entryGrid[1, 1] = entry
+        entryGrid[2, 1] = unitLabel
+        set_gtk_property!(entryGrid,:column_spacing,10)
+
+
+        label = GtkLabel(label)
+        grid[1, 1] = label
+        grid[2, 1] = entryGrid
+        set_gtk_property!(grid, :column_homogeneous, true)
+        generic = new(grid.handle, field, label, entry, unitText)
+        return Gtk.gobject_move_ref(generic, grid)
+    end
+end
+
+mutable struct BoolParameter <: Gtk.CheckButton
+    handle::Ptr{Gtk.GObject}
+    field::Symbol
+
+    function BoolParameter(field::Symbol, label::AbstractString, value::Bool)
+        check = GtkCheckButton()
+        set_gtk_property!(check, :label, label)
+        set_gtk_property!(check, :active, value)
+        cb = new(check.handle, field)
+        return Gtk.gobject_move_ref(cb, check)
+    end
+end
+
 function ProtocolWidget(scanner=nothing)
     @info "Starting ProtocolWidget"
     uifile = joinpath(@__DIR__,"..","builder","protocolWidget.ui")
@@ -88,6 +166,7 @@ function initProtocolChoices(pw::ProtocolWidget)
         push!(cb, choice)
     end
     defaultIndex = findfirst(x -> x == scanner.generalParams.defaultProtocol, choices)
+    @show defaultIndex
     if !isnothing(defaultIndex)
         protocolName = choices[defaultIndex]
         protocol = Protocol(protocolName, pw.scanner)
@@ -106,30 +185,51 @@ function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
         set_gtk_property!(pw["txtBuffProtocolDescription", GtkTextBufferLeaf], :text, MPIMeasurements.description(protocol))
     end
     @idle_add begin 
-        for field in fieldnames(typeof(params))
+        # Clear old parameters
+        empty!(pw["boxProtocolParameter", BoxLeaf])
+
+        for (index, field) in enumerate(fieldnames(typeof(params)))
         @info "Try adding field $field"
-        try 
-            addProtocolParameter(pw, field, params)
-            @info "Added $field"
-        catch ex
-            @error ex
+            try 
+                @show typeof(params).types[index]
+                value = getfield(params, field)
+                addProtocolParameter(pw, parameterType(field, value), field, value)
+                @info "Added $field"
+            catch ex
+                @error ex
+            end
         end
-        end
+
+        showall(pw["boxProtocolParameter", BoxLeaf])
     end
 end
 
-function addProtocolParameter(pw::ProtocolWidget, field, params)
-    if haskey(pw.paramBuilder, field)
-        @info "Do special things for parameter $field"
-    else 
-        gridGeneric = object_(pw.builder, "gridGeneric",GtkGrid)
-        labelLeaf = gridGeneric[1, 1]
-        valueEntry = gridGeneric[2, 1]
-        set_gtk_property!(labelLeaf, :label, string(field))
-        set_gtk_property!(valueEntry, :text, string(getfield(params, field)))
-        #TODO set entry name/id to fetch it later
-        push!(pw["boxProtocolParameter", BoxLeaf], gridGeneric)
-    end
+function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value)
+    generic = GenericParameter(field, string(field), string(value))
+    push!(pw["boxProtocolParameter", BoxLeaf], generic)
+end
+
+function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value::T) where {T<:Quantity}
+    @info "Unitful parameter $field"
+    generic = UnitfulParameter(field, string(field), value)
+    push!(pw["boxProtocolParameter", BoxLeaf], generic)
+end
+
+function addProtocolParameter(pw::ProtocolWidget, ::SequenceParameterType, field, value)
+    seq = object_(pw.builder, "expSequence", GtkExpander)
+    push!(pw["boxProtocolParameter", BoxLeaf], seq)
+end
+
+
+function addProtocolParameter(pw::ProtocolWidget, ::PositionParameterType, field, value)
+    @info "Do something for positions $field"
+    pos = object_(pw.builder, "expPositions", GtkExpander)
+    push!(pw["boxProtocolParameter", BoxLeaf], pos)
+end
+
+function addProtocolParameter(pw::ProtocolWidget, ::BoolParameterType, field, value)
+    cb = BoolParameter(field, string(field), value)
+    push!(pw["boxProtocolParameter", BoxLeaf], cb)
 end
 
 function isMeasurementStore(m::ProtocolWidget, d::DatasetStore)
