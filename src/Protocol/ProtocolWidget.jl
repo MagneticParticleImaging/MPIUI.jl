@@ -3,6 +3,7 @@ mutable struct ProtocolWidget{T} <: Gtk.GtkBox
     handle::Ptr{Gtk.GObject}
     builder::GtkBuilder
     paramBuilder::Dict
+    updating::Bool
     # Protocol Interaction
     scanner::T
     protocol::Union{Protocol, Nothing}
@@ -115,7 +116,7 @@ function ProtocolWidget(scanner=nothing)
 
     paramBuilder = Dict(:sequence => "expSequence", :positions => "expPositions")
 
-    pw = ProtocolWidget(mainBox.handle, b, paramBuilder, scanner, protocol, nothing, nothing, 
+    pw = ProtocolWidget(mainBox.handle, b, paramBuilder, false, scanner, protocol, nothing, nothing, 
         mdfstore, zeros(Float32,0,0,0,0), "", now())
     Gtk.gobject_move_ref(pw, mainBox)
 
@@ -159,9 +160,30 @@ function initCallbacks(pw::ProtocolWidget)
         protocol = Protocol(protocolName, pw.scanner)
         updateProtocol(pw, protocol)
     end
+
+    signal_connect(pw["btnSaveProtocol", GtkButton], "clicked") do w
+        try 
+            # TODO try to pick protocol folder of current scanner?
+            filter = Gtk.GtkFileFilter(pattern=String("*.toml"))
+            fileName = save_dialog("Save Protocol", GtkNullContainer(), (filter, ))
+            if fileName != ""
+                saveProtocol(pw::ProtocolWidget, fileName)
+            end
+        catch e
+            @info e
+            showError(e)
+        end
+    end
+
+    signal_connect(pw["txtBuffProtocolDescription", GtkTextBufferLeaf], :changed) do w
+        if !pw.updating
+            @idle_add set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+        end
+    end
 end
 
 function initProtocolChoices(pw::ProtocolWidget)
+    pw.updating = true
     scanner = pw.scanner
     choices = getProtocolList(scanner)
     cb = pw["cmbProtocolSelection", GtkComboBoxText]
@@ -178,21 +200,21 @@ function initProtocolChoices(pw::ProtocolWidget)
             set_gtk_property!(cb, :active, defaultIndex)
         end
     end
+    pw.updating = false
 end
 
 function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
     params = protocol.params
     @info "Updating protocol"
     @idle_add begin
+        pw.updating = true
+        set_gtk_property!(pw["lblScannerName", GtkLabelLeaf], :label, name(pw.scanner))
         set_gtk_property!(pw["lblProtocolType", GtkLabelLeaf], :label, string(typeof(protocol)))
         set_gtk_property!(pw["txtBuffProtocolDescription", GtkTextBufferLeaf], :text, MPIMeasurements.description(protocol))
-    end
-    @idle_add begin 
         # Clear old parameters
         empty!(pw["boxProtocolParameter", BoxLeaf])
 
         for field in fieldnames(typeof(params))
-        @info "Try adding field $field"
             try 
                 value = getfield(params, field)
                 tooltip = string(fielddoc(typeof(params), field))
@@ -206,17 +228,21 @@ function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
             end
         end
 
+        set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, false)
+        pw.updating = false
         showall(pw["boxProtocolParameter", BoxLeaf])
     end
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value, tooltip)
     generic = GenericParameter(field, string(field), string(value), tooltip)
+    addGenericCallback(pw, generic.entry)
     push!(pw["boxProtocolParameter", BoxLeaf], generic)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value::T, tooltip) where {T<:Quantity}
     generic = UnitfulParameter(field, string(field), value, tooltip)
+    addGenericCallback(pw, generic.entry)
     push!(pw["boxProtocolParameter", BoxLeaf], generic)
 end
 
@@ -235,6 +261,7 @@ end
 
 function addProtocolParameter(pw::ProtocolWidget, ::BoolParameterType, field, value, tooltip)
     cb = BoolParameter(field, string(field), value, tooltip)
+    addGenericCallback(pw, cb)
     push!(pw["boxProtocolParameter", BoxLeaf], cb)
 end
 
@@ -244,6 +271,29 @@ end
 
 function addTooltip(object, tooltip::Nothing)
     # NOP
+end
+
+function addGenericCallback(pw::ProtocolWidget, generic)
+    signal_connect(generic, "changed") do w
+        if !pw.updating
+            @idle_add set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+        end
+    end
+end
+
+function addGenericCallback(pw::ProtocolWidget, cb::BoolParameter)
+    signal_connect(cb, "toggled") do w
+        if !pw.updating
+            @idle_add set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+        end
+    end
+end
+
+function saveProtocol(pw::ProtocolWidget, fileName::AbstractString)
+    @info "Saving protocol to $fileName"
+    # TODO Serialize into protocol
+    # TODO Update protocol selection
+    # TODO Pick new protocol
 end
 
 function isMeasurementStore(m::ProtocolWidget, d::DatasetStore)
