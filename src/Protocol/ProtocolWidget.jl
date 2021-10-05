@@ -40,11 +40,12 @@ mutable struct GenericParameter <: Gtk.GtkGrid
     label::GtkLabel
     entry::GtkEntry
 
-    function GenericParameter(field::Symbol, label::AbstractString, value::AbstractString)
+    function GenericParameter(field::Symbol, label::AbstractString, value::AbstractString, tooltip::Union{Nothing, AbstractString} = nothing)
         grid = GtkGrid()
         entry = GtkEntry()
         label = GtkLabel(label)
         set_gtk_property!(entry, :text, value)
+        addTooltip(label, tooltip)
         grid[1, 1] = label
         grid[2, 1] = entry
         set_gtk_property!(grid, :column_homogeneous, true)
@@ -60,7 +61,7 @@ mutable struct UnitfulParameter <: Gtk.GtkGrid
     entry::GtkEntry
     unit::AbstractString
 
-    function UnitfulParameter(field::Symbol, label::AbstractString, value::T) where {T<:Quantity}
+    function UnitfulParameter(field::Symbol, label::AbstractString, value::T, tooltip::Union{Nothing, AbstractString} = nothing) where {T<:Quantity}
         grid = GtkGrid()
         
         entryGrid = GtkGrid()
@@ -74,6 +75,7 @@ mutable struct UnitfulParameter <: Gtk.GtkGrid
 
 
         label = GtkLabel(label)
+        addTooltip(label, tooltip)
         grid[1, 1] = label
         grid[2, 1] = entryGrid
         set_gtk_property!(grid, :column_homogeneous, true)
@@ -86,10 +88,11 @@ mutable struct BoolParameter <: Gtk.CheckButton
     handle::Ptr{Gtk.GObject}
     field::Symbol
 
-    function BoolParameter(field::Symbol, label::AbstractString, value::Bool)
+    function BoolParameter(field::Symbol, label::AbstractString, value::Bool, tooltip::Union{Nothing, AbstractString} = nothing)
         check = GtkCheckButton()
         set_gtk_property!(check, :label, label)
         set_gtk_property!(check, :active, value)
+        addTooltip(check, tooltip)
         cb = new(check.handle, field)
         return Gtk.gobject_move_ref(cb, check)
     end
@@ -188,12 +191,15 @@ function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
         # Clear old parameters
         empty!(pw["boxProtocolParameter", BoxLeaf])
 
-        for (index, field) in enumerate(fieldnames(typeof(params)))
+        for field in fieldnames(typeof(params))
         @info "Try adding field $field"
             try 
-                @show typeof(params).types[index]
                 value = getfield(params, field)
-                addProtocolParameter(pw, parameterType(field, value), field, value)
+                tooltip = string(fielddoc(typeof(params), field))
+                if contains(tooltip, "has field") #fielddoc for fields with no docstring returns "Type x has fields ..." listing all fields with docstring
+                    tooltip = nothing
+                end
+                addProtocolParameter(pw, parameterType(field, value), field, value, tooltip)
                 @info "Added $field"
             catch ex
                 @error ex
@@ -204,32 +210,40 @@ function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
     end
 end
 
-function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value)
-    generic = GenericParameter(field, string(field), string(value))
+function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value, tooltip)
+    generic = GenericParameter(field, string(field), string(value), tooltip)
     push!(pw["boxProtocolParameter", BoxLeaf], generic)
 end
 
-function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value::T) where {T<:Quantity}
-    @info "Unitful parameter $field"
-    generic = UnitfulParameter(field, string(field), value)
+function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value::T, tooltip) where {T<:Quantity}
+    generic = UnitfulParameter(field, string(field), value, tooltip)
     push!(pw["boxProtocolParameter", BoxLeaf], generic)
 end
 
-function addProtocolParameter(pw::ProtocolWidget, ::SequenceParameterType, field, value)
+function addProtocolParameter(pw::ProtocolWidget, ::SequenceParameterType, field, value, tooltip)
     seq = object_(pw.builder, "expSequence", GtkExpander)
+    addTooltip(object_(pw.builder, "lblSequence", GtkLabel), tooltip)
     push!(pw["boxProtocolParameter", BoxLeaf], seq)
 end
 
 
-function addProtocolParameter(pw::ProtocolWidget, ::PositionParameterType, field, value)
-    @info "Do something for positions $field"
+function addProtocolParameter(pw::ProtocolWidget, ::PositionParameterType, field, value, tooltip)
     pos = object_(pw.builder, "expPositions", GtkExpander)
+    addTooltip(object_(pw.builder, "lblPositions", GtkLabel), tooltip)
     push!(pw["boxProtocolParameter", BoxLeaf], pos)
 end
 
-function addProtocolParameter(pw::ProtocolWidget, ::BoolParameterType, field, value)
-    cb = BoolParameter(field, string(field), value)
+function addProtocolParameter(pw::ProtocolWidget, ::BoolParameterType, field, value, tooltip)
+    cb = BoolParameter(field, string(field), value, tooltip)
     push!(pw["boxProtocolParameter", BoxLeaf], cb)
+end
+
+function addTooltip(object, tooltip::AbstractString)
+    set_gtk_property!(object, :tooltip_text, tooltip)
+end
+
+function addTooltip(object, tooltip::Nothing)
+    # NOP
 end
 
 function isMeasurementStore(m::ProtocolWidget, d::DatasetStore)

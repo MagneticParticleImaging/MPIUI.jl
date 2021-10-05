@@ -420,7 +420,7 @@
       </object>
     </child>
     <child type="label">
-      <object class="GtkLabel">
+      <object class="GtkLabel" id="lblSequence">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="label" translatable="yes">Sequence</property>
@@ -596,7 +596,7 @@
       </object>
     </child>
     <child type="label">
-      <object class="GtkLabel" id="label21">
+      <object class="GtkLabel" id="lblPositions">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="label" translatable="yes">Positions</property>

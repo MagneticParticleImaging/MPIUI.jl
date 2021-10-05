@@ -14,6 +14,7 @@ using ImageUtils: converttometer, ColoringParams
 using MPIMeasurements.Sockets
 using Logging, LoggingExtras
 using ThreadPools
+using REPL: fielddoc
 
 ENV["MPILIB_UI"] = "Nothing"
 
