@@ -1,3 +1,5 @@
+@enum ProtocolState INIT RUNNING FINISHED FAILED
+
 mutable struct ProtocolWidget{T} <: Gtk.GtkBox
   # Gtk 
   handle::Ptr{Gtk.GObject}
@@ -9,6 +11,9 @@ mutable struct ProtocolWidget{T} <: Gtk.GtkBox
   protocol::Union{Protocol, Nothing}
   biChannel::Union{BidirectionalChannel{ProtocolEvent}, Nothing}
   eventHandler::Union{Timer, Nothing}
+  protocolState::ProtocolState
+  # Display
+  # TODO
   # Storage
   mdfstore::MDFDatasetStore
   dataBGStore::Array{Float32,4}
@@ -35,13 +40,13 @@ end
 function parameterType(::Symbol, value::Bool)
     return BoolParameterType()
 end
-mutable struct GenericParameter <: Gtk.GtkGrid
+mutable struct GenericParameter{T} <: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
   field::Symbol
   label::GtkLabel
   entry::GtkEntry
 
-  function GenericParameter(field::Symbol, label::AbstractString, value::AbstractString, tooltip::Union{Nothing, AbstractString} = nothing)
+  function GenericParameter{T}(field::Symbol, label::AbstractString, value::AbstractString, tooltip::Union{Nothing, AbstractString} = nothing) where {T}
     grid = GtkGrid()
     entry = GtkEntry()
     label = GtkLabel(label)
@@ -60,7 +65,7 @@ mutable struct UnitfulParameter <: Gtk.GtkGrid
   field::Symbol
   label::GtkLabel
   entry::GtkEntry
-  unit::AbstractString
+  unitValue::Unitful.Unit
 
   function UnitfulParameter(field::Symbol, label::AbstractString, value::T, tooltip::Union{Nothing, AbstractString} = nothing) where {T<:Quantity}
     grid = GtkGrid()
@@ -68,7 +73,8 @@ mutable struct UnitfulParameter <: Gtk.GtkGrid
     entryGrid = GtkGrid()
     entry = GtkEntry()
     set_gtk_property!(entry, :text, ustrip(value))
-    unitText = string(unit(value))
+    unitValue = unit(value)
+    unitText = string(unitValue)
     unitLabel = GtkLabel(unitText)
     entryGrid[1, 1] = entry
     entryGrid[2, 1] = unitLabel
@@ -78,7 +84,7 @@ mutable struct UnitfulParameter <: Gtk.GtkGrid
     grid[1, 1] = label
     grid[2, 1] = entryGrid
     set_gtk_property!(grid, :column_homogeneous, true)
-    generic = new(grid.handle, field, label, entry, unitText)
+    generic = new(grid.handle, field, label, entry, unitValue)
     return Gtk.gobject_move_ref(generic, grid)
   end
 end
@@ -94,6 +100,19 @@ mutable struct BoolParameter <: Gtk.CheckButton
     addTooltip(check, tooltip)
     cb = new(check.handle, field)
     return Gtk.gobject_move_ref(cb, check)
+  end
+end
+
+# GtkObject only exists once!
+mutable struct SequenceParameter <: Gtk.GtkExpander
+  handle::Ptr{Gtk.GObject}
+  field::Symbol
+
+  function SequenceParameter(pw::ProtocolWidget, field::Symbol, tooltip::Union{Nothing, AbstractString} = nothing)
+    exp = object_(pw.builder, "expSequence", GtkExpander)
+    addTooltip(object_(pw.builder, "lblSequence", GtkLabel), tooltip)
+    seq = new(exp.handle, field)
+    return Gtk.gobject_move_ref(seq, exp)
   end
 end
 
@@ -114,7 +133,7 @@ function ProtocolWidget(scanner=nothing)
 
   paramBuilder = Dict(:sequence => "expSequence", :positions => "expPositions")
 
-  pw = ProtocolWidget(mainBox.handle, b, paramBuilder, false, scanner, protocol, nothing, nothing, 
+  pw = ProtocolWidget(mainBox.handle, b, paramBuilder, false, scanner, protocol, nothing, nothing, INIT,
         mdfstore, zeros(Float32,0,0,0,0), "", now())
   Gtk.gobject_move_ref(pw, mainBox)
 
@@ -136,11 +155,17 @@ function ProtocolWidget(scanner=nothing)
 end
 
 function initCallbacks(pw::ProtocolWidget)
-  signal_connect(pw["tbRun", ToolButtonLeaf], :clicked) do w
-    #startProtocol(pw)
+  signal_connect(pw["tbRun", ToggleToolButtonLeaf], :toggled) do w
+    pw.updating = true
+    #if get_gtk_property(w, :active, Bool)
+    #  if pw.protocolState == INIT
+    #  else
+    #end
+    startProtocol(pw)
+    pw.updating = false
   end
 
-  signal_connect(pw["tbPause", ToolButtonLeaf], :clicked) do w
+  signal_connect(pw["tbPause", ToggleToolButtonLeaf], :toggled) do w
     #tryPauseProtocol(pw)
   end
 
@@ -191,7 +216,7 @@ function initCallbacks(pw::ProtocolWidget)
     destroy(dlg)
   end
 
-  for adj in ["adjNumFGFrames", "adjNumAverages", "adjNumFrameAverages", "adjNumBGFrames"]
+  for adj in ["adjNumFrames", "adjNumAverages", "adjNumFrameAverages", "adjNumBGFrames"]
     signal_connect(pw[adj, AdjustmentLeaf], "value_changed") do w
       if !pw.updating
         @idle_add set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
@@ -256,7 +281,7 @@ function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value, tooltip)
-  generic = GenericParameter(field, string(field), string(value), tooltip)
+  generic = GenericParameter{typeof(value)}(field, string(field), string(value), tooltip)
   addGenericCallback(pw, generic.entry)
   push!(pw["boxProtocolParameter", BoxLeaf], generic)
 end
@@ -268,32 +293,14 @@ function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field,
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::SequenceParameterType, field, value, tooltip)
-  seq = object_(pw.builder, "expSequence", GtkExpander)
-  addTooltip(object_(pw.builder, "lblSequence", GtkLabel), tooltip)
-  updateSequence(pw, pw.protocol.params.sequence)
+  seq = SequenceParameter(pw, field, tooltip)
+  updateSequence(pw, value) # Set default sequence values
   push!(pw["boxProtocolParameter", BoxLeaf], seq)
 end
 
 function updateSequence(pw::ProtocolWidget, seq::AbstractString)
   s = Sequence(pw.scanner, seq)
   updateSequence(pw, s)
-end
-
-function updateSequence(pw::ProtocolWidget, seq::Sequence)
-  dfString = *([ string(x*1e3," x ") for x in diag(ustrip.(dfStrength(seq)[1,:,:])) ]...)[1:end-3]
-  dfDividerStr = *([ string(x," x ") for x in unique(vec(dfDivider(seq))) ]...)[1:end-3]
-  
-  @idle_add begin
-    set_gtk_property!(pw["entSequenceName",EntryLeaf], :text, MPIFiles.name(seq)) 
-    set_gtk_property!(pw["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(seq))")
-    set_gtk_property!(pw["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(seq))")
-    set_gtk_property!(pw["adjNumFGFrames", AdjustmentLeaf], :value, acqNumFrames(seq))
-    set_gtk_property!(pw["adjNumFrameAverages", AdjustmentLeaf], :value, acqNumFrameAverages(seq))
-    set_gtk_property!(pw["adjNumAverages", AdjustmentLeaf], :value, acqNumAverages(seq))
-    set_gtk_property!(pw["entDFStrength",EntryLeaf], :text, dfString)
-    set_gtk_property!(pw["entDFDivider",EntryLeaf], :text, dfDividerStr)
-    #setInfoParams(pw)
-  end
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::PositionParameterType, field, value, tooltip)
@@ -345,4 +352,68 @@ function isMeasurementStore(m::ProtocolWidget, d::DatasetStore)
   else
     return d.path == m.mdfstore.path
   end
+end
+
+function updateSequence(pw::ProtocolWidget, seq::Sequence)
+  dfString = *([ string(x*1e3," x ") for x in diag(ustrip.(dfStrength(seq)[1,:,:])) ]...)[1:end-3]
+  dfDividerStr = *([ string(x," x ") for x in unique(vec(dfDivider(seq))) ]...)[1:end-3]
+  
+  @idle_add begin
+    set_gtk_property!(pw["entSequenceName",EntryLeaf], :text, MPIFiles.name(seq)) 
+    set_gtk_property!(pw["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(seq))")
+    set_gtk_property!(pw["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(seq))")
+    set_gtk_property!(pw["adjNumFrames", AdjustmentLeaf], :value, acqNumFrames(seq))
+    set_gtk_property!(pw["adjNumFrameAverages", AdjustmentLeaf], :value, acqNumFrameAverages(seq))
+    set_gtk_property!(pw["adjNumAverages", AdjustmentLeaf], :value, acqNumAverages(seq))
+    set_gtk_property!(pw["entDFStrength",EntryLeaf], :text, dfString)
+    set_gtk_property!(pw["entDFDivider",EntryLeaf], :text, dfDividerStr)
+    #setInfoParams(pw)
+  end
+end
+
+function startProtocol(pw::ProtocolWidget)
+  @info "Setting protocol parameters"
+  try 
+  for parameterObj in pw["boxProtocolParameter", BoxLeaf]
+    setProtocolParameter(pw, parameterObj, pw.protocol.params)
+  end
+catch e
+  @error e
+end
+  @info "Init protocol"
+  @info "Execute protocol"
+end
+
+function setProtocolParameter(pw::ProtocolWidget, parameterObj::BoolParameter, params::ProtocolParams)
+  value = get_gtk_property(parameterObj, :active, Bool)
+  field = parameterObj.field
+  @info "Setting field $field"
+  setfield!(params, field, value)
+end
+
+function setProtocolParameter(pw::ProtocolWidget, parameterObj::UnitfulParameter, params::ProtocolParams)
+  valueString = get_gtk_property(parameterObj.entry, :text, String)
+  value = tryparse(Float64, valueString)
+  field = parameterObj.field
+  @info "Setting field $field"
+  setfield!(params, field, value * parameterObj.unitValue)
+end
+
+function setProtocolParameter(pw::ProtocolWidget, parameterObj::GenericParameter{T}, params::ProtocolParams) where {T}
+  valueString = get_gtk_property(parameterObj.entry, :text, String)
+  value = tryparse(T, valueString)
+  field = parameterObj.field
+  @info "Setting field $field"
+  setfield!(params, field, value)
+end
+
+function setProtocolParameter(pw::ProtocolWidget, parameterObj::SequenceParameter, params::ProtocolParams)
+  @info "Trying to set sequence"
+  seq = getfield(params, parameterObj.field)
+
+  acqNumFrames(seq, get_gtk_property(pw["adjNumFrames",AdjustmentLeaf], :value, Int64))
+  acqNumFrameAverages(seq, get_gtk_property(pw["adjNumFrameAverages",AdjustmentLeaf], :value, Int64))
+  acqNumAverages(seq, get_gtk_property(pw["adjNumAverages",AdjustmentLeaf], :value, Int64))
+  #dfDivider(seq)
+  #dfStrength TODO, doesnt have a function atm
 end

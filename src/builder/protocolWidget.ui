@@ -73,14 +73,14 @@
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
-  <object class="GtkAdjustment" id="adjNumFGFrames">
-    <property name="upper">1000000000</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
-  </object>
   <object class="GtkAdjustment" id="adjNumFrameAverages">
     <property name="lower">1</property>
     <property name="upper">1000000</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
+  </object>
+  <object class="GtkAdjustment" id="adjNumFrames">
+    <property name="upper">1000000000</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
@@ -130,7 +130,7 @@
             <property name="hexpand">True</property>
             <property name="width_chars">0</property>
             <property name="text" translatable="yes">1</property>
-            <property name="adjustment">adjNumFGFrames</property>
+            <property name="adjustment">adjNumFrames</property>
             <property name="value">1</property>
           </object>
           <packing>
@@ -191,7 +191,7 @@
         <child>
           <object class="GtkSpinButton">
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
+            <property name="can_focus">False</property>
             <property name="width_chars">0</property>
             <property name="text" translatable="yes">1</property>
             <property name="adjustment">adjNumSubperiods</property>
@@ -214,19 +214,6 @@
           </packing>
         </child>
         <child>
-          <object class="GtkSpinButton">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="width_chars">0</property>
-            <property name="text" translatable="yes">0</property>
-            <property name="adjustment">adjNumBGFrames</property>
-          </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">9</property>
-          </packing>
-        </child>
-        <child>
           <object class="GtkLabel">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
@@ -243,23 +230,11 @@
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="halign">start</property>
-            <property name="label" translatable="yes"># BG Frames</property>
-          </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">9</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="halign">start</property>
             <property name="label" translatable="yes">Sequence</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">10</property>
+            <property name="top_attach">9</property>
           </packing>
         </child>
         <child>
@@ -378,7 +353,7 @@
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">12</property>
+            <property name="top_attach">11</property>
           </packing>
         </child>
         <child>
@@ -389,7 +364,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">12</property>
+            <property name="top_attach">11</property>
           </packing>
         </child>
         <child>
@@ -401,7 +376,7 @@
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">11</property>
+            <property name="top_attach">10</property>
             <property name="width">2</property>
           </packing>
         </child>
@@ -414,7 +389,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">10</property>
+            <property name="top_attach">9</property>
           </packing>
         </child>
       </object>
@@ -534,29 +509,6 @@
           </packing>
         </child>
         <child>
-          <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="halign">start</property>
-            <property name="label" translatable="yes">Velo</property>
-          </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">3</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkEntry" id="entVelRob">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="width_chars">1</property>
-          </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">3</property>
-          </packing>
-        </child>
-        <child>
           <object class="GtkButton" id="btLoadArbPos">
             <property name="label" translatable="yes">Load</property>
             <property name="visible">True</property>
@@ -565,7 +517,7 @@
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">4</property>
+            <property name="top_attach">3</property>
           </packing>
         </child>
         <child>
@@ -576,7 +528,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">4</property>
+            <property name="top_attach">3</property>
           </packing>
         </child>
         <child>
@@ -589,7 +541,7 @@
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">5</property>
+            <property name="top_attach">4</property>
             <property name="width">2</property>
           </packing>
         </child>
@@ -636,7 +588,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
-                  <object class="GtkToolButton" id="tbRun">
+                  <object class="GtkToggleToolButton" id="tbRun">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="tooltip_text" translatable="yes">Measurement</property>
@@ -651,7 +603,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkToolButton" id="tbPause">
+                  <object class="GtkToggleToolButton" id="tbPause">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="tooltip_text" translatable="yes">Background</property>
@@ -943,19 +895,6 @@
                     <property name="expand">False</property>
                     <property name="fill">True</property>
                     <property name="position">2</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkButton" id="btnNewProtocol">
-                    <property name="label" translatable="yes">New Protocol</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">3</property>
                   </packing>
                 </child>
               </object>
