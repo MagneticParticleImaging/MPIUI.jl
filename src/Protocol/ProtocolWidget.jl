@@ -1,4 +1,4 @@
-@enum ProtocolState INIT RUNNING FINISHED FAILED
+@enum ProtocolState UNDEFINED INIT RUNNING PAUSED FINISHED FAILED
 
 mutable struct ProtocolWidget{T} <: Gtk.GtkBox
   # Gtk 
@@ -13,7 +13,8 @@ mutable struct ProtocolWidget{T} <: Gtk.GtkBox
   eventHandler::Union{Timer, Nothing}
   protocolState::ProtocolState
   # Display
-  # TODO
+  progress::Union{ProgressEvent, Nothing}
+  rawDataWidget::RawDataWidget
   # Storage
   mdfstore::MDFDatasetStore
   dataBGStore::Array{Float32,4}
@@ -65,14 +66,14 @@ mutable struct UnitfulParameter <: Gtk.GtkGrid
   field::Symbol
   label::GtkLabel
   entry::GtkEntry
-  unitValue::Unitful.Unit
+  unitValue
 
   function UnitfulParameter(field::Symbol, label::AbstractString, value::T, tooltip::Union{Nothing, AbstractString} = nothing) where {T<:Quantity}
     grid = GtkGrid()
       
     entryGrid = GtkGrid()
     entry = GtkEntry()
-    set_gtk_property!(entry, :text, ustrip(value))
+    set_gtk_property!(entry, :text, string(ustrip(value)))
     unitValue = unit(value)
     unitText = string(unitValue)
     unitLabel = GtkLabel(unitText)
@@ -133,44 +134,93 @@ function ProtocolWidget(scanner=nothing)
 
   paramBuilder = Dict(:sequence => "expSequence", :positions => "expPositions")
 
-  pw = ProtocolWidget(mainBox.handle, b, paramBuilder, false, scanner, protocol, nothing, nothing, INIT,
-        mdfstore, zeros(Float32,0,0,0,0), "", now())
+  pw = ProtocolWidget(mainBox.handle, b, paramBuilder, false, scanner, protocol, nothing, nothing, UNDEFINED,
+        nothing, RawDataWidget(), mdfstore, zeros(Float32,0,0,0,0), "", now())
   Gtk.gobject_move_ref(pw, mainBox)
 
-  if isnothing(pw.scanner)
-    @idle_add begin
-      set_gtk_property!(pw["tbStart",ToolButtonLeaf],:sensitive,false)
-      set_gtk_property!(pw["tbPause",ToolButtonLeaf],:sensitive,false)
-      set_gtk_property!(pw["tbCancel",ToolButtonLeaf],:sensitive,false)      
-      set_gtk_property!(pw["tbRestart",ToolButtonLeaf],:sensitive,false)      
-    end
-  else
+  @idle_add begin
+    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf],:sensitive,false)
+    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf],:sensitive,false)
+    set_gtk_property!(pw["tbCancel",ToolButtonLeaf],:sensitive,false)      
+    set_gtk_property!(pw["tbRestart",ToolButtonLeaf],:sensitive,false)      
+  end
+  if !isnothing(pw.scanner)
     # Load default protocol and set params
     # + dummy plotting?
     initProtocolChoices(pw)
     initCallbacks(pw)
+    @idle_add set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf],:sensitive,true)
   end
+
+  # Dummy plotting for warmstart during protocol execution
+  @idle_add updateData(pw.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
+
   @info "Finished starting ProtocolWidget"
   return pw
 end
 
+function displayProgress(pw::ProtocolWidget)
+  progress = "N/A"
+  fraction = 0.0
+  if !isnothing(pw.progress) && pw.protocolState == RUNNING
+    progress = "$(pw.progress.done)/$(pw.progress.total) $(pw.progress.unit)"
+    fraction = pw.progress.done/pw.progress.total
+  elseif pw.protocolState == FINISHED
+    progress = "FINISHDED"
+    fraction = 1.0
+  end
+  @idle_add begin
+    set_gtk_property!(pw["pbProtocol", ProgressBar], :text, progress)
+    set_gtk_property!(pw["pbProtocol", ProgressBar], :fraction, fraction)
+  end
+end
+
+include("EventHandler.jl")
+
 function initCallbacks(pw::ProtocolWidget)
   signal_connect(pw["tbRun", ToggleToolButtonLeaf], :toggled) do w
-    pw.updating = true
-    #if get_gtk_property(w, :active, Bool)
-    #  if pw.protocolState == INIT
-    #  else
-    #end
-    startProtocol(pw)
-    pw.updating = false
+    if !pw.updating
+      if get_gtk_property(w, :active, Bool)
+        if startProtocol(pw)
+          @idle_add begin 
+            pw.updating = true
+            set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, false)
+            set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
+            set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, true)
+            set_gtk_property!(pw["cmbProtocolSelection", GtkComboBoxText], :sensitive, false)
+            pw.updating = false
+          end
+        else
+          # Something went wrong during start, we dont count button press
+          set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :active, false)
+        end
+      else 
+        @idle_add begin 
+          pw.updating = true
+          set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
+          set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
+          set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, false)
+          set_gtk_property!(pw["cmbProtocolSelection", GtkComboBoxText], :sensitive, true)
+          pw.updating = false
+        end
+      end
+    end
   end
 
   signal_connect(pw["tbPause", ToggleToolButtonLeaf], :toggled) do w
-    #tryPauseProtocol(pw)
+    if !pw.updating
+      if get_gtk_property(w, :active, Bool)
+        tryPauseProtocol(pw)
+      else 
+        tryResumeProtocol(pw)
+      end
+      @idle_add set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
+    end
   end
 
   signal_connect(pw["tbCancel", ToolButtonLeaf], :clicked) do w
     #tryCancelProtocol(pw)
+    @idle_add set_gtk_property!(pw["tbRun", ToggleToolButtonLeaf], :active, false)
   end
 
   signal_connect(pw["tbRestart", ToolButtonLeaf], :clicked) do w
@@ -369,19 +419,6 @@ function updateSequence(pw::ProtocolWidget, seq::Sequence)
     set_gtk_property!(pw["entDFDivider",EntryLeaf], :text, dfDividerStr)
     #setInfoParams(pw)
   end
-end
-
-function startProtocol(pw::ProtocolWidget)
-  @info "Setting protocol parameters"
-  try 
-  for parameterObj in pw["boxProtocolParameter", BoxLeaf]
-    setProtocolParameter(pw, parameterObj, pw.protocol.params)
-  end
-catch e
-  @error e
-end
-  @info "Init protocol"
-  @info "Execute protocol"
 end
 
 function setProtocolParameter(pw::ProtocolWidget, parameterObj::BoolParameter, params::ProtocolParams)
