@@ -119,6 +119,18 @@ mutable struct SequenceParameter <: Gtk.GtkExpander
   end
 end
 
+mutable struct PositionParameter <: Gtk.GtkExpander
+  handle::Ptr{Gtk.GObject}
+  field::Symbol
+
+  function PositionParameter(pw::ProtocolWidget, field::Symbol, tooltip::Union{Nothing, AbstractString} = nothing)
+    pos = object_(pw.builder, "expPositions", GtkExpander)
+    addTooltip(object_(pw.builder, "lblPositions", GtkLabel), tooltip)
+    posParam = new(pos.handle, field)
+    return Gtk.gobject_move_ref(posParam, pos)
+  end
+end
+
 function ProtocolWidget(scanner=nothing)
   @info "Starting ProtocolWidget"
   uifile = joinpath(@__DIR__,"..","builder","protocolWidget.ui")
@@ -170,7 +182,7 @@ function displayProgress(pw::ProtocolWidget)
   progress = "N/A"
   fraction = 0.0
   if !isnothing(pw.progress) && pw.protocolState == RUNNING
-    progress = "$(pw.progress.done)/$(pw.progress.total) $(pw.progress.unit)"
+    progress = "$(pw.progress.unit) $(pw.progress.done)/$(pw.progress.total)"
     fraction = pw.progress.done/pw.progress.total
   elseif pw.protocolState == FINISHED
     progress = "FINISHED"
@@ -379,8 +391,8 @@ function updateSequence(pw::ProtocolWidget, seq::AbstractString)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::PositionParameterType, field, value, tooltip)
-  pos = object_(pw.builder, "expPositions", GtkExpander)
-  addTooltip(object_(pw.builder, "lblPositions", GtkLabel), tooltip)
+  pos = PositionParameter(pw, field, tooltip)
+  updatePositions(pw, value)
   push!(pw["boxProtocolParameter", BoxLeaf], pos)
 end
 
@@ -446,6 +458,22 @@ function updateSequence(pw::ProtocolWidget, seq::Sequence)
   end
 end
 
+function updatePositions(pw::ProtocolWidget, pos::Union{Positions, Nothing})
+  if !isnothing(pos)
+    shp = MPIFiles.shape(pos)
+    shpStr = @sprintf("%d x %d x %d", shp[1],shp[2],shp[3])
+    fov = Float64.(ustrip.(uconvert.(Unitful.mm,MPIFiles.fieldOfView(pos)))) # convert to mm
+    fovStr = @sprintf("%.2f x %.2f x %.2f", fov[1],fov[2],fov[3])
+    ctr = Float64.(ustrip.(uconvert.(Unitful.mm,MPIFiles.fieldOfViewCenter(pos)))) # convert to mm
+    ctrStr = @sprintf("%.2f x %.2f x %.2f", ctr[1],ctr[2],ctr[3])
+    @idle_add begin 
+      set_gtk_property!(pw["entGridShape",EntryLeaf], :text, shpStr)
+      set_gtk_property!(pw["entFOV",EntryLeaf], :text, fovStr)
+      set_gtk_property!(pw["entCenter",EntryLeaf], :text, ctrStr)
+    end
+  end
+end
+
 function setProtocolParameter(pw::ProtocolWidget, parameterObj::BoolParameter, params::ProtocolParams)
   value = get_gtk_property(parameterObj, :active, Bool)
   field = parameterObj.field
@@ -478,4 +506,40 @@ function setProtocolParameter(pw::ProtocolWidget, parameterObj::SequenceParamete
   acqNumAverages(seq, get_gtk_property(pw["adjNumAverages",AdjustmentLeaf], :value, Int64))
   #dfDivider(seq)
   #dfStrength TODO, doesnt have a function atm
+end
+
+function setProtocolParameter(pw::ProtocolWidget, parameterObj::PositionParameter, params::ProtocolParams)
+  # Construct pos
+  @info "Trying to set pos"
+  shpString = get_gtk_property(pw["entGridShape",EntryLeaf], :text, String)
+  shp_ = tryparse.(Int64,split(shpString,"x"))
+  fovString = get_gtk_property(pw["entFOV",EntryLeaf], :text, String)
+  fov_ = tryparse.(Float64,split(fovString,"x"))
+  centerString = get_gtk_property(pw["entCenter",EntryLeaf], :text, String)
+  center_ = tryparse.(Float64,split(centerString,"x"))
+  if any(shp_ .== nothing) || any(fov_ .== nothing) || any(center_ .== nothing)  ||
+   length(shp_) != 3 || length(fov_) != 3 || length(center_) != 3
+    @warn "Mismatch dimension for positions"
+    @idle_add set_gtk_property!(pw["tbCalibration",ToggleToolButtonLeaf], :active, false)
+    return
+  end
+
+  shp = shp_
+  fov = fov_ .*1Unitful.mm
+  ctr = center_ .*1Unitful.mm
+
+  if get_gtk_property(pw["cbUseArbitraryPos",CheckButtonLeaf], :active, Bool) == false
+    cartGrid = RegularGridPositions(shp,fov,ctr)
+  else
+    filename = get_gtk_property(pw["entArbitraryPos",EntryLeaf],:text,String)
+    if filename != ""
+        cartGrid = h5open(filename, "r") do file
+            positions = Positions(file)
+        end
+    else
+      error("Filename Arbitrary Positions empty!")
+    end
+  end
+
+  setfield!(params, parameterObj.field, cartGrid)
 end
