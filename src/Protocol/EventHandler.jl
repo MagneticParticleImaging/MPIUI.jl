@@ -218,6 +218,26 @@ function denyResumeProtocol(pw::ProtocolWidget)
 end
 
 ### Cancel Default ###
+function tryCancelProtocol(pw::ProtocolWidget)
+  put!(pw.biChannel, CancelEvent())
+end
+
+function handleSuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::CancelEvent)
+  @info "Protocol cancelled"
+  pw.protocolState = FAILED
+  return true
+end
+
+function handleUnsupportedOperation(pw::ProtocolWidget, protocol::Protocol, event::CancelEvent)
+  @warn "Protocol can not be cancelled"
+  return false
+end
+
+function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::CancelEvent)
+  @warn "Protocol failed to be cancelled"
+  return false
+end
+
 ### Restart Default ###
 ### Finish Default ###
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::FinishedNotificationEvent)

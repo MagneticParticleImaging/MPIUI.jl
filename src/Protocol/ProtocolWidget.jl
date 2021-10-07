@@ -256,8 +256,7 @@ function initCallbacks(pw::ProtocolWidget)
   end
 
   signal_connect(pw["tbCancel", ToolButtonLeaf], :clicked) do w
-    #tryCancelProtocol(pw)
-    @idle_add set_gtk_property!(pw["tbRun", ToggleToolButtonLeaf], :active, false)
+    tryCancelProtocol(pw)
   end
 
   signal_connect(pw["tbRestart", ToolButtonLeaf], :clicked) do w
