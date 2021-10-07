@@ -46,22 +46,11 @@ function eventHandler(pw::ProtocolWidget, timer::Timer)
       @info "Finished event handler"
       confirmFinishedProtocol(pw)
       close(timer)
-      #@idle_add begin
-      #  set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
-      #  set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
-      #  #set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
-      #end
     end
 
   catch ex
-    #confirmFinishedProtocol(pw)
+    confirmFinishedProtocol(pw)
     close(timer)
-    #close(timerCalibration)
-    #@idle_add begin
-    #  set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
-    #  set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
-    #  #set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
-    #end
     showError(ex)
   end
 end
@@ -311,4 +300,43 @@ function handleFinished(pw::ProtocolWidget, protocol::AsyncMeasurementProtocol)
   bufferRequest = DataQueryEvent("BUFFER")
   put!(pw.biChannel, bufferRequest)
   return false
+end
+
+### RobotBasedSystemMatrixProtocol ###
+function handleNewProgress(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtocol, event::ProgressEvent)
+  dataQuery = DataQueryEvent("SIGNAL")
+  put!(pw.biChannel, dataQuery)
+  return false
+end
+
+function handleEvent(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtocol, event::DataAnswerEvent)
+  channel = pw.biChannel
+  if event.query.message == "SIGNAL"
+    @info "Received current signal"
+    frame = event.data
+    if !isnothing(frame)
+      #if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
+        seq = pw.protocol.params.sequence
+        deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
+        updateData(pw.rawDataWidget, frame, deltaT)
+      #end
+    end
+    # Ask for next progress
+    progressQuery = ProgressQueryEvent()
+    isopen(channel) && pw.protocolState == RUNNING && put!(channel, progressQuery)
+  end
+  return false
+end
+
+function handleFinished(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtocol)
+  request = DatasetStoreStorageRequestEvent(pw.mdfstore, getStorageParams(pw))
+  put!(pw.biChannel, request)
+  return false
+end
+
+function handleEvent(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtocol, event::StorageSuccessEvent)
+  @info "Received storage success event"
+  put!(pw.biChannel, FinishedAckEvent())
+  cleanup(protocol)
+  return true
 end
