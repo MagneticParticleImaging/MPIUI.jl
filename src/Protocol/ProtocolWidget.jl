@@ -51,6 +51,7 @@ mutable struct GenericParameter{T} <: Gtk.GtkGrid
     grid = GtkGrid()
     entry = GtkEntry()
     label = GtkLabel(label)
+    set_gtk_property!(label, :xalign, 0.0)
     set_gtk_property!(entry, :text, value)
     addTooltip(label, tooltip)
     grid[1, 1] = label
@@ -81,6 +82,7 @@ mutable struct UnitfulParameter <: Gtk.GtkGrid
     entryGrid[2, 1] = unitLabel
     set_gtk_property!(entryGrid,:column_spacing,10)
     label = GtkLabel(label)
+    set_gtk_property!(label, :xalign, 0.0)
     addTooltip(label, tooltip)
     grid[1, 1] = label
     grid[2, 1] = entryGrid
@@ -180,7 +182,25 @@ function displayProgress(pw::ProtocolWidget)
   end
 end
 
+function getStorageParams(pw::ProtocolWidget)
+  params = Dict{String,Any}()
+  params["studyName"] = pw.currStudyName # TODO These are never updates, is the result correct?
+  params["studyDate"] = pw.currStudyDate 
+  params["studyDescription"] = ""
+  params["experimentDescription"] = get_gtk_property(pw["entExpDescr",EntryLeaf], :text, String)
+  params["experimentName"] = get_gtk_property(pw["entExpName",EntryLeaf], :text, String)
+  params["scannerOperator"] = get_gtk_property(pw["entOperator",EntryLeaf], :text, String)
+  params["tracerName"] = [get_gtk_property(pw["entTracerName",EntryLeaf], :text, String)]
+  params["tracerBatch"] = [get_gtk_property(pw["entTracerBatch",EntryLeaf], :text, String)]
+  params["tracerVendor"] = [get_gtk_property(pw["entTracerVendor",EntryLeaf], :text, String)]
+  params["tracerVolume"] = [1e-3*get_gtk_property(pw["adjTracerVolume",AdjustmentLeaf], :value, Float64)]
+  params["tracerConcentration"] = [1e-3*get_gtk_property(pw["adjTracerConcentration",AdjustmentLeaf], :value, Float64)]
+  params["tracerSolute"] = [get_gtk_property(pw["entTracerSolute",EntryLeaf], :text, String)]
+  return params
+end
+
 include("EventHandler.jl")
+include("SequenceBrowser.jl")
 
 function initCallbacks(pw::ProtocolWidget)
   signal_connect(pw["tbRun", ToggleToolButtonLeaf], :toggled) do w

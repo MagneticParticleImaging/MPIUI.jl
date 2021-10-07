@@ -78,7 +78,7 @@ end
 
 include("GtkUtils.jl")
 include("RawDataViewer.jl")
-include("Measurement/MeasurementWidget.jl")
+#include("Measurement/MeasurementWidget.jl")
 include("Protocol/ProtocolWidget.jl")
 include("SpectrumViewer.jl")
 include("BaseViewer.jl")
