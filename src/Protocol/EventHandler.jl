@@ -180,6 +180,7 @@ end
 ### Finish Default ###
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::FinishedNotificationEvent)
   pw.protocolState = FINISHED
+  displayProgress(pw)
   return handleFinished(pw, protocol)
 end
 
@@ -231,9 +232,9 @@ function handleEvent(pw::ProtocolWidget, protocol::AsyncMeasurementProtocol, eve
       @info "Received frame"
       #infoMessage(m, "$(m.progress.unit) $(m.progress.done) / $(m.progress.total)", "green")
       #if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
-        seq = pw.protocol.params.sequence
-        deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
-        updateData(pw.rawDataWidget, frame, deltaT)
+      seq = pw.protocol.params.sequence
+      deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
+      updateData(pw.rawDataWidget, frame, deltaT)
       #end
     end
     # Ask for next progress

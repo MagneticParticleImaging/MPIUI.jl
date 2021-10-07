@@ -153,7 +153,12 @@ function ProtocolWidget(scanner=nothing)
   end
 
   # Dummy plotting for warmstart during protocol execution
-  @idle_add updateData(pw.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
+  @idle_add begin 
+    push!(pw["boxProtocolTabVisu",BoxLeaf], pw.rawDataWidget)
+    set_gtk_property!(pw["boxProtocolTabVisu",BoxLeaf],:expand, pw.rawDataWidget, true)  
+    updateData(pw.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
+    showall(pw.rawDataWidget)
+  end
 
   @info "Finished starting ProtocolWidget"
   return pw
@@ -166,7 +171,7 @@ function displayProgress(pw::ProtocolWidget)
     progress = "$(pw.progress.done)/$(pw.progress.total) $(pw.progress.unit)"
     fraction = pw.progress.done/pw.progress.total
   elseif pw.protocolState == FINISHED
-    progress = "FINISHDED"
+    progress = "FINISHED"
     fraction = 1.0
   end
   @idle_add begin
