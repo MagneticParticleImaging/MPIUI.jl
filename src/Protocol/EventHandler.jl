@@ -10,7 +10,7 @@ function startProtocol(pw::ProtocolWidget)
     execute(pw.scanner, pw.protocol)
     pw.protocolState = INIT
     @info "Start event handler"
-    pw.eventHandler = Timer(timer -> eventHandler(pw, timer), 0.0, interval=0.1)
+    pw.eventHandler = Timer(timer -> eventHandler(pw, timer), 0.0, interval=0.05)
     return true
   catch e
     @error e
@@ -175,6 +175,48 @@ function denyPauseProtocol(pw::ProtocolWidget)
 end
 
 ### Resume/Unpause Default ###
+function tryResumeProtocol(pw::ProtocolWidget)
+  put!(pw.biChannel, ResumeEvent())
+end
+
+function handleSuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::ResumeEvent)
+  @info "Protocol resumed"
+  pw.protocolState = RUNNING
+  confirmResumeProtocol(pw)
+  put!(pw.biChannel, ProgressQueryEvent()) # Restart "Main" loop
+  return false
+end
+
+function handleUnsupportedOperation(pw::ProtocolWidget, protocol::Protocol, event::ResumeEvent)
+  @info "Protocol can not be resumed"
+  denyResumeProtocol(pw)
+  return false
+end
+
+function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::ResumeEvent)
+  @info "Protocol failed to be resumed"
+  denyResumeProtocol(pw)
+  return false
+end
+
+function confirmResumeProtocol(pw::ProtocolWidget)
+  @idle_add begin
+    pw.updating = true
+    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, false)
+    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
+    pw.updating = false
+  end
+end
+
+function denyResumeProtocol(pw::ProtocolWidget)
+  @idle_add begin
+    pw.updating = true
+    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, true)
+    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
+    pw.updating = false
+  end
+end
+
 ### Cancel Default ###
 ### Restart Default ###
 ### Finish Default ###
