@@ -509,7 +509,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="btLoadArbPos">
+          <object class="GtkButton" id="btnLoadFilePos">
             <property name="label" translatable="yes">Load</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -533,7 +533,7 @@
         </child>
         <child>
           <object class="GtkCheckButton" id="cbUseArbitraryPos">
-            <property name="label" translatable="yes">Use Arbitrary Position</property>
+            <property name="label" translatable="yes">Use Positions from File</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>

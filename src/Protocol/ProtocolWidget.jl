@@ -311,6 +311,9 @@ function initCallbacks(pw::ProtocolWidget)
     end
   end
 
+  signal_connect(pw["btnLoadFilePos", ButtonLeaf], :clicked) do w
+    loadFilePos(pw)
+  end
 
 end
 
@@ -426,6 +429,7 @@ function addGenericCallback(pw::ProtocolWidget, cb::BoolParameter)
   end
 end
 
+### File Interaction ###
 function saveProtocol(pw::ProtocolWidget, fileName::AbstractString)
   @info "Saving protocol to $fileName"
   # TODO Serialize into protocol
@@ -441,6 +445,18 @@ function isMeasurementStore(m::ProtocolWidget, d::DatasetStore)
   end
 end
 
+function loadFilePos(pw::ProtocolWidget)
+  filter = Gtk.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
+  filename = open_dialog("Select Position File", GtkNullContainer(), (filter, ))
+  @idle_add begin 
+    set_gtk_property!(pw["entArbitraryPos",EntryLeaf],:text,filename)
+    if filename != ""
+      set_gtk_property!(pw["cbUseArbitraryPos", CheckButtonLeaf], :sensitive, true)
+    end
+  end
+end
+
+### Parameter Interaction ###
 function updateSequence(pw::ProtocolWidget, seq::Sequence)
   dfString = *([ string(x*1e3," x ") for x in diag(ustrip.(dfStrength(seq)[1,:,:])) ]...)[1:end-3]
   dfDividerStr = *([ string(x," x ") for x in unique(vec(dfDivider(seq))) ]...)[1:end-3]
@@ -470,6 +486,8 @@ function updatePositions(pw::ProtocolWidget, pos::Union{Positions, Nothing})
       set_gtk_property!(pw["entGridShape",EntryLeaf], :text, shpStr)
       set_gtk_property!(pw["entFOV",EntryLeaf], :text, fovStr)
       set_gtk_property!(pw["entCenter",EntryLeaf], :text, ctrStr)
+      set_gtk_property!(pw["cbUseArbitraryPos", CheckButtonLeaf], :sensitive, false)
+      set_gtk_property!(pw["entArbitraryPos",EntryLeaf],:text, "")
     end
   end
 end
@@ -511,26 +529,28 @@ end
 function setProtocolParameter(pw::ProtocolWidget, parameterObj::PositionParameter, params::ProtocolParams)
   # Construct pos
   @info "Trying to set pos"
-  shpString = get_gtk_property(pw["entGridShape",EntryLeaf], :text, String)
-  shp_ = tryparse.(Int64,split(shpString,"x"))
-  fovString = get_gtk_property(pw["entFOV",EntryLeaf], :text, String)
-  fov_ = tryparse.(Float64,split(fovString,"x"))
-  centerString = get_gtk_property(pw["entCenter",EntryLeaf], :text, String)
-  center_ = tryparse.(Float64,split(centerString,"x"))
-  if any(shp_ .== nothing) || any(fov_ .== nothing) || any(center_ .== nothing)  ||
-   length(shp_) != 3 || length(fov_) != 3 || length(center_) != 3
-    @warn "Mismatch dimension for positions"
-    @idle_add set_gtk_property!(pw["tbCalibration",ToggleToolButtonLeaf], :active, false)
-    return
-  end
-
-  shp = shp_
-  fov = fov_ .*1Unitful.mm
-  ctr = center_ .*1Unitful.mm
-
+  cartGrid = nothing
   if get_gtk_property(pw["cbUseArbitraryPos",CheckButtonLeaf], :active, Bool) == false
+    
+    shpString = get_gtk_property(pw["entGridShape",EntryLeaf], :text, String)
+    shp_ = tryparse.(Int64,split(shpString,"x"))
+    fovString = get_gtk_property(pw["entFOV",EntryLeaf], :text, String)
+    fov_ = tryparse.(Float64,split(fovString,"x"))
+    centerString = get_gtk_property(pw["entCenter",EntryLeaf], :text, String)
+    center_ = tryparse.(Float64,split(centerString,"x"))
+    if any(shp_ .== nothing) || any(fov_ .== nothing) || any(center_ .== nothing)  ||
+     length(shp_) != 3 || length(fov_) != 3 || length(center_) != 3
+      @warn "Mismatch dimension for positions"
+      # TODO throw some sort of exception
+      return
+    end
+    shp = shp_
+    fov = fov_ .*1Unitful.mm
+    ctr = center_ .*1Unitful.mm
     cartGrid = RegularGridPositions(shp,fov,ctr)
+  
   else
+    
     filename = get_gtk_property(pw["entArbitraryPos",EntryLeaf],:text,String)
     if filename != ""
         cartGrid = h5open(filename, "r") do file
@@ -539,6 +559,7 @@ function setProtocolParameter(pw::ProtocolWidget, parameterObj::PositionParamete
     else
       error("Filename Arbitrary Positions empty!")
     end
+
   end
 
   setfield!(params, parameterObj.field, cartGrid)
