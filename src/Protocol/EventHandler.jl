@@ -19,6 +19,15 @@ function startProtocol(pw::ProtocolWidget)
   end
 end
 
+function endProtocol(pw::ProtocolWidget)
+  if isopen(pw.biChannel)
+    put!(pw.biChannel, FinishedAckEvent())
+  end
+  if isopen(pw.eventHandler)
+    close(pw.eventHandler)
+  end
+end
+
 function eventHandler(pw::ProtocolWidget, timer::Timer)
   try
     channel = pw.biChannel
@@ -106,6 +115,18 @@ function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::DecisionEven
   reply = ask_dialog(event.message, "No", "Yes", mpilab[]["mainWindow"])
   answerEvent = AnswerEvent(reply, event)
   put!(pw.biChannel, answerEvent)
+  return false
+end
+
+function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::MultipleChoiceEvent)
+  buttons = [(choice, i) for (i, choice) in enumerate(event.choices)]
+  parent = mpilab[]["mainWindow"]
+  widget = GtkMessageDialog(event.message, buttons, GtkDialogFlags.DESTROY_WITH_PARENT, GtkMessageType.INFO, parent)
+  showall(widget)
+  reply = run(widget)
+  destroy(widget)
+  @show reply
+  put!(pw.biChannel, ChoiceAnswerEvent(reply, event))
   return false
 end
 
@@ -228,6 +249,46 @@ function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, eve
 end
 
 ### Restart Default ###
+function tryRestartProtocol(pw::ProtocolWidget)
+  put!(pw.biChannel, RestartEvent())
+end
+function handleSuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::RestartEvent)
+  @info "Protocol restarted"
+  confirmRestartProtocol(pw)
+  return false
+end
+
+function handleUnsupportedOperation(pw::ProtocolWidget, protocol::Protocol, event::RestartEvent)
+  @warn "Protocol can not be restarted"
+  denyRestartProtocol(pw)
+  return false
+end
+
+function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::RestartEvent)
+  @warn "Protocol failed to be restarted"
+  denyRestartProtocol(pw)
+  return false
+end
+
+function confirmRestartProtocol(pw::ProtocolWidget)
+  @idle_add begin
+    pw.updating = true
+    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, false)
+    set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, false)
+    pw.updating = false
+  end
+end
+
+function denyRestartProtocol(pw::ProtocolWidget)
+  @idle_add begin
+    pw.updating = true
+    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
+    set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, true)
+    pw.updating = false
+  end
+end
+
+
 ### Finish Default ###
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::FinishedNotificationEvent)
   pw.protocolState = FINISHED
@@ -247,7 +308,7 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
     set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, false)
-    set_gtk_property!(pw["cmbProtocolSelection", GtkComboBoxText], :sensitive, true)
+    set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, false)
     # Active
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :active, false)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, false)
@@ -339,4 +400,22 @@ function handleEvent(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtoco
   put!(pw.biChannel, FinishedAckEvent())
   cleanup(protocol)
   return true
+end
+
+
+### MPIMeasurementProtocol ###
+function handleFinished(pw::ProtocolWidget, protocol::MPIMeasurementProtocol)
+  request = DatasetStoreStorageRequestEvent(pw.mdfstore, getStorageParams(pw))
+  put!(pw.biChannel, request)
+  return false
+end
+
+function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event::StorageSuccessEvent)
+  @info "Received storage success event"
+  @idle_add begin
+    # Enable ending or restart
+    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
+    set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, true)
+  end
+  return false
 end

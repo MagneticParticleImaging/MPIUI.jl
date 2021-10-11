@@ -112,7 +112,7 @@ function MPILab(offlineMode=false)::MPILab
   @debug "## Init Image Tab ..."
   initImageTab(m)
   @debug "## Init Raw Data Tab ..."
-  initRawDataTab(m)
+  #initRawDataTab(m)
   if m.settings["enableRecoStore", true]
     @debug "## Init Reco Tab ..."
     initRecoTab(m)

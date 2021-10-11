@@ -213,6 +213,7 @@ end
 
 include("EventHandler.jl")
 include("SequenceBrowser.jl")
+include("ProtocolBrowser.jl")
 
 function initCallbacks(pw::ProtocolWidget)
   signal_connect(pw["tbRun", ToggleToolButtonLeaf], :toggled) do w
@@ -224,20 +225,20 @@ function initCallbacks(pw::ProtocolWidget)
             set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, false)
             set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
             set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, true)
-            set_gtk_property!(pw["cmbProtocolSelection", GtkComboBoxText], :sensitive, false)
             pw.updating = false
           end
         else
           # Something went wrong during start, we dont count button press
           set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :active, false)
         end
-      else 
+      else
+        endProtocol(pw)  
         @idle_add begin 
           pw.updating = true
           set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
           set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
           set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, false)
-          set_gtk_property!(pw["cmbProtocolSelection", GtkComboBoxText], :sensitive, true)
+          set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, false)
           pw.updating = false
         end
       end
@@ -260,14 +261,28 @@ function initCallbacks(pw::ProtocolWidget)
   end
 
   signal_connect(pw["tbRestart", ToolButtonLeaf], :clicked) do w
-    #tryRestartProtocol(pw)
+    tryRestartProtocol(pw)
   end
 
-  signal_connect(pw["cmbProtocolSelection", GtkComboBoxText], :changed) do w
-    protocolName = Gtk.bytestring( GAccessor.active_text(pw["cmbProtocolSelection", GtkComboBoxText])) 
-    #get_gtk_property(pw["cmbProtocolSelection", GtkComboBoxText], :active, AbstractString)
-    protocol = Protocol(protocolName, pw.scanner)
-    updateProtocol(pw, protocol)
+  #signal_connect(pw["cmbProtocolSelection", GtkComboBoxText], :changed) do w
+  #  protocolName = Gtk.bytestring( GAccessor.active_text(pw["cmbProtocolSelection", GtkComboBoxText])) 
+  #  #get_gtk_property(pw["cmbProtocolSelection", GtkComboBoxText], :active, AbstractString)
+  #  #@show protocolName
+  #  protocol = Protocol(protocolName, pw.scanner)
+  #  updateProtocol(pw, protocol)
+  #end
+
+  signal_connect(pw["btnPickProtocol", GtkButton], "clicked") do w
+    @info "clicked picked protocol button"
+    dlg = ProtocolSelectionDialog(pw.scanner, Dict())
+    ret = run(dlg)
+    if ret == GtkResponseType.ACCEPT
+      if hasselection(dlg.selection)
+        protocol = getSelectedProtocol(dlg)
+        updateProtocol(pw, protocol)
+        end
+    end
+    destroy(dlg)
   end
 
   signal_connect(pw["btnSaveProtocol", GtkButton], "clicked") do w
@@ -319,22 +334,15 @@ end
 function initProtocolChoices(pw::ProtocolWidget)
   pw.updating = true
   scanner = pw.scanner
-  choices = getProtocolList(scanner)
-  cb = pw["cmbProtocolSelection", GtkComboBoxText]
-  for choice in choices
-    push!(cb, choice)
-  end
-  defaultIndex = findfirst(x -> x == scanner.generalParams.defaultProtocol, choices)
-  @show defaultIndex
-  if !isnothing(defaultIndex)
-    protocolName = choices[defaultIndex]
-    protocol = Protocol(protocolName, pw.scanner)
-    @idle_add begin
-      updateProtocol(pw, protocol)
-      set_gtk_property!(cb, :active, defaultIndex)
-    end
-  end
+  protocolName = scanner.generalParams.defaultProtocol
+  protocol = Protocol(protocolName, pw.scanner)
+  updateProtocol(pw, protocol)
   pw.updating = false
+end
+
+function updateProtocol(pw::ProtocolWidget, protocol::AbstractString)
+  p = Protocol(protocol, pw.scanner)
+  updateProtocol(pw, p)
 end
 
 function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
@@ -346,6 +354,7 @@ function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
     set_gtk_property!(pw["lblScannerName", GtkLabelLeaf], :label, name(pw.scanner))
     set_gtk_property!(pw["lblProtocolType", GtkLabelLeaf], :label, string(typeof(protocol)))
     set_gtk_property!(pw["txtBuffProtocolDescription", GtkTextBufferLeaf], :text, MPIMeasurements.description(protocol))
+    set_gtk_property!(pw["lblProtocolName", GtkLabelLeaf], :label, name(protocol))
     # Clear old parameters
     empty!(pw["boxProtocolParameter", BoxLeaf])
 
