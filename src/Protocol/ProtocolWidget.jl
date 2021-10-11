@@ -261,7 +261,7 @@ function initCallbacks(pw::ProtocolWidget)
   end
 
   signal_connect(pw["tbRestart", ToolButtonLeaf], :clicked) do w
-    #tryRestartProtocol(pw)
+    tryRestartProtocol(pw)
   end
 
   #signal_connect(pw["cmbProtocolSelection", GtkComboBoxText], :changed) do w

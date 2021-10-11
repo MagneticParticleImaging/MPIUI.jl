@@ -249,6 +249,46 @@ function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, eve
 end
 
 ### Restart Default ###
+function tryRestartProtocol(pw::ProtocolWidget)
+  put!(pw.biChannel, RestartEvent())
+end
+function handleSuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::RestartEvent)
+  @info "Protocol restarted"
+  confirmRestartProtocol(pw)
+  return false
+end
+
+function handleUnsupportedOperation(pw::ProtocolWidget, protocol::Protocol, event::RestartEvent)
+  @warn "Protocol can not be restarted"
+  denyRestartProtocol(pw)
+  return false
+end
+
+function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::RestartEvent)
+  @warn "Protocol failed to be restarted"
+  denyRestartProtocol(pw)
+  return false
+end
+
+function confirmRestartProtocol(pw::ProtocolWidget)
+  @idle_add begin
+    pw.updating = true
+    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, false)
+    set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, false)
+    pw.updating = false
+  end
+end
+
+function denyRestartProtocol(pw::ProtocolWidget)
+  @idle_add begin
+    pw.updating = true
+    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
+    set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, true)
+    pw.updating = false
+  end
+end
+
+
 ### Finish Default ###
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::FinishedNotificationEvent)
   pw.protocolState = FINISHED
