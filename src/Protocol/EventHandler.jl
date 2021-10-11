@@ -19,6 +19,15 @@ function startProtocol(pw::ProtocolWidget)
   end
 end
 
+function endProtocol(pw::ProtocolWidget)
+  if isopen(pw.biChannel)
+    put!(pw.biChannel, FinishedAckEvent())
+  end
+  if isopen(pw.eventHandler)
+    close(pw.eventHandler)
+  end
+end
+
 function eventHandler(pw::ProtocolWidget, timer::Timer)
   try
     channel = pw.biChannel
@@ -111,8 +120,12 @@ end
 
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::MultipleChoiceEvent)
   buttons = [(choice, i) for (i, choice) in enumerate(event.choices)]
-  reply = input_dialog(event.message, event.choices[1], buttons, mpilab[]["mainWindow"])
-  @show reply 
+  parent = mpilab[]["mainWindow"]
+  widget = GtkMessageDialog(event.message, buttons, GtkDialogFlags.DESTROY_WITH_PARENT, GtkMessageType.INFO, parent)
+  showall(widget)
+  reply = run(widget)
+  destroy(widget)
+  @show reply
   put!(pw.biChannel, ChoiceAnswerEvent(reply, event))
   return false
 end
