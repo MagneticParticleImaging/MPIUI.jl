@@ -581,6 +581,7 @@
               <object class="GtkGrid">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="valign">center</property>
                 <child>
                   <object class="GtkLabel" id="lblProtocolName">
                     <property name="visible">True</property>

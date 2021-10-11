@@ -7,7 +7,6 @@ mutable struct ProtocolSelectionDialog <: Gtk.GtkDialog
   tv
   selection
   box::Box
-  canvas
   scanner::MPIScanner
   protocols::Vector{String}
   updating::Bool
@@ -23,7 +22,7 @@ function ProtocolSelectionDialog(scanner::MPIScanner, params::Dict)
   resize!(dialog, 1024, 600)
   box = G_.content_area(dialog)
 
-  store = ListStore(String, String, String, String)
+  store = ListStore(String, String, String, Bool)
 
   tv = TreeView(TreeModel(store))
   r1 = CellRendererText()
@@ -39,15 +38,14 @@ function ProtocolSelectionDialog(scanner::MPIScanner, params::Dict)
     G_.max_width(c,80)
     push!(tv,c)
   end
+  @info "Pushed tv columns"
 
   G_.max_width(c0,300)
   G_.max_width(c1,200)
   G_.max_width(c2,200)
-  G_.max_width(c3,200)
-  G_.max_width(c4,200)
 
   tmFiltered = TreeModelFilter(store)
-  G_.visible_column(tmFiltered,6)
+  G_.visible_column(tmFiltered,3)
   tmSorted = TreeModelSort(tmFiltered)
   G_.model(tv, tmSorted)
 
@@ -58,15 +56,13 @@ function ProtocolSelectionDialog(scanner::MPIScanner, params::Dict)
   push!(sw, tv)
   push!(box, sw)
   set_gtk_property!(box, :expand, sw, true)
-
-  canvas = Canvas()
-  push!(box,canvas)
-  set_gtk_property!(box,:expand, canvas, true)
+  @info "Set to box"
 
   protocols = getProtocolList(scanner)
+  @info "Got $(length(protocols)) protocols"
 
   dlg = ProtocolSelectionDialog(dialog.handle, store, tmSorted, tv, selection, 
-                                box, canvas, scanner, protocols, false)
+                                box, scanner, protocols, false)
 
   updateData!(dlg)
 
@@ -81,6 +77,7 @@ end
 function updateData!(m::ProtocolSelectionDialog)
 
   @idle_add begin
+      @info "Update protocol store"
       m.updating = true
       unselectall!(m.selection)
       empty!(m.store)
@@ -88,7 +85,8 @@ function updateData!(m::ProtocolSelectionDialog)
       for protoName in m.protocols
         p = Protocol(protoName, m.scanner)
         
-        push!(m.store, (protoName, string(typeof(p), MPIMeasurements.description(p))))
+        push!(m.store, (protoName, string(typeof(p)), MPIMeasurements.description(p), true))
+        @info "Pushed value"
       end
       m.updating = false
   end

@@ -162,7 +162,7 @@ function ProtocolWidget(scanner=nothing)
     # Load default protocol and set params
     # + dummy plotting?
     initProtocolChoices(pw)
-    #initCallbacks(pw)
+    initCallbacks(pw)
     @idle_add set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf],:sensitive,true)
   end
 
@@ -213,6 +213,7 @@ end
 
 include("EventHandler.jl")
 include("SequenceBrowser.jl")
+include("ProtocolBrowser.jl")
 
 function initCallbacks(pw::ProtocolWidget)
   signal_connect(pw["tbRun", ToggleToolButtonLeaf], :toggled) do w
@@ -271,7 +272,8 @@ function initCallbacks(pw::ProtocolWidget)
   #  updateProtocol(pw, protocol)
   #end
 
-  #=signal_connect(pw["btnSaveProtocol", GtkButton], "clicked") do w
+  signal_connect(pw["btnPickProtocol", GtkButton], "clicked") do w
+    @info "clicked picked protocol button"
     dlg = ProtocolSelectionDialog(pw.scanner, Dict())
     ret = run(dlg)
     if ret == GtkResponseType.ACCEPT
@@ -281,7 +283,7 @@ function initCallbacks(pw::ProtocolWidget)
         end
     end
     destroy(dlg)
-  end=#
+  end
 
   signal_connect(pw["btnSaveProtocol", GtkButton], "clicked") do w
     try 
