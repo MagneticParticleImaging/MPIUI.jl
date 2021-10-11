@@ -225,6 +225,7 @@ function initCallbacks(pw::ProtocolWidget)
             set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, false)
             set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
             set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, true)
+            set_gtk_property!(pw["btnPickProtocol", ButtonLeaf], :sensitive, false)
             pw.updating = false
           end
         else
@@ -239,6 +240,7 @@ function initCallbacks(pw::ProtocolWidget)
           set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
           set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, false)
           set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, false)
+          set_gtk_property!(pw["btnPickProtocol", ButtonLeaf], :sensitive, true)
           pw.updating = false
         end
       end

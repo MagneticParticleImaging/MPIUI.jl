@@ -309,6 +309,7 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
     set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, false)
     set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, false)
+    set_gtk_property!(pw["btnPickProtocol", ButtonLeaf], :sensitive, true)
     # Active
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :active, false)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, false)
@@ -398,12 +399,42 @@ end
 function handleEvent(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtocol, event::StorageSuccessEvent)
   @info "Received storage success event"
   put!(pw.biChannel, FinishedAckEvent())
+  updateData!(mpilab[].sfBrowser, m.mdfstore)
+  updateExperimentStore(mpilab[], mpilab[].currentStudy)
   cleanup(protocol)
   return true
 end
 
 
 ### MPIMeasurementProtocol ###
+function handleNewProgress(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event::ProgressEvent)
+  @info "Asking for new frame $(event.done)"
+  dataQuery = DataQueryEvent("FRAME:$(event.done)")
+  put!(pw.biChannel, dataQuery)
+  return false
+end
+
+function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event::DataAnswerEvent)
+  channel = pw.biChannel
+  # We were waiting on the last buffer request
+  if startswith(event.query.message, "FRAME") && pw.protocolState == RUNNING
+    frame = event.data
+    if !isnothing(frame)
+      @info "Received frame"
+      #infoMessage(m, "$(m.progress.unit) $(m.progress.done) / $(m.progress.total)", "green")
+      #if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
+      seq = pw.protocol.params.sequence
+      deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
+      updateData(pw.rawDataWidget, frame, deltaT)
+      #end
+    end
+    # Ask for next progress
+    progressQuery = ProgressQueryEvent()
+    put!(channel, progressQuery)
+  end
+  return false
+end
+
 function handleFinished(pw::ProtocolWidget, protocol::MPIMeasurementProtocol)
   request = DatasetStoreStorageRequestEvent(pw.mdfstore, getStorageParams(pw))
   put!(pw.biChannel, request)
@@ -416,6 +447,8 @@ function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event
     # Enable ending or restart
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
     set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, true)
+    updateData(pw.rawDataWidget, event.filename)
+    updateExperimentStore(mpilab[], mpilab[].currentStudy)
   end
   return false
 end
