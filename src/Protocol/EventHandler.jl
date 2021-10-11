@@ -109,6 +109,14 @@ function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::DecisionEven
   return false
 end
 
+function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::MultipleChoiceEvent)
+  buttons = [(choice, i) for (i, choice) in enumerate(event.choices)]
+  reply = input_dialog(event.message, event.choices[1], buttons, mpilab[]["mainWindow"])
+  @show reply 
+  put!(pw.biChannel, ChoiceAnswerEvent(reply, event))
+  return false
+end
+
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::OperationSuccessfulEvent)
   return handleSuccessfulOperation(pw, protocol, event.operation)
 end
@@ -247,7 +255,7 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
     set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, false)
-    set_gtk_property!(pw["cmbProtocolSelection", GtkComboBoxText], :sensitive, true)
+    set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, false)
     # Active
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :active, false)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, false)
@@ -339,4 +347,22 @@ function handleEvent(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtoco
   put!(pw.biChannel, FinishedAckEvent())
   cleanup(protocol)
   return true
+end
+
+
+### MPIMeasurementProtocol ###
+function handleFinished(pw::ProtocolWidget, protocol::MPIMeasurementProtocol)
+  request = DatasetStoreStorageRequestEvent(pw.mdfstore, getStorageParams(pw))
+  put!(pw.biChannel, request)
+  return false
+end
+
+function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event::StorageSuccessEvent)
+  @info "Received storage success event"
+  @idle_add begin
+    # Enable ending or restart
+    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
+    set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, true)
+  end
+  return false
 end
