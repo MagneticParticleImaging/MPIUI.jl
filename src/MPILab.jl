@@ -60,7 +60,7 @@ end
 
 
 function MPILab(offlineMode=false)::MPILab
-
+   
   mkpath(logpath)
   logger = TeeLogger(
     MinLevelLogger(ConsoleLogger(), Logging.Info),
@@ -86,6 +86,8 @@ function MPILab(offlineMode=false)::MPILab
   mpilab[] = m
 
   w = m["mainWindow"]
+
+  addConfigurationPath(expanduser("~/.mpilab/configs"))
 
   @debug "## Init Settings ..."
   initSettings(m)
