@@ -26,6 +26,7 @@ function endProtocol(pw::ProtocolWidget)
   if isopen(pw.eventHandler)
     close(pw.eventHandler)
   end
+  confirmFinishedProtocol(pw)
 end
 
 function eventHandler(pw::ProtocolWidget, timer::Timer)
@@ -171,6 +172,7 @@ function confirmPauseProtocol(pw::ProtocolWidget)
     pw.updating = true
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, true)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
+    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :label, "Unpause")
     pw.updating = false
   end
 end
@@ -214,6 +216,7 @@ function confirmResumeProtocol(pw::ProtocolWidget)
     pw.updating = true
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, false)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
+    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :label, "Pause")
     pw.updating = false
   end
 end
@@ -274,6 +277,7 @@ function confirmRestartProtocol(pw::ProtocolWidget)
   @idle_add begin
     pw.updating = true
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, false)
+    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :label, "Run")
     set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, false)
     pw.updating = false
   end
@@ -313,6 +317,9 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
     # Active
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :active, false)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, false)
+    # Text
+    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :label, "Play")
+    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :label, "Pause")
     pw.updating = false
   end
 end
@@ -446,6 +453,7 @@ function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event
   @idle_add begin
     # Enable ending or restart
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
+    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :label, "Finish")
     set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, true)
     updateData(pw.rawDataWidget, event.filename)
     updateExperimentStore(mpilab[], mpilab[].currentStudy)
