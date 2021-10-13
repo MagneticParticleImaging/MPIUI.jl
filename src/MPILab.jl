@@ -101,8 +101,6 @@ function MPILab(offlineMode=false)::MPILab
   initScanner(m, offlineMode)
   @debug "## Init Scanner Tab ..."
   initScannerTab(m)
-  @debug "## Init Protocol Tab ..."
-  initProtocolTab(m)
   @debug "## Init Store switch ..."
   initStoreSwitch(m)
 
@@ -118,7 +116,7 @@ function MPILab(offlineMode=false)::MPILab
   @debug "## Init Image Tab ..."
   initImageTab(m)
   @debug "## Init Raw Data Tab ..."
-  #initRawDataTab(m)
+  initRawDataTab(m)
   if m.settings["enableRecoStore", true]
     @debug "## Init Reco Tab ..."
     initRecoTab(m)
@@ -131,6 +129,9 @@ function MPILab(offlineMode=false)::MPILab
   initVisuStore(m)
   @debug "## Init View switch ..."
   initViewSwitch(m)
+  @debug "## Init Protocol Tab ..."
+  initProtocolTab(m)
+
 
   @idle_add set_gtk_property!(m["lbInfo"],:use_markup,true)
   @idle_add set_gtk_property!(m["cbDatasetStores"],:active,0)
@@ -215,8 +216,10 @@ function initStoreSwitch(m::MPILab)
       scanDatasetDir(m)
       updateData!(m.sfBrowser,activeDatasetStore(m))
 
-      visible(m["tbProtocolTab"],
-        isMeasurementStore(m.protocolWidget,activeDatasetStore(m)) )
+      if !isnothing(m.protocolWidget)
+        visible(m["tbProtocolTab"],
+          isMeasurementStore(m.protocolWidget,activeDatasetStore(m)))
+      end
 
       if length(m.studyStore) > 0
         # select first study so that always measurements can be performed
@@ -400,8 +403,10 @@ function initStudyStore(m::MPILab)
       @debug "Current Study Id: " m.currentStudy.name
       updateAnatomRefStore(m)
 
-      m.protocolWidget.currStudyName = m.currentStudy.name
-      m.protocolWidget.currStudyDate = m.currentStudy.date
+      if !isnothing(m.protocolWidget)
+        m.protocolWidget.currStudyName = m.currentStudy.name
+        m.protocolWidget.currStudyDate = m.currentStudy.date
+      end
       m.updating = false
     end
   end
@@ -1116,9 +1121,8 @@ end
 function initRawDataTab(m::MPILab)
 
   m.rawDataWidget = RawDataWidget()
-
   boxRawViewer = m["boxRawViewer"]
-  push!(boxRawViewer,m.rawDataWidget)
+  push!(boxRawViewer,m.rawDataWidget)  
   set_gtk_property!(boxRawViewer, :expand, m.rawDataWidget, true)
   showall(boxRawViewer)
 end
