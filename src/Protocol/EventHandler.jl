@@ -3,12 +3,14 @@ function initProtocol(pw::ProtocolWidget)
   for parameterObj in pw["boxProtocolParameter", BoxLeaf]
     setProtocolParameter(pw, parameterObj, pw.protocol.params)
   end
-  @info "Init protocol"
-  pw.biChannel = MPIMeasurements.init(pw.protocol)
-  est = timeEstimate(pw.protocol)
-  @idle_add begin 
-    set_gtk_property!(pw["lblRuntime", LabelLeaf], :label, est)
-    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
+  try 
+    @info "Init protocol"
+    pw.biChannel = MPIMeasurements.init(pw.protocol)
+    return true
+  catch e
+    @error e
+    showError(e)
+    return false
   end
 end
 

@@ -222,7 +222,15 @@ function initCallbacks(pw::ProtocolWidget)
         @warn message
         info_dialog(message, mpilab[]["mainWindow"])
       else
-        initProtocol(pw)
+        if initProtocol(pw)
+          @idle_add begin
+            pw.updating = true
+            est = timeEstimate(pw.protocol)
+            set_gtk_property!(pw["lblRuntime", LabelLeaf], :label, est)
+            set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
+            pw.updating = false
+          end        
+        end
       end
     end
   end
