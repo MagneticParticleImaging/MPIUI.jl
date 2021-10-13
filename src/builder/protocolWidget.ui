@@ -618,10 +618,26 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
-                  <object class="GtkToggleToolButton" id="tbRun">
+                  <object class="GtkToolButton" id="tbInit">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="tooltip_text" translatable="yes">Measurement</property>
+                    <property name="tooltip_text" translatable="yes">Initializes the current protocol with the current paramters</property>
+                    <property name="is_important">True</property>
+                    <property name="label" translatable="yes">Init</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-jump-to</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="homogeneous">True</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkToggleToolButton" id="tbRun">
+                    <property name="visible">True</property>
+                    <property name="sensitive">False</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Starts the current protocol</property>
                     <property name="is_important">True</property>
                     <property name="label" translatable="yes">Run</property>
                     <property name="use_underline">True</property>
@@ -635,8 +651,9 @@
                 <child>
                   <object class="GtkToggleToolButton" id="tbPause">
                     <property name="visible">True</property>
+                    <property name="sensitive">False</property>
                     <property name="can_focus">False</property>
-                    <property name="tooltip_text" translatable="yes">Background</property>
+                    <property name="tooltip_text" translatable="yes">Attempts to pause the protocol</property>
                     <property name="is_important">True</property>
                     <property name="label" translatable="yes">Pause</property>
                     <property name="use_underline">True</property>
@@ -650,8 +667,9 @@
                 <child>
                   <object class="GtkToolButton" id="tbCancel">
                     <property name="visible">True</property>
+                    <property name="sensitive">False</property>
                     <property name="can_focus">False</property>
-                    <property name="tooltip_text" translatable="yes">Continuous</property>
+                    <property name="tooltip_text" translatable="yes">Attempts to cancel the protocol</property>
                     <property name="is_important">True</property>
                     <property name="label" translatable="yes">Cancel</property>
                     <property name="use_underline">True</property>
@@ -665,8 +683,9 @@
                 <child>
                   <object class="GtkToolButton" id="tbRestart">
                     <property name="visible">True</property>
+                    <property name="sensitive">False</property>
                     <property name="can_focus">False</property>
-                    <property name="tooltip_text" translatable="yes">Reset</property>
+                    <property name="tooltip_text" translatable="yes">Attempts to restart the protocol</property>
                     <property name="is_important">True</property>
                     <property name="label" translatable="yes">Restart</property>
                     <property name="use_underline">True</property>
@@ -685,9 +704,34 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="lbInfo">
+              <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkLabel" id="lbInfo">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Est. Runtime</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="lblRuntime">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">N/A</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
               </object>
               <packing>
                 <property name="expand">True</property>

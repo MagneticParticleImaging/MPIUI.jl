@@ -1,11 +1,19 @@
+function initProtocol(pw::ProtocolWidget)
+  @info "Setting protocol parameters"
+  for parameterObj in pw["boxProtocolParameter", BoxLeaf]
+    setProtocolParameter(pw, parameterObj, pw.protocol.params)
+  end
+  @info "Init protocol"
+  pw.biChannel = MPIMeasurements.init(pw.protocol)
+  est = timeEstimate(pw.protocol)
+  @idle_add begin 
+    set_gtk_property!(pw["lblRuntime", LabelLeaf], :label, est)
+    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
+  end
+end
+
 function startProtocol(pw::ProtocolWidget)
   try 
-    @info "Setting protocol parameters"
-    for parameterObj in pw["boxProtocolParameter", BoxLeaf]
-      setProtocolParameter(pw, parameterObj, pw.protocol.params)
-    end
-    @info "Init protocol"
-    pw.biChannel = MPIMeasurements.init(pw.protocol)
     @info "Execute protocol"
     execute(pw.scanner, pw.protocol)
     pw.protocolState = INIT
@@ -309,7 +317,8 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
   @idle_add begin
     pw.updating = true
     # Sensitive
-    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
+    set_gtk_property!(pw["tbInit",ToolButtonLeaf], :sensitive, true)
+    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, false)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
     set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, false)
     set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, false)

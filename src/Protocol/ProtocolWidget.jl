@@ -163,7 +163,6 @@ function ProtocolWidget(scanner=nothing)
     # + dummy plotting?
     initProtocolChoices(pw)
     initCallbacks(pw)
-    @idle_add set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf],:sensitive,true)
   end
 
   # Dummy plotting for warmstart during protocol execution
@@ -216,6 +215,18 @@ include("SequenceBrowser.jl")
 include("ProtocolBrowser.jl")
 
 function initCallbacks(pw::ProtocolWidget)
+  signal_connect(pw["tbInit", ToolButtonLeaf], :clicked) do w
+    if !pw.updating
+      if !isnothing(pw.eventHandler) && isopen(pw.eventHandler)
+        message = "Event handler is still running. Cannot initialize new protocol"
+        @warn message
+        info_dialog(message, mpilab[]["mainWindow"])
+      else
+        initProtocol(pw)
+      end
+    end
+  end
+
   signal_connect(pw["tbRun", ToggleToolButtonLeaf], :toggled) do w
     if !pw.updating
       if get_gtk_property(w, :active, Bool)
@@ -234,15 +245,6 @@ function initCallbacks(pw::ProtocolWidget)
         end
       else
         endProtocol(pw)  
-        @idle_add begin 
-          pw.updating = true
-          set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
-          set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
-          set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, false)
-          set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, false)
-          set_gtk_property!(pw["btnPickProtocol", ButtonLeaf], :sensitive, true)
-          pw.updating = false
-        end
       end
     end
   end
@@ -265,14 +267,6 @@ function initCallbacks(pw::ProtocolWidget)
   signal_connect(pw["tbRestart", ToolButtonLeaf], :clicked) do w
     tryRestartProtocol(pw)
   end
-
-  #signal_connect(pw["cmbProtocolSelection", GtkComboBoxText], :changed) do w
-  #  protocolName = Gtk.bytestring( GAccessor.active_text(pw["cmbProtocolSelection", GtkComboBoxText])) 
-  #  #get_gtk_property(pw["cmbProtocolSelection", GtkComboBoxText], :active, AbstractString)
-  #  #@show protocolName
-  #  protocol = Protocol(protocolName, pw.scanner)
-  #  updateProtocol(pw, protocol)
-  #end
 
   signal_connect(pw["btnPickProtocol", GtkButton], "clicked") do w
     @info "clicked picked protocol button"
