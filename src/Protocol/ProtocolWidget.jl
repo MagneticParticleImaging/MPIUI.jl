@@ -43,11 +43,11 @@ function parameterType(::Symbol, value::Bool)
 end
 mutable struct GenericParameter{T} <: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
-  field::Symbol
+  field::Union{Symbol, Nothing}
   label::GtkLabel
   entry::GtkEntry
 
-  function GenericParameter{T}(field::Symbol, label::AbstractString, value::AbstractString, tooltip::Union{Nothing, AbstractString} = nothing) where {T}
+  function GenericParameter{T}(field::Union{Symbol, Nothing}, label::AbstractString, value::AbstractString, tooltip::Union{Nothing, AbstractString} = nothing) where {T}
     grid = GtkGrid()
     entry = GtkEntry()
     label = GtkLabel(label)
@@ -64,12 +64,12 @@ end
 
 mutable struct UnitfulParameter <: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
-  field::Symbol
+  field::Union{Symbol, Nothing}
   label::GtkLabel
   entry::GtkEntry
   unitValue
 
-  function UnitfulParameter(field::Symbol, label::AbstractString, value::T, tooltip::Union{Nothing, AbstractString} = nothing) where {T<:Quantity}
+  function UnitfulParameter(field::Union{Symbol, Nothing}, label::AbstractString, value::T, tooltip::Union{Nothing, AbstractString} = nothing) where {T<:Quantity}
     grid = GtkGrid()
       
     entryGrid = GtkGrid()
@@ -104,6 +104,57 @@ mutable struct BoolParameter <: Gtk.CheckButton
     addTooltip(check, tooltip)
     cb = new(check.handle, field)
     return Gtk.gobject_move_ref(cb, check)
+  end
+end
+
+mutable struct ComponentParameter <: Gtk.GtkGrid
+  handle::Ptr{Gtk.GObject}
+  idLabel::GtkLabel
+  divider::GenericParameter
+  amplitude::UnitfulParameter
+  phase::UnitfulParameter
+
+  function ComponentParameter(comp::PeriodicElectricalComponent)
+    grid = GtkGrid()
+    #set_gtk_property!(grid, :column_homogeneous, true)
+    # ID
+    #idDescrLabel = GtkLabel("Comp. Id", xalign = 0.0)
+    idLabel = GtkLabel(id(comp), xalign = 0.0)
+    #grid[1, 1] = idDescrLabel
+    grid[1:2, 1] = idLabel
+    # Divider
+    div = GenericParameter{Int64}(nothing, "Divider", string(divider(comp)))
+    grid[1:2, 2] = div
+    # Amplitude
+    amp = UnitfulParameter(nothing, "Amplitude", MPIFiles.amplitude(comp))
+    grid[1:2, 3] = amp
+    # Phase
+    pha = UnitfulParameter(nothing, "Phase", MPIFiles.phase(comp))
+    grid[1:2, 4] = pha
+    gridResult = new(grid.handle, idLabel, div, amp, pha)
+    return Gtk.gobject_move_ref(gridResult, grid)
+  end
+end
+
+mutable struct PeriodicChannelParameter <: Gtk.GtkExpander
+  handle::Ptr{Gtk.GObject}
+  box::GtkBox
+  function PeriodicChannelParameter(idx::Int64, ch::PeriodicElectricalChannel)
+    expander = GtkExpander(id(ch), expand=true)
+    # TODO offset
+    box = GtkBox(:v)
+    push!(expander, box)
+    grid = GtkGrid(expand=true)
+    grid[1, 1] = GtkLabel("Tx Idx")
+    grid[2, 1] = GtkLabel(string(idx))
+    grid[1:2, 2] = GtkLabel("Components", xalign = 0.5)
+    push!(box, grid)
+    for comp in components(ch)
+      compParam = ComponentParameter(comp)
+      push!(box, compParam)
+    end
+    result = new(expander.handle, box)
+    return Gtk.gobject_move_ref(result, expander)
   end
 end
 
@@ -475,14 +526,29 @@ function updateSequence(pw::ProtocolWidget, seq::Sequence)
   dfDividerStr = *([ string(x," x ") for x in unique(vec(dfDivider(seq))) ]...)[1:end-3]
   
   @idle_add begin
-    set_gtk_property!(pw["entSequenceName",EntryLeaf], :text, MPIFiles.name(seq)) 
-    set_gtk_property!(pw["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(seq))")
-    set_gtk_property!(pw["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(seq))")
-    set_gtk_property!(pw["adjNumFrames", AdjustmentLeaf], :value, acqNumFrames(seq))
-    set_gtk_property!(pw["adjNumFrameAverages", AdjustmentLeaf], :value, acqNumFrameAverages(seq))
-    set_gtk_property!(pw["adjNumAverages", AdjustmentLeaf], :value, acqNumAverages(seq))
-    set_gtk_property!(pw["entDFStrength",EntryLeaf], :text, dfString)
-    set_gtk_property!(pw["entDFDivider",EntryLeaf], :text, dfDividerStr)
+    try
+      @info "Try adding channels"
+      empty!(pw["boxPeriodicChannel", BoxLeaf])
+      for channel in periodicElectricalTxChannels(seq)
+        idx = MPIMeasurements.channelIdx(getDAQ(pw.scanner), id(channel))
+        channelParam = PeriodicChannelParameter(idx, channel)
+        push!(pw["boxPeriodicChannel", BoxLeaf], channelParam)
+      end
+      showall(pw["boxPeriodicChannel", BoxLeaf])
+      @info "Finished adding channels"
+
+
+      set_gtk_property!(pw["entSequenceName",EntryLeaf], :text, MPIFiles.name(seq)) 
+      set_gtk_property!(pw["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(seq))")
+      set_gtk_property!(pw["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(seq))")
+      set_gtk_property!(pw["adjNumFrames", AdjustmentLeaf], :value, acqNumFrames(seq))
+      set_gtk_property!(pw["adjNumFrameAverages", AdjustmentLeaf], :value, acqNumFrameAverages(seq))
+      set_gtk_property!(pw["adjNumAverages", AdjustmentLeaf], :value, acqNumAverages(seq))
+    catch e 
+      @error e
+    end
+    #set_gtk_property!(pw["entDFStrength",EntryLeaf], :text, dfString)
+    #set_gtk_property!(pw["entDFDivider",EntryLeaf], :text, dfDividerStr)
     #setInfoParams(pw)
   end
 end
