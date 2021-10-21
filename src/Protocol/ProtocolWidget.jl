@@ -100,6 +100,7 @@ mutable struct BoolParameter <: Gtk.CheckButton
     check = GtkCheckButton()
     set_gtk_property!(check, :label, label)
     set_gtk_property!(check, :active, value)
+    set_gtk_property!(check, :xalign, 0.5)
     addTooltip(check, tooltip)
     cb = new(check.handle, field)
     return Gtk.gobject_move_ref(cb, check)

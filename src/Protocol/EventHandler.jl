@@ -417,7 +417,7 @@ end
 function handleEvent(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtocol, event::StorageSuccessEvent)
   @info "Received storage success event"
   put!(pw.biChannel, FinishedAckEvent())
-  updateData!(mpilab[].sfBrowser, m.mdfstore)
+  updateData!(mpilab[].sfBrowser, pw.mdfstore)
   updateExperimentStore(mpilab[], mpilab[].currentStudy)
   cleanup(protocol)
   return true
