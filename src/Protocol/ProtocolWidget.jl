@@ -41,27 +41,56 @@ end
 function parameterType(::Symbol, value::Bool)
     return BoolParameterType()
 end
+
+mutable struct GenericEntry{T} <: Gtk.GtkEntry
+  handle::Ptr{Gtk.GObject}
+  entry::GtkEntry
+  function GenericEntry{T}(value::AbstractString) where {T}
+    entry = GtkEntry()
+    set_gtk_property!(entry, :text, value)
+    set_gtk_property!(entry, :hexpand, true)
+    generic = new(entry.handle, entry)
+    return Gtk.gobject_move_ref(generic, entry)
+  end
+end
 mutable struct GenericParameter{T} <: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
   field::Union{Symbol, Nothing}
   label::GtkLabel
-  entry::GtkEntry
+  entry::GenericEntry{T}
 
   function GenericParameter{T}(field::Union{Symbol, Nothing}, label::AbstractString, value::AbstractString, tooltip::Union{Nothing, AbstractString} = nothing) where {T}
     grid = GtkGrid()
-    entry = GtkEntry()
+    entry = GenericEntry{T}(value)
     label = GtkLabel(label)
     set_gtk_property!(label, :xalign, 0.0)
-    set_gtk_property!(entry, :text, value)
     addTooltip(label, tooltip)
     grid[1, 1] = label
     grid[2, 1] = entry
-    set_gtk_property!(grid, :column_homogeneous, true)
     generic = new(grid.handle, field, label, entry)
     return Gtk.gobject_move_ref(generic, grid)
   end
 end
 
+mutable struct UnitfulEntry <: Gtk.GtkGrid
+  handle::Ptr{Gtk.GObject}
+  entry::GtkEntry
+  unitValue
+  function UnitfulEntry(value::T) where {T<:Quantity}
+    grid = GtkGrid()
+    entry = GtkEntry()
+    set_gtk_property!(entry, :text, string(ustrip(value)))
+    unitValue = unit(value)
+    unitText = string(unitValue)
+    unitLabel = GtkLabel(unitText)
+    grid[1, 1] = entry
+    grid[2, 1] = unitLabel
+    set_gtk_property!(grid,:column_spacing,5)
+    set_gtk_property!(entry, :hexpand, true)
+    result = new(grid.handle, entry, unitValue)
+    return Gtk.gobject_move_ref(result, grid)
+  end
+end
 mutable struct UnitfulParameter <: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
   field::Union{Symbol, Nothing}
@@ -72,21 +101,13 @@ mutable struct UnitfulParameter <: Gtk.GtkGrid
   function UnitfulParameter(field::Union{Symbol, Nothing}, label::AbstractString, value::T, tooltip::Union{Nothing, AbstractString} = nothing) where {T<:Quantity}
     grid = GtkGrid()
       
-    entryGrid = GtkGrid()
-    entry = GtkEntry()
-    set_gtk_property!(entry, :text, string(ustrip(value)))
-    unitValue = unit(value)
-    unitText = string(unitValue)
-    unitLabel = GtkLabel(unitText)
-    entryGrid[1, 1] = entry
-    entryGrid[2, 1] = unitLabel
-    set_gtk_property!(entryGrid,:column_spacing,10)
+    unitfulEntry = UnitfulEntry(value)
     label = GtkLabel(label)
     set_gtk_property!(label, :xalign, 0.0)
     addTooltip(label, tooltip)
     grid[1, 1] = label
-    grid[2, 1] = entryGrid
-    set_gtk_property!(grid, :column_homogeneous, true)
+    grid[2, 1] = unitfulEntry
+    #set_gtk_property!(unitLabel, :hexpand, true)
     generic = new(grid.handle, field, label, entry, unitValue)
     return Gtk.gobject_move_ref(generic, grid)
   end
@@ -110,12 +131,14 @@ end
 mutable struct ComponentParameter <: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
   idLabel::GtkLabel
-  divider::GenericParameter
-  amplitude::UnitfulParameter
-  phase::UnitfulParameter
+  divider::GenericEntry
+  amplitude::UnitfulEntry
+  phase::UnitfulEntry
 
   function ComponentParameter(comp::PeriodicElectricalComponent)
     grid = GtkGrid()
+    set_gtk_property!(grid, :row_spacing, 5)
+    set_gtk_property!(grid, :column_spacing, 5)
     #set_gtk_property!(grid, :column_homogeneous, true)
     # ID
     #idDescrLabel = GtkLabel("Comp. Id", xalign = 0.0)
@@ -123,14 +146,17 @@ mutable struct ComponentParameter <: Gtk.GtkGrid
     #grid[1, 1] = idDescrLabel
     grid[1:2, 1] = idLabel
     # Divider
-    div = GenericParameter{Int64}(nothing, "Divider", string(divider(comp)))
-    grid[1:2, 2] = div
+    div = GenericEntry{Int64}(string(divider(comp)))
+    grid[1, 2] = GtkLabel("Divider", xalign = 0.0)
+    grid[2, 2] = div
     # Amplitude
-    amp = UnitfulParameter(nothing, "Amplitude", MPIFiles.amplitude(comp))
-    grid[1:2, 3] = amp
+    amp = UnitfulEntry(MPIFiles.amplitude(comp))
+    grid[1, 3] = GtkLabel("Amplitude", xalign = 0.0)
+    grid[2, 3] = amp
     # Phase
-    pha = UnitfulParameter(nothing, "Phase", MPIFiles.phase(comp))
-    grid[1:2, 4] = pha
+    pha = UnitfulEntry(MPIFiles.phase(comp))
+    grid[1, 4] = GtkLabel("Phase", xalign = 0.0)
+    grid[2, 4] = pha
     gridResult = new(grid.handle, idLabel, div, amp, pha)
     return Gtk.gobject_move_ref(gridResult, grid)
   end
@@ -145,9 +171,10 @@ mutable struct PeriodicChannelParameter <: Gtk.GtkExpander
     box = GtkBox(:v)
     push!(expander, box)
     grid = GtkGrid(expand=true)
-    grid[1, 1] = GtkLabel("Tx Idx")
+    grid[1, 1] = GtkLabel("Tx Channel Index", xalign = 0.0)
     grid[2, 1] = GtkLabel(string(idx))
-    grid[1:2, 2] = GtkLabel("Components", xalign = 0.5)
+    grid[1:2, 3] = GtkLabel("Components", xalign = 0.5, hexpand=true)
+    grid[1:2, 2] = GtkSeparatorMenuItem() 
     push!(box, grid)
     for comp in components(ch)
       compParam = ComponentParameter(comp)
