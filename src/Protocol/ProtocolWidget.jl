@@ -95,9 +95,7 @@ mutable struct UnitfulParameter <: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
   field::Union{Symbol, Nothing}
   label::GtkLabel
-  entry::GtkEntry
-  unitValue
-
+  entry::UnitfulEntry
   function UnitfulParameter(field::Union{Symbol, Nothing}, label::AbstractString, value::T, tooltip::Union{Nothing, AbstractString} = nothing) where {T<:Quantity}
     grid = GtkGrid()
       
@@ -108,7 +106,7 @@ mutable struct UnitfulParameter <: Gtk.GtkGrid
     grid[1, 1] = label
     grid[2, 1] = unitfulEntry
     #set_gtk_property!(unitLabel, :hexpand, true)
-    generic = new(grid.handle, field, label, entry, unitValue)
+    generic = new(grid.handle, field, label, unitfulEntry)
     return Gtk.gobject_move_ref(generic, grid)
   end
 end
@@ -463,13 +461,13 @@ end
 
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value, tooltip)
   generic = GenericParameter{typeof(value)}(field, string(field), string(value), tooltip)
-  addGenericCallback(pw, generic.entry)
+  addGenericCallback(pw, generic.entry.entry)
   push!(pw["boxProtocolParameter", BoxLeaf], generic)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value::T, tooltip) where {T<:Quantity}
   generic = UnitfulParameter(field, string(field), value, tooltip)
-  addGenericCallback(pw, generic.entry)
+  addGenericCallback(pw, generic.entry.entry)
   push!(pw["boxProtocolParameter", BoxLeaf], generic)
 end
 
@@ -606,7 +604,7 @@ function setProtocolParameter(pw::ProtocolWidget, parameterObj::BoolParameter, p
 end
 
 function setProtocolParameter(pw::ProtocolWidget, parameterObj::UnitfulParameter, params::ProtocolParams)
-  valueString = get_gtk_property(parameterObj.entry, :text, String)
+  valueString = get_gtk_property(parameterObj.entry.entry, :text, String)
   value = tryparse(Float64, valueString)
   field = parameterObj.field
   @info "Setting field $field"
@@ -614,7 +612,7 @@ function setProtocolParameter(pw::ProtocolWidget, parameterObj::UnitfulParameter
 end
 
 function setProtocolParameter(pw::ProtocolWidget, parameterObj::GenericParameter{T}, params::ProtocolParams) where {T}
-  valueString = get_gtk_property(parameterObj.entry, :text, String)
+  valueString = get_gtk_property(parameterObj.entry.entry, :text, String)
   value = tryparse(T, valueString)
   field = parameterObj.field
   @info "Setting field $field"
