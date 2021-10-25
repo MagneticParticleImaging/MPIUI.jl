@@ -25,10 +25,12 @@ end
 getindex(m::ProtocolWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
 abstract type ParameterType end
-struct GenericParameterType <: ParameterType end
-struct SequenceParameterType <: ParameterType end
-struct PositionParameterType <: ParameterType end
-struct BoolParameterType <: ParameterType end
+abstract type SpecialParameterType <: ParameterType end
+abstract type RegularParameterType <: ParameterType end
+struct GenericParameterType <: RegularParameterType end
+struct SequenceParameterType <: SpecialParameterType end
+struct PositionParameterType <: SpecialParameterType end
+struct BoolParameterType <: RegularParameterType end
 function parameterType(field::Symbol, value)
   if field == :sequence
     return SequenceParameterType()
@@ -96,7 +98,7 @@ mutable struct UnitfulParameter <: Gtk.GtkGrid
   field::Symbol
   label::GtkLabel
   entry::UnitfulEntry
-  function UnitfulParameter(field::Union{Symbol, Nothing}, label::AbstractString, value::T, tooltip::Union{Nothing, AbstractString} = nothing) where {T<:Quantity}
+  function UnitfulParameter(field::Symbol, label::AbstractString, value::T, tooltip::Union{Nothing, AbstractString} = nothing) where {T<:Quantity}
     grid = GtkGrid()
       
     unitfulEntry = UnitfulEntry(value)
@@ -108,6 +110,30 @@ mutable struct UnitfulParameter <: Gtk.GtkGrid
     #set_gtk_property!(unitLabel, :hexpand, true)
     generic = new(grid.handle, field, label, unitfulEntry)
     return Gtk.gobject_move_ref(generic, grid)
+  end
+end
+
+mutable struct RegularParameters <: Gtk.Grid
+  handle::Ptr{Gtk.GObject}
+  paramDict::Dict{Symbol, GObject}
+  function RegularParameters()
+    grid = GtkGrid()
+    set_gtk_property!(grid, :column_spacing, 5)
+    set_gtk_property!(grid, :row_spacing, 5)
+    result = new(grid.handle, Dict{Symbol, GObject}())
+    return Gtk.gobject_move_ref(result, grid)
+  end
+end
+
+mutable struct ParameterLabel <: Gtk.GtkLabel
+  handle::Ptr{Gtk.GObject}
+  field::Symbol
+
+  function ParameterLabel(field::Symbol, tooltip::Union{AbstractString, Nothing} = nothing)
+    label = GtkLabel(string(field))
+    addTooltip(label, tooltip)
+    result = new(label.handle, field)
+    return Gtk.gobject_move_ref(result, label)
   end
 end
 
@@ -137,14 +163,12 @@ mutable struct ComponentParameter <: Gtk.GtkGrid
     grid = GtkGrid()
     set_gtk_property!(grid, :row_spacing, 5)
     set_gtk_property!(grid, :column_spacing, 5)
-    #set_gtk_property!(grid, :column_homogeneous, true)
     # ID
-    #idDescrLabel = GtkLabel("Comp. Id", xalign = 0.0)
     idLabel = GtkLabel(id(comp), xalign = 0.0)
-    #grid[1, 1] = idDescrLabel
     grid[1:2, 1] = idLabel
     # Divider
     div = GenericEntry{Int64}(string(divider(comp)))
+    set_gtk_property!(div, :sensitive, false)
     grid[1, 2] = GtkLabel("Divider", xalign = 0.0)
     grid[2, 2] = div
     # Amplitude
@@ -439,7 +463,11 @@ function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
     # Clear old parameters
     empty!(pw["boxProtocolParameter", BoxLeaf])
 
-    for field in fieldnames(typeof(params))
+    regular = [field for field in fieldnames(typeof(params)) if parameterType(field, nothing) isa RegularParameterType]
+    special = setdiff(fieldnames(typeof(params)), regular)
+    addRegularProtocolParameter(pw, params, regular)
+
+    for field in special
       try 
         value = getfield(params, field)
         tooltip = string(fielddoc(typeof(params), field))
@@ -459,6 +487,23 @@ function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
   end
 end
 
+function addRegularProtocolParameter(pw::ProtocolWidget, params::ProtocolParams, fields::Vector{Symbol})
+  try 
+    paramGrid = RegularParameters()
+    for field in fields
+      value = getfield(params, field)
+      tooltip = string(fielddoc(typeof(params), field))
+      if contains(tooltip, "has field") #fielddoc for fields with no docstring returns "Type x has fields ..." listing all fields with docstring
+        tooltip = nothing
+      end
+      addProtocolParameter(pw, parameterType(field, value), paramGrid, field, value, tooltip)
+    end
+    push!(pw["boxProtocolParameter", BoxLeaf], paramGrid)
+  catch ex 
+    @error ex
+  end
+end
+
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value, tooltip)
   generic = GenericParameter{typeof(value)}(field, string(field), string(value), tooltip)
   addGenericCallback(pw, generic.entry)
@@ -469,6 +514,46 @@ function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field,
   generic = UnitfulParameter(field, string(field), value, tooltip)
   addGenericCallback(pw, generic.entry)
   push!(pw["boxProtocolParameter", BoxLeaf], generic)
+end
+
+function addProtocolParameter(pw::ProtocolWidget, ::BoolParameterType, field, value, tooltip)
+  cb = BoolParameter(field, string(field), value, tooltip)
+  addGenericCallback(pw, cb)
+  push!(pw["boxProtocolParameter", BoxLeaf], cb)
+end
+
+function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, regParams::RegularParameters, field::Symbol, value, tooltip)
+  label = ParameterLabel(field, tooltip)
+  generic = GenericEntry{typeof(value)}(string(value))
+  addGenericCallback(pw, generic)
+  addToRegularParams(regParams, label, generic)
+end
+
+function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, regParams::RegularParameters, field::Symbol, value::T, tooltip) where {T<:Quantity}
+  label = ParameterLabel(field, tooltip)
+  generic = UnitfulEntry(value)
+  addGenericCallback(pw, generic)
+  addToRegularParams(regParams, label, generic)
+end
+
+function addProtocolParameter(pw::ProtocolWidget, ::BoolParameterType, regParams::RegularParameters, field::Symbol, value, tooltip)
+  label = ParameterLabel(field, tooltip)
+  cb = BoolParameter(field, string(field), value, tooltip)
+  addGenericCallback(pw, cb)
+  addToRegularParams(regParams, label, cb)
+end
+
+function addToRegularParams(regParams::RegularParameters, label::ParameterLabel, object::GObject)
+  index = length(regParams.paramDict) + 1
+  regParams[1, index] = label
+  regParams[2, index] = object
+  regParams.paramDict[label.field] = object
+end
+
+function addToRegularParams(regParams::RegularParameters, label::ParameterLabel, object::BoolParameter)
+  index = length(regParams.paramDict) + 1
+  regParams[1:2, index] = object
+  regParams.paramDict[label.field] = object
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::SequenceParameterType, field, value, tooltip)
@@ -486,12 +571,6 @@ function addProtocolParameter(pw::ProtocolWidget, ::PositionParameterType, field
   pos = PositionParameter(pw, field, tooltip)
   updatePositions(pw, value)
   push!(pw["boxProtocolParameter", BoxLeaf], pos)
-end
-
-function addProtocolParameter(pw::ProtocolWidget, ::BoolParameterType, field, value, tooltip)
-  cb = BoolParameter(field, string(field), value, tooltip)
-  addGenericCallback(pw, cb)
-  push!(pw["boxProtocolParameter", BoxLeaf], cb)
 end
 
 function addTooltip(object, tooltip::AbstractString)
