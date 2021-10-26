@@ -55,6 +55,12 @@ mutable struct GenericEntry{T} <: Gtk.GtkEntry
     return Gtk.gobject_move_ref(generic, entry)
   end
 end
+
+function value(entry::GenericEntry{T}) where {T}
+  valueString = get_gtk_property(entry, :text, String)
+  return tryparse(T, valueString)
+end
+
 mutable struct GenericParameter{T} <: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
   field::Symbol
@@ -92,6 +98,12 @@ mutable struct UnitfulEntry <: Gtk.GtkGrid
     result = new(grid.handle, entry, unitValue)
     return Gtk.gobject_move_ref(result, grid)
   end
+end
+
+function value(entry::UnitfulEntry)
+  valueString = get_gtk_property(entry.entry, :text, String)
+  value = tryparse(Float64, valueString)
+  return value * entry.unitValue
 end
 mutable struct UnitfulParameter <: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
@@ -152,6 +164,7 @@ mutable struct BoolParameter <: Gtk.CheckButton
   end
 end
 
+value(entry::BoolParameter) = get_gtk_property(entry, :active, Bool)
 mutable struct ComponentParameter <: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
   idLabel::GtkLabel
@@ -186,6 +199,7 @@ end
 
 mutable struct PeriodicChannelParameter <: Gtk.GtkExpander
   handle::Ptr{Gtk.GObject}
+  channel::PeriodicElectricalChannel
   box::GtkBox
   function PeriodicChannelParameter(idx::Int64, ch::PeriodicElectricalChannel)
     expander = GtkExpander(id(ch), expand=true)
@@ -202,7 +216,7 @@ mutable struct PeriodicChannelParameter <: Gtk.GtkExpander
       compParam = ComponentParameter(comp)
       push!(box, compParam)
     end
-    result = new(expander.handle, box)
+    result = new(expander.handle, ch, box)
     return Gtk.gobject_move_ref(result, expander)
   end
 end
@@ -670,38 +684,19 @@ function updatePositions(pw::ProtocolWidget, pos::Union{Positions, Nothing})
   end
 end
 
-# Technically BoolParameter contains the field already but for the sake of consistency this is structured like the other parameter
-function setProtocolParameter(pw::ProtocolWidget, field::Symbol, parameterObj::BoolParameter, params::ProtocolParams)
-  value = get_gtk_property(parameterObj, :active, Bool)
+function setProtocolParameter(pw::ProtocolWidget, field::Symbol, parameterObj, params::ProtocolParams)
   @info "Setting field $field"
-  setfield!(params, field, value)
+  val = value(parameterObj)
+  setfield!(params, field, val)
 end
 
+# Technically BoolParameter contains the field already but for the sake of consistency this is structured like the other parameter
 function setProtocolParameter(pw::ProtocolWidget, parameterObj::BoolParameter, params::ProtocolParams)
   field = parameterObj.field
   setProtocolParameter(pw, field, parameterObj, params)
 end
 
-function setProtocolParameter(pw::ProtocolWidget, field::Symbol, parameterObj::UnitfulEntry, params::ProtocolParams)
-  valueString = get_gtk_property(parameterObj, :text, String)
-  value = tryparse(Float64, valueString)
-  @info "Setting field $field"
-  setfield!(params, field, value * parameterObj.unitValue)
-end
-
-function setProtocolParameter(pw::ProtocolWidget, parameterObj::UnitfulParameter, params::ProtocolParams)
-  field = parameterObj.field
-  setProtocolParameter(pw, field, parameterObj.entry, params)
-end
-
-function setProtocolParameter(pw::ProtocolWidget, field::Symbol, parameterObj::GenericEntry{T}, params::ProtocolParams) where {T}
-  valueString = get_gtk_property(parameterObj, :text, String)
-  value = tryparse(T, valueString)
-  @info "Setting field $field"
-  setfield!(params, field, value)
-end
-
-function setProtocolParameter(pw::ProtocolWidget, parameterObj::GenericParameter{T}, params::ProtocolParams) where {T}
+function setProtocolParameter(pw::ProtocolWidget, parameterObj::Union{UnitfulParameter, GenericParameter{T}}, params::ProtocolParams) where {T}
   field = parameterObj.field
   setProtocolParameter(pw, field, parameterObj.entry, params)
 end
@@ -726,8 +721,23 @@ function setProtocolParameter(pw::ProtocolWidget, parameterObj::SequenceParamete
   acqNumFrames(seq, get_gtk_property(pw["adjNumFrames",AdjustmentLeaf], :value, Int64))
   acqNumFrameAverages(seq, get_gtk_property(pw["adjNumFrameAverages",AdjustmentLeaf], :value, Int64))
   acqNumAverages(seq, get_gtk_property(pw["adjNumAverages",AdjustmentLeaf], :value, Int64))
-  #dfDivider(seq)
-  #dfStrength TODO, doesnt have a function atm
+  
+  for channelParam in pw["boxPeriodicChannel", BoxLeaf]
+    setProtocolParameter(pw, channelParam)
+  end
+  @info "Set sequence"
+end
+
+function setProtocolParameter(pw::ProtocolWidget, channelParam::PeriodicChannelParameter)
+  # TODO offset
+  channel = channelParam.channel
+  for index = 2:length(channelParam.box) # Index 1 is grid describing channel, then come the components
+    component = channelParam.box[index]
+    id = get_gtk_property(component.idLabel, :label, String)
+    @info "Setting componend $id"
+    amplitude!(channel, id, value(component.amplitude))
+    phase!(channel, id, value(component.phase))
+  end
 end
 
 function setProtocolParameter(pw::ProtocolWidget, parameterObj::PositionParameter, params::ProtocolParams)
