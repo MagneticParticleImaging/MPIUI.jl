@@ -625,10 +625,7 @@ function loadFilePos(pw::ProtocolWidget)
 end
 
 ### Parameter Interaction ###
-function updateSequence(pw::ProtocolWidget, seq::Sequence)
-  dfString = *([ string(x*1e3," x ") for x in diag(ustrip.(dfStrength(seq)[1,:,:])) ]...)[1:end-3]
-  dfDividerStr = *([ string(x," x ") for x in unique(vec(dfDivider(seq))) ]...)[1:end-3]
-  
+function updateSequence(pw::ProtocolWidget, seq::Sequence)  
   @idle_add begin
     try
       @info "Try adding channels"
@@ -651,8 +648,6 @@ function updateSequence(pw::ProtocolWidget, seq::Sequence)
     catch e 
       @error e
     end
-    #set_gtk_property!(pw["entDFStrength",EntryLeaf], :text, dfString)
-    #set_gtk_property!(pw["entDFDivider",EntryLeaf], :text, dfDividerStr)
     #setInfoParams(pw)
   end
 end
@@ -675,27 +670,53 @@ function updatePositions(pw::ProtocolWidget, pos::Union{Positions, Nothing})
   end
 end
 
-function setProtocolParameter(pw::ProtocolWidget, parameterObj::BoolParameter, params::ProtocolParams)
+# Technically BoolParameter contains the field already but for the sake of consistency this is structured like the other parameter
+function setProtocolParameter(pw::ProtocolWidget, field::Symbol, parameterObj::BoolParameter, params::ProtocolParams)
   value = get_gtk_property(parameterObj, :active, Bool)
-  field = parameterObj.field
   @info "Setting field $field"
   setfield!(params, field, value)
 end
 
-function setProtocolParameter(pw::ProtocolWidget, parameterObj::UnitfulParameter, params::ProtocolParams)
-  valueString = get_gtk_property(parameterObj.entry, :text, String)
-  value = tryparse(Float64, valueString)
+function setProtocolParameter(pw::ProtocolWidget, parameterObj::BoolParameter, params::ProtocolParams)
   field = parameterObj.field
+  setProtocolParameter(pw, field, parameterObj, params)
+end
+
+function setProtocolParameter(pw::ProtocolWidget, field::Symbol, parameterObj::UnitfulEntry, params::ProtocolParams)
+  valueString = get_gtk_property(parameterObj, :text, String)
+  value = tryparse(Float64, valueString)
   @info "Setting field $field"
   setfield!(params, field, value * parameterObj.unitValue)
 end
 
-function setProtocolParameter(pw::ProtocolWidget, parameterObj::GenericParameter{T}, params::ProtocolParams) where {T}
-  valueString = get_gtk_property(parameterObj.entry, :text, String)
-  value = tryparse(T, valueString)
+function setProtocolParameter(pw::ProtocolWidget, parameterObj::UnitfulParameter, params::ProtocolParams)
   field = parameterObj.field
+  setProtocolParameter(pw, field, parameterObj.entry, params)
+end
+
+function setProtocolParameter(pw::ProtocolWidget, field::Symbol, parameterObj::GenericEntry{T}, params::ProtocolParams) where {T}
+  valueString = get_gtk_property(parameterObj, :text, String)
+  value = tryparse(T, valueString)
   @info "Setting field $field"
   setfield!(params, field, value)
+end
+
+function setProtocolParameter(pw::ProtocolWidget, parameterObj::GenericParameter{T}, params::ProtocolParams) where {T}
+  field = parameterObj.field
+  setProtocolParameter(pw, field, parameterObj.entry, params)
+end
+
+function setProtocolParameter(pw::ProtocolWidget, fieldObj::Union{ParameterLabel, BoolParameter}, valueObj, params::ProtocolParams)
+  field = fieldObj.field
+  setProtocolParameter(pw, field, valueObj, params)
+end
+
+function setProtocolParameter(pw::ProtocolWidget, parameterObj::RegularParameters, params::ProtocolParams)
+  for i = 1:length(parameterObj.paramDict)
+    fieldObj = parameterObj[1, i]
+    valueObj = parameterObj[2, i]
+    setProtocolParameter(pw, fieldObj, valueObj, params)
+  end
 end
 
 function setProtocolParameter(pw::ProtocolWidget, parameterObj::SequenceParameter, params::ProtocolParams)
