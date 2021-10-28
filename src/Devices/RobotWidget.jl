@@ -32,6 +32,15 @@ function RobotWidget(robot::Robot)
     end
   end
 
+  @idle_add begin
+    ranges = axisRange(m.robot)
+    # adapt for other dof
+    set_gtk_property!(m["entRangeX"], :text, string(ustrip.(u"mm", ranges[1])))
+    set_gtk_property!(m["entRangeY"], :text, string(ustrip.(u"mm", ranges[2])))
+    set_gtk_property!(m["entRangeZ"], :text, string(ustrip.(u"mm", ranges[3])))
+    set_gtk_property!(m["entMoveOrder"], :text, MPIMeasurements.movementOrder(m.robot))
+  end
+
   initCallbacks(m)
 
   return m
@@ -51,20 +60,8 @@ function initCallbacks(m::RobotWidget)
   end
 
   signal_connect(m["btnRobotMove"], :clicked) do w
-      robotMove(m)
-  end
-
-  signal_connect(m["btnMovePark"], :clicked) do w
     try
-      movePark(m)
-    catch ex
-      showError(ex)
-    end
-  end
-
-  signal_connect(m["btnMoveAssemblePos"], :clicked) do w
-    try 
-      moveAssemblePos(m)
+      robotMove(m)
     catch ex
       showError(ex)
     end
@@ -116,51 +113,32 @@ end
 function enableRobotMoveButtons(m::RobotWidget, enable::Bool)
     @idle_add begin
       set_gtk_property!(m["btnRobotMove"],:sensitive,enable)
-      set_gtk_property!(m["btnMoveAssemblePos"],:sensitive,enable)
-      set_gtk_property!(m["btnMovePark"],:sensitive,enable)
-      #set_gtk_property!(m["tbCalibration"],:sensitive,enable)
+      set_gtk_property!(m["btnMoveNamedPos"], :sensitive, enable)
     end
 end
   
 function robotMove(m::RobotWidget)
-    if !isReferenced(m.robot)
-        info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
-    return
-    end
+  if !isReferenced(m.robot)
+      info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
+  return
+  end
 
-    entryX = get_gtk_property(m["entMovePosX"], :text, String)
-    entryY = get_gtk_property(m["entMovePosY"], :text, String)
-    entryZ = get_gtk_property(m["entMovePosZ"], :text, String)
-    posFloat = tryparse.(Float64, [entryX, entryY, entryZ])
+  entryX = get_gtk_property(m["entMovePosX"], :text, String)
+  entryY = get_gtk_property(m["entMovePosY"], :text, String)
+  entryZ = get_gtk_property(m["entMovePosZ"], :text, String)
+  posFloat = tryparse.(Float64, [entryX, entryY, entryZ])
 
-    if any(posFloat .== nothing) || length(posFloat) != 3
-        return
-    end
-    pos = posFloat.*1Unitful.mm
-    try
-      @info "enabeling robot"
-      enable(m.robot)
-      @info "move robot"
-      moveAbs(m.robot, pos)
-      disable(m.robot)
-      displayPosition(m)
-      @info "move robot done"
-    catch ex
-      showError(ex)
-    end
-end
-  
-  
-function MPIMeasurements.movePark(m::RobotWidget)
-    if !isReferenced(m.robot)
-        info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
-        return
-    end
-    enable(m.robot)
-    movePark(m.robot)
-    disable(m.robot)
-    displayPosition(m)
-    enableRobotMoveButtons(m, true)
+  if any(posFloat .== nothing) || length(posFloat) != 3
+      return
+  end
+  pos = posFloat.*1Unitful.mm
+  @info "enabeling robot"
+  enable(m.robot)
+  @info "move robot"
+  moveAbs(m.robot, pos)
+  @info "move robot done"
+  disable(m.robot)
+  displayPosition(m)
 end
 
 function moveNamedPosition(m::RobotWidget, posName::String)
@@ -168,16 +146,15 @@ function moveNamedPosition(m::RobotWidget, posName::String)
     info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
     return
   end
+  @info "enabeling robot"
   enable(m.robot)
+  @info "move robot"
   MPIMeasurements.gotoPos(m.robot, posName)
+  @info "move robot done"
   disable(m.robot)
   displayPosition(m)
 end
   
-function moveAssemblePos(m::RobotWidget)
-  moveNamedPosition(m, "assembly")
-  @idle_add set_gtk_property!(m["btnRobotMove"],:sensitive,false)
-end
 
 function referenceDrive(m::RobotWidget)
   robot = m.robot
