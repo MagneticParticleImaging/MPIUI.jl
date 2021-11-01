@@ -68,6 +68,10 @@ function initCallbacks(m::RobotWidget)
   signal_connect(m["btnReferenceDrive"], :clicked) do w
       referenceDrive(m)
   end
+
+  signal_connect(m["btnScannerOrigin"], :clicked) do w
+    moveScannerOrigin(m)
+  end 
   
   signal_connect(m["cmbNamedPos"], :changed) do w
     displayNamedPosition(m)
@@ -96,6 +100,8 @@ function initCallbacks(m::RobotWidget)
       m.coordType = RobotCoords
     end
   end
+
+  # TODO implement Name Position button
 
 end
 
@@ -243,7 +249,20 @@ function moveNamedPosition(m::RobotWidget, posName::String)
   disable(m.robot)
   displayCurrentPosition(m)
 end
-  
+
+function moveScannerOrigin(m::RobotWidget)
+  if !isReferenced(m.robot)
+    info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
+    return
+  end
+  @info "enabeling robot"
+  enable(m.robot)
+  @info "move robot"
+  MPIMeasurements.moveScannerOrigin(m.robot)
+  @info "move robot done"
+  disable(m.robot)
+  displayCurrentPosition(m)
+end
 
 function referenceDrive(m::RobotWidget)
   robot = m.robot
@@ -257,6 +276,9 @@ function referenceDrive(m::RobotWidget)
       if ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"])
         enable(robot)
         doReferenceDrive(robot)
+        if in("park", keys(namedPositions(m.robot)))
+          moveNamedPosition(m, "park")
+        end
         disable(robot)
         displayCurrentPosition(m)
         message = """The robot is now referenced.
