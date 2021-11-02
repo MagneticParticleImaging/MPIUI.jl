@@ -1,9 +1,9 @@
 function initProtocol(pw::ProtocolWidget)
-  @info "Setting protocol parameters"
-  for parameterObj in pw["boxProtocolParameter", BoxLeaf]
-    setProtocolParameter(pw, parameterObj, pw.protocol.params)
-  end
   try 
+    @info "Setting protocol parameters"
+    for parameterObj in pw["boxProtocolParameter", BoxLeaf]
+      setProtocolParameter(pw, parameterObj, pw.protocol.params)
+    end
     @info "Init protocol"
     pw.biChannel = MPIMeasurements.init(pw.protocol)
     return true
@@ -469,5 +469,26 @@ function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event
     updateData(pw.rawDataWidget, event.filename)
     updateExperimentStore(mpilab[], mpilab[].currentStudy)
   end
+  return false
+end
+
+### ContinousMeasurementProtocol ###
+function handleNewProgress(pw::ProtocolWidget, protocol::ContinousMeasurementProtocol, event::ProgressEvent)
+  @info "Asking for new measurement $(event.done)"
+  dataQuery = DataQueryEvent("")
+  put!(pw.biChannel, dataQuery)
+  return false
+end
+
+function handleEvent(pw::ProtocolWidget, protocol::ContinousMeasurementProtocol, event::DataAnswerEvent)
+  channel = pw.biChannel
+  meas = event.data
+  if !isnothing(meas)
+    seq = pw.protocol.params.sequence
+    deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
+    updateData(pw.rawDataWidget, meas, deltaT)
+  end
+  progressQuery = ProgressQueryEvent()
+  put!(channel, progressQuery)
   return false
 end
