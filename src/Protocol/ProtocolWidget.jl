@@ -546,7 +546,7 @@ end
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, regParams::RegularParameters, field::Symbol, value::T, tooltip) where {T<:Quantity}
   label = ParameterLabel(field, tooltip)
   generic = UnitfulEntry(value)
-  addGenericCallback(pw, generic)
+  addGenericCallback(pw, generic.entry)
   addToRegularParams(regParams, label, generic)
 end
 
