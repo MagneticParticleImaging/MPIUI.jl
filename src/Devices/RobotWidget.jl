@@ -57,6 +57,14 @@ function initCallbacks(m::RobotWidget)
     end
   end
 
+  signal_connect(m["btnResetRobot"], :clicked) do w
+    try
+      resetRobot(m)
+    catch ex
+      showError(ex)
+    end
+  end
+
   signal_connect(m["btnRobotMove"], :clicked) do w
     try
       robotMove(m)
@@ -66,11 +74,19 @@ function initCallbacks(m::RobotWidget)
   end
 
   signal_connect(m["btnReferenceDrive"], :clicked) do w
+    try
       referenceDrive(m)
+    catch ex
+      showError(ex)
+    end
   end
 
   signal_connect(m["btnScannerOrigin"], :clicked) do w
-    moveScannerOrigin(m)
+    try 
+      moveScannerOrigin(m)
+    catch ex
+      showError(ex)
+    end
   end 
   
   signal_connect(m["cmbNamedPos"], :changed) do w
@@ -210,6 +226,13 @@ function updatePositionCoords(m::RobotWidget, transferNewType::Function, oldType
   end
 end
 
+
+function resetRobot(m::RobotWidget)
+  robot = m.robot 
+  reset(robot)
+  setup(robot)
+  @idle_add set_gtk_property!(m["btnReferenceDrive"],:sensitive, !isReferenced(robot))
+end
 
 function enableRobotMoveButtons(m::RobotWidget, enable::Bool)
     @idle_add begin
