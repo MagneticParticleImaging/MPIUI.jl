@@ -84,23 +84,7 @@ function initCallbacks(m::ScannerBrowser)
 
       # Remove all currently loaded widgets
       empty!(m.deviceBox)
-
-      if typeof(m.scanner.devices[name]) <: Robot
-        w = RobotWidget(m.scanner.devices[name])
-        push!(m.deviceBox, w)
-        set_gtk_property!(m.deviceBox, :expand, w, true)
-      elseif typeof(m.scanner.devices[name]) <: SurveillanceUnit
-          w = SurveillanceWidget(m.scanner.devices[name])
-          push!(m.deviceBox, w)
-          set_gtk_property!(m.deviceBox, :expand, w, true)
-      elseif typeof(m.scanner.devices[name]) <: AbstractDAQ
-          w = DAQWidget(m.scanner.devices[name])
-          push!(m.deviceBox, w)
-          set_gtk_property!(m.deviceBox, :expand, w, true)
-      else
-        info_dialog("Device $(typeof(m.scanner.devices[name])) not yet implemented.", 
-                  mpilab[]["mainWindow"])
-      end
+      displayDeviceWidget(m, m.scanner.devices[name])
 
       showall(m.deviceBox)
       m.updating = false
@@ -108,6 +92,21 @@ function initCallbacks(m::ScannerBrowser)
   end
 
 end
+
+function showDeviceWidget(m::ScannerBrowser, widget)
+  push!(m.deviceBox, widget)
+  set_gtk_property!(m.deviceBox, :expand, widget, true)
+end
+
+function displayDeviceWidget(m::ScannerBrowser, dev::Device)
+  info_dialog("Device $(typeof(dev)) not yet implemented.", mpilab[]["mainWindow"])
+end
+displayDeviceWidget(m::ScannerBrowser, dev::Robot) = showDeviceWidget(m, RobotWidget(dev))
+displayDeviceWidget(m::ScannerBrowser, dev::AbstractDAQ) = showDeviceWidget(m, DAQWidget(dev))
+displayDeviceWidget(m::ScannerBrowser, dev::SurveillanceUnit) = showDeviceWidget(m, SurveillanceWidget(dev))
+displayDeviceWidget(m::ScannerBrowser, dev::TemperatureSensor) = showDeviceWidget(m, TemperatureSensorWidget(dev))
+
+
 
 function updateData!(m::ScannerBrowser, scanner=nothing)
   if scanner != nothing
