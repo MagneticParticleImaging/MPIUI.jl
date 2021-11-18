@@ -87,6 +87,7 @@ end
         end
         #Winston.xlabel("Time")
         display(m.canvas ,p)
+        m.canvas.is_sized = true
       end
     end
   end
