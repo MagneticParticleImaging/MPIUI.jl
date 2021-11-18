@@ -80,9 +80,9 @@ function initCallbacks(m::SurveillanceWidget)
 
     signal_connect(m["tbStartTemp"], :toggled) do w
         if get_gtk_property(m["tbStartTemp"], :active, Bool)
-            startSurveillance(m)
+            startSurveillanceUnit(m)
         else
-            stopSurveillance(m)
+            stopSurveillanceUnit(m)
         end
     end
 
@@ -106,7 +106,7 @@ function initCallbacks(m::SurveillanceWidget)
 end
 
   
-function startSurveillance(m::SurveillanceWidget)
+function startSurveillanceUnit(m::SurveillanceWidget)
   
     @guarded function update_(timer::Timer)
       if !(m.updating) 
@@ -138,7 +138,7 @@ function startSurveillance(m::SurveillanceWidget)
     m.timer = Timer(update_, 0.0, interval=1.5)
 end
   
-function stopSurveillance(m)
+function stopSurveillanceUnit(m::SurveillanceWidget)
     if m.timer != nothing
         close(m.timer)
         m.timer = nothing

@@ -1,45 +1,3 @@
-mutable struct TemperatureLog
-  temperatures::Vector{Float64}
-  times::Vector{DateTime}
-  numChan::Int64
-end
-
-
-function TemperatureLog(numChan::Int=1)
-  TemperatureLog(Float64[], DateTime[], numChan)
-end
-
-function TemperatureLog(filename::String)
-  p = TOML.parsefile(filename)
-  return TemperatureLog(p["temperatures"], p["times"], p["numChan"])
-end
-
-function clear(log::TemperatureLog, numChan=log.numChan)
-  log.temperatures = Float64[]
-  log.times = DateTime[]
-  log.numChan = numChan
-end
-
-function Base.push!(log::TemperatureLog, temp, t)
-  if length(temp) != log.numChan
-      error("Num Temperature sensors is not correct!")
-  end
-
-  append!(log.temperatures, temp)
-  push!(log.times, t)
-end
-
-function saveTemperatureLog(filename::String, log::TemperatureLog)
-  p = Dict{String,Any}()
-  p["temperatures"] = log.temperatures
-  p["times"] = log.times
-  p["numChan"] = log.numChan
-
-  open(filename, "w") do f
-      TOML.print(f, p)
-  end
-end
-
 mutable struct TemperatureSensorWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder::GtkBuilder
@@ -80,9 +38,9 @@ function initCallbacks(m::TemperatureSensorWidget)
 
   signal_connect(m["tbStartTemp"], :toggled) do w
       if get_gtk_property(m["tbStartTemp"], :active, Bool)
-          startSurveillance(m)
+          startSensor(m)
       else
-          stopSurveillance(m)
+          stopSensor(m)
       end
   end
 
@@ -106,39 +64,39 @@ function initCallbacks(m::TemperatureSensorWidget)
 end
 
 
-function startSurveillance(m::TemperatureSensorWidget)
+@guarded function updateSensor(timer::Timer, m::TemperatureSensorWidget)
+  if !(m.updating) 
+    te = ustrip.(getTemperatures(m.sensor))
+    if sum(te) > 0.0
+      time = Dates.now()
+      str = join([ @sprintf("%.2f C ",t) for t in te ])
+      set_gtk_property!(m["entTemperatures"], :text, str)
 
-  @guarded function update_(timer::Timer)
-    if !(m.updating) 
-      te = ustrip.(getTemperatures(m.sensor))
-      if sum(te) > 0.0
-        time = Dates.now()
-        str = join([ @sprintf("%.2f C ",t) for t in te ])
-        set_gtk_property!(m["entTemperatures"], :text, str)
+      push!(m.temperatureLog, te, time)
 
-        push!(m.temperatureLog, te, time)
+      L = min(m.temperatureLog.numChan,7)
 
-        L = min(m.temperatureLog.numChan,7)
+      colors = ["b", "r", "g", "y", "k", "c", "m"]
 
-        colors = ["b", "r", "g", "y", "k", "c", "m"]
+      T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
 
-        T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
-
-        @idle_add begin
-          p = Winston.plot(T[1,:], colors[1], linewidth=3)
-          for l=2:L
-            Winston.plot(p, T[l,:], colors[l], linewidth=3)
-          end
-          #Winston.xlabel("Time")
-          display(m.canvas ,p)
+      @idle_add begin
+        p = Winston.plot(T[1,:], colors[1], linewidth=3)
+        for l=2:L
+          Winston.plot(p, T[l,:], colors[l], linewidth=3)
         end
+        #Winston.xlabel("Time")
+        display(m.canvas ,p)
       end
     end
   end
-  m.timer = Timer(update_, 0.0, interval=1.5)
 end
 
-function stopSurveillance(m)
+function startSensor(m::TemperatureSensorWidget)
+  m.timer = Timer(timer -> updateSensor(timer, m), 0.0, interval=1.5)
+end
+
+function stopSensor(m::TemperatureSensorWidget)
   if m.timer != nothing
       close(m.timer)
       m.timer = nothing

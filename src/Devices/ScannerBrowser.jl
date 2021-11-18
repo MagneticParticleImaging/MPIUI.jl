@@ -2,6 +2,7 @@
 include("RobotWidget.jl")
 include("SurveillanceWidget.jl")
 include("DAQWidget.jl")
+include("TemperatureSensorWidget.jl")
 
 mutable struct ScannerBrowser <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
@@ -12,6 +13,7 @@ mutable struct ScannerBrowser <: Gtk.GtkBox
   updating
   deviceBox
   scanner
+  widgetCache::Dict{Device, Gtk.GtkContainer}
 end
 
 getindex(m::ScannerBrowser, w::AbstractString) = G_.object(m.builder, w)
@@ -58,7 +60,7 @@ function ScannerBrowser(scanner, deviceBox)
 
   # TODO Add widget that shows properties of selected Device
 
-  m = ScannerBrowser(mainBox.handle, store, tmSorted, tv, selection, false, deviceBox, scanner)
+  m = ScannerBrowser(mainBox.handle, store, tmSorted, tv, selection, false, deviceBox, scanner, Dict{Device, Gtk.GtkContainer}())
   Gtk.gobject_move_ref(m, mainBox)
 
   updateData!(m, scanner)
@@ -96,15 +98,24 @@ end
 function showDeviceWidget(m::ScannerBrowser, widget)
   push!(m.deviceBox, widget)
   set_gtk_property!(m.deviceBox, :expand, widget, true)
+  showall(widget)
 end
-
+function getDeviceWidget(m::ScannerBrowser, dev::Device, widgetType::Type{<:Gtk.GtkContainer})
+  if haskey(m.widgetCache, dev)
+    return m.widgetCache[dev]
+  else
+    widget = widgetType(dev)
+    m.widgetCache[dev] = widget
+    return widget
+  end
+end
 function displayDeviceWidget(m::ScannerBrowser, dev::Device)
   info_dialog("Device $(typeof(dev)) not yet implemented.", mpilab[]["mainWindow"])
 end
-displayDeviceWidget(m::ScannerBrowser, dev::Robot) = showDeviceWidget(m, RobotWidget(dev))
-displayDeviceWidget(m::ScannerBrowser, dev::AbstractDAQ) = showDeviceWidget(m, DAQWidget(dev))
-displayDeviceWidget(m::ScannerBrowser, dev::SurveillanceUnit) = showDeviceWidget(m, SurveillanceWidget(dev))
-displayDeviceWidget(m::ScannerBrowser, dev::TemperatureSensor) = showDeviceWidget(m, TemperatureSensorWidget(dev))
+displayDeviceWidget(m::ScannerBrowser, dev::Robot) = showDeviceWidget(m, getDeviceWidget(m, dev, RobotWidget))
+displayDeviceWidget(m::ScannerBrowser, dev::AbstractDAQ) = showDeviceWidget(m, getDeviceWidget(m, dev, DAQWidget))
+displayDeviceWidget(m::ScannerBrowser, dev::SurveillanceUnit) = showDeviceWidget(m, getDeviceWidget(m, dev, SurveillanceWidget))
+displayDeviceWidget(m::ScannerBrowser, dev::TemperatureSensor) = showDeviceWidget(m, getDeviceWidget(m, dev, TemperatureSensorWidget))
 
 
 
