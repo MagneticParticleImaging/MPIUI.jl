@@ -48,7 +48,6 @@ end
 function startDAQ(m::DAQWidget)
     MPIMeasurements.startTx(m.daq)
     function update_(timer::Timer)
-        @info "ja Moin!  $(typeof(m.daq))  $(!(m.updating))"
         if !(m.updating) && typeof(m.daq) <: RedPitayaDAQ
             wp = MPIMeasurements.currentWP(m.daq.rpc)
             @info wp
