@@ -204,7 +204,7 @@ function updateSF(m::SFViewerWidget)
                       tuple(1.0, 1.0, 1.0, 1.0, 1.0),
                       tuple(0.0, 0.0, 0.0, 0.0, 0.0))
 
-  imMeta = ImageMeta(im, Dict{String,Any}())
+  imMeta = ImageMeta(im, Dict{Symbol,Any}())
 
   updateData!(m.dv, imMeta, ampPhase=true)
 end
