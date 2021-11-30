@@ -575,9 +575,11 @@
             <property name="can_focus">False</property>
             <child>
               <object class="GtkGrid">
+                <property name="width_request">180</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="valign">center</property>
+                <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkLabel" id="lblProtocolName">
                     <property name="visible">True</property>
@@ -765,6 +767,7 @@
     </child>
     <child>
       <object class="GtkScrolledWindow" id="wndProtoclParams">
+        <property name="width_request">250</property>
         <property name="visible">True</property>
         <property name="can_focus">True</property>
         <property name="shadow_type">in</property>
@@ -776,6 +779,8 @@
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="margin_left">4</property>
+                <property name="margin_right">4</property>
                 <property name="orientation">vertical</property>
                 <child>
                   <object class="GtkBox">
@@ -788,7 +793,8 @@
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">General</property>
                         <attributes>
-                          <attribute name="weight" value="heavy"/>
+                          <attribute name="weight" value="bold"/>
+                          <attribute name="size" value="13000"/>
                         </attributes>
                       </object>
                       <packing>
@@ -807,6 +813,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="orientation">vertical</property>
+                            <property name="spacing">4</property>
                             <child>
                               <object class="GtkExpander" id="expander10">
                                 <property name="visible">True</property>
@@ -1109,6 +1116,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="orientation">vertical</property>
+                    <property name="spacing">4</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="visible">True</property>
@@ -1116,6 +1124,7 @@
                         <property name="label" translatable="yes">Protocol</property>
                         <attributes>
                           <attribute name="weight" value="heavy"/>
+                          <attribute name="size" value="13000"/>
                         </attributes>
                       </object>
                       <packing>

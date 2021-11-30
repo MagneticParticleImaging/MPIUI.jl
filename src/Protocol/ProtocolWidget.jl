@@ -51,6 +51,7 @@ mutable struct GenericEntry{T} <: Gtk.GtkEntry
     entry = GtkEntry()
     set_gtk_property!(entry, :text, value)
     set_gtk_property!(entry, :hexpand, true)
+    set_gtk_property!(entry,:width_chars,5)
     generic = new(entry.handle, entry)
     return Gtk.gobject_move_ref(generic, entry)
   end
@@ -94,6 +95,7 @@ mutable struct UnitfulEntry <: Gtk.GtkGrid
     grid[1, 1] = entry
     grid[2, 1] = unitLabel
     set_gtk_property!(grid,:column_spacing,5)
+    set_gtk_property!(entry,:width_chars,5)
     set_gtk_property!(entry, :hexpand, true)
     result = new(grid.handle, entry, unitValue)
     return Gtk.gobject_move_ref(result, grid)
