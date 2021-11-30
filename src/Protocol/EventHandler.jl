@@ -2,7 +2,7 @@ function initProtocol(pw::ProtocolWidget)
   try 
     @info "Setting protocol parameters"
     for parameterObj in pw["boxProtocolParameter", BoxLeaf]
-      setProtocolParameter(pw, parameterObj, pw.protocol.params)
+      setProtocolParameter(parameterObj, pw.protocol.params)
     end
     @info "Init protocol"
     pw.biChannel = MPIMeasurements.init(pw.protocol)
