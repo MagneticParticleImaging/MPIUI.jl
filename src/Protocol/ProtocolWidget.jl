@@ -225,11 +225,12 @@ end
 mutable struct SequenceParameter <: Gtk.GtkExpander
   handle::Ptr{Gtk.GObject}
   field::Symbol
+  value::Sequence
 
-  function SequenceParameter(pw::ProtocolWidget, field::Symbol, tooltip::Union{Nothing, AbstractString} = nothing)
+  function SequenceParameter(pw::ProtocolWidget, field::Symbol, value::Sequence, tooltip::Union{Nothing, AbstractString} = nothing)
     exp = object_(pw.builder, "expSequence", GtkExpander)
     addTooltip(object_(pw.builder, "lblSequence", GtkLabel), tooltip)
-    seq = new(exp.handle, field)
+    seq = new(exp.handle, field, value)
     return Gtk.gobject_move_ref(seq, exp)
   end
 end
@@ -571,7 +572,7 @@ function addToRegularParams(regParams::RegularParameters, label::ParameterLabel,
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::SequenceParameterType, field, value, tooltip)
-  seq = SequenceParameter(pw, field, tooltip)
+  seq = SequenceParameter(pw, field, value, tooltip)
   updateSequence(pw, value) # Set default sequence values
   push!(pw["boxProtocolParameter", BoxLeaf], seq)
 end
@@ -642,6 +643,7 @@ end
 function updateSequence(pw::ProtocolWidget, seq::Sequence)  
   @idle_add begin
     try
+      # TODO move sequence into own builder
       @info "Try adding channels"
       empty!(pw["boxPeriodicChannel", BoxLeaf])
       for channel in periodicElectricalTxChannels(seq)
@@ -716,7 +718,7 @@ end
 
 function setProtocolParameter(pw::ProtocolWidget, parameterObj::SequenceParameter, params::ProtocolParams)
   @info "Trying to set sequence"
-  seq = getfield(params, parameterObj.field)
+  seq = parameterObj.value
 
   acqNumFrames(seq, get_gtk_property(pw["adjNumFrames",AdjustmentLeaf], :value, Int64))
   acqNumFrameAverages(seq, get_gtk_property(pw["adjNumFrameAverages",AdjustmentLeaf], :value, Int64))
@@ -725,6 +727,7 @@ function setProtocolParameter(pw::ProtocolWidget, parameterObj::SequenceParamete
   for channelParam in pw["boxPeriodicChannel", BoxLeaf]
     setProtocolParameter(pw, channelParam)
   end
+  setfield!(params, parameterObj.field, seq)
   @info "Set sequence"
 end
 
@@ -734,7 +737,7 @@ function setProtocolParameter(pw::ProtocolWidget, channelParam::PeriodicChannelP
   for index = 2:length(channelParam.box) # Index 1 is grid describing channel, then come the components
     component = channelParam.box[index]
     id = get_gtk_property(component.idLabel, :label, String)
-    @info "Setting componend $id"
+    @info "Setting component $id"
     amplitude!(channel, id, value(component.amplitude))
     phase!(channel, id, value(component.phase))
   end
