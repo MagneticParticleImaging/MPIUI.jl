@@ -5,7 +5,7 @@ function initProtocol(pw::ProtocolWidget)
       setProtocolParameter(parameterObj, pw.protocol.params)
     end
     @info "Init protocol"
-    pw.biChannel = MPIMeasurements.init(pw.protocol)
+    MPIMeasurements.init(pw.protocol)
     return true
   catch e
     @error e
@@ -17,7 +17,7 @@ end
 function startProtocol(pw::ProtocolWidget)
   try 
     @info "Execute protocol"
-    execute(pw.scanner, pw.protocol)
+    pw.biChannel = execute(pw.scanner, pw.protocol)
     pw.protocolState = INIT
     @info "Start event handler"
     pw.eventHandler = Timer(timer -> eventHandler(pw, timer), 0.0, interval=0.05)
@@ -261,48 +261,6 @@ function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, eve
   return false
 end
 
-### Restart Default ###
-function tryRestartProtocol(pw::ProtocolWidget)
-  put!(pw.biChannel, RestartEvent())
-end
-function handleSuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::RestartEvent)
-  @info "Protocol restarted"
-  confirmRestartProtocol(pw)
-  return false
-end
-
-function handleUnsupportedOperation(pw::ProtocolWidget, protocol::Protocol, event::RestartEvent)
-  @warn "Protocol can not be restarted"
-  denyRestartProtocol(pw)
-  return false
-end
-
-function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::RestartEvent)
-  @warn "Protocol failed to be restarted"
-  denyRestartProtocol(pw)
-  return false
-end
-
-function confirmRestartProtocol(pw::ProtocolWidget)
-  @idle_add begin
-    pw.updating = true
-    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, false)
-    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :label, "Run")
-    set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, false)
-    pw.updating = false
-  end
-end
-
-function denyRestartProtocol(pw::ProtocolWidget)
-  @idle_add begin
-    pw.updating = true
-    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
-    set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, true)
-    pw.updating = false
-  end
-end
-
-
 ### Finish Default ###
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::FinishedNotificationEvent)
   pw.protocolState = FINISHED
@@ -320,66 +278,20 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
     pw.updating = true
     # Sensitive
     set_gtk_property!(pw["tbInit",ToolButtonLeaf], :sensitive, true)
-    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, false)
+    if pw.protocolState != FAILED
+      set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
+    end
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
     set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, false)
-    set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, false)
     set_gtk_property!(pw["btnPickProtocol", ButtonLeaf], :sensitive, true)
     # Active
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :active, false)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, false)
     # Text
-    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :label, "Play")
+    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :label, "Execute")
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :label, "Pause")
     pw.updating = false
   end
-end
-
-### Async Measurement Protocol ###
-function handleNewProgress(pw::ProtocolWidget, protocol::AsyncMeasurementProtocol, event::ProgressEvent)
-  @info "Asking for new frame $(event.done)"
-  dataQuery = DataQueryEvent("FRAME:$(event.done)")
-  put!(pw.biChannel, dataQuery)
-  return false
-end
-
-function handleEvent(pw::ProtocolWidget, protocol::AsyncMeasurementProtocol, event::DataAnswerEvent)
-  channel = pw.biChannel
-  # We were waiting on the last buffer request
-  if event.query.message == "BUFFER"
-    @info "Finishing measurement"
-    bgdata = nothing 
-    buffer = event.data
-    #filenameExperiment = MPIFiles.saveasMDF(pw.mdfstore, pw.scanner, pw.protocol.params.sequence, buffer, params)
-    #updateData(pw.rawDataWidget, filenameExperiment)
-    #updateExperimentStore(mpilab[], mpilab[].currentStudy)
-    @info "Would store now"
-    put!(channel, FinishedAckEvent())
-    return true
-  # We were waiting on a new frame
-  elseif startswith(event.query.message, "FRAME") && pw.protocolState == RUNNING
-    frame = event.data
-    if !isnothing(frame)
-      @info "Received frame"
-      #infoMessage(m, "$(m.progress.unit) $(m.progress.done) / $(m.progress.total)", "green")
-      #if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
-      seq = pw.protocol.params.sequence
-      deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
-      updateData(pw.rawDataWidget, frame, deltaT)
-      #end
-    end
-    # Ask for next progress
-    progressQuery = ProgressQueryEvent()
-    put!(channel, progressQuery)
-  end
-  return false
-end
-
-function handleFinished(pw::ProtocolWidget, protocol::AsyncMeasurementProtocol)
-  @info "Asking for full buffer"
-  bufferRequest = DataQueryEvent("BUFFER")
-  put!(pw.biChannel, bufferRequest)
-  return false
 end
 
 ### RobotBasedSystemMatrixProtocol ###
@@ -461,15 +373,10 @@ end
 
 function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event::StorageSuccessEvent)
   @info "Received storage success event"
-  @idle_add begin
-    # Enable ending or restart
-    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
-    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :label, "Finish")
-    set_gtk_property!(pw["tbRestart",ToolButtonLeaf], :sensitive, true)
-    updateData(pw.rawDataWidget, event.filename)
-    updateExperimentStore(mpilab[], mpilab[].currentStudy)
-  end
-  return false
+  put!(pw.biChannel, FinishedAckEvent())
+  updateData(pw.rawDataWidget, event.filename)
+  updateExperimentStore(mpilab[], mpilab[].currentStudy)
+  return true
 end
 
 ### ContinousMeasurementProtocol ###

@@ -51,7 +51,6 @@ function ProtocolWidget(scanner=nothing)
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf],:sensitive,false)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf],:sensitive,false)
     set_gtk_property!(pw["tbCancel",ToolButtonLeaf],:sensitive,false)      
-    set_gtk_property!(pw["tbRestart",ToolButtonLeaf],:sensitive,false)      
   end
   if !isnothing(pw.scanner)
     # Load default protocol and set params
@@ -165,10 +164,6 @@ function initCallbacks(pw::ProtocolWidget)
 
   signal_connect(pw["tbCancel", ToolButtonLeaf], :clicked) do w
     tryCancelProtocol(pw)
-  end
-
-  signal_connect(pw["tbRestart", ToolButtonLeaf], :clicked) do w
-    tryRestartProtocol(pw)
   end
 
   signal_connect(pw["btnPickProtocol", GtkButton], "clicked") do w
