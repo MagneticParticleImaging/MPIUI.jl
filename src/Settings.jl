@@ -9,10 +9,11 @@ mutable struct Settings
 end
 
 
-const settingspath = joinpath(homedir(),".mpilab")
+const settingspath = joinpath(homedir(),".mpi")
 const settingsfile = joinpath(settingspath, "Settings.toml")
 const cachefile = joinpath(settingspath, "Cache.jld")
-const logpath = joinpath(homedir(),".mpilab/logs/")
+const logpath = joinpath(settingspath, "Logs")
+const scannerpath = joinpath(settingspath, "Scanner")
 
 function loadcache()
   if isfile(cachefile)
