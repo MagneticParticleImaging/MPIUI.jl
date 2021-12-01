@@ -9,6 +9,7 @@
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjNumAverages">
+    <property name="lower">1</property>
     <property name="upper">100000000000</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
@@ -20,6 +21,7 @@
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjNumFrames">
+    <property name="lower">1</property>
     <property name="upper">1000000000</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
@@ -59,6 +61,7 @@
             <property name="hexpand">True</property>
             <property name="width_chars">0</property>
             <property name="text" translatable="yes">1</property>
+            <property name="adjustment">adjNumFrames</property>
             <property name="value">1</property>
           </object>
           <packing>
@@ -84,6 +87,7 @@
             <property name="can_focus">True</property>
             <property name="width_chars">0</property>
             <property name="text" translatable="yes">1</property>
+            <property name="adjustment">adjNumAverages</property>
             <property name="value">1</property>
           </object>
           <packing>
@@ -121,6 +125,7 @@
             <property name="can_focus">True</property>
             <property name="width_chars">0</property>
             <property name="text" translatable="yes">1</property>
+            <property name="adjustment">adjNumSubperiods</property>
             <property name="value">1</property>
           </object>
           <packing>
@@ -146,6 +151,7 @@
             <property name="can_focus">True</property>
             <property name="width_chars">3</property>
             <property name="text" translatable="yes">1</property>
+            <property name="adjustment">adjNumFrameAverages</property>
             <property name="value">1</property>
           </object>
           <packing>
