@@ -173,3 +173,4 @@ function setProtocolParameter(parameterObj::RegularParameters, params::ProtocolP
 end
 
 include("SequenceParameter.jl")
+include("PositionsParameter.jl")

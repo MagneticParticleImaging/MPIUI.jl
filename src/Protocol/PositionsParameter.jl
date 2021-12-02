@@ -11,17 +11,19 @@ mutable struct PositionParameter <: Gtk.GtkExpander
     posParam = new(posObj.handle, b, field)
     updatePositions(posParam, posValue)
     initCallbacks(posParam)
-    return Gtk.gobject_move_ref(posParam, pos)
+    return Gtk.gobject_move_ref(posParam, posObj)
   end
 end
+
+getindex(m::PositionParameter, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
 function initCallbacks(posParam::PositionParameter)
-  signal_connect(pw["btnLoadFilePos", ButtonLeaf], :clicked) do w
-    loadFilePos(pw)
+  signal_connect(posParam["btnLoadFilePos", ButtonLeaf], :clicked) do w
+    loadFilePos(posParam)
   end
 end
 
-function updatePositions(posParam::ProtocolWidget, pos::Union{Positions, Nothing})
+function updatePositions(posParam::PositionParameter, pos::Union{Positions, Nothing})
   if !isnothing(pos)
     shp = MPIFiles.shape(pos)
     shpStr = @sprintf("%d x %d x %d", shp[1],shp[2],shp[3])
@@ -75,7 +77,7 @@ function setProtocolParameter(posParam::PositionParameter, params::ProtocolParam
 
   end
 
-  setfield!(params, parameterObj.field, cartGrid)
+  setfield!(params, posParam.field, cartGrid)
 end
 
 function loadFilePos(posParam::PositionParameter)

@@ -336,7 +336,7 @@ function addProtocolParameter(pw::ProtocolWidget, ::SequenceParameterType, field
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::PositionParameterType, field, value, tooltip)
-  pos = PositionParameter(pw, field, tooltip)
+  pos = PositionParameter(field, value)
   updatePositions(pos, value)
   push!(pw["boxProtocolParameter", BoxLeaf], pos)
 end
