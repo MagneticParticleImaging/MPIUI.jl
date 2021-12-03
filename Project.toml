@@ -23,9 +23,11 @@ MPIMeasurements = "a874a27a-e9a7-503d-98b6-bf61df4bb725"
 MPIReco = "e4246700-6248-511e-8146-a1d1f47669d2"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+ThreadPools = "b189fb0b-2eb5-4ed4-bc0c-d34c51242431"
 Winston = "bd07be1c-e76f-5ff0-9c0b-f51ef45303c6"
 
 [compat]

@@ -4,3 +4,4 @@
 *.ui~
 *.mdf
 test/img
+Manifest.toml

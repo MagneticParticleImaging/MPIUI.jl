@@ -1,5 +1,5 @@
 datasetStores = ["/opt/mpidata", "/opt/data/MPS1", "/opt/data/HeadScanner", "/opt/data/Bruker"]
 brukerRecoStore = "/opt/data/Bruker"
 exportMDFFreqSpace = false
-scanner = "" #"HeadScanner.toml"
+scanner = "" #"HeadScanner"
 enableRecoStore = true

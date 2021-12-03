@@ -2,6 +2,7 @@ export MPILab, scanner
 
 mutable struct MPILab
   builder
+  scanner
   activeStore
   datasetStores
   brukerRecoStore
@@ -27,10 +28,12 @@ mutable struct MPILab
   basicRobot
   robotScanner
   multiPatchRobot
-  measurementWidget
+  #measurementWidget
+  protocolWidget
   dataViewerWidget
   rawDataWidget
   recoWidget
+  scannerBrowser
   currentAnatomRefFilename
   sfViewerWidget
   updating
@@ -57,7 +60,7 @@ end
 
 
 function MPILab(offlineMode=false)::MPILab
-
+   
   mkpath(logpath)
   logger = TeeLogger(
     MinLevelLogger(ConsoleLogger(), Logging.Info),
@@ -71,12 +74,12 @@ function MPILab(offlineMode=false)::MPILab
 
   uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
-  m_ = MPILab( Builder(filename=uifile), 1, DatasetStore[],
+  m_ = MPILab( Builder(filename=uifile), nothing, 1, DatasetStore[],
               nothing, nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, false, false, nothing, nothing, nothing, nothing,
-              nothing, nothing, nothing, "", nothing, false)
+              nothing, nothing, nothing, nothing, "", nothing, false)
 
   let m=m_
 
@@ -84,10 +87,20 @@ function MPILab(offlineMode=false)::MPILab
 
   w = m["mainWindow"]
 
+  @static if Sys.islinux()
+    defaultConfigPath = expanduser("~/.mpilab/configs")
+  else
+    defaultConfigPath = joinpath(homedir(), ".mpilab\\configs")
+  end
+
+  addConfigurationPath(defaultConfigPath)
+
   @debug "## Init Settings ..."
   initSettings(m)
-  @debug "## Init Measurement Tab ..."
-  initMeasurementTab(m, offlineMode)
+  @debug "## Init Scanner ..."
+  initScanner(m, offlineMode)
+  @debug "## Init Scanner Tab ..."
+  initScannerTab(m)
   @debug "## Init Store switch ..."
   initStoreSwitch(m)
 
@@ -116,6 +129,9 @@ function MPILab(offlineMode=false)::MPILab
   initVisuStore(m)
   @debug "## Init View switch ..."
   initViewSwitch(m)
+  @debug "## Init Protocol Tab ..."
+  initProtocolTab(m)
+
 
   @idle_add set_gtk_property!(m["lbInfo"],:use_markup,true)
   @idle_add set_gtk_property!(m["cbDatasetStores"],:active,0)
@@ -161,9 +177,9 @@ function MPILab(offlineMode=false)::MPILab
 
   
   signal_connect(w, "delete-event") do widget, event
-    if m.measurementWidget != nothing && m.measurementWidget.scanner != nothing
-      close(m.measurementWidget.scanner)
-      stopSurveillance(m.measurementWidget)
+    if m.protocolWidget != nothing && m.scanner != nothing
+      close(m.scanner)
+      #stopSurveillance(m.measurementWidget) # TODO I think this is now in the scanner browser
     end
     return false
   end
@@ -200,8 +216,10 @@ function initStoreSwitch(m::MPILab)
       scanDatasetDir(m)
       updateData!(m.sfBrowser,activeDatasetStore(m))
 
-      visible(m["tbMeasurementTab"],
-        isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
+      if !isnothing(m.protocolWidget)
+        visible(m["tbProtocolTab"],
+          isMeasurementStore(m.protocolWidget,activeDatasetStore(m)))
+      end
 
       if length(m.studyStore) > 0
         # select first study so that always measurements can be performed
@@ -233,9 +251,12 @@ function initViewSwitch(m::MPILab)
         @idle_add updateData!(m.recoWidget, path(m.currentExperiment) )
       end
     elseif page_num == 4
-      @idle_add unselectall!(m.selectionExp)
-      m.currentExperiment = nothing
-      infoMessage(m, m.measurementWidget.message)
+      # TODO scanner? Previously was measurementWidget
+    elseif page_num == 5
+      # TODO Protocol
+      #@idle_add unselectall!(m.selectionExp)
+      #m.currentExperiment = nothing
+      #infoMessage(m, m.measurementWidget.message)
     end
     return nothing
   end
@@ -250,7 +271,8 @@ function initViewSwitch(m::MPILab)
           G_.current_page(m["nbData"], 0)
           set_gtk_property!(m["tbDataTab"], :active, true)
           set_gtk_property!(m["tbCalibrationTab"], :active, false)
-          set_gtk_property!(m["tbMeasurementTab"], :active, false)
+          set_gtk_property!(m["tbScannerTab"], :active, false)
+          set_gtk_property!(m["tbProtocolTab"], :active, false)
           visible(m["panedReco"],true)
           updatingTab = false
       end
@@ -265,23 +287,40 @@ function initViewSwitch(m::MPILab)
           G_.current_page(m["nbData"], 1)
           set_gtk_property!(m["tbDataTab"], :active, false)
           set_gtk_property!(m["tbCalibrationTab"], :active, true)
-          set_gtk_property!(m["tbMeasurementTab"], :active, false)
+          set_gtk_property!(m["tbScannerTab"], :active, false)
+          set_gtk_property!(m["tbProtocolTab"], :active, false)
           visible(m["panedReco"],false)
           updatingTab = false
       end
     end
   end
 
-  signal_connect(m["tbMeasurementTab"], "clicked") do widget
+  signal_connect(m["tbScannerTab"], "clicked") do widget
     if !updatingTab
       @idle_add begin
           updatingTab = true
           G_.current_page(m["nbView"], 4)
+          G_.current_page(m["nbData"], 2)
+          set_gtk_property!(m["tbDataTab"], :active, false)
+          set_gtk_property!(m["tbCalibrationTab"], :active, false)
+          set_gtk_property!(m["tbScannerTab"], :active, true)
+          set_gtk_property!(m["tbProtocolTab"], :active, false)
+          updatingTab = false
+      end
+    end
+  end
+
+  signal_connect(m["tbProtocolTab"], "clicked") do widget
+    if !updatingTab
+      @idle_add begin
+          updatingTab = true
+          G_.current_page(m["nbView"], 5)
           G_.current_page(m["nbData"], 0)
           set_gtk_property!(m["tbDataTab"], :active, false)
           set_gtk_property!(m["tbCalibrationTab"], :active, false)
-          set_gtk_property!(m["tbMeasurementTab"], :active, true)
-          visible(m["panedReco"],false)
+          set_gtk_property!(m["tbScannerTab"], :active, false)
+          set_gtk_property!(m["tbProtocolTab"], :active, true)
+          visible(m["panedReco"],false) # is this necessary?
           updatingTab = false
       end
     end
@@ -364,8 +403,10 @@ function initStudyStore(m::MPILab)
       @debug "Current Study Id: " m.currentStudy.name
       updateAnatomRefStore(m)
 
-      m.measurementWidget.currStudyName = m.currentStudy.name
-      m.measurementWidget.currStudyDate = m.currentStudy.date
+      if !isnothing(m.protocolWidget)
+        m.protocolWidget.currStudyName = m.currentStudy.name
+        m.protocolWidget.currStudyDate = m.currentStudy.date
+      end
       m.updating = false
     end
   end
@@ -1041,18 +1082,26 @@ function initSFStore(m::MPILab)
   showall(boxSFPane)
 end
 
-### Measurement Tab ###
+### Scanner Tab ###
+function initScannerTab(m::MPILab)
 
+  m.scannerBrowser = ScannerBrowser(m.scanner, m["boxScannerTab"])
 
-function initMeasurementTab(m::MPILab, offlineMode)
+  boxScannerTab = m["boxScanner"]
+  push!(boxScannerTab,m.scannerBrowser)
+  set_gtk_property!(boxScannerTab, :expand, m.scannerBrowser, true)
+  showall(boxScannerTab)
+end
 
-  settings = offlineMode ? "" : m.settings["scanner"]
-  m.measurementWidget = MeasurementWidget(settings)
+### Protocol Tab ###
 
-  boxMeasTab = m["boxMeasTab"]
-  push!(boxMeasTab,m.measurementWidget)
-  set_gtk_property!(boxMeasTab, :expand, m.measurementWidget, true)
-  showall(boxMeasTab)
+function initProtocolTab(m::MPILab)
+  m.protocolWidget = ProtocolWidget(m.scanner)
+
+  boxProtoTab = m["boxProtocolTab"]
+  push!(boxProtoTab, m.protocolWidget)
+  set_gtk_property!(boxProtoTab, :expand, m.protocolWidget, true)
+  showall(boxProtoTab)
 end
 
 ### Image Tab ###
@@ -1072,9 +1121,8 @@ end
 function initRawDataTab(m::MPILab)
 
   m.rawDataWidget = RawDataWidget()
-
   boxRawViewer = m["boxRawViewer"]
-  push!(boxRawViewer,m.rawDataWidget)
+  push!(boxRawViewer,m.rawDataWidget)  
   set_gtk_property!(boxRawViewer, :expand, m.rawDataWidget, true)
   showall(boxRawViewer)
 end
@@ -1109,6 +1157,15 @@ function initSettings(m::MPILab)
   #m["gridSettings_"][1,1] = m.settings["gridSettings"]
 end
 
+function initScanner(m::MPILab, offlineMode::Bool)
+  settings = offlineMode ? "" : m.settings["scanner"]
+  scanner = nothing
+  if settings != ""
+    scanner = MPIScanner(settings)
+  end
+  m.scanner = scanner
+end
+
 function infoMessage(m::MPILab, message::String, color::String)
   infoMessage(m, """<span foreground="$color" font_weight="bold" size="x-large">$message</span>""")
 end
@@ -1122,5 +1179,5 @@ function progress(m::MPILab, startStop::Bool)
 end
 
 function scanner(m::MPILab)
-  return m.measurementWidget.scanner
+  return m.scanner
 end

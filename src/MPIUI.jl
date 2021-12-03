@@ -13,6 +13,8 @@ using InteractiveUtils
 using ImageUtils: converttometer, ColoringParams
 using MPIMeasurements.Sockets
 using Logging, LoggingExtras
+using ThreadPools
+using REPL: fielddoc
 
 ENV["MPILIB_UI"] = "Nothing"
 
@@ -76,7 +78,8 @@ end
 
 include("GtkUtils.jl")
 include("RawDataViewer.jl")
-include("Measurement/MeasurementWidget.jl")
+#include("Measurement/MeasurementWidget.jl")
+include("Protocol/ProtocolWidget.jl")
 include("SpectrumViewer.jl")
 include("BaseViewer.jl")
 include("DataViewer/DataViewer.jl")
@@ -85,6 +88,7 @@ include("SFViewerWidget.jl")
 include("SFBrowser.jl")
 include("RecoWidget.jl")
 include("Settings.jl")
+include("Devices/ScannerBrowser.jl")
 include("MPILab.jl")
 include("LCRMeter.jl")
 include("ArduinoDataLogger.jl")
