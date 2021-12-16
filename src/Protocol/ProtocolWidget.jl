@@ -32,7 +32,7 @@ function ProtocolWidget(scanner=nothing)
     mdfstore = MDFDatasetStore( generalParams(scanner).datasetStore )
     protocol = Protocol(scanner.generalParams.defaultProtocol, scanner)
   else
-    mdfstore = MDFDatasetStore( "Dummy" )
+    mdfstore = MDFDatasetStore(defaultdatastore)
     protocol = nothing
   end
     

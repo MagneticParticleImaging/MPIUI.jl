@@ -9,11 +9,12 @@ mutable struct Settings
 end
 
 
-const settingspath = joinpath(homedir(), ".mpi")
+const settingspath = abspath(homedir(), ".mpi")
 const settingsfile = joinpath(settingspath, "Settings.toml")
 const cachefile = joinpath(settingspath, "Cache.jld")
 const logpath = joinpath(settingspath, "Logs")
 const scannerpath = joinpath(settingspath, "Scanners")
+const defaultdatastore = joinpath(settingspath, "Data")
 
 function loadcache()
   if isfile(cachefile)
@@ -52,10 +53,12 @@ function Settings()
 
   uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
-  @static if Sys.islinux()
+  @static if Sys.islinux() || Sys.isapple()
     defaultSettingsFile = joinpath(@__DIR__, "DefaultSettings", "SettingsLinux.toml")
-  else
+  elseif Sys.iswindows()
     defaultSettingsFile = joinpath(@__DIR__, "DefaultSettings", "SettingsWindows.toml")
+  else
+    error("Operating system not supported.")
   end
 
   mkpath(settingspath)
