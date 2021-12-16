@@ -9,11 +9,11 @@ mutable struct Settings
 end
 
 
-const settingspath = joinpath(homedir(),".mpi")
+const settingspath = joinpath(homedir(), ".mpi")
 const settingsfile = joinpath(settingspath, "Settings.toml")
 const cachefile = joinpath(settingspath, "Cache.jld")
 const logpath = joinpath(settingspath, "Logs")
-const scannerpath = joinpath(settingspath, "Scanner")
+const scannerpath = joinpath(settingspath, "Scanners")
 
 function loadcache()
   if isfile(cachefile)
@@ -52,7 +52,12 @@ function Settings()
 
   uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
-  defaultSettingsFile = joinpath(@__DIR__,"Settings.toml")
+  @static if Sys.islinux()
+    defaultSettingsFile = joinpath(@__DIR__, "DefaultSettings", "SettingsLinux.toml")
+  else
+    defaultSettingsFile = joinpath(@__DIR__, "DefaultSettings", "SettingsWindows.toml")
+  end
+
   mkpath(settingspath)
   try_chmod(settingspath, 0o777, recursive=true)
   if !isfile(settingsfile)

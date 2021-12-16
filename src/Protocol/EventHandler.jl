@@ -18,7 +18,7 @@ function startProtocol(pw::ProtocolWidget)
   try 
     @info "Execute protocol"
     pw.biChannel = execute(pw.scanner, pw.protocol)
-    pw.protocolState = INIT
+    pw.protocolState = PS_INIT
     @info "Start event handler"
     pw.eventHandler = Timer(timer -> eventHandler(pw, timer), 0.0, interval=0.05)
     return true
@@ -55,11 +55,11 @@ function eventHandler(pw::ProtocolWidget, timer::Timer)
       finished = true
     end
 
-    if pw.protocolState == INIT && !finished
+    if pw.protocolState == PS_INIT && !finished
       @info "Init query"
       progressQuery = ProgressQueryEvent()
       put!(channel, progressQuery)
-      pw.protocolState = RUNNING
+      pw.protocolState = PS_RUNNING
     end
 
     if finished
@@ -82,7 +82,7 @@ end
 
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::IllegaleStateEvent)
   @idle_add info_dialog(event.message, mpilab[]["mainWindow"])
-  pw.protocolState = FAILED
+  pw.protocolState = PS_FAILED
   return true
 end
 
@@ -92,14 +92,14 @@ function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::ExceptionEve
   @error stack[1]
   @error stacktrace(stack[2])
   showError(stack[1])
-  pw.protocolState = FAILED
+  pw.protocolState = PS_FAILED
   return true
 end
 
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::ProgressEvent)
   channel = pw.biChannel
   # New Progress noticed
-  if isopen(channel) && pw.protocolState == RUNNING
+  if isopen(channel) && pw.protocolState == PS_RUNNING
     if isnothing(pw.progress) || pw.progress != event
       @info "New progress detected"
       handleNewProgress(pw, protocol, event)
@@ -160,7 +160,7 @@ end
 
 function handleSuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::StopEvent)
   @info "Protocol stopped"
-  pw.protocolState = PAUSED
+  pw.protocolState = PS_PAUSED
   confirmPauseProtocol(pw)
   return false
 end
@@ -203,7 +203,7 @@ end
 
 function handleSuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::ResumeEvent)
   @info "Protocol resumed"
-  pw.protocolState = RUNNING
+  pw.protocolState = PS_RUNNING
   confirmResumeProtocol(pw)
   put!(pw.biChannel, ProgressQueryEvent()) # Restart "Main" loop
   return false
@@ -247,7 +247,7 @@ end
 
 function handleSuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::CancelEvent)
   @info "Protocol cancelled"
-  pw.protocolState = FAILED
+  pw.protocolState = PS_FAILED
   return true
 end
 
@@ -263,7 +263,7 @@ end
 
 ### Finish Default ###
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::FinishedNotificationEvent)
-  pw.protocolState = FINISHED
+  pw.protocolState = PS_FINISHED
   displayProgress(pw)
   return handleFinished(pw, protocol)
 end
@@ -278,7 +278,7 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
     pw.updating = true
     # Sensitive
     set_gtk_property!(pw["tbInit",ToolButtonLeaf], :sensitive, true)
-    if pw.protocolState != FAILED
+    if pw.protocolState != PS_FAILED
       set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
     end
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
@@ -315,7 +315,7 @@ function handleEvent(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtoco
     end
     # Ask for next progress
     progressQuery = ProgressQueryEvent()
-    isopen(channel) && pw.protocolState == RUNNING && put!(channel, progressQuery)
+    isopen(channel) && pw.protocolState == PS_RUNNING && put!(channel, progressQuery)
   end
   return false
 end

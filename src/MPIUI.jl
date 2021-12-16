@@ -26,7 +26,7 @@ using ImageUtils: makeAxisArray
 using Gtk, Gtk.ShortNames, Gtk.GLib
 using Cairo
 using Images
-using HDF5
+#using HDF5
 
 import Winston
 using Colors

@@ -1,5 +1,3 @@
-@enum ProtocolState UNDEFINED INIT RUNNING PAUSED FINISHED FAILED
-
 mutable struct ProtocolWidget{T} <: Gtk.GtkBox
   # Gtk 
   handle::Ptr{Gtk.GObject}
@@ -43,7 +41,7 @@ function ProtocolWidget(scanner=nothing)
 
   paramBuilder = Dict(:sequence => "expSequence", :positions => "expPositions")
 
-  pw = ProtocolWidget(mainBox.handle, b, paramBuilder, false, scanner, protocol, nothing, nothing, UNDEFINED,
+  pw = ProtocolWidget(mainBox.handle, b, paramBuilder, false, scanner, protocol, nothing, nothing, PS_UNDEFINED,
         nothing, RawDataWidget(), mdfstore, zeros(Float32,0,0,0,0), "", now())
   Gtk.gobject_move_ref(pw, mainBox)
 
@@ -74,10 +72,10 @@ end
 function displayProgress(pw::ProtocolWidget)
   progress = "N/A"
   fraction = 0.0
-  if !isnothing(pw.progress) && pw.protocolState == RUNNING
+  if !isnothing(pw.progress) && pw.protocolState == PS_RUNNING
     progress = "$(pw.progress.unit) $(pw.progress.done)/$(pw.progress.total)"
     fraction = pw.progress.done/pw.progress.total
-  elseif pw.protocolState == FINISHED
+  elseif pw.protocolState == PS_FINISHED
     progress = "FINISHED"
     fraction = 1.0
   end

@@ -1,0 +1,5 @@
+datasetStores = ["./mpi/Data"]
+brukerRecoStore = "./mpi/Bruker"
+exportMDFFreqSpace = false
+scanner = ""
+enableRecoStore = true

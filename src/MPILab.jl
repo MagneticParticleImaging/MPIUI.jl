@@ -87,13 +87,7 @@ function MPILab(offlineMode=false)::MPILab
 
   w = m["mainWindow"]
 
-  @static if Sys.islinux()
-    defaultConfigPath = expanduser("~/.mpilab/configs")
-  else
-    defaultConfigPath = joinpath(homedir(), ".mpilab\\configs")
-  end
-
-  addConfigurationPath(defaultConfigPath)
+  addConfigurationPath(scannerpath)
 
   @debug "## Init Settings ..."
   initSettings(m)
