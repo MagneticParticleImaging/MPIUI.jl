@@ -347,7 +347,7 @@ end
 function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event::DataAnswerEvent)
   channel = pw.biChannel
   # We were waiting on the last buffer request
-  if startswith(event.query.message, "FRAME") && pw.protocolState == RUNNING
+  if startswith(event.query.message, "FRAME") && pw.protocolState == PS_RUNNING
     frame = event.data
     if !isnothing(frame)
       @info "Received frame"
