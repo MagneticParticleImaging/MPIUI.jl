@@ -20,6 +20,8 @@ jobs:
           #- 'nightly'
         os:
           - ubuntu-latest
+        threads:
+          - '4'
         arch:
           - x64
         include:
@@ -43,6 +45,8 @@ jobs:
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+        env:
+          JULIA_NUM_THREADS: ${{ matrix.threads }}
         with:
           prefix: ${{ matrix.prefix }}
       - uses: julia-actions/julia-processcoverage@v1
