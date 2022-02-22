@@ -76,7 +76,7 @@ end
 
       L = min(m.temperatureLog.numChan,10)
 
-      colors = ["b", "r", "g", "y", "k", "c", "m", "b", "r", "g"]
+      colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta", "blue", "red", "green"]
       lines = ["solid", "solid", "solid", "solid", "solid", "solid", 
       "solid", "dashed", "dashed", "dashed"]
 
