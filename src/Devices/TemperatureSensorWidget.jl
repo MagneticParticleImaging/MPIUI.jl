@@ -74,19 +74,30 @@ end
 
       push!(m.temperatureLog, te, time)
 
-      L = min(m.temperatureLog.numChan,7)
+      L = min(m.temperatureLog.numChan,10)
 
-      colors = ["b", "r", "g", "y", "k", "c", "m"]
+      colors = ["b", "r", "g", "y", "k", "c", "m", "b", "r", "g"]
+      lines = ["solid", "solid", "solid", "solid", "solid", "solid", 
+      "solid", "dashed", "dashed", "dashed"]
 
       T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
 
       @idle_add begin
-        p = Winston.plot(T[1,:], colors[1], linewidth=3)
-        for l=2:L
-          Winston.plot(p, T[l,:], colors[l], linewidth=3)
+        p = FramedPlot()
+        Winston.plot(T[1,:], colors[1], linewidth=3)
+        x = collect(1:size(T, 2))
+        legendEntries = []
+        for l=1:L
+          curve = Curve(x, T[l,:], color = colors[l], linekind=lines[l], linewidth=3)
+          # Hack, this is not generic yet, only works with ArduinoTemperatureSensor
+          setattr(curve, label = m.sensor.params.nameSensors[m.sensor.params.selectSensors[l]])
+          push!(legendEntries, curve)
+          add(p, curve)
         end
         #Winston.xlabel("Time")
-        display(m.canvas ,p)
+        legend = Legend(.1, 0.9, legendEntries)
+        add(p, legend)
+        display(m.canvas, p)
         m.canvas.is_sized = true
       end
     end
