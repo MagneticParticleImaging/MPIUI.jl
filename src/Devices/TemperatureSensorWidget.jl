@@ -74,11 +74,10 @@ end
 
       push!(m.temperatureLog, te, time)
 
-      L = min(m.temperatureLog.numChan,10)
+      colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
+      lines = ["solid", "dashed", "dotted"]
 
-      colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta", "blue", "red", "green"]
-      lines = ["solid", "solid", "solid", "solid", "solid", "solid", 
-      "solid", "dashed", "dashed", "dashed"]
+      L = min(m.temperatureLog.numChan,length(colors) * length(lines))
 
       T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
 
@@ -87,11 +86,16 @@ end
         Winston.plot(T[1,:], colors[1], linewidth=3)
         x = collect(1:size(T, 2))
         legendEntries = []
+        channelNames = []
+        if hasmethod(getChannelNames, (typeof(m.sensor),))
+          channelNames = getChannelNames(sensor)
+        end
         for l=1:L
-          curve = Curve(x, T[l,:], color = colors[l], linekind=lines[l], linewidth=3)
-          # Hack, this is not generic yet, only works with ArduinoTemperatureSensor
-          setattr(curve, label = m.sensor.params.nameSensors[m.sensor.params.selectSensors[l]])
-          push!(legendEntries, curve)
+          curve = Curve(x, T[l,:], color = colors[mod1(l, length(colors))], linekind=lines[div(l-1, length(colors)) + 1], linewidth=3)
+          if !isempty(channelNa) 
+            setattr(curve, label = m.sensor.params.nameSensors[m.sensor.params.selectSensors[l]])
+            push!(legendEntries, curve)
+          end
           add(p, curve)
         end
         #Winston.xlabel("Time")
