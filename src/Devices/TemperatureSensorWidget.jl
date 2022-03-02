@@ -82,17 +82,18 @@ end
       T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
 
       @idle_add begin
+        try 
         p = FramedPlot()
         Winston.plot(T[1,:], colors[1], linewidth=3)
         x = collect(1:size(T, 2))
         legendEntries = []
         channelNames = []
         if hasmethod(getChannelNames, (typeof(m.sensor),))
-          channelNames = getChannelNames(sensor)
+          channelNames = getChannelNames(m.sensor)
         end
         for l=1:L
           curve = Curve(x, T[l,:], color = colors[mod1(l, length(colors))], linekind=lines[div(l-1, length(colors)) + 1], linewidth=3)
-          if !isempty(channelNa) 
+          if !isempty(channelNames) 
             setattr(curve, label = m.sensor.params.nameSensors[m.sensor.params.selectSensors[l]])
             push!(legendEntries, curve)
           end
@@ -103,6 +104,9 @@ end
         add(p, legend)
         display(m.canvas, p)
         m.canvas.is_sized = true
+      catch e
+        @warn "Error"
+      end
       end
     end
   end
