@@ -6,6 +6,7 @@ include("TemperatureSensorWidget.jl")
 
 mutable struct ScannerBrowser <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
+  builder::GtkBuilder
   store
   tmSorted
   tv
@@ -20,11 +21,10 @@ getindex(m::ScannerBrowser, w::AbstractString) = G_.object(m.builder, w)
 
 function ScannerBrowser(scanner, deviceBox)
   @info "Starting ScannerBrowser"
-  #uifile = joinpath(@__DIR__,"builder","rawDataViewer.ui")
+  uifile = joinpath(@__DIR__,"..", "builder","scannerBrowser.ui")
 
-  #b = Builder(filename=uifile)
-  #mainBox = G_.object(b, "boxRawViewer")
-  mainBox = Box(:v)
+  b = Builder(filename=uifile)
+  mainBox = G_.object(b, "boxScannerBrowser")
 
   store = ListStore(String,String,Bool)
 
@@ -60,8 +60,10 @@ function ScannerBrowser(scanner, deviceBox)
 
   # TODO Add widget that shows properties of selected Device
 
-  m = ScannerBrowser(mainBox.handle, store, tmSorted, tv, selection, false, deviceBox, scanner, Dict{Device, Gtk.GtkContainer}())
+  m = ScannerBrowser(mainBox.handle, b, store, tmSorted, tv, selection, false, deviceBox, scanner, Dict{Device, Gtk.GtkContainer}())
   Gtk.gobject_move_ref(m, mainBox)
+
+  set_gtk_property!(m["lblScannerName"], :label, name(scanner))
 
   updateData!(m, scanner)
 
@@ -90,6 +92,14 @@ function initCallbacks(m::ScannerBrowser)
 
       showall(m.deviceBox)
       m.updating = false
+    end
+  end
+
+  signal_connect(m["btnReloadScanner"], :clicked) do w
+    try
+      refreshScanner(m)
+    catch ex
+      showError(ex)
     end
   end
 
@@ -137,5 +147,23 @@ function updateData!(m::ScannerBrowser, scanner=nothing)
   end
 end
 
+function refreshScanner(m::ScannerBrowser)
+  message = """This will reload the current Scanner.toml. \n
+  Please make sure that no protocol or device widget is currently communicating as otherwise undefined states can occur.
+  Press \"Ok\" if you if you are sure.
+  """
+  if ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"])
+    tempName = name(m.scanner)
+    close(m.scanner)
+    updateScanner!(mpilab[], MPIScanner(tempName))
+  end
+end
 
-
+function updateScanner!(m::ScannerBrowser, scanner::MPIScanner)
+  m.scanner = scanner
+  updateData!(m, m.scanner)
+  @idle_add begin 
+    empty!(m.deviceBox)
+    m.widgetCache = Dict{Device, Gtk.GtkContainer}()
+  end
+end

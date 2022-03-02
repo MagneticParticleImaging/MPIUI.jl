@@ -1175,3 +1175,9 @@ end
 function scanner(m::MPILab)
   return m.scanner
 end
+
+function updateScanner!(m::MPILab, scanner::MPIScanner)
+  m.scanner = scanner
+  updateScanner!(m.protocolWidget, scanner)
+  updateScanner!(m.scannerBrowser, scanner)
+end
