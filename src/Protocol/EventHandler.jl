@@ -321,7 +321,7 @@ function handleEvent(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtoco
 end
 
 function handleFinished(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtocol)
-  request = DatasetStoreStorageRequestEvent(pw.mdfstore, getStorageParams(pw))
+  request = DatasetStoreStorageRequestEvent(pw.mdfstore, getStorageMDF(pw))
   put!(pw.biChannel, request)
   return false
 end
@@ -366,7 +366,7 @@ function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event
 end
 
 function handleFinished(pw::ProtocolWidget, protocol::MPIMeasurementProtocol)
-  request = DatasetStoreStorageRequestEvent(pw.mdfstore, getStorageParams(pw))
+  request = DatasetStoreStorageRequestEvent(pw.mdfstore, getStorageMDF(pw))
   put!(pw.biChannel, request)
   return false
 end

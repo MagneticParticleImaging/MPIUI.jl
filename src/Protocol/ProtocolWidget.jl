@@ -85,20 +85,20 @@ function displayProgress(pw::ProtocolWidget)
   end
 end
 
-function getStorageParams(pw::ProtocolWidget)
-  params = Dict{String,Any}()
-  params["studyName"] = pw.currStudyName # TODO These are never updates, is the result correct?
-  params["studyDate"] = pw.currStudyDate 
-  params["studyDescription"] = ""
-  params["experimentDescription"] = get_gtk_property(pw["entExpDescr",EntryLeaf], :text, String)
-  params["experimentName"] = get_gtk_property(pw["entExpName",EntryLeaf], :text, String)
-  params["scannerOperator"] = get_gtk_property(pw["entOperator",EntryLeaf], :text, String)
-  params["tracerName"] = [get_gtk_property(pw["entTracerName",EntryLeaf], :text, String)]
-  params["tracerBatch"] = [get_gtk_property(pw["entTracerBatch",EntryLeaf], :text, String)]
-  params["tracerVendor"] = [get_gtk_property(pw["entTracerVendor",EntryLeaf], :text, String)]
-  params["tracerVolume"] = [1e-3*get_gtk_property(pw["adjTracerVolume",AdjustmentLeaf], :value, Float64)]
-  params["tracerConcentration"] = [1e-3*get_gtk_property(pw["adjTracerConcentration",AdjustmentLeaf], :value, Float64)]
-  params["tracerSolute"] = [get_gtk_property(pw["entTracerSolute",EntryLeaf], :text, String)]
+function getStorageMDF(pw::ProtocolWidget)
+  mdf = defaultMDFv2InMemory()
+  studyName(mdf, pw.currStudyName) # TODO These are never updates, is the result correct?
+  studyDate(mdf, pw.currStudyDate )
+  studyDescription(mdf, "")
+  experimentDescription(mdf, get_gtk_property(pw["entExpDescr",EntryLeaf], :text, String))
+  experimentName(mdf, get_gtk_property(pw["entExpName",EntryLeaf], :text, String))
+  scannerOperator(mdf, get_gtk_property(pw["entOperator",EntryLeaf], :text, String))
+  tracerName(mdf, [get_gtk_property(pw["entTracerName",EntryLeaf], :text, String)])
+  tracerBatch(mdf, [get_gtk_property(pw["entTracerBatch",EntryLeaf], :text, String)])
+  tracerVendor(mdf, [get_gtk_property(pw["entTracerVendor",EntryLeaf], :text, String)])
+  tracerVolume(mdf, [1e-3*get_gtk_property(pw["adjTracerVolume",AdjustmentLeaf], :value, Float64)])
+  tracerConcentration(mdf, [1e-3*get_gtk_property(pw["adjTracerConcentration",AdjustmentLeaf], :value, Float64)])
+  tracerSolute(mdf, [get_gtk_property(pw["entTracerSolute",EntryLeaf], :text, String)])
   return params
 end
 
