@@ -96,7 +96,7 @@ include("OnlineReco/OnlineReco.jl")
 
 function __init__()
   if Threads.nthreads() < 4
-    error("MPIUI needs Julia to be started with at least two threads. Do the with `julia -t 4`.")
+    error("MPIUI needs Julia to be started with at least two threads. To do so start Julia with `julia -t 4`.")
   end
 end
 

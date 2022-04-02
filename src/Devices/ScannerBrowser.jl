@@ -3,6 +3,7 @@ include("RobotWidget.jl")
 include("SurveillanceWidget.jl")
 include("DAQWidget.jl")
 include("TemperatureSensorWidget.jl")
+include("DeviceWidgetContainer.jl")
 
 mutable struct ScannerBrowser <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
@@ -14,7 +15,7 @@ mutable struct ScannerBrowser <: Gtk.GtkBox
   updating
   deviceBox
   scanner
-  widgetCache::Dict{Device, Gtk.GtkContainer}
+  widgetCache::Dict{Device, DeviceWidgetContainer}
 end
 
 getindex(m::ScannerBrowser, w::AbstractString) = G_.object(m.builder, w)
@@ -98,7 +99,7 @@ function initCallbacks(m::ScannerBrowser)
   signal_connect(m["btnReloadScanner"], :clicked) do w
     try
       refreshScanner(m)
-      info_dialog("Scanner was sucessfully reloaded!", mpilab[]["mainWindow"])
+      info_dialog("Scanner has been reloaded successfully!", mpilab[]["mainWindow"])
     catch ex
       showError(ex)
     end
@@ -115,7 +116,8 @@ function getDeviceWidget(m::ScannerBrowser, dev::Device, widgetType::Type{<:Gtk.
   if haskey(m.widgetCache, dev)
     return m.widgetCache[dev]
   else
-    widget = widgetType(dev)
+    deviceWidget = widgetType(dev)
+    widget = DeviceWidgetContainer(deviceID(dev), deviceWidget)
     m.widgetCache[dev] = widget
     return widget
   end
@@ -125,7 +127,7 @@ function displayDeviceWidget(m::ScannerBrowser, dev::Device)
 end
 displayDeviceWidget(m::ScannerBrowser, dev::Robot) = showDeviceWidget(m, getDeviceWidget(m, dev, RobotWidget))
 displayDeviceWidget(m::ScannerBrowser, dev::AbstractDAQ) = showDeviceWidget(m, getDeviceWidget(m, dev, DAQWidget))
-displayDeviceWidget(m::ScannerBrowser, dev::SurveillanceUnit) = showDeviceWidget(m, getDeviceWidget(m, dev, SurveillanceWidget))
+#displayDeviceWidget(m::ScannerBrowser, dev::SurveillanceUnit) = showDeviceWidget(m, getDeviceWidget(m, dev, SurveillanceWidget))
 displayDeviceWidget(m::ScannerBrowser, dev::TemperatureSensor) = showDeviceWidget(m, getDeviceWidget(m, dev, TemperatureSensorWidget))
 
 
@@ -163,7 +165,10 @@ end
 function updateScanner!(m::ScannerBrowser, scanner::MPIScanner)
   m.scanner = scanner
   updateData!(m, m.scanner)
-  @idle_add begin 
+  @idle_add begin
+    for container in values(m.widgetCache)
+      popout!(container, false)
+    end
     empty!(m.deviceBox)
     m.widgetCache = Dict{Device, Gtk.GtkContainer}()
   end
