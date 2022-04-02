@@ -98,7 +98,7 @@ function initCallbacks(m::ScannerBrowser)
   signal_connect(m["btnReloadScanner"], :clicked) do w
     try
       refreshScanner(m)
-      ask_dialog("Scanner was sucessfully reloaded!", "Continue", mpilab[]["mainWindow"])
+      info_dialog("Scanner was sucessfully reloaded!", mpilab[]["mainWindow"])
     catch ex
       showError(ex)
     end
