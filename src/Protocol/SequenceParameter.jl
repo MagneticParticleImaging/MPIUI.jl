@@ -64,7 +64,11 @@ mutable struct ComponentParameter <: Gtk.GtkGrid
     grid[1, 2] = GtkLabel("Divider", xalign = 0.0)
     grid[2, 2] = div
     # Amplitude
-    amp = UnitfulEntry(MPIFiles.amplitude(comp))
+    ampVal = MPIFiles.amplitude(comp)
+    if ampVal isa typeof(1.0u"T")
+      ampVal = uconvert(u"mT", ampVal)
+    end
+    amp = UnitfulEntry(ampVal)
     grid[1, 3] = GtkLabel("Amplitude", xalign = 0.0)
     grid[2, 3] = amp
     # Phase
@@ -144,7 +148,7 @@ function setProtocolParameter(channelParam::PeriodicChannelParameter)
     component = channelParam.box[index]
     id = get_gtk_property(component.idLabel, :label, String)
     @info "Setting component $id"
-    amplitude!(channel, id, value(component.amplitude))
+    amplitude!(channel, id, uconvert(u"T", value(component.amplitude)))
     phase!(channel, id, value(component.phase))
   end
 end
