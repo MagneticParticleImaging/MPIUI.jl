@@ -94,7 +94,7 @@ function MPILab(offlineMode=false)::MPILab
   @debug "## Init Scanner ..."
   initScanner(m, offlineMode)
   @debug "## Init Scanner Tab ..."
-  initScannerTab(m)
+  initScannerTab(m, offlineMode)
   @debug "## Init Store switch ..."
   initStoreSwitch(m)
 
@@ -124,7 +124,7 @@ function MPILab(offlineMode=false)::MPILab
   @debug "## Init View switch ..."
   initViewSwitch(m)
   @debug "## Init Protocol Tab ..."
-  initProtocolTab(m)
+  initProtocolTab(m, offlineMode)
 
 
   @idle_add set_gtk_property!(m["lbInfo"],:use_markup,true)
@@ -1077,25 +1077,28 @@ function initSFStore(m::MPILab)
 end
 
 ### Scanner Tab ###
-function initScannerTab(m::MPILab)
+function initScannerTab(m::MPILab, offlineMode=false)
+  if !offlineMode
+    m.scannerBrowser = ScannerBrowser(m.scanner, m["boxScannerTab"])
 
-  m.scannerBrowser = ScannerBrowser(m.scanner, m["boxScannerTab"])
-
-  boxScannerTab = m["boxScanner"]
-  push!(boxScannerTab,m.scannerBrowser)
-  set_gtk_property!(boxScannerTab, :expand, m.scannerBrowser, true)
-  showall(boxScannerTab)
+    boxScannerTab = m["boxScanner"]
+    push!(boxScannerTab,m.scannerBrowser)
+    set_gtk_property!(boxScannerTab, :expand, m.scannerBrowser, true)
+    showall(boxScannerTab)
+  end
 end
 
 ### Protocol Tab ###
 
-function initProtocolTab(m::MPILab)
-  m.protocolWidget = ProtocolWidget(m.scanner)
+function initProtocolTab(m::MPILab, offlineMode=false)
+  if !offlineMode
+    m.protocolWidget = ProtocolWidget(m.scanner)
 
-  boxProtoTab = m["boxProtocolTab"]
-  push!(boxProtoTab, m.protocolWidget)
-  set_gtk_property!(boxProtoTab, :expand, m.protocolWidget, true)
-  showall(boxProtoTab)
+    boxProtoTab = m["boxProtocolTab"]
+    push!(boxProtoTab, m.protocolWidget)
+    set_gtk_property!(boxProtoTab, :expand, m.protocolWidget, true)
+    showall(boxProtoTab)
+  end
 end
 
 ### Image Tab ###
