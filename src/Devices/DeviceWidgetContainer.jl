@@ -26,6 +26,7 @@ function DeviceWidgetContainer(deviceName::String, deviceWidget)
   
   set_gtk_property!(m["lblDeviceName"], :label, deviceName)
   push!(m["boxDeviceWidget"], deviceWidget)
+  set_gtk_property!(m["boxDeviceWidget"], :expand, deviceWidget, true)
   showall(m)
 
   initCallbacks(m)
