@@ -4,7 +4,7 @@ mutable struct TemperatureSensorWidget <: Gtk.GtkBox
   updating::Bool
   sensor::TemperatureSensor
   temperatureLog::TemperatureLog
-  canvas::GtkCanvasLeaf
+  canvases::Vector{GtkCanvasLeaf}
   timer::Union{Timer,Nothing}
 end
 
@@ -16,11 +16,16 @@ function TemperatureSensorWidget(sensor::TemperatureSensor)
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "mainBox")
 
-  m = TemperatureSensorWidget(mainBox.handle, b, false, sensor, TemperatureLog(), Canvas(), nothing)
+  numPlots = length(unique(getChannelGroups(sensor)))
+  canvases = [Canvas() for i=1:numPlots]
+
+  m = TemperatureSensorWidget(mainBox.handle, b, false, sensor, TemperatureLog(), canvases, nothing)
   Gtk.gobject_move_ref(m, mainBox)
 
-  push!(m, m.canvas)
-  set_gtk_property!(m,:expand, m.canvas, true)
+  for (i,c) in enumerate(m.canvases)
+    push!(m, c)
+    set_gtk_property!(m, :expand, c, true)
+  end
 
   showall(m)
 
@@ -83,30 +88,39 @@ end
 
       @idle_add begin
         try 
-        p = FramedPlot()
-        Winston.plot(T[1,:], colors[1], linewidth=3)
-        x = collect(1:size(T, 2))
-        legendEntries = []
-        channelNames = []
-        if hasmethod(getChannelNames, (typeof(m.sensor),))
-          channelNames = getChannelNames(m.sensor)
-        end
-        for l=1:L
-          curve = Curve(x, T[l,:], color = colors[mod1(l, length(colors))], linekind=lines[div(l-1, length(colors)) + 1], linewidth=3)
-          if !isempty(channelNames) 
-            setattr(curve, label = m.sensor.params.nameSensors[m.sensor.params.selectSensors[l]])
-            push!(legendEntries, curve)
+          for (i,c) in enumerate(m.canvases)
+            idx = findall(d->d==i, getChannelGroups(m.sensor))
+            if length(idx) > 0
+              p = FramedPlot()
+              Winston.plot(T[idx[1],:], colors[1], linewidth=3)
+              x = collect(1:size(T, 2))
+              legendEntries = []
+              channelNames = []
+              if hasmethod(getChannelNames, (typeof(m.sensor),))
+                channelNames = getChannelNames(m.sensor)
+              end
+              for l=1:length(idx)
+                curve = Curve(x, T[idx[l],:], color = colors[mod1(l, length(colors))], linekind=lines[div(l-1, length(colors)) + 1], linewidth=5)
+                if !isempty(channelNames) 
+                  setattr(curve, label = channelNames[idx[l]])
+                  push!(legendEntries, curve)
+                end
+                add(p, curve)
+              end
+              # setattr(p, xlim=(-100, size(T, 2))) does not work. Idea was to shift the legend
+              
+              #Winston.xlabel("Time")
+              legend = Legend(.1, 0.9, legendEntries, halign="right") #size=1
+              add(p, legend)
+              display(c, p)
+              showall(c)
+              c.is_sized = true
+            end
           end
-          add(p, curve)
+        catch e
+          @warn "Error"
+          println(e)
         end
-        #Winston.xlabel("Time")
-        legend = Legend(.1, 0.9, legendEntries)
-        add(p, legend)
-        display(m.canvas, p)
-        m.canvas.is_sized = true
-      catch e
-        @warn "Error"
-      end
       end
     end
   end
