@@ -628,15 +628,7 @@ function initExperimentStore(m::MPILab)
   G_.sort_column_id(TreeSortable(m.experimentStore),0,GtkSortType.ASCENDING)
 
   m.selectionExp = G_.selection(tv)
-
-  signal_connect(m["tbRawData"], "clicked") do widget
-    if hasselection( m.selectionExp)
-      @idle_add begin
-        updateData(m.rawDataWidget, path(m.currentExperiment))
-        G_.current_page(m["nbView"], 0)
-      end
-    end
-  end
+  G_.mode(m.selectionExp, GtkSelectionMode.MULTIPLE)
 
 
   signal_connect(m["tbReco"], "clicked") do widget
@@ -660,22 +652,35 @@ function initExperimentStore(m::MPILab)
 
 
   signal_connect(tv, "row-activated") do treeview, path_, col, other...
-    if hasselection(m.selectionExp)
-      @idle_add begin
-        #updateData!(m.recoWidget, path(m.currentExperiment) )
-        @info path(m.currentExperiment)
-        updateData(m.rawDataWidget, path(m.currentExperiment))
-        G_.current_page(m["nbView"], 0)
-      end
-    end
+    showRawData()
     false
   end
 
+  signal_connect(m["tbRawData"], "clicked") do widget
+    showRawData()
+  end
+
+  function showRawData()
+    if hasselection(m.selectionExp)
+      @idle_add begin
+        selectedRows = Gtk.selected_rows(m.selectionExp)
+        expNums = [m.experimentStore[selectedRows[j],1] for j=1:length(selectedRows)]
+        exps = [getExperiment(m.currentStudy, expNums[j]) for j=1:length(selectedRows)]
+        paths = path.(exps)
+
+        updateData(m.rawDataWidget, paths)
+        G_.current_page(m["nbView"], 0)
+      end
+    end
+  end
+
+
   signal_connect(m.selectionExp, "changed") do widget
     if !m.updating && hasselection(m.selectionExp) && !m.clearingStudyStore &&
-       m.currentStudy != nothing && !m.clearingExpStore
+      m.currentStudy != nothing && !m.clearingExpStore
 
-      currentIt = selected( m.selectionExp )
+      selectedRows = Gtk.selected_rows(m.selectionExp) # can have multiple selections
+      currentIt = selectedRows[1] #selected( m.selectionExp )
       
       exp = getExperiment(m.currentStudy, m.experimentStore[currentIt,1])
 
