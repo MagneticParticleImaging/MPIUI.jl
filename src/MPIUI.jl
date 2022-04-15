@@ -14,6 +14,7 @@ using ImageUtils: converttometer, ColoringParams
 using MPIMeasurements.Sockets
 using Logging, LoggingExtras
 using ThreadPools
+using Dates
 using REPL: fielddoc
 
 ENV["MPILIB_UI"] = "Nothing"
@@ -34,6 +35,7 @@ using Colors
 import Base: getindex
 import MPIFiles: addReco, getVisu, addVisu
 import MPIMeasurements #: measurement
+import Logging: shouldlog, min_enabled_level, handle_message
 export openFileBrowser
 
 function object_(builder::Builder,name::AbstractString, T::Type)::T
@@ -76,6 +78,7 @@ macro guard(ex)
   return :(try; begin $(ex) end; catch e; showError(e); end)
 end
 
+include("LogMessagesWidget.jl")
 include("GtkUtils.jl")
 include("RawDataViewer.jl")
 #include("Measurement/MeasurementWidget.jl")

@@ -1424,168 +1424,183 @@
           </packing>
         </child>
         <child>
-          <object class="GtkNotebook" id="nbView">
+          <object class="GtkPaned" id="paneMain">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="show_tabs">False</property>
+            <property name="orientation">vertical</property>
+            <property name="position">300</property>
             <child>
-              <object class="GtkBox" id="boxRawViewer">
+              <object class="GtkNotebook" id="nbView">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="orientation">vertical</property>
+                <property name="can_focus">True</property>
+                <property name="show_tabs">False</property>
+                <child>
+                  <object class="GtkBox" id="boxRawViewer">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                </child>
+                <child type="tab">
+                  <object class="GtkLabel" id="gridRawData">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Raw Data</property>
+                  </object>
+                  <packing>
+                    <property name="tab_fill">False</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox" id="boxImageTab">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child type="tab">
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Image Data</property>
+                  </object>
+                  <packing>
+                    <property name="position">1</property>
+                    <property name="tab_fill">False</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox" id="boxRecoTab">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child type="tab">
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Reconstruction</property>
+                  </object>
+                  <packing>
+                    <property name="position">2</property>
+                    <property name="tab_fill">False</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox" id="boxSFTab">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="hexpand">True</property>
+                    <property name="vexpand">True</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child type="tab">
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">System Matrix</property>
+                  </object>
+                  <packing>
+                    <property name="position">3</property>
+                    <property name="tab_fill">False</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox" id="boxScannerTab">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="position">4</property>
+                  </packing>
+                </child>
+                <child type="tab">
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Scanner</property>
+                  </object>
+                  <packing>
+                    <property name="position">4</property>
+                    <property name="tab_fill">False</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox" id="boxProtocolTab">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="position">5</property>
+                  </packing>
+                </child>
+                <child type="tab">
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Protocol</property>
+                  </object>
+                  <packing>
+                    <property name="position">5</property>
+                    <property name="tab_fill">False</property>
+                  </packing>
+                </child>
                 <child>
                   <placeholder/>
                 </child>
-              </object>
-            </child>
-            <child type="tab">
-              <object class="GtkLabel" id="gridRawData">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Raw Data</property>
-              </object>
-              <packing>
-                <property name="tab_fill">False</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox" id="boxImageTab">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="orientation">vertical</property>
+                <child type="tab">
+                  <placeholder/>
+                </child>
                 <child>
+                  <placeholder/>
+                </child>
+                <child type="tab">
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child type="tab">
                   <placeholder/>
                 </child>
               </object>
               <packing>
-                <property name="position">1</property>
-              </packing>
-            </child>
-            <child type="tab">
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Image Data</property>
-              </object>
-              <packing>
-                <property name="position">1</property>
-                <property name="tab_fill">False</property>
+                <property name="resize">True</property>
+                <property name="shrink">False</property>
               </packing>
             </child>
             <child>
-              <object class="GtkBox" id="boxRecoTab">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="orientation">vertical</property>
-                <child>
-                  <placeholder/>
-                </child>
-              </object>
-              <packing>
-                <property name="position">2</property>
-              </packing>
-            </child>
-            <child type="tab">
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Reconstruction</property>
-              </object>
-              <packing>
-                <property name="position">2</property>
-                <property name="tab_fill">False</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox" id="boxSFTab">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="hexpand">True</property>
-                <property name="vexpand">True</property>
-                <property name="orientation">vertical</property>
-                <child>
-                  <placeholder/>
-                </child>
-              </object>
-              <packing>
-                <property name="position">3</property>
-              </packing>
-            </child>
-            <child type="tab">
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">System Matrix</property>
-              </object>
-              <packing>
-                <property name="position">3</property>
-                <property name="tab_fill">False</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox" id="boxScannerTab">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="orientation">vertical</property>
-                <child>
-                  <placeholder/>
-                </child>
-              </object>
-              <packing>
-                <property name="position">4</property>
-              </packing>
-            </child>
-            <child type="tab">
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Scanner</property>
-              </object>
-              <packing>
-                <property name="position">4</property>
-                <property name="tab_fill">False</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox" id="boxProtocolTab">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="orientation">vertical</property>
-                <child>
-                  <placeholder/>
-                </child>
-              </object>
-              <packing>
-                <property name="position">5</property>
-              </packing>
-            </child>
-            <child type="tab">
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Protocol</property>
-              </object>
-              <packing>
-                <property name="position">5</property>
-                <property name="tab_fill">False</property>
-              </packing>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child type="tab">
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child type="tab">
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child type="tab">
               <placeholder/>
             </child>
           </object>
