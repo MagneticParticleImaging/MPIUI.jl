@@ -4,10 +4,15 @@ abstract type LogMessageWidget <: Gtk.GtkBox end
 
 mutable struct LogMessageListWidget <: LogMessageWidget
   handle::Ptr{Gtk.GObject}
+  builder::GtkBuilder
   store
+  tmSorted
   tv
+  selection
   updating::Bool
 end
+
+getindex(m::LogMessageListWidget, w::AbstractString) = G_.object(m.builder, w)
 
 function LogMessageListWidget()
 
@@ -16,13 +21,43 @@ function LogMessageListWidget()
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxLogMessages")
 
-  # LogLevel, Time, Group, Message, filepath, line
-  store = ListStore(Int, String, String, String, String, String)
+  # LogLevel, Time, Group, Message, visible
+  store = ListStore(Int, String, String, String, Bool)
 
+  tv = TreeView(TreeModel(store))
+  r1 = CellRendererText()
 
-  m = LogMessageListWidget(mainBox.handle, store, nothing, false)
+  c0 = TreeViewColumn("LogLevel", r1, Dict("text" => 0))
+  c1 = TreeViewColumn("Time", r1, Dict("text" => 1))
+  c2 = TreeViewColumn("Group", r1, Dict("text" => 2))
+  c3 = TreeViewColumn("Message", r1, Dict("text" => 3))
+
+  for (i,c) in enumerate((c0,c1,c2,c3))
+    G_.sort_column_id(c,i-1)
+    G_.resizable(c,true)
+    G_.max_width(c,80)
+    push!(tv,c)
+  end
+
+  G_.max_width(c0,100)
+  G_.max_width(c1,200)
+  G_.max_width(c2,200)
+  G_.max_width(c3,500)
+
+  tmFiltered = TreeModelFilter(store)
+  G_.visible_column(tmFiltered,4)
+  tmSorted = TreeModelSort(tmFiltered)
+  G_.model(tv, tmSorted)
+
+  selection = G_.selection(tv)
+
+  m = LogMessageListWidget(mainBox.handle, b, store, tmSorted, tv, selection, false)
   Gtk.gobject_move_ref(m, mainBox)
 
+  push!(m["wndMessages"], tv)
+
+  showall(tv)
+  return m
 end
 
 
@@ -34,7 +69,7 @@ function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, date
     else 
       dateTimeString = Dates.format(dateTime, "yyyy-mm-dd HH:MM:SS.ss")
     end
-    push!(widget.store, (level.level, dateTimeString, string(group), messageString, string(filepath), string(line)))
+    push!(widget.store, (level.level, dateTimeString, string(group), messageString, true))
   catch ex
     @warn "Could not buffer log message^"
   end

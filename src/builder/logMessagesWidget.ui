@@ -18,7 +18,7 @@
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjMinutes">
-    <property name="upper">60</property>
+    <property name="upper">59</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
@@ -101,6 +101,16 @@
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="stock">gtk-remove</property>
+  </object>
+  <object class="GtkImage" id="imgDel">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-delete</property>
+  </object>
+  <object class="GtkImage" id="imgDir">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-directory</property>
   </object>
   <object class="GtkImage" id="imgFind">
     <property name="visible">True</property>
@@ -362,7 +372,7 @@
             <property name="always_show_image">True</property>
           </object>
           <packing>
-            <property name="left_attach">9</property>
+            <property name="left_attach">10</property>
             <property name="top_attach">1</property>
           </packing>
         </child>
@@ -375,19 +385,8 @@
             <property name="always_show_image">True</property>
           </object>
           <packing>
-            <property name="left_attach">8</property>
+            <property name="left_attach">9</property>
             <property name="top_attach">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-          </object>
-          <packing>
-            <property name="left_attach">8</property>
-            <property name="top_attach">0</property>
-            <property name="width">2</property>
           </packing>
         </child>
         <child>
@@ -413,6 +412,42 @@
             <property name="top_attach">1</property>
           </packing>
         </child>
+        <child>
+          <object class="GtkButton" id="btnDelete">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">imgDel</property>
+          </object>
+          <packing>
+            <property name="left_attach">9</property>
+            <property name="top_attach">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="btnDir">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">imgDir</property>
+            <property name="always_show_image">True</property>
+          </object>
+          <packing>
+            <property name="left_attach">10</property>
+            <property name="top_attach">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="left_attach">8</property>
+            <property name="top_attach">0</property>
+            <property name="height">2</property>
+          </packing>
+        </child>
       </object>
       <packing>
         <property name="expand">False</property>
@@ -421,7 +456,7 @@
       </packing>
     </child>
     <child>
-      <object class="GtkScrolledWindow">
+      <object class="GtkScrolledWindow" id="wndMessages">
         <property name="visible">True</property>
         <property name="can_focus">True</property>
         <property name="shadow_type">in</property>
