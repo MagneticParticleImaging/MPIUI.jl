@@ -12,6 +12,13 @@ mutable struct LogMessageListWidget <: LogMessageWidget
   updating::Bool
 end
 
+const LOG_LEVEL_TO_PIX = Dict(
+  -1000 => "gtk-execute",
+  0 => "gtk-info",
+  1000 => "gtk-dialog-warning",
+  2000 => "gtk-dialog-error"
+)
+
 getindex(m::LogMessageListWidget, w::AbstractString) = G_.object(m.builder, w)
 
 function LogMessageListWidget()
@@ -22,12 +29,13 @@ function LogMessageListWidget()
   mainBox = G_.object(b, "boxLogMessages")
 
   # LogLevel, Time, Group, Message, visible
-  store = ListStore(Int, String, String, String, Bool)
+  store = ListStore(String, String, String, String, Bool)
 
   tv = TreeView(TreeModel(store))
+  r0 = CellRendererPixbuf()
   r1 = CellRendererText()
 
-  c0 = TreeViewColumn("LogLevel", r1, Dict("text" => 0))
+  c0 = TreeViewColumn("Level", r0, Dict("stock-id" => 0))
   c1 = TreeViewColumn("Time", r1, Dict("text" => 1))
   c2 = TreeViewColumn("Group", r1, Dict("text" => 2))
   c3 = TreeViewColumn("Message", r1, Dict("text" => 3))
@@ -39,7 +47,7 @@ function LogMessageListWidget()
     push!(tv,c)
   end
 
-  G_.max_width(c0,100)
+  G_.max_width(c0,80)
   G_.max_width(c1,200)
   G_.max_width(c2,200)
   G_.max_width(c3,500)
@@ -69,7 +77,7 @@ function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, date
     else 
       dateTimeString = Dates.format(dateTime, "yyyy-mm-dd HH:MM:SS.ss")
     end
-    push!(widget.store, (level.level, dateTimeString, string(group), messageString, true))
+    push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "gtk-execute"), dateTimeString, string(group), messageString, true))
   catch ex
     @warn "Could not buffer log message^"
   end
