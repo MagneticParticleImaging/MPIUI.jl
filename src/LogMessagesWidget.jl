@@ -2,6 +2,34 @@ export LogMessageListWidget, LogMessageWidget, WidgetLogger, min_enabled_level, 
 
 abstract type LogMessageWidget <: Gtk.GtkBox end
 
+mutable struct LogMessageFilter
+  messageFilter::Union{Regex, Nothing}
+  minLevel::Int
+  #groups::Union{Set{String}, Nothing}
+  from::Union{DateTime, Nothing}
+  to::Union{DateTime, Nothing}
+end
+
+function apply(filter::LogMessageFilter, logLevel::Integer, group::String, message::String, time::DateTime)
+  if logLevel < filter.minLevel
+    return false
+  end
+
+  if !isnothing(filter.messageFilter) && !occursin(filter.messageFilter, message)
+    return false
+  end
+
+  if !isnothing(filter.from) && time < filter.from
+    return false
+  end
+
+  if !isnothing(filter.to) && time >= filter.to
+    return false
+  end
+
+  return true
+end
+
 mutable struct LogMessageListWidget <: LogMessageWidget
   handle::Ptr{Gtk.GObject}
   builder::GtkBuilder
@@ -9,6 +37,7 @@ mutable struct LogMessageListWidget <: LogMessageWidget
   tmSorted
   tv
   selection
+  logFilter::LogMessageFilter
   updating::Bool
 end
 
@@ -59,10 +88,13 @@ function LogMessageListWidget()
 
   selection = G_.selection(tv)
 
-  m = LogMessageListWidget(mainBox.handle, b, store, tmSorted, tv, selection, false)
+  logFilter = LogMessageFilter(nothing, 0, nothing, nothing)
+  m = LogMessageListWidget(mainBox.handle, b, store, tmSorted, tv, selection, logFilter, false)
   Gtk.gobject_move_ref(m, mainBox)
 
   push!(m["wndMessages"], tv)
+
+  # Set calendar and time to now!
 
   showall(tv)
   return m
@@ -77,9 +109,13 @@ function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, date
     else 
       dateTimeString = Dates.format(dateTime, "yyyy-mm-dd HH:MM:SS.ss")
     end
-    push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "gtk-execute"), dateTimeString, string(group), messageString, true))
+    visible = apply(widget.logFilter, level.level, string(group), messageString, dateTime)
+    push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "gtk-execute"), dateTimeString, string(group), messageString, visible))
   catch ex
-    @warn "Could not buffer log message^"
+    # Avoid endless loop
+    with_logger(ConsoleLogger()) do 
+      @warn "Could not buffer log message" ex
+    end
   end
 end
 
