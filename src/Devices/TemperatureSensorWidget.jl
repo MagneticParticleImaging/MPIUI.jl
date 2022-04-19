@@ -89,14 +89,17 @@ end
       timesDT .-= timesDT[1]
       times = Dates.value.(timesDT) / 1000 # seconds
    
-      if maximum(times) > 60*60
+      if maximum(times) > 2*60*60*24
+        times ./= 60*60*24
+        strTime = "t / d"
+      elseif maximum(times) > 2*60*60
         times ./= 60*60
-        strTime = "Time / Hours"
-      elseif  maximum(times) > 60
+        strTime = "t / h"
+      elseif  maximum(times) > 2*60
         times ./= 60
-        strTime = "Time / Minutes"
+        strTime = "t / min"
       else
-        strTime = "Time / Seconds"
+        strTime = "t / s"
       end
 
 
@@ -110,7 +113,7 @@ end
 
 
               Winston.setattr(p, "xlabel", strTime)
-              Winston.setattr(p, "ylabel", "Temperature / °C")
+              Winston.setattr(p, "ylabel", "T / °C")
 
               legendEntries = []
               channelNames = []
