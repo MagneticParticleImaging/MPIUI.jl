@@ -104,27 +104,45 @@ end
 function initCallbacks(m::LogMessageListWidget)
   signal_connect(m["calFrom"], :day_selected) do w
     @idle_add begin
+      dt = getFromDateTime(m)
+      m.logFilter.from = dt
+      applyFilter!(m)
     end
   end
   signal_connect(m["spinFromHour"], :value_changed) do w
     @idle_add begin
+      dt = getFromDateTime(m)
+      m.logFilter.from = dt
+      applyFilter!(m)
     end
   end
   signal_connect(m["spinFromMin"], :value_changed) do w
     @idle_add begin
+      dt = getFromDateTime(m)
+      m.logFilter.from = dt
+      applyFilter!(m)
     end
   end
 
   signal_connect(m["calTo"], :day_selected) do w
     @idle_add begin
+      dt = getToDateTime(m)
+      m.logFilter.to = dt
+      applyFilter!(m)
     end
   end
   signal_connect(m["spinToHour"], :value_changed) do w
     @idle_add begin
+      dt = getToDateTime(m)
+      m.logFilter.to = dt
+      applyFilter!(m)
     end
   end
   signal_connect(m["spinToMin"], :value_changed) do w
     @idle_add begin
+      dt = getToDateTime(m)
+      m.logFilter.to = dt
+      applyFilter!(m)
     end
   end
 
@@ -146,6 +164,25 @@ function initCallbacks(m::LogMessageListWidget)
     end
   end
 end
+
+function getToDateTime(widget::LogMessageListWidget)
+  year = get_gtk_property(widget["calTo"], :year, Int)
+  month = get_gtk_property(widget["calTo"], :month, Int) + 1 # Month is 0 ... 11
+  day = get_gtk_property(widget["calTo"], :day, Int)
+  hour = get_gtk_property(widget["spinToHour"], :value, Int)
+  min = get_gtk_property(widget["spinToMin"], :value, Int)
+  return DateTime(year, month, day, hour, min)
+end
+
+function getFromDateTime(widget::LogMessageListWidget)
+  year = get_gtk_property(widget["calFrom"], :year, Int)
+  month = get_gtk_property(widget["calFrom"], :month, Int) + 1 # Month is 0 ... 11
+  day = get_gtk_property(widget["calFrom"], :day, Int)
+  hour = get_gtk_property(widget["spinFromHour"], :value, Int)
+  min = get_gtk_property(widget["spinFromMin"], :value, Int)
+  return DateTime(year, month, day, hour, min)
+end
+
 
 function applyFilter!(widget::LogMessageListWidget)
   @idle_add begin
