@@ -85,7 +85,7 @@ end
       L = min(m.temperatureLog.numChan,length(colors) * length(lines))
 
       T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
-      timesDT = copy(m.temperatureLog.times) #collect(1:size(T, 2))
+      timesDT = copy(m.temperatureLog.times) 
       timesDT .-= timesDT[1]
       times = Dates.value.(timesDT) / 1000 # seconds
    
@@ -110,7 +110,7 @@ end
 
 
               Winston.setattr(p, "xlabel", strTime)
-              Winston.setattr(p, "ylabel", "Temperature / C")
+              Winston.setattr(p, "ylabel", "Temperature / °C")
 
               legendEntries = []
               channelNames = []
