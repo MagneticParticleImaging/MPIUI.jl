@@ -146,6 +146,19 @@ function initCallbacks(m::LogMessageListWidget)
     end
   end
 
+  signal_connect(m["entryMsgRegex"], :changed) do w
+    @idle_add begin
+      str = get_gtk_property(m["entryMsgRegex"],:text,String)
+      if isempty(str)
+        m.logFilter.messageFilter = nothing
+      else
+        rgx = Regex(".*$str.*")
+        m.logFilter.messageFilter = rgx
+      end
+      applyFilter!(m)
+    end
+  end
+
   signal_connect(m["cbLogLevel"], :changed) do w
     @idle_add begin
       str = Gtk.bytestring(GAccessor.active_text(m["cbLogLevel"]))
