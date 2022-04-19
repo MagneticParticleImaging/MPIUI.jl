@@ -57,8 +57,8 @@ function LogMessageListWidget()
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxLogMessages")
 
-  # LogLevel, Time, Group, Message, visible
-  store = ListStore(String, String, String, String, Bool)
+  # LogLevel, Time, Group, Message, visible, tooltip, "number" log level
+  store = ListStore(String, String, String, String, Bool, String, Int)
 
   tv = TreeView(TreeModel(store))
   r0 = CellRendererPixbuf()
@@ -95,11 +95,73 @@ function LogMessageListWidget()
   push!(m["wndMessages"], tv)
 
   # Set calendar and time to now!
+  initCallbacks(m::LogMessageListWidget)
 
   showall(tv)
   return m
 end
 
+function initCallbacks(m::LogMessageListWidget)
+  signal_connect(m["calFrom"], :day_selected) do w
+    @idle_add begin
+    end
+  end
+  signal_connect(m["spinFromHour"], :value_changed) do w
+    @idle_add begin
+    end
+  end
+  signal_connect(m["spinFromMin"], :value_changed) do w
+    @idle_add begin
+    end
+  end
+
+  signal_connect(m["calTo"], :day_selected) do w
+    @idle_add begin
+    end
+  end
+  signal_connect(m["spinToHour"], :value_changed) do w
+    @idle_add begin
+    end
+  end
+  signal_connect(m["spinToMin"], :value_changed) do w
+    @idle_add begin
+    end
+  end
+
+  signal_connect(m["cbLogLevel"], :changed) do w
+    @idle_add begin
+      str = Gtk.bytestring(GAccessor.active_text(m["cbLogLevel"]))
+      level = 0
+      if str == "Debug"
+        level = -1000
+      elseif str == "Info"
+        level = 0
+      elseif str == "Warning"
+        level = 1000
+      elseif str == "Error"
+        level = 2000
+      end
+      m.logFilter.minLevel = level
+      applyFilter!(m)
+    end
+  end
+end
+
+function applyFilter!(widget::LogMessageListWidget)
+  @idle_add begin
+    widget.updating = true
+    try
+      for l=1:length(widget.store)
+        dateTime = DateTime(widget.store[l, 2], dateTimeFormatter)
+        visible = apply(widget.logFilter, widget.store[l, 7], widget.store[l, 3], widget.store[l, 4], dateTime)
+        widget.store[l, 5] = visible
+      end
+    catch e
+      @warn "Could not update log filter" e
+    end
+    widget.updating = false
+  end
+end
 
 function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, dateTime::Union{DateTime, Missing}, group, message, filepath, line)
   try 
@@ -107,10 +169,10 @@ function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, date
     if ismissing(dateTime)
       dateTimeString = "N/A"
     else 
-      dateTimeString = Dates.format(dateTime, "yyyy-mm-dd HH:MM:SS.ss")
+      dateTimeString = Dates.format(dateTime, dateTimeFormatter)
     end
     visible = apply(widget.logFilter, level.level, string(group), messageString, dateTime)
-    push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "gtk-execute"), dateTimeString, string(group), messageString, visible))
+    push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "gtk-missing-image"), dateTimeString, string(group), messageString, visible, "", level.level))
   catch ex
     # Avoid endless loop
     with_logger(ConsoleLogger()) do 

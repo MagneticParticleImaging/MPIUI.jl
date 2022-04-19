@@ -38,6 +38,9 @@ import MPIMeasurements #: measurement
 import Logging: shouldlog, min_enabled_level, handle_message
 export openFileBrowser
 
+
+const dateTimeFormatter = DateFormat("yyyy-mm-dd HH:MM:SS.sss")
+
 function object_(builder::Builder,name::AbstractString, T::Type)::T
    return convert(T,ccall((:gtk_builder_get_object,Gtk.libgtk),Ptr{Gtk.GObject},(Ptr{Gtk.GObject},Ptr{UInt8}),builder,name))
 end

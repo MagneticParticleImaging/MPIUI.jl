@@ -191,7 +191,7 @@ datetimeFormater_logger(logger) = TransformerLogger(logger) do log
     end
   end
   kwargs = [p for p in pairs(log.kwargs) if p[1] != :dateTime]
-  merge(log, (; kwargs = kwargs, message = "$(Dates.format(dateTime, "yyyy-mm-dd HH:MM:SS.ss")) $(log.message)"))
+  merge(log, (; kwargs = kwargs, message = "$(Dates.format(dateTime, dateTimeFormatter)) $(log.message)"))
 end
 
 function initLogging(m::MPILab)
