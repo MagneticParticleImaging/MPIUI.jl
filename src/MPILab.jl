@@ -36,6 +36,7 @@ mutable struct MPILab
   scannerBrowser
   currentAnatomRefFilename
   sfViewerWidget
+  logMessagesWidget
   updating
 end
 
@@ -61,15 +62,6 @@ end
 
 function MPILab(offlineMode=false)::MPILab
    
-  mkpath(logpath)
-  logger = TeeLogger(
-    MinLevelLogger(ConsoleLogger(), Logging.Info),
-    MinLevelLogger(
-      DatetimeRotatingFileLogger(logpath, raw"\m\p\i\l\a\b-YYYY-mm-dd.\l\o\g"), 
-        Logging.Debug)
-  );
-  global_logger(logger)
-
   @info "Starting MPILab"
 
   uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
@@ -79,7 +71,7 @@ function MPILab(offlineMode=false)::MPILab
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, false, false, nothing, nothing, nothing, nothing,
-              nothing, nothing, nothing, nothing, "", nothing, false)
+              nothing, nothing, nothing, nothing, "", nothing, nothing, false)
 
   let m=m_
 
@@ -89,6 +81,8 @@ function MPILab(offlineMode=false)::MPILab
 
   addConfigurationPath(scannerpath)
 
+  @debug "## Init Logging ..."
+  initLogging(m)
   @debug "## Init Settings ..."
   initSettings(m)
   @debug "## Init Scanner ..."
@@ -183,6 +177,42 @@ function MPILab(offlineMode=false)::MPILab
   end
 
   return m_
+end
+
+datetime_logger(logger) = TransformerLogger(logger) do log
+  merge(log, (; kwargs = (; log.kwargs..., dateTime = now())))
+end
+
+datetimeFormater_logger(logger) = TransformerLogger(logger) do log
+  dateTime = nothing
+  for (key, val) in log.kwargs
+    if key === :dateTime
+      dateTime = val
+    end
+  end
+  kwargs = [p for p in pairs(log.kwargs) if p[1] != :dateTime]
+  merge(log, (; kwargs = kwargs, message = "$(Dates.format(dateTime, "yyyy-mm-dd HH:MM:SS.ss")) $(log.message)"))
+end
+
+function initLogging(m::MPILab)
+  # Setup Logging Widget
+  m.logMessagesWidget = LogMessageListWidget()
+  pane = m["paneMain"]
+  push!(pane, m.logMessagesWidget)
+
+  # Setup Loggers
+  mkpath(logpath)
+  logger = datetime_logger(TeeLogger(
+    datetimeFormater_logger(
+        TeeLogger(
+        MinLevelLogger(ConsoleLogger(), Logging.Info),
+        MinLevelLogger(DatetimeRotatingFileLogger(logpath, raw"\m\p\i\l\a\b-YYYY-mm-dd.\l\o\g"),
+            Logging.Debug)
+      )
+    ),
+    WidgetLogger(m.logMessagesWidget)
+  ))
+  global_logger(logger)
 end
 
 function initStoreSwitch(m::MPILab)
