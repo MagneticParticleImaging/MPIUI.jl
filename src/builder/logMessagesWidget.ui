@@ -182,16 +182,6 @@
     <property name="can_focus">False</property>
     <property name="stock">gtk-directory</property>
   </object>
-  <object class="GtkPopover" id="popGroup">
-    <property name="can_focus">False</property>
-    <child>
-      <object class="GtkFlowBox">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="max_children_per_line">4</property>
-      </object>
-    </child>
-  </object>
   <object class="GtkPopover" id="popGrp">
     <property name="can_focus">False</property>
     <child>
