@@ -197,6 +197,16 @@ function initCallbacks(m::LogMessageListWidget)
       openFileBrowser(logpath)
     end
   end
+
+  signal_connect(m.selection, :changed) do w
+    if hasselection(m.selection)
+      @idle_add begin
+        current = selected(m.selection)
+        tooltip = TreeModel(m.tmSorted)[current, 6]
+        set_gtk_property!(m.tv, :tooltip_text, tooltip)
+      end
+    end
+  end
 end
 
 function getToDateTime(widget::LogMessageListWidget)
@@ -250,20 +260,28 @@ function applyFilter!(widget::LogMessageListWidget)
   end
 end
 
-function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, dateTime::Union{DateTime, Missing}, group, message, filepath, line)
+function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, dateTime::Union{DateTime, Missing}, group, message; kwargs...)
   try 
     messageString = string(message)
+    
     if ismissing(dateTime)
       dateTimeString = "N/A"
     else 
       dateTimeString = Dates.format(dateTime, dateTimeFormatter)
+    
     end
     visible = apply(widget.logFilter, level.level, string(group), messageString, dateTime)
+    
     groupString = string(group)
     if !hasGroup(widget.logFilter, groupString)
       addGroupCheckBox(widget, groupString)
     end
-    push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "gtk-missing-image"), dateTimeString, groupString, messageString, visible, "", level.level))
+    
+    keyVals = [string(string(key), " = ", string(val)) for (key, val) in kwargs]
+    tooltip = join(keyVals, "\n")
+    tooltip = tooltip[1:min(end, 1024)]
+
+    push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "gtk-missing-image"), dateTimeString, groupString, messageString, visible, tooltip, level.level))
   catch ex
     # Avoid endless loop
     with_logger(ConsoleLogger()) do 
@@ -287,5 +305,7 @@ function handle_message(logger::WidgetLogger, level::LogLevel, message, _module,
       dateTime = val
     end
   end
-  updateMessage!(logger.widget, level, dateTime, group, message, filepath, line)
+  kwargsFiltered = [p for p in pairs(kwargs) if p[1] != :dateTime]
+  #@show kwar
+  updateMessage!(logger.widget, level, dateTime, group, message; kwargsFiltered...)
 end
