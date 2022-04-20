@@ -216,7 +216,6 @@ function initCallbacks(m::LogMessageListWidget)
 
   # Autoscrolling
   signal_connect(m["wndMessages"], :edge_reached) do w, pos
-    @show pos
     if pos == 3
       m.scrollState = ATTACHED_BOTTOM
     else
@@ -318,7 +317,9 @@ function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, date
     tooltip = join(keyVals, "\n")
     tooltip = tooltip[1:min(end, 1024)]
 
-    push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "gtk-missing-image"), dateTimeString, groupString, messageString, visible, tooltip, level.level))
+    @idle_add begin
+      push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "gtk-missing-image"), dateTimeString, groupString, messageString, visible, tooltip, level.level))
+    end
   catch ex
     # Avoid endless loop
     with_logger(ConsoleLogger()) do 
