@@ -188,7 +188,10 @@ function initCallbacks(m::LogMessageListWidget)
 
   signal_connect(m["btnDelete"], :clicked) do w
     @idle_add begin
+      m.updating = true
+      unselectall!(m.selection)
       empty!(m.store)
+      m.updating = false
     end
   end
 
@@ -199,7 +202,7 @@ function initCallbacks(m::LogMessageListWidget)
   end
 
   signal_connect(m.selection, :changed) do w
-    if hasselection(m.selection)
+    if hasselection(m.selection) && !m.updating
       @idle_add begin
         current = selected(m.selection)
         tooltip = TreeModel(m.tmSorted)[current, 6]
@@ -248,6 +251,7 @@ function applyFilter!(widget::LogMessageListWidget)
   @idle_add begin
     widget.updating = true
     try
+      unselectall!(widget.selection)
       for l=1:length(widget.store)
         dateTime = DateTime(widget.store[l, 2], dateTimeFormatter)
         visible = apply(widget.logFilter, widget.store[l, 7], widget.store[l, 3], widget.store[l, 4], dateTime)
