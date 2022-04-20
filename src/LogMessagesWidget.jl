@@ -176,6 +176,18 @@ function initCallbacks(m::LogMessageListWidget)
       applyFilter!(m)
     end
   end
+
+  signal_connect(m["btnDelete"], :clicked) do w
+    @idle_add begin
+      empty!(m.store)
+    end
+  end
+
+  signal_connect(m["btnDir"], :clicked) do w
+    @idle_add begin
+      openFileBrowser(logpath)
+    end
+  end
 end
 
 function getToDateTime(widget::LogMessageListWidget)
