@@ -27,16 +27,19 @@ function ScannerBrowser(scanner, deviceBox)
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxScannerBrowser")
 
-  store = ListStore(String,String,Bool)
+  # IsPresent/Online Icon, Device ID, Device Type, IsPresent value, Visible
+  store = ListStore(String,String,String, Bool, Bool)
 
   tv = TreeView(TreeModel(store))
+  r0 = CellRendererPixbuf()
   r1 = CellRendererText()
   r2 = CellRendererToggle()
 
-  c0 = TreeViewColumn("DeviceID", r1, Dict("text" => 0))
-  c1 = TreeViewColumn("Type", r1, Dict("text" => 1))
+  c0 = TreeViewColumn("Status", r0, Dict("stock-id" => 0))
+  c1 = TreeViewColumn("DeviceID", r1, Dict("text" => 1))
+  c2 = TreeViewColumn("Type", r1, Dict("text" => 2))
 
-  for (i,c) in enumerate((c0,c1))
+  for (i,c) in enumerate((c0, c1, c2))
     G_.sort_column_id(c,i-1)
     G_.resizable(c,true)
     G_.max_width(c,80)
@@ -45,9 +48,10 @@ function ScannerBrowser(scanner, deviceBox)
 
   G_.max_width(c0,300)
   G_.max_width(c1,300)
+  G_.max_width(c2, 60)
 
   tmFiltered = TreeModelFilter(store)
-  G_.visible_column(tmFiltered,2)
+  G_.visible_column(tmFiltered,4)
   tmSorted = TreeModelSort(tmFiltered)
   G_.model(tv, tmSorted)
 
@@ -84,12 +88,15 @@ function initCallbacks(m::ScannerBrowser)
       m.updating = true
       currentIt = selected( m.selection )
 
-      name = TreeModel(m.tmSorted)[currentIt,1]
-      @info name
-
+      name = TreeModel(m.tmSorted)[currentIt,2]
       # Remove all currently loaded widgets
       empty!(m.deviceBox)
-      displayDeviceWidget(m, m.scanner.devices[name])
+      dev = m.scanner.devices[name]
+      if MPIMeasurements.isPresent(dev)
+        displayDeviceWidget(m, dev)
+      else
+        info_dialog("Device $name is not availalbe.", mpilab[]["mainWindow"])
+      end
 
       showall(m.deviceBox)
       m.updating = false
@@ -139,9 +146,10 @@ function updateData!(m::ScannerBrowser, scanner=nothing)
       m.updating = true
       unselectall!(m.selection)
       empty!(m.store)
-
       for (deviceID, device) in scanner.devices
-        push!(m.store, (deviceID, string(typeof(device)), true))
+        present = MPIMeasurements.isPresent(device)
+        icon = present ? "gtk-ok" : "gtk-dialog-error"
+        push!(m.store, (icon, deviceID, string(typeof(device)), present, true))
       end
 
       m.updating = false
@@ -158,7 +166,7 @@ function refreshScanner(m::ScannerBrowser)
   if ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"])
     tempName = name(m.scanner)
     close(m.scanner)
-    updateScanner!(mpilab[], MPIScanner(tempName))
+    updateScanner!(mpilab[], MPIScanner(tempName, robust = true))
   end
 end
 

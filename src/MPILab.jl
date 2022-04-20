@@ -1193,7 +1193,7 @@ function initScanner(m::MPILab, offlineMode::Bool)
   settings = offlineMode ? "" : m.settings["scanner"]
   scanner = nothing
   if settings != ""
-    scanner = MPIScanner(settings)
+    scanner = MPIScanner(settings, robust = true)
   end
   m.scanner = scanner
 end
