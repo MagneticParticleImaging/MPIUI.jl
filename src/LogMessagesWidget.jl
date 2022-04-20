@@ -39,6 +39,8 @@ function updateGroup!(filter::LogMessageFilter, group::String, visible::Bool)
 end
 hasGroup(filter::LogMessageFilter, group::String) = haskey(filter.groups, group)
 
+@enum AutoScrollState DETACHED ATTACHED_TOP ATTACHED_BOTTOM
+
 mutable struct LogMessageListWidget <: LogMessageWidget
   handle::Ptr{Gtk.GObject}
   builder::GtkBuilder
@@ -47,6 +49,7 @@ mutable struct LogMessageListWidget <: LogMessageWidget
   tv
   selection
   logFilter::LogMessageFilter
+  scrollState::AutoScrollState
   updating::Bool
 end
 
@@ -98,7 +101,7 @@ function LogMessageListWidget()
   selection = G_.selection(tv)
 
   logFilter = LogMessageFilter(nothing, 0, Dict{String, Bool}(), nothing, nothing)
-  m = LogMessageListWidget(mainBox.handle, b, store, tmSorted, tv, selection, logFilter, false)
+  m = LogMessageListWidget(mainBox.handle, b, store, tmSorted, tv, selection, logFilter, DETACHED, false)
   Gtk.gobject_move_ref(m, mainBox)
 
   push!(m["wndMessages"], tv)
@@ -210,6 +213,36 @@ function initCallbacks(m::LogMessageListWidget)
       end
     end
   end
+
+  # Autoscrolling
+  signal_connect(m["wndMessages"], :edge_reached) do w, pos
+    @show pos
+    if pos == 3
+      m.scrollState = ATTACHED_BOTTOM
+    else
+      m.scrollState = ATTACHED_TOP
+    end
+  end
+
+  vadj = get_gtk_property(m["wndMessages"], :vadjustment, GtkAdjustment)
+  signal_connect(vadj, :value_changed) do w
+    newValue = get_gtk_property(vadj, :value, Float64)
+    if newValue != (get_gtk_property(vadj, :upper, Float64) - get_gtk_property(vadj, :page_size, Float64)) && newValue != get_gtk_property(vadj, :lower, Float64)
+      m.scrollState = DETACHED
+    end
+  end
+
+  signal_connect(m.tv, :size_allocate) do w, a
+    @idle_add begin
+      m.updating = true
+      if m.scrollState == ATTACHED_BOTTOM
+        set_gtk_property!(vadj, :value, get_gtk_property(vadj, :upper, Float64) - get_gtk_property(vadj, :page_size, Float64))
+      elseif m.scrollState == ATTACHED_TOP
+        set_gtk_property!(vadj, :value, 0)
+      end
+      m.updating = false
+    end
+  end
 end
 
 function getToDateTime(widget::LogMessageListWidget)
@@ -231,7 +264,7 @@ function getFromDateTime(widget::LogMessageListWidget)
 end
 
 function addGroupCheckBox(widget::LogMessageListWidget, group::String)
-  # Add to group immidiately
+  # Add to group immidiately to avoid multiple checkbuttons
   updateGroup!(widget.logFilter, group, true)
   @idle_add begin
     check = GtkCheckButton(group)
