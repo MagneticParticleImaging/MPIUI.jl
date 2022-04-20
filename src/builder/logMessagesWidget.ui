@@ -2,16 +2,6 @@
 <!-- Generated with glade 3.22.2 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
-  <object class="GtkPopover">
-    <property name="can_focus">False</property>
-    <child>
-      <object class="GtkFlowBox" id="boxGroups">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="max_children_per_line">4</property>
-      </object>
-    </child>
-  </object>
   <object class="GtkAdjustment" id="adjHourFrom">
     <property name="upper">23</property>
     <property name="step_increment">1</property>
@@ -202,6 +192,35 @@
       </object>
     </child>
   </object>
+  <object class="GtkPopover" id="popGrp">
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkScrolledWindow">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="shadow_type">in</property>
+        <property name="min_content_width">200</property>
+        <property name="min_content_height">200</property>
+        <property name="max_content_height">600</property>
+        <property name="propagate_natural_width">True</property>
+        <child>
+          <object class="GtkViewport">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkFlowBox" id="boxGroups">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="homogeneous">True</property>
+                <property name="min_children_per_line">1</property>
+                <property name="max_children_per_line">4</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
   <object class="GtkBox" id="boxLogMessages">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -344,7 +363,7 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="popover">popGroup</property>
+            <property name="popover">popGrp</property>
             <child>
               <placeholder/>
             </child>
@@ -355,7 +374,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkEntry">
+          <object class="GtkEntry" id="entryMsgRegex">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="hexpand">True</property>
@@ -409,7 +428,7 @@
             <property name="always_show_image">True</property>
           </object>
           <packing>
-            <property name="left_attach">10</property>
+            <property name="left_attach">11</property>
             <property name="top_attach">1</property>
           </packing>
         </child>
@@ -442,8 +461,19 @@
             <property name="label" translatable="yes">Folder</property>
           </object>
           <packing>
+            <property name="left_attach">11</property>
+            <property name="top_attach">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
             <property name="left_attach">10</property>
             <property name="top_attach">0</property>
+            <property name="height">2</property>
           </packing>
         </child>
       </object>

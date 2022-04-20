@@ -52,7 +52,7 @@ function openFileBrowser(dir::String)
     elseif Sys.islinux()
       run(`xdg-open $dir`)
     else
-      @info "openFileBrowser not supported on thos OS!"
+      @info "openFileBrowser not supported on this OS!"
     end
   end
   return

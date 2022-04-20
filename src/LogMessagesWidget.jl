@@ -5,7 +5,7 @@ abstract type LogMessageWidget <: Gtk.GtkBox end
 mutable struct LogMessageFilter
   messageFilter::Union{Regex, Nothing}
   minLevel::Int
-  #groups::Union{Set{String}, Nothing}
+  groups::Dict{String, Bool}
   from::Union{DateTime, Nothing}
   to::Union{DateTime, Nothing}
 end
@@ -19,6 +19,10 @@ function apply(filter::LogMessageFilter, logLevel::Integer, group::String, messa
     return false
   end
 
+  if !get(filter.groups, group, true)
+    return false
+  end
+
   if !isnothing(filter.from) && time < filter.from
     return false
   end
@@ -29,6 +33,11 @@ function apply(filter::LogMessageFilter, logLevel::Integer, group::String, messa
 
   return true
 end
+
+function updateGroup!(filter::LogMessageFilter, group::String, visible::Bool)
+  filter.groups[group] = visible
+end
+hasGroup(filter::LogMessageFilter, group::String) = haskey(filter.groups, group)
 
 mutable struct LogMessageListWidget <: LogMessageWidget
   handle::Ptr{Gtk.GObject}
@@ -88,7 +97,7 @@ function LogMessageListWidget()
 
   selection = G_.selection(tv)
 
-  logFilter = LogMessageFilter(nothing, 0, nothing, nothing)
+  logFilter = LogMessageFilter(nothing, 0, Dict{String, Bool}(), nothing, nothing)
   m = LogMessageListWidget(mainBox.handle, b, store, tmSorted, tv, selection, logFilter, false)
   Gtk.gobject_move_ref(m, mainBox)
 
@@ -208,6 +217,22 @@ function getFromDateTime(widget::LogMessageListWidget)
   return DateTime(year, month, day, hour, min)
 end
 
+function addGroupCheckBox(widget::LogMessageListWidget, group::String)
+  # Add to group immidiately
+  updateGroup!(widget.logFilter, group, true)
+  @idle_add begin
+    check = GtkCheckButton(group)
+    set_gtk_property!(check, :active, true)
+    signal_connect(check, :toggled) do w
+      @idle_add begin
+        updateGroup!(widget.logFilter, get_gtk_property(check, :label, String), get_gtk_property(check, :active, Bool))
+        applyFilter!(widget)
+      end
+    end
+    push!(widget["boxGroups"], check)
+    showall(widget["boxGroups"])
+  end
+end
 
 function applyFilter!(widget::LogMessageListWidget)
   @idle_add begin
@@ -234,7 +259,11 @@ function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, date
       dateTimeString = Dates.format(dateTime, dateTimeFormatter)
     end
     visible = apply(widget.logFilter, level.level, string(group), messageString, dateTime)
-    push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "gtk-missing-image"), dateTimeString, string(group), messageString, visible, "", level.level))
+    groupString = string(group)
+    if !hasGroup(widget.logFilter, groupString)
+      addGroupCheckBox(widget, groupString)
+    end
+    push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "gtk-missing-image"), dateTimeString, groupString, messageString, visible, "", level.level))
   catch ex
     # Avoid endless loop
     with_logger(ConsoleLogger()) do 
