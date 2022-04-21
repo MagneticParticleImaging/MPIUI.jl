@@ -296,7 +296,7 @@ function applyFilter!(widget::LogMessageListWidget)
   end
 end
 
-function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, dateTime::Union{DateTime, Missing}, group, message; kwargs...)
+function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, dateTime::Union{DateTime, Missing}, group, message, filepath, line; kwargs...)
   try 
     messageString = string(message)
     
@@ -313,8 +313,13 @@ function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, date
       addGroupCheckBox(widget, groupString)
     end
     
+    lineString = string(filepath, ":", string(line))
     keyVals = [string(string(key), " = ", string(val)) for (key, val) in kwargs]
-    tooltip = join(keyVals, "\n")
+    if isempty(keyVals)
+      tooltip = lineString
+    else
+      tooltip = join(insert!(keyVals, 1, lineString), "\n")
+    end
     tooltip = tooltip[1:min(end, 1024)]
 
     @idle_add begin
@@ -345,5 +350,5 @@ function handle_message(logger::WidgetLogger, level::LogLevel, message, _module,
   end
   kwargsFiltered = [p for p in pairs(kwargs) if p[1] != :dateTime]
   #@show kwar
-  updateMessage!(logger.widget, level, dateTime, group, message; kwargsFiltered...)
+  updateMessage!(logger.widget, level, dateTime, group, message, filepath, line; kwargsFiltered...)
 end
