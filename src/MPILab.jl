@@ -78,6 +78,9 @@ function MPILab(offlineMode=false)::MPILab
   mpilab[] = m
 
   w = m["mainWindow"]
+  set_gtk_property!(w, :sensitive, false)
+
+  @idle_add show(w)
 
   addConfigurationPath(scannerpath)
 
@@ -91,10 +94,8 @@ function MPILab(offlineMode=false)::MPILab
   initScannerTab(m, offlineMode)
   @debug "## Init Store switch ..."
   initStoreSwitch(m)
-
   @debug "## Init Study ..."
   initStudyStore(m)
-
   @debug "## Init Experiment Store ..."
   initExperimentStore(m)
   @debug "## Init SFStore ..."
@@ -138,8 +139,6 @@ function MPILab(offlineMode=false)::MPILab
     return true
   end
 
-  show(w)
-
   signal_connect(w, "key-press-event") do widget, event
     if event.keyval ==  Gtk.GConstants.GDK_KEY_c
       if event.state & 0x04 != 0x00 # Control key is pressed
@@ -173,6 +172,8 @@ function MPILab(offlineMode=false)::MPILab
   end
 
   @info "Finished starting MPILab"
+
+  set_gtk_property!(w, :sensitive, true)
 
   end
 
