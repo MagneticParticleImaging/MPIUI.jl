@@ -280,6 +280,20 @@
           </packing>
         </child>
         <child>
+          <object class="GtkCheckButton" id="cbShowFreq">
+            <property name="label" translatable="yes">Show Freq</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">False</property>
+            <property name="draw_indicator">True</property>
+            <property name="active">True</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">3</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkSpinButton">
             <property name="visible">True</property>
             <property name="can_focus">True</property>

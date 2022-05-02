@@ -103,12 +103,19 @@ function initCallbacks(m_::RawDataWidget)
       patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
       numPatches = div(size(m.data,3), patchAv)
 
-      maxVal = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
+      maxValTP = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
+      maxValFre = div(maxValTP,2)+1
 
-      set_gtk_property!(m["adjMinTP"],:upper,maxVal)
+      set_gtk_property!(m["adjMinTP"],:upper,maxValTP)
       set_gtk_property!(m["adjMinTP"],:value,1)
-      set_gtk_property!(m["adjMaxTP"],:upper,maxVal)
-      set_gtk_property!(m["adjMaxTP"],:value,maxVal)
+      set_gtk_property!(m["adjMaxTP"],:upper,maxValTP)
+      set_gtk_property!(m["adjMaxTP"],:value,maxValTP)
+
+      set_gtk_property!(m["adjMinFre"],:upper,maxValFre)
+      set_gtk_property!(m["adjMinFre"],:value,1)
+      set_gtk_property!(m["adjMaxFre"],:upper,maxValFre)
+      set_gtk_property!(m["adjMaxFre"],:value,maxValFre)
+
       m.updatingData = false
 
       showData(C_NULL, m)
@@ -234,6 +241,7 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
     numPatches = div(size(m.data,3), patchAv)
     numSignals = size(m.data,5)
+    showFD = get_gtk_property(m["cbShowFreq"], :active, Bool)
 
     autoRangingTD = true
     autoRangingFD = true
@@ -254,15 +262,8 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       autoRangingFD = false
     end
 
-
-    showFD = true
     if get_gtk_property(m["cbShowAllPatches"], :active, Bool)
-      showFD = false
-
       data = vec( mean( reshape(m.data[:,chan,:,1,:],:, patchAv, numPatches, numSignals), dims=2) )
-
-      minFr = 1
-      maxFr = (div(length(data),2)+1)
 
       if length(m.dataBG) > 0 && get_gtk_property(m["cbSubtractBG"], :active, Bool)
         data[:] .-= vec(mean(reshape(m.dataBG[:,chan,:,:,:],size(m.dataBG,1), patchAv, numPatches, :, numSignals), dims=(2,4)) )
