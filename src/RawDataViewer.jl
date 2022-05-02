@@ -316,6 +316,13 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       Winston.ylim(minValTD, maxValTD)
     end
 
+    if size(data,2) > 1
+      legendEntries = [string(j) for j=1:size(data,2)]
+      #legend = Legend(.1, 0.9, legendEntries, halign="right") 
+      #add(p1, legend)
+      legend(legendEntries)
+    end
+
     if showFD
       freq = collect(0:(numFreq-1))./(numFreq-1)./m.deltaT./2.0
       freqdata = abs.(rfft(data, 1)) / size(data,1)
@@ -375,7 +382,8 @@ end
 
 
 function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
-  maxValOld = get_gtk_property(m["adjMinTP"],:upper, Int64)
+  maxValTPOld = get_gtk_property(m["adjMinTP"],:upper, Int64)
+  maxValFreOld = get_gtk_property(m["adjMinFre"],:upper, Int64)
 
   if ndims(data) == 5
     m.data = data
@@ -388,7 +396,8 @@ function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   showAllPatches = get_gtk_property(m["cbShowAllPatches"], :active, Bool) 
   patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
   numPatches = div(size(m.data,3), patchAv)
-  maxVal = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
+  maxValTP = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
+  maxValFre = div(maxValTP,2)+1
 
   @idle_add begin
     m.updatingData = true
@@ -406,21 +415,21 @@ function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
     if !(1 <= get_gtk_property(m["adjPatch"],:value,Int64) <= size(data,3))
       set_gtk_property!(m["adjPatch"],:value,1)
     end
-    set_gtk_property!(m["adjMinTP"],:upper,maxVal)
-    if !(1 <= get_gtk_property(m["adjMinTP"],:value,Int64) <= maxVal) || maxVal != maxValOld
+    set_gtk_property!(m["adjMinTP"],:upper,maxValTP)
+    if !(1 <= get_gtk_property(m["adjMinTP"],:value,Int64) <= maxValTP) || maxValTP != maxValTPOld
       set_gtk_property!(m["adjMinTP"],:value,1)
     end
-    set_gtk_property!(m["adjMaxTP"],:upper,maxVal)
-    if !(1 <= get_gtk_property(m["adjMaxTP"],:value,Int64) <= maxVal) || maxVal != maxValOld
-      set_gtk_property!(m["adjMaxTP"],:value,size(data,1))
+    set_gtk_property!(m["adjMaxTP"],:upper, maxValTP)
+    if !(1 <= get_gtk_property(m["adjMaxTP"],:value,Int64) <= maxValTP) || maxValTP != maxValTPOld
+      set_gtk_property!(m["adjMaxTP"],:value, maxValTP)
     end
-    set_gtk_property!(m["adjMinFre"],:upper,div(size(data,1),2)+1)
-    if !(1 <= get_gtk_property(m["adjMinFre"],:value,Int64) <= div(size(data,1),2)+1)
+    set_gtk_property!(m["adjMinFre"],:upper, maxValFre)
+    if !(1 <= get_gtk_property(m["adjMinFre"],:value,Int64) <= maxValFre) || maxValFre != maxValFreOld
       set_gtk_property!(m["adjMinFre"],:value,1)
     end
-    set_gtk_property!(m["adjMaxFre"],:upper,div(size(data,1),2)+1)
-    if !(1 <= get_gtk_property(m["adjMaxFre"],:value,Int64) <= div(size(data,1),2)+1)
-      set_gtk_property!(m["adjMaxFre"],:value,div(size(data,1),2)+1)
+    set_gtk_property!(m["adjMaxFre"],:upper, maxValFre)
+    if !(1 <= get_gtk_property(m["adjMaxFre"],:value,Int64) <= maxValFre) || maxValFre != maxValFreOld
+      set_gtk_property!(m["adjMaxFre"],:value, maxValFre)
     end
 
     for l=1:5
