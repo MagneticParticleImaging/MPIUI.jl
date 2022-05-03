@@ -9,7 +9,7 @@ mutable struct ProtocolWidget{T} <: Gtk.GtkBox
   protocol::Union{Protocol, Nothing}
   biChannel::Union{BidirectionalChannel{ProtocolEvent}, Nothing}
   eventHandler::Union{Timer, Nothing}
-  protocolState::ProtocolState
+  protocolState::MPIMeasurements.ProtocolState
   # Display
   progress::Union{ProgressEvent, Nothing}
   rawDataWidget::RawDataWidget
@@ -376,5 +376,15 @@ function isMeasurementStore(m::ProtocolWidget, d::DatasetStore)
     return false
   else
     return d.path == m.mdfstore.path
+  end
+end
+
+function updateScanner!(pw::ProtocolWidget, scanner::MPIScanner)
+  pw.scanner = scanner
+  @idle_add begin
+    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf],:sensitive,false)
+    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf],:sensitive,false)
+    set_gtk_property!(pw["tbCancel",ToolButtonLeaf],:sensitive,false)
+    initProtocolChoices(pw)
   end
 end

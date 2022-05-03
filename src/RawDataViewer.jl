@@ -3,12 +3,13 @@ import Base: getindex
 mutable struct RawDataWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder::Builder
-  data::Array{Float32,4}
-  dataBG::Array{Float32,4}
+  data::Array{Float32,5}
+  dataBG::Array{Float32,5}
+  labels::Vector{String}
   cTD::Canvas
   cFD::Canvas
   deltaT::Float64
-  filenameData::String
+  filenamesData::Vector{String}
   loadingData::Bool
   updatingData::Bool
   fileModus::Bool
@@ -19,7 +20,6 @@ mutable struct RawDataWidget <: Gtk.GtkBox
 end
 
 getindex(m::RawDataWidget, w::AbstractString) = G_.object(m.builder, w)
-#getindex(m::RawDataWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
 function RawDataWidget(filenameConfig=nothing)
   @info "Starting RawDataWidget"
@@ -29,9 +29,9 @@ function RawDataWidget(filenameConfig=nothing)
   mainBox = G_.object(b, "boxRawViewer")
 
   m = RawDataWidget( mainBox.handle, b,
-                  zeros(Float32,0,0,0,0), zeros(Float32,0,0,0,0),
-                  Canvas(), Canvas(),
-                  1.0, "", false, false, false,
+                  zeros(Float32,0,0,0,0,0), zeros(Float32,0,0,0,0,0),
+                  [""], Canvas(), Canvas(),
+                  1.0, [""], false, false, false,
                   G_.object(b,"winHarmonicViewer"),
                   AdjustmentLeaf[], Canvas[], Vector{Vector{Float32}}())
   Gtk.gobject_move_ref(m, mainBox)
@@ -90,7 +90,7 @@ function initCallbacks(m_::RawDataWidget)
     #signal_connect(showData, m[sl], "value_changed", Nothing, (), false, m )
   end
 
-  for cb in ["cbShowBG", "cbSubtractBG"]
+  for cb in ["cbShowBG", "cbSubtractBG", "cbShowFreq"]
     signal_connect(m[cb], :toggled) do w
       showData(C_NULL, m)
     end
@@ -104,12 +104,19 @@ function initCallbacks(m_::RawDataWidget)
       patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
       numPatches = div(size(m.data,3), patchAv)
 
-      maxVal = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
+      maxValTP = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
+      maxValFre = div(maxValTP,2)+1
 
-      set_gtk_property!(m["adjMinTP"],:upper,maxVal)
+      set_gtk_property!(m["adjMinTP"],:upper,maxValTP)
       set_gtk_property!(m["adjMinTP"],:value,1)
-      set_gtk_property!(m["adjMaxTP"],:upper,maxVal)
-      set_gtk_property!(m["adjMaxTP"],:value,maxVal)
+      set_gtk_property!(m["adjMaxTP"],:upper,maxValTP)
+      set_gtk_property!(m["adjMaxTP"],:value,maxValTP)
+
+      set_gtk_property!(m["adjMinFre"],:upper,maxValFre)
+      set_gtk_property!(m["adjMinFre"],:value,1)
+      set_gtk_property!(m["adjMaxFre"],:upper,maxValFre)
+      set_gtk_property!(m["adjMaxFre"],:value,maxValFre)
+
       m.updatingData = false
 
       showData(C_NULL, m)
@@ -166,38 +173,57 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
   if !m.loadingData
     m.loadingData = true
     @info "Loading Data ..."
+    deltaT = 1.0
 
+    if m.filenamesData != [""] && all(ispath.(m.filenamesData))
+      fs = MPIFile(m.filenamesData) #, isCalib=false)
 
-    if m.filenameData != "" && ispath(m.filenameData)
-      f = MPIFile(m.filenameData)#, isCalib=false)
-      params = MPIFiles.loadMetadata(f)
-      params[:acqNumFGFrames] = acqNumFGFrames(f)
-      params[:acqNumBGFrames] = acqNumBGFrames(f)
+      # TODO: Ensure that the measurements fit together (num samples / patches)
+      # otherwise -> error
+  
+      numFGFrames = minimum(acqNumFGFrames.(fs))
+      numBGFrames = minimum(acqNumBGFrames.(fs))    
+      
+      dataFGVec = Any[]
+      dataBGVec = Any[]
 
-      @idle_add set_gtk_property!(m["adjFrame"], :upper, acqNumFGFrames(f))
+      for (i,f) in enumerate(fs)
+        params = MPIFiles.loadMetadata(f)
+        params[:acqNumFGFrames] = acqNumFGFrames(f)
+        params[:acqNumBGFrames] = acqNumBGFrames(f)
 
-      if get_gtk_property(m["cbAbsFrameAverage"], :active, Bool)
-        frame = 1:acqNumFGFrames(f)
-      else
-        frame = max( get_gtk_property(m["adjFrame"], :value, Int64),1)
+        @idle_add set_gtk_property!(m["adjFrame"], :upper, numFGFrames)
+
+        if get_gtk_property(m["cbAbsFrameAverage"], :active, Bool)
+          frame = 1:numFGFrames
+        else
+          frame = max( get_gtk_property(m["adjFrame"], :value, Int64), 1)
+        end
+
+        timePoints = rxTimePoints(f)
+        deltaT = timePoints[2] - timePoints[1]
+
+        data = getMeasurements(f, true, frames=frame,
+                    bgCorrection=false, spectralLeakageCorrection = get_gtk_property(m["cbSLCorr"], :active, Bool),
+                    tfCorrection=get_gtk_property(m["cbCorrTF"], :active, Bool))
+        push!(dataFGVec, data)
+
+        if acqNumBGFrames(f) > 0
+          dataBG = getMeasurements(f, false, frames=measBGFrameIdx(f),
+                bgCorrection=false, spectralLeakageCorrection = get_gtk_property(m["cbSLCorr"], :active, Bool),
+                tfCorrection=get_gtk_property(m["cbCorrTF"], :active, Bool))
+        else
+          dataBG = zeros(Float32,0,0,0,0)
+        end
+        push!(dataBGVec, dataBG)
       end
 
-      timePoints = rxTimePoints(f)
-      deltaT = timePoints[2] - timePoints[1]
 
-      u = getMeasurements(f, true, frames=frame,
-                  bgCorrection=false, spectralLeakageCorrection = get_gtk_property(m["cbSLCorr"], :active, Bool),
-                  tfCorrection=get_gtk_property(m["cbCorrTF"], :active, Bool))
+      m.dataBG = cat(dataBGVec..., dims=5)
+      dataFG = cat(dataFGVec..., dims=5)
+      m.labels = ["expnum "*string(experimentNumber(f)) for f in fs]
 
-      if acqNumBGFrames(f) > 0
-        m.dataBG = getMeasurements(f, false, frames=measBGFrameIdx(f),
-              bgCorrection=false, spectralLeakageCorrection = get_gtk_property(m["cbSLCorr"], :active, Bool),
-              tfCorrection=get_gtk_property(m["cbCorrTF"], :active, Bool))
-      else
-        m.dataBG = zeros(Float32,0,0,0,0)
-      end
-
-      updateData(m, u, deltaT, true)
+      updateData(m, dataFG, deltaT, true)
     end
     m.loadingData = false
   end
@@ -216,6 +242,8 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     maxFr = max(get_gtk_property(m["adjMaxFre"], :value, Int64),1)
     patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
     numPatches = div(size(m.data,3), patchAv)
+    numSignals = size(m.data,5)
+    showFD = get_gtk_property(m["cbShowFreq"], :active, Bool)
 
     autoRangingTD = true
     autoRangingFD = true
@@ -236,38 +264,32 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       autoRangingFD = false
     end
 
-
-    showFD = true
     if get_gtk_property(m["cbShowAllPatches"], :active, Bool)
-      showFD = false
-
-      data = vec( mean( reshape(m.data[:,chan,:,1],:, patchAv, numPatches), dims=2) )
-
-      minFr = 1
-      maxFr = (div(length(data),2)+1)
+      data = vec( mean( reshape(m.data[:,chan,:,1,:],:, patchAv, numPatches, numSignals), dims=2) )
+      dataBG = vec(mean(reshape(m.dataBG[:,chan,:,:,:],size(m.dataBG,1), patchAv, numPatches, :, numSignals), dims=(2,4)) )
 
       if length(m.dataBG) > 0 && get_gtk_property(m["cbSubtractBG"], :active, Bool)
-        data[:] .-= vec(mean(reshape(m.dataBG[:,chan,:,:],size(m.dataBG,1), patchAv, numPatches,:), dims=(2,4)) )
+        data[:] .-= dataBG
       end
     else
       if get_gtk_property(m["cbAbsFrameAverage"], :active, Bool)
-        dataFD = rfft(m.data[:,chan,patch,:],1)
-        dataFD_ = vec(mean(abs.(dataFD), dims=2))
-        data = irfft(dataFD_, 2*size(dataFD_, 1) -2)
+        dataFD = rfft(m.data[:,chan,patch,:,:],1)
+        dataFD_ = reshape(mean(abs.(dataFD), dims=2),:,numSignals)
+        data = irfft(dataFD_, 2*size(dataFD_, 1) -2, 1)
 
         if length(m.dataBG) > 0
-          dataBGFD = rfft(m.dataBG[:,chan,patch,:],1)
-          dataBGFD_ = vec(mean(abs.(dataBGFD), dims=2))
-          dataBG = irfft(dataBGFD_, 2*size(dataBGFD_, 1) -2)
+          dataBGFD = rfft(m.dataBG[:,chan,patch,:,:], 1)
+          dataBGFD_ = reshape(mean(abs.(dataBGFD), dims=2), :, numSignals)
+          dataBG = irfft(dataBGFD_, 2*size(dataBGFD_, 1) -2, 1)
           if get_gtk_property(m["cbSubtractBG"], :active, Bool)
-            data[:] .-=  dataBG
+            data .-=  dataBG
           end
         end
       else
-        data = vec(m.data[:,chan,patch,1])
+        data = vec(m.data[:,chan,patch,1,:])
         if length(m.dataBG) > 0
           #dataBG = vec(m.dataBG[:,chan,patch,1] .- mean(m.dataBG[:,chan,patch,:], dims=2))
-          dataBG = vec( mean(m.dataBG[:,chan,patch,:],dims=2))
+          dataBG = vec( mean(m.dataBG[:,chan,patch,:,:],dims=2))
           if get_gtk_property(m["cbSubtractBG"], :active, Bool)
             data[:] .-=  dataBG
           end
@@ -275,24 +297,43 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       end
     end
 
-    timePoints = (0:(length(data)-1)).*m.deltaT
-    numFreq = floor(Int, length(data) ./ 2 .+ 1)
+    data = reshape(data, :, numSignals)
+    if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
+      dataBG = reshape(dataBG, :, numSignals)
+    end
+
+    #colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
+
+    timePoints = (0:(size(data,1)-1)).*m.deltaT
+    numFreq = floor(Int, size(data,1) ./ 2 .+ 1)
 
     maxPoints = 1000
     sp = length(minTP:maxTP) > maxPoints ? round(Int,length(minTP:maxTP) / maxPoints)  : 1
-    p1 = Winston.plot(timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP],"b-",linewidth=3)
+    p1 = Winston.plot(timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP,1],color=colors[1],linewidth=3)
+    for j=2:size(data,2)
+      Winston.plot(p1, timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP,j],color=colors[j],linewidth=3)
+    end
     Winston.ylabel("u / V")
     Winston.xlabel("t / ms")
     if !autoRangingTD
       Winston.ylim(minValTD, maxValTD)
     end
 
+    if size(data,2) > 1 && length(m.labels) == size(data,2)
+      #legend = Legend(.1, 0.9, legendEntries, halign="right") 
+      #add(p1, legend)
+      legend(m.labels)
+    end
+
     if showFD
       freq = collect(0:(numFreq-1))./(numFreq-1)./m.deltaT./2.0
-      freqdata = abs.(rfft(data)) / length(data)
+      freqdata = abs.(rfft(data, 1)) / size(data,1)
+      spFr = length(minFr:maxFr) > maxPoints ? round(Int,length(minFr:maxFr) / maxPoints)  : 1
 
-      ls = "b-" #length(minFr:maxFr) > 150 ? "b-" : "b-o"
-      p2 = Winston.semilogy(freq[minFr:maxFr],freqdata[minFr:maxFr],ls,linewidth=3)
+      p2 = Winston.semilogy(freq[minFr:spFr:maxFr],freqdata[minFr:spFr:maxFr,1],color=colors[1],linewidth=3)
+      for j=2:size(data,2)
+        Winston.plot(p2, freq[minFr:spFr:maxFr], freqdata[minFr:spFr:maxFr,j],color=colors[j],linewidth=3)
+      end
       #Winston.ylabel("u / V")
       Winston.xlabel("f / kHz")
       if !autoRangingFD
@@ -312,12 +353,11 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     end
 
     if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
-      Winston.plot(p1,timePoints[minTP:maxTP],dataBG[minTP:maxTP],"k--",linewidth=2)
+      Winston.plot(p1,timePoints[minTP:sp:maxTP],dataBG[minTP:sp:maxTP,1],"k--",linewidth=3)
 
       if showFD
-        ls = length(minFr:maxFr) > 150 ? "k-" : "k-x"
-        Winston.plot(p2,freq[minFr:maxFr],abs.(rfft(dataBG)[minFr:maxFr]) / length(dataBG),
-                  ls, linewidth=2, ylog=true)
+        Winston.plot(p2,freq[minFr:spFr:maxFr],abs.(rfft(dataBG,1)[minFr:spFr:maxFr,1]) / size(dataBG,1),
+                     "k--", linewidth=3, ylog=true)
       end
     end
     @idle_add display(m.cTD, p1)
@@ -329,9 +369,9 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     if  get_gtk_property(m["cbHarmonicViewer"], :active, Bool) && showFD
       for l=1:5
         f = get_gtk_property(m.harmViewAdj[l], :value, Int64)
-        push!(m.harmBuff[l], freqdata[f])
+        push!(m.harmBuff[l], freqdata[f,1])
 
-        p = Winston.semilogy(m.harmBuff[l],"b-o", linewidth=3)
+        p = Winston.semilogy(m.harmBuff[l], "b-o", linewidth=3)
         Winston.ylabel("Harmonic $f")
         Winston.xlabel("Time")
         display(m.harmViewCanvas[l] ,p)
@@ -343,16 +383,22 @@ end
 
 
 function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
-  maxValOld = get_gtk_property(m["adjMinTP"],:upper, Int64)
+  maxValTPOld = get_gtk_property(m["adjMinTP"],:upper, Int64)
+  maxValFreOld = get_gtk_property(m["adjMinFre"],:upper, Int64)
 
-  m.data = data
+  if ndims(data) == 5
+    m.data = data
+  else
+    m.data = reshape(data, size(data)..., 1)
+  end
   m.deltaT = deltaT .* 1000 # convert to ms and kHz
   m.fileModus = fileModus
 
   showAllPatches = get_gtk_property(m["cbShowAllPatches"], :active, Bool) 
   patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
   numPatches = div(size(m.data,3), patchAv)
-  maxVal = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
+  maxValTP = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
+  maxValFre = div(maxValTP,2)+1
 
   @idle_add begin
     m.updatingData = true
@@ -370,21 +416,21 @@ function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
     if !(1 <= get_gtk_property(m["adjPatch"],:value,Int64) <= size(data,3))
       set_gtk_property!(m["adjPatch"],:value,1)
     end
-    set_gtk_property!(m["adjMinTP"],:upper,maxVal)
-    if !(1 <= get_gtk_property(m["adjMinTP"],:value,Int64) <= maxVal) || maxVal != maxValOld
+    set_gtk_property!(m["adjMinTP"],:upper,maxValTP)
+    if !(1 <= get_gtk_property(m["adjMinTP"],:value,Int64) <= maxValTP) || maxValTP != maxValTPOld
       set_gtk_property!(m["adjMinTP"],:value,1)
     end
-    set_gtk_property!(m["adjMaxTP"],:upper,maxVal)
-    if !(1 <= get_gtk_property(m["adjMaxTP"],:value,Int64) <= maxVal) || maxVal != maxValOld
-      set_gtk_property!(m["adjMaxTP"],:value,size(data,1))
+    set_gtk_property!(m["adjMaxTP"],:upper, maxValTP)
+    if !(1 <= get_gtk_property(m["adjMaxTP"],:value,Int64) <= maxValTP) || maxValTP != maxValTPOld
+      set_gtk_property!(m["adjMaxTP"],:value, maxValTP)
     end
-    set_gtk_property!(m["adjMinFre"],:upper,div(size(data,1),2)+1)
-    if !(1 <= get_gtk_property(m["adjMinFre"],:value,Int64) <= div(size(data,1),2)+1)
+    set_gtk_property!(m["adjMinFre"],:upper, maxValFre)
+    if !(1 <= get_gtk_property(m["adjMinFre"],:value,Int64) <= maxValFre) || maxValFre != maxValFreOld
       set_gtk_property!(m["adjMinFre"],:value,1)
     end
-    set_gtk_property!(m["adjMaxFre"],:upper,div(size(data,1),2)+1)
-    if !(1 <= get_gtk_property(m["adjMaxFre"],:value,Int64) <= div(size(data,1),2)+1)
-      set_gtk_property!(m["adjMaxFre"],:value,div(size(data,1),2)+1)
+    set_gtk_property!(m["adjMaxFre"],:upper, maxValFre)
+    if !(1 <= get_gtk_property(m["adjMaxFre"],:value,Int64) <= maxValFre) || maxValFre != maxValFreOld
+      set_gtk_property!(m["adjMaxFre"],:value, maxValFre)
     end
 
     for l=1:5
@@ -392,15 +438,19 @@ function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
     end
 
     m.updatingData = false
-    showData(C_NULL,m)
+    showData(C_NULL, m)
   end
 end
 
-function updateData(m::RawDataWidget, filename::String)
-  m.filenameData = filename
+function updateData(m::RawDataWidget, filenames::Vector{<:AbstractString})
+  m.filenamesData = filenames
   @idle_add set_gtk_property!(m["adjFrame"],:upper,1)
   @idle_add set_gtk_property!(m["adjFrame"],:value,1)
   loadData(C_NULL, m)
   return nothing
 end
 
+function updateData(m::RawDataWidget, filename::String)
+  updateData(m, [filename])
+  return nothing
+end

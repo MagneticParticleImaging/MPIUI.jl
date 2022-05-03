@@ -36,6 +36,7 @@ mutable struct MPILab
   scannerBrowser
   currentAnatomRefFilename
   sfViewerWidget
+  logMessagesWidget
   updating
 end
 
@@ -61,15 +62,6 @@ end
 
 function MPILab(offlineMode=false)::MPILab
    
-  mkpath(logpath)
-  logger = TeeLogger(
-    MinLevelLogger(ConsoleLogger(), Logging.Info),
-    MinLevelLogger(
-      DatetimeRotatingFileLogger(logpath, raw"\m\p\i\l\a\b-YYYY-mm-dd.\l\o\g"), 
-        Logging.Debug)
-  );
-  global_logger(logger)
-
   @info "Starting MPILab"
 
   uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
@@ -79,28 +71,31 @@ function MPILab(offlineMode=false)::MPILab
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, false, false, nothing, nothing, nothing, nothing,
-              nothing, nothing, nothing, nothing, "", nothing, false)
+              nothing, nothing, nothing, nothing, "", nothing, nothing, false)
 
   let m=m_
 
   mpilab[] = m
 
   w = m["mainWindow"]
+  set_gtk_property!(w, :sensitive, false)
+
+  @idle_add show(w)
 
   addConfigurationPath(scannerpath)
 
+  @debug "## Init Logging ..."
+  initLogging(m)
   @debug "## Init Settings ..."
   initSettings(m)
   @debug "## Init Scanner ..."
   initScanner(m, offlineMode)
   @debug "## Init Scanner Tab ..."
-  initScannerTab(m)
+  initScannerTab(m, offlineMode)
   @debug "## Init Store switch ..."
   initStoreSwitch(m)
-
   @debug "## Init Study ..."
   initStudyStore(m)
-
   @debug "## Init Experiment Store ..."
   initExperimentStore(m)
   @debug "## Init SFStore ..."
@@ -124,7 +119,7 @@ function MPILab(offlineMode=false)::MPILab
   @debug "## Init View switch ..."
   initViewSwitch(m)
   @debug "## Init Protocol Tab ..."
-  initProtocolTab(m)
+  initProtocolTab(m, offlineMode)
 
 
   @idle_add set_gtk_property!(m["lbInfo"],:use_markup,true)
@@ -143,8 +138,6 @@ function MPILab(offlineMode=false)::MPILab
     G_.icon_from_file(w, filename, error_check)
     return true
   end
-
-  show(w)
 
   signal_connect(w, "key-press-event") do widget, event
     if event.keyval ==  Gtk.GConstants.GDK_KEY_c
@@ -180,9 +173,47 @@ function MPILab(offlineMode=false)::MPILab
 
   @info "Finished starting MPILab"
 
+  set_gtk_property!(w, :sensitive, true)
+
   end
 
   return m_
+end
+
+datetime_logger(logger) = TransformerLogger(logger) do log
+  merge(log, (; kwargs = (; log.kwargs..., dateTime = now())))
+end
+
+datetimeFormater_logger(logger) = TransformerLogger(logger) do log
+  dateTime = nothing
+  for (key, val) in log.kwargs
+    if key === :dateTime
+      dateTime = val
+    end
+  end
+  kwargs = [p for p in pairs(log.kwargs) if p[1] != :dateTime]
+  merge(log, (; kwargs = kwargs, message = "$(Dates.format(dateTime, dateTimeFormatter)) $(log.message)"))
+end
+
+function initLogging(m::MPILab)
+  # Setup Logging Widget
+  m.logMessagesWidget = LogMessageListWidget()
+  pane = m["paneMain"]
+  push!(pane, m.logMessagesWidget)
+
+  # Setup Loggers
+  mkpath(logpath)
+  logger = datetime_logger(TeeLogger(
+    datetimeFormater_logger(
+        TeeLogger(
+        MinLevelLogger(ConsoleLogger(), Logging.Info),
+        MinLevelLogger(DatetimeRotatingFileLogger(logpath, raw"\m\p\i\l\a\b-YYYY-mm-dd.\l\o\g"),
+            Logging.Debug)
+      )
+    ),
+    WidgetLogger(m.logMessagesWidget)
+  ))
+  global_logger(logger)
 end
 
 function initStoreSwitch(m::MPILab)
@@ -628,15 +659,7 @@ function initExperimentStore(m::MPILab)
   G_.sort_column_id(TreeSortable(m.experimentStore),0,GtkSortType.ASCENDING)
 
   m.selectionExp = G_.selection(tv)
-
-  signal_connect(m["tbRawData"], "clicked") do widget
-    if hasselection( m.selectionExp)
-      @idle_add begin
-        updateData(m.rawDataWidget, path(m.currentExperiment))
-        G_.current_page(m["nbView"], 0)
-      end
-    end
-  end
+  G_.mode(m.selectionExp, GtkSelectionMode.MULTIPLE)
 
 
   signal_connect(m["tbReco"], "clicked") do widget
@@ -660,22 +683,35 @@ function initExperimentStore(m::MPILab)
 
 
   signal_connect(tv, "row-activated") do treeview, path_, col, other...
-    if hasselection(m.selectionExp)
-      @idle_add begin
-        #updateData!(m.recoWidget, path(m.currentExperiment) )
-        @info path(m.currentExperiment)
-        updateData(m.rawDataWidget, path(m.currentExperiment))
-        G_.current_page(m["nbView"], 0)
-      end
-    end
+    showRawData()
     false
   end
 
+  signal_connect(m["tbRawData"], "clicked") do widget
+    showRawData()
+  end
+
+  function showRawData()
+    if hasselection(m.selectionExp)
+      @idle_add begin
+        selectedRows = Gtk.selected_rows(m.selectionExp)
+        expNums = [m.experimentStore[selectedRows[j],1] for j=1:length(selectedRows)]
+        exps = [getExperiment(m.currentStudy, expNums[j]) for j=1:length(selectedRows)]
+        paths = path.(exps)
+
+        updateData(m.rawDataWidget, paths)
+        G_.current_page(m["nbView"], 0)
+      end
+    end
+  end
+
+
   signal_connect(m.selectionExp, "changed") do widget
     if !m.updating && hasselection(m.selectionExp) && !m.clearingStudyStore &&
-       m.currentStudy != nothing && !m.clearingExpStore
+      m.currentStudy != nothing && !m.clearingExpStore
 
-      currentIt = selected( m.selectionExp )
+      selectedRows = Gtk.selected_rows(m.selectionExp) # can have multiple selections
+      currentIt = selectedRows[1] #selected( m.selectionExp )
       
       exp = getExperiment(m.currentStudy, m.experimentStore[currentIt,1])
 
@@ -1077,25 +1113,28 @@ function initSFStore(m::MPILab)
 end
 
 ### Scanner Tab ###
-function initScannerTab(m::MPILab)
+function initScannerTab(m::MPILab, offlineMode=false)
+  if !offlineMode
+    m.scannerBrowser = ScannerBrowser(m.scanner, m["boxScannerTab"])
 
-  m.scannerBrowser = ScannerBrowser(m.scanner, m["boxScannerTab"])
-
-  boxScannerTab = m["boxScanner"]
-  push!(boxScannerTab,m.scannerBrowser)
-  set_gtk_property!(boxScannerTab, :expand, m.scannerBrowser, true)
-  showall(boxScannerTab)
+    boxScannerTab = m["boxScanner"]
+    push!(boxScannerTab,m.scannerBrowser)
+    set_gtk_property!(boxScannerTab, :expand, m.scannerBrowser, true)
+    showall(boxScannerTab)
+  end
 end
 
 ### Protocol Tab ###
 
-function initProtocolTab(m::MPILab)
-  m.protocolWidget = ProtocolWidget(m.scanner)
+function initProtocolTab(m::MPILab, offlineMode=false)
+  if !offlineMode
+    m.protocolWidget = ProtocolWidget(m.scanner)
 
-  boxProtoTab = m["boxProtocolTab"]
-  push!(boxProtoTab, m.protocolWidget)
-  set_gtk_property!(boxProtoTab, :expand, m.protocolWidget, true)
-  showall(boxProtoTab)
+    boxProtoTab = m["boxProtocolTab"]
+    push!(boxProtoTab, m.protocolWidget)
+    set_gtk_property!(boxProtoTab, :expand, m.protocolWidget, true)
+    showall(boxProtoTab)
+  end
 end
 
 ### Image Tab ###
@@ -1155,7 +1194,7 @@ function initScanner(m::MPILab, offlineMode::Bool)
   settings = offlineMode ? "" : m.settings["scanner"]
   scanner = nothing
   if settings != ""
-    scanner = MPIScanner(settings)
+    scanner = MPIScanner(settings, robust = true)
   end
   m.scanner = scanner
 end
@@ -1174,4 +1213,10 @@ end
 
 function scanner(m::MPILab)
   return m.scanner
+end
+
+function updateScanner!(m::MPILab, scanner::MPIScanner)
+  m.scanner = scanner
+  updateScanner!(m.protocolWidget, scanner)
+  updateScanner!(m.scannerBrowser, scanner)
 end

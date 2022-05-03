@@ -4,7 +4,7 @@ mutable struct TemperatureSensorWidget <: Gtk.GtkBox
   updating::Bool
   sensor::TemperatureSensor
   temperatureLog::TemperatureLog
-  canvas::GtkCanvasLeaf
+  canvases::Vector{GtkCanvasLeaf}
   timer::Union{Timer,Nothing}
 end
 
@@ -16,11 +16,16 @@ function TemperatureSensorWidget(sensor::TemperatureSensor)
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "mainBox")
 
-  m = TemperatureSensorWidget(mainBox.handle, b, false, sensor, TemperatureLog(), Canvas(), nothing)
+  numPlots = length(unique(getChannelGroups(sensor)))
+  canvases = [Canvas() for i=1:numPlots]
+
+  m = TemperatureSensorWidget(mainBox.handle, b, false, sensor, TemperatureLog(), canvases, nothing)
   Gtk.gobject_move_ref(m, mainBox)
 
-  push!(m, m.canvas)
-  set_gtk_property!(m,:expand, m.canvas, true)
+  for (i,c) in enumerate(m.canvases)
+    push!(m, c)
+    set_gtk_property!(m, :expand, c, true)
+  end
 
   showall(m)
 
@@ -74,35 +79,68 @@ end
 
       push!(m.temperatureLog, te, time)
 
-      colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
+      #colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
       lines = ["solid", "dashed", "dotted"]
 
       L = min(m.temperatureLog.numChan,length(colors) * length(lines))
 
       T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
+      timesDT = copy(m.temperatureLog.times) 
+      timesDT .-= timesDT[1]
+      times = Dates.value.(timesDT) / 1000 # seconds
+   
+      if maximum(times) > 2*60*60*24
+        times ./= 60*60*24
+        strTime = "t / d"
+      elseif maximum(times) > 2*60*60
+        times ./= 60*60
+        strTime = "t / h"
+      elseif  maximum(times) > 2*60
+        times ./= 60
+        strTime = "t / min"
+      else
+        strTime = "t / s"
+      end
+
 
       @idle_add begin
-        p = FramedPlot()
-        Winston.plot(T[1,:], colors[1], linewidth=3)
-        x = collect(1:size(T, 2))
-        legendEntries = []
-        channelNames = []
-        if hasmethod(getChannelNames, (typeof(m.sensor),))
-          channelNames = getChannelNames(sensor)
-        end
-        for l=1:L
-          curve = Curve(x, T[l,:], color = colors[mod1(l, length(colors))], linekind=lines[div(l-1, length(colors)) + 1], linewidth=3)
-          if !isempty(channelNa) 
-            setattr(curve, label = m.sensor.params.nameSensors[m.sensor.params.selectSensors[l]])
-            push!(legendEntries, curve)
+        try 
+          for (i,c) in enumerate(m.canvases)
+            idx = findall(d->d==i, getChannelGroups(m.sensor))
+            if length(idx) > 0
+              p = FramedPlot()
+              Winston.plot(T[idx[1],:], color=colors[1], linewidth=3)
+
+
+              Winston.setattr(p, "xlabel", strTime)
+              Winston.setattr(p, "ylabel", "T / °C")
+
+              legendEntries = []
+              channelNames = []
+              if hasmethod(getChannelNames, (typeof(m.sensor),))
+                channelNames = getChannelNames(m.sensor)
+              end
+              for l=1:length(idx)
+                curve = Curve(times, T[idx[l],:], color = colors[mod1(l, length(colors))], linewidth=5) #linekind=lines[div(l-1, length(colors)) + 1]
+                if !isempty(channelNames) 
+                  setattr(curve, label = channelNames[idx[l]])
+                  push!(legendEntries, curve)
+                end
+                add(p, curve)
+              end
+              # setattr(p, xlim=(-100, size(T, 2))) does not work. Idea was to shift the legend
+
+              legend = Legend(.1, 0.9, legendEntries, halign="right") #size=1
+              add(p, legend)
+              display(c, p)
+              showall(c)
+              c.is_sized = true
+            end
           end
-          add(p, curve)
+        catch e
+          @warn "Error"
+          println(e)
         end
-        #Winston.xlabel("Time")
-        legend = Legend(.1, 0.9, legendEntries)
-        add(p, legend)
-        display(m.canvas, p)
-        m.canvas.is_sized = true
       end
     end
   end
