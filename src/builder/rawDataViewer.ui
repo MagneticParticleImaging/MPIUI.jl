@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.22.1 -->
+<!-- Generated with glade 3.20.0 -->
 <interface>
   <requires lib="gtk+" version="3.12"/>
   <object class="GtkAdjustment" id="adjFrame">
@@ -45,9 +45,6 @@
     <property name="default_height">600</property>
     <property name="urgency_hint">True</property>
     <property name="deletable">False</property>
-    <child>
-      <placeholder/>
-    </child>
     <child>
       <object class="GtkBox" id="boxHarmView">
         <property name="visible">True</property>
@@ -285,8 +282,8 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
-            <property name="draw_indicator">True</property>
             <property name="active">True</property>
+            <property name="draw_indicator">True</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
@@ -314,9 +311,6 @@
             <property name="left_attach">0</property>
             <property name="top_attach">4</property>
           </packing>
-        </child>
-        <child>
-          <placeholder/>
         </child>
       </object>
     </child>
@@ -480,7 +474,6 @@
                     <property name="adjustment">adjMinTP</property>
                     <property name="round_digits">0</property>
                     <property name="digits">0</property>
-                    <property name="value_pos">left</property>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -495,7 +488,6 @@
                     <property name="adjustment">adjMaxTP</property>
                     <property name="round_digits">0</property>
                     <property name="digits">0</property>
-                    <property name="value_pos">left</property>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -558,7 +550,6 @@
                     <property name="adjustment">adjMinFre</property>
                     <property name="round_digits">0</property>
                     <property name="digits">0</property>
-                    <property name="value_pos">left</property>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -573,7 +564,6 @@
                     <property name="adjustment">adjMaxFre</property>
                     <property name="round_digits">0</property>
                     <property name="digits">0</property>
-                    <property name="value_pos">left</property>
                   </object>
                   <packing>
                     <property name="expand">True</property>

@@ -5,6 +5,7 @@ mutable struct RawDataWidget <: Gtk.GtkBox
   builder::Builder
   data::Array{Float32,5}
   dataBG::Array{Float32,5}
+  labels::Vector{String}
   cTD::Canvas
   cFD::Canvas
   deltaT::Float64
@@ -29,7 +30,7 @@ function RawDataWidget(filenameConfig=nothing)
 
   m = RawDataWidget( mainBox.handle, b,
                   zeros(Float32,0,0,0,0,0), zeros(Float32,0,0,0,0,0),
-                  Canvas(), Canvas(),
+                  [""], Canvas(), Canvas(),
                   1.0, [""], false, false, false,
                   G_.object(b,"winHarmonicViewer"),
                   AdjustmentLeaf[], Canvas[], Vector{Vector{Float32}}())
@@ -89,7 +90,7 @@ function initCallbacks(m_::RawDataWidget)
     #signal_connect(showData, m[sl], "value_changed", Nothing, (), false, m )
   end
 
-  for cb in ["cbShowBG", "cbSubtractBG"]
+  for cb in ["cbShowBG", "cbSubtractBG", "cbShowFreq"]
     signal_connect(m[cb], :toggled) do w
       showData(C_NULL, m)
     end
@@ -220,6 +221,7 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
 
       m.dataBG = cat(dataBGVec..., dims=5)
       dataFG = cat(dataFGVec..., dims=5)
+      m.labels = ["expnum "*string(experimentNumber(f)) for f in fs]
 
       updateData(m, dataFG, deltaT, true)
     end
@@ -316,21 +318,21 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       Winston.ylim(minValTD, maxValTD)
     end
 
-    if size(data,2) > 1
-      legendEntries = [string(j) for j=1:size(data,2)]
+    if size(data,2) > 1 && length(m.labels) == size(data,2)
       #legend = Legend(.1, 0.9, legendEntries, halign="right") 
       #add(p1, legend)
-      legend(legendEntries)
+      legend(m.labels)
     end
 
     if showFD
       freq = collect(0:(numFreq-1))./(numFreq-1)./m.deltaT./2.0
       freqdata = abs.(rfft(data, 1)) / size(data,1)
+      spFr = length(minFr:maxFr) > maxPoints ? round(Int,length(minFr:maxFr) / maxPoints)  : 1
 
-      ls = "b-" #length(minFr:maxFr) > 150 ? "b-" : "b-o"
-      p2 = Winston.semilogy(freq[minFr:maxFr],freqdata[minFr:maxFr,1],colors[1],linewidth=3)
+      # ls = "b-" #length(minFr:maxFr) > 150 ? "b-" : "b-o"
+      p2 = Winston.semilogy(freq[minFr:spFr:maxFr],freqdata[minFr:spFr:maxFr,1],colors[1],linewidth=3)
       for j=2:size(data,2)
-        Winston.plot(p2, freq[minFr:maxFr], freqdata[minFr:maxFr,j],colors[j],linewidth=3)
+        Winston.plot(p2, freq[minFr:spFr:maxFr], freqdata[minFr:spFr:maxFr,j],colors[j],linewidth=3)
       end
       #Winston.ylabel("u / V")
       Winston.xlabel("f / kHz")
