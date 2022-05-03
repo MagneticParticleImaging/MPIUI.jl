@@ -266,9 +266,10 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
 
     if get_gtk_property(m["cbShowAllPatches"], :active, Bool)
       data = vec( mean( reshape(m.data[:,chan,:,1,:],:, patchAv, numPatches, numSignals), dims=2) )
+      dataBG = vec(mean(reshape(m.dataBG[:,chan,:,:,:],size(m.dataBG,1), patchAv, numPatches, :, numSignals), dims=(2,4)) )
 
       if length(m.dataBG) > 0 && get_gtk_property(m["cbSubtractBG"], :active, Bool)
-        data[:] .-= vec(mean(reshape(m.dataBG[:,chan,:,:,:],size(m.dataBG,1), patchAv, numPatches, :, numSignals), dims=(2,4)) )
+        data[:] .-= dataBG
       end
     else
       if get_gtk_property(m["cbAbsFrameAverage"], :active, Bool)
@@ -352,12 +353,11 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     end
 
     if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
-      Winston.plot(p1,timePoints[minTP:maxTP],dataBG[minTP:maxTP,1],"k--",linewidth=2)
+      Winston.plot(p1,timePoints[minTP:sp:maxTP],dataBG[minTP:sp:maxTP,1],"k--",linewidth=3)
 
       if showFD
-        ls = length(minFr:maxFr) > 150 ? "k-" : "k-x"
-        Winston.plot(p2,freq[minFr:maxFr],abs.(rfft(dataBG,1)[minFr:maxFr,1]) / size(dataBG,1),
-                  ls, linewidth=2, ylog=true)
+        Winston.plot(p2,freq[minFr:spFr:maxFr],abs.(rfft(dataBG,1)[minFr:spFr:maxFr,1]) / size(dataBG,1),
+                     "k--", linewidth=3, ylog=true)
       end
     end
     @idle_add display(m.cTD, p1)
