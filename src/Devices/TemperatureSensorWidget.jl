@@ -79,7 +79,7 @@ end
 
       push!(m.temperatureLog, te, time)
 
-      colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
+      #colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
       lines = ["solid", "dashed", "dotted"]
 
       L = min(m.temperatureLog.numChan,length(colors) * length(lines))
@@ -109,7 +109,7 @@ end
             idx = findall(d->d==i, getChannelGroups(m.sensor))
             if length(idx) > 0
               p = FramedPlot()
-              Winston.plot(T[idx[1],:], colors[1], linewidth=3)
+              Winston.plot(T[idx[1],:], color=colors[1], linewidth=3)
 
 
               Winston.setattr(p, "xlabel", strTime)
@@ -121,7 +121,7 @@ end
                 channelNames = getChannelNames(m.sensor)
               end
               for l=1:length(idx)
-                curve = Curve(times, T[idx[l],:], color = colors[mod1(l, length(colors))], linekind=lines[div(l-1, length(colors)) + 1], linewidth=5)
+                curve = Curve(times, T[idx[l],:], color = colors[mod1(l, length(colors))], linewidth=5) #linekind=lines[div(l-1, length(colors)) + 1]
                 if !isempty(channelNames) 
                   setattr(curve, label = channelNames[idx[l]])
                   push!(legendEntries, curve)

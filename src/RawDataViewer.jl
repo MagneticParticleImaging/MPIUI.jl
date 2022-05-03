@@ -301,16 +301,16 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       dataBG = reshape(dataBG, :, numSignals)
     end
 
-    colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
+    #colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
 
     timePoints = (0:(size(data,1)-1)).*m.deltaT
     numFreq = floor(Int, size(data,1) ./ 2 .+ 1)
 
     maxPoints = 1000
     sp = length(minTP:maxTP) > maxPoints ? round(Int,length(minTP:maxTP) / maxPoints)  : 1
-    p1 = Winston.plot(timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP,1],colors[1],linewidth=3)
+    p1 = Winston.plot(timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP,1],color=colors[1],linewidth=3)
     for j=2:size(data,2)
-      Winston.plot(p1, timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP,j],colors[j],linewidth=3)
+      Winston.plot(p1, timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP,j],color=colors[j],linewidth=3)
     end
     Winston.ylabel("u / V")
     Winston.xlabel("t / ms")
@@ -329,10 +329,9 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       freqdata = abs.(rfft(data, 1)) / size(data,1)
       spFr = length(minFr:maxFr) > maxPoints ? round(Int,length(minFr:maxFr) / maxPoints)  : 1
 
-      # ls = "b-" #length(minFr:maxFr) > 150 ? "b-" : "b-o"
-      p2 = Winston.semilogy(freq[minFr:spFr:maxFr],freqdata[minFr:spFr:maxFr,1],colors[1],linewidth=3)
+      p2 = Winston.semilogy(freq[minFr:spFr:maxFr],freqdata[minFr:spFr:maxFr,1],color=colors[1],linewidth=3)
       for j=2:size(data,2)
-        Winston.plot(p2, freq[minFr:spFr:maxFr], freqdata[minFr:spFr:maxFr,j],colors[j],linewidth=3)
+        Winston.plot(p2, freq[minFr:spFr:maxFr], freqdata[minFr:spFr:maxFr,j],color=colors[j],linewidth=3)
       end
       #Winston.ylabel("u / V")
       Winston.xlabel("f / kHz")
