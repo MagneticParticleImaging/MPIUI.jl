@@ -64,7 +64,7 @@ mutable struct ComponentParameter <: Gtk.GtkGrid
     grid[1, 2] = GtkLabel("Divider", xalign = 0.0)
     grid[2, 2] = div
     # Amplitude
-    ampVal = MPIFiles.amplitude(comp)
+    ampVal = MPIMeasurements.amplitude(comp)
     if ampVal isa typeof(1.0u"T")
       ampVal = uconvert(u"mT", ampVal)
     end
@@ -72,7 +72,7 @@ mutable struct ComponentParameter <: Gtk.GtkGrid
     grid[1, 3] = GtkLabel("Amplitude", xalign = 0.0)
     grid[2, 3] = amp
     # Phase
-    pha = UnitfulEntry(MPIFiles.phase(comp))
+    pha = UnitfulEntry(MPIMeasurements.phase(comp))
     grid[1, 4] = GtkLabel("Phase", xalign = 0.0)
     grid[2, 4] = pha
     gridResult = new(grid.handle, idLabel, div, amp, pha)
@@ -113,14 +113,15 @@ function updateSequence(seqParam::SequenceParameter, seq::Sequence)
       @info "Finished adding channels"
 
 
-      set_gtk_property!(seqParam["entSequenceName",EntryLeaf], :text, MPIFiles.name(seq)) 
-      set_gtk_property!(seqParam["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(seq))")
-      set_gtk_property!(seqParam["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(seq))")
-      set_gtk_property!(seqParam["adjNumFrames", AdjustmentLeaf], :value, acqNumFrames(seq))
-      set_gtk_property!(seqParam["adjNumFrameAverages", AdjustmentLeaf], :value, acqNumFrameAverages(seq))
-      set_gtk_property!(seqParam["adjNumAverages", AdjustmentLeaf], :value, acqNumAverages(seq))
+      set_gtk_property!(seqParam["entSequenceName",EntryLeaf], :text, MPIMeasurements.name(seq)) 
+      set_gtk_property!(seqParam["entNumPeriods",EntryLeaf], :text, "$(MPIMeasurements.acqNumPeriodsPerFrame(seq))")
+      set_gtk_property!(seqParam["entNumPatches",EntryLeaf], :text, "$(MPIMeasurements.acqNumPatches(seq))")
+      set_gtk_property!(seqParam["adjNumFrames", AdjustmentLeaf], :value, MPIMeasurements.acqNumFrames(seq))
+      set_gtk_property!(seqParam["adjNumFrameAverages", AdjustmentLeaf], :value, MPIMeasurements.acqNumFrameAverages(seq))
+      set_gtk_property!(seqParam["adjNumAverages", AdjustmentLeaf], :value, MPIMeasurements.acqNumAverages(seq))
       seqParam.value = seq
-    catch e 
+    catch e
+      rethrow()
       @error e
     end
   end
