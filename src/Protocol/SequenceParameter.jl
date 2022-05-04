@@ -131,9 +131,9 @@ function setProtocolParameter(seqParam::SequenceParameter, params::ProtocolParam
   @info "Trying to set sequence"
   seq = seqParam.value
 
-  acqNumFrames(seq, get_gtk_property(seqParam["adjNumFrames",AdjustmentLeaf], :value, Int64))
-  acqNumFrameAverages(seq, get_gtk_property(seqParam["adjNumFrameAverages",AdjustmentLeaf], :value, Int64))
-  acqNumAverages(seq, get_gtk_property(seqParam["adjNumAverages",AdjustmentLeaf], :value, Int64))
+  MPIMeasurements.acqNumFrames(seq, get_gtk_property(seqParam["adjNumFrames",AdjustmentLeaf], :value, Int64))
+  MPIMeasurements.acqNumFrameAverages(seq, get_gtk_property(seqParam["adjNumFrameAverages",AdjustmentLeaf], :value, Int64))
+  MPIMeasurements.acqNumAverages(seq, get_gtk_property(seqParam["adjNumAverages",AdjustmentLeaf], :value, Int64))
   
   for channelParam in seqParam["boxPeriodicChannel", BoxLeaf]
     setProtocolParameter(channelParam)
