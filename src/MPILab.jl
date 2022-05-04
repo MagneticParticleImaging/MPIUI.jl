@@ -121,6 +121,9 @@ function MPILab(offlineMode=false)::MPILab
   @debug "## Init Protocol Tab ..."
   initProtocolTab(m, offlineMode)
 
+  if !(scannerDatasetStore(m.scanner) in m.settings["datasetStores"])
+    @warn "The scanner's dataset store `$(scannerDatasetStore(m.scanner))` does not match one of the stores in the Settings.toml."
+  end
 
   @idle_add set_gtk_property!(m["lbInfo"],:use_markup,true)
   @idle_add set_gtk_property!(m["cbDatasetStores"],:active,0)
