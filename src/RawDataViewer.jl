@@ -266,10 +266,12 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
 
     if get_gtk_property(m["cbShowAllPatches"], :active, Bool)
       data = vec( mean( reshape(m.data[:,chan,:,1,:],:, patchAv, numPatches, numSignals), dims=2) )
-      dataBG = vec(mean(reshape(m.dataBG[:,chan,:,:,:],size(m.dataBG,1), patchAv, numPatches, :, numSignals), dims=(2,4)) )
+      if length(m.dataBG) > 0
+        dataBG = vec(mean(reshape(m.dataBG[:,chan,:,:,:],size(m.dataBG,1), patchAv, numPatches, :, numSignals), dims=(2,4)) )
 
-      if length(m.dataBG) > 0 && get_gtk_property(m["cbSubtractBG"], :active, Bool)
-        data[:] .-= dataBG
+        if get_gtk_property(m["cbSubtractBG"], :active, Bool)
+          data[:] .-= dataBG
+        end
       end
     else
       if get_gtk_property(m["cbAbsFrameAverage"], :active, Bool)
