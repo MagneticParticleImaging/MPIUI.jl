@@ -354,7 +354,7 @@ function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event
       #infoMessage(m, "$(m.progress.unit) $(m.progress.done) / $(m.progress.total)", "green")
       #if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
       seq = pw.protocol.params.sequence
-      deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
+      deltaT = ustrip(u"s", MPIMeasurements.dfCycle(seq) / rxNumSamplesPerPeriod(seq))
       updateData(pw.rawDataWidget, frame, deltaT)
       #end
     end
