@@ -75,6 +75,11 @@ mutable struct ComponentParameter <: Gtk.GtkGrid
     pha = UnitfulEntry(MPIFiles.phase(comp))
     grid[1, 4] = GtkLabel("Phase", xalign = 0.0)
     grid[2, 4] = pha
+    # Waveform
+    wav = GenericEntry{Int64}(string(waveform(comp)))
+    set_gtk_property!(div, :sensitive, false)
+    grid[1, 5] = GtkLabel("Waveform", xalign = 0.0)
+    grid[2, 5] = wav
     gridResult = new(grid.handle, idLabel, div, amp, pha)
     return Gtk.gobject_move_ref(gridResult, grid)
   end
