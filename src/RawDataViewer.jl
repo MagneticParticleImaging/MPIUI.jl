@@ -311,9 +311,24 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
 
     maxPoints = 1000
     sp = length(minTP:maxTP) > maxPoints ? round(Int,length(minTP:maxTP) / maxPoints)  : 1
-    p1 = Winston.plot(timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP,1],color=colors[1],linewidth=3)
+
+    steps = minTP:sp:maxTP
+    dataCompressed = zeros(length(steps), size(data,2))
+    if sp > 1
+      for j=1:size(data,2)
+        for l=1:length(steps)
+          st = steps[l]
+          en = min(st+sp,steps[end])
+          dataCompressed[l,j] = median(data[st:en,j])
+        end
+      end
+    else
+      dataCompressed = data[steps,:]
+    end
+
+    p1 = Winston.plot(timePoints[steps],data[minTP:sp:maxTP,1],color=colors[1],linewidth=3)
     for j=2:size(data,2)
-      Winston.plot(p1, timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP,j],color=colors[j],linewidth=3)
+      Winston.plot(p1, timePoints[steps],data[minTP:sp:maxTP,j],color=colors[j],linewidth=3)
     end
     Winston.ylabel("u / V")
     Winston.xlabel("t / ms")
@@ -332,9 +347,23 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       freqdata = abs.(rfft(data, 1)) / size(data,1)
       spFr = length(minFr:maxFr) > maxPoints ? round(Int,length(minFr:maxFr) / maxPoints)  : 1
 
-      p2 = Winston.semilogy(freq[minFr:spFr:maxFr],freqdata[minFr:spFr:maxFr,1],color=colors[1],linewidth=3)
+      stepsFr = minFr:spFr:maxFr
+      freqDataCompressed = zeros(length(stepsFr), size(freqdata,2))
+      if spFr > 1
+        for j=1:size(freqdata,2)
+          for l=1:length(stepsFr)
+            st = stepsFr[l]
+            en = min(st+spFr,stepsFr[end])
+            freqDataCompressed[l,j] = maximum(freqdata[st:en,j])
+          end
+        end
+      else
+        freqDataCompressed = freqdata[stepsFr,:]
+      end
+
+      p2 = Winston.semilogy(freq[stepsFr],freqDataCompressed[:,1],color=colors[1],linewidth=3)
       for j=2:size(data,2)
-        Winston.plot(p2, freq[minFr:spFr:maxFr], freqdata[minFr:spFr:maxFr,j],color=colors[j],linewidth=3)
+        Winston.plot(p2, freq[stepsFr], freqDataCompressed[:,j],color=colors[j],linewidth=3)
       end
       #Winston.ylabel("u / V")
       Winston.xlabel("f / kHz")
