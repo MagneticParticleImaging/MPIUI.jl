@@ -83,11 +83,35 @@ end
 function initCallbacks(m_::RawDataWidget)
  let m=m_
   for sl in ["adjPatch","adjRxChan","adjMinTP","adjMaxTP",
-                   "adjMinFre","adjMaxFre", "adjPatchAv"]
+                   "adjMinFre","adjMaxFre"]
     signal_connect(m[sl], "value_changed") do w
       showData(C_NULL, m)
     end
     #signal_connect(showData, m[sl], "value_changed", Nothing, (), false, m )
+  end
+
+  oldAdjPatchAvValue = 1
+  signal_connect(m["adjPatchAv"], "value_changed") do w
+    if !m.updatingData
+      m.updatingData = true
+      patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
+      numPatches = size(m.data,3)
+      if mod(numPatches, patchAv) != 0
+        while mod(numPatches, patchAv) != 0
+          patchAv += sign(patchAv-oldAdjPatchAvValue)*1
+        end
+        oldAdjPatchAvValue = patchAv
+        
+        @idle_add begin
+          set_gtk_property!(m["adjPatchAv"], :value, patchAv)
+          showAllPatchesChanged(m)
+        end
+      else
+        showData(C_NULL, m)
+      end
+      oldAdjPatchAvValue = patchAv
+      m.updatingData = false
+    end
   end
 
   for cb in ["cbShowBG", "cbSubtractBG", "cbShowFreq"]
@@ -99,28 +123,30 @@ function initCallbacks(m_::RawDataWidget)
 
   signal_connect(m["cbShowAllPatches"], :toggled) do w
     @idle_add begin
-      m.updatingData = true
-      showAllPatches = get_gtk_property(m["cbShowAllPatches"], :active, Bool)
-      patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
-      numPatches = div(size(m.data,3), patchAv)
-
-      maxValTP = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
-      maxValFre = div(maxValTP,2)+1
-
-      set_gtk_property!(m["adjMinTP"],:upper,maxValTP)
-      set_gtk_property!(m["adjMinTP"],:value,1)
-      set_gtk_property!(m["adjMaxTP"],:upper,maxValTP)
-      set_gtk_property!(m["adjMaxTP"],:value,maxValTP)
-
-      set_gtk_property!(m["adjMinFre"],:upper,maxValFre)
-      set_gtk_property!(m["adjMinFre"],:value,1)
-      set_gtk_property!(m["adjMaxFre"],:upper,maxValFre)
-      set_gtk_property!(m["adjMaxFre"],:value,maxValFre)
-
-      m.updatingData = false
-
-      showData(C_NULL, m)
+      showAllPatchesChanged(m)
     end
+  end
+
+  function showAllPatchesChanged(m)
+    m.updatingData = true
+    showAllPatches = get_gtk_property(m["cbShowAllPatches"], :active, Bool)
+    patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
+    numPatches = div(size(m.data,3), patchAv)
+
+    maxValTP = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
+    maxValFre = div(maxValTP,2)+1
+
+    set_gtk_property!(m["adjMinTP"],:upper,maxValTP)
+    set_gtk_property!(m["adjMinTP"],:value,1)
+    set_gtk_property!(m["adjMaxTP"],:upper,maxValTP)
+    set_gtk_property!(m["adjMaxTP"],:value,maxValTP)
+
+    set_gtk_property!(m["adjMinFre"],:upper,maxValFre)
+    set_gtk_property!(m["adjMinFre"],:value,1)
+    set_gtk_property!(m["adjMaxFre"],:upper,maxValFre)
+    set_gtk_property!(m["adjMaxFre"],:value,maxValFre)
+    m.updatingData = false
+    showData(C_NULL, m)
   end
 
 
