@@ -107,7 +107,7 @@ function initCallbacks(m_::RawDataWidget)
           showAllPatchesChanged(m)
         end
       else
-        showData(C_NULL, m)
+        @idle_add showAllPatchesChanged(m)
       end
       oldAdjPatchAvValue = patchAv
       m.updatingData = false
