@@ -200,6 +200,7 @@ function initLogging(m::MPILab)
   m.logMessagesWidget = LogMessageListWidget()
   pane = m["paneMain"]
   push!(pane, m.logMessagesWidget)
+  set_gtk_property!(m["paneMain"], :position, 550)
 
   # Setup Loggers
   mkpath(logpath)

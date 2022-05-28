@@ -97,8 +97,14 @@ function initCallbacks(m_::RawDataWidget)
       patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
       numPatches = size(m.data,3)
       if mod(numPatches, patchAv) != 0
-        while mod(numPatches, patchAv) != 0
-          patchAv += sign(patchAv-oldAdjPatchAvValue)*1
+        if 1 < patchAv < numPatches
+          while mod(numPatches, patchAv) != 0
+            patchAv += sign(patchAv-oldAdjPatchAvValue)*1
+          end
+        elseif patchAv < 1
+          patchAv = 1
+        elseif patchAv > numPatches
+          patchAv = numPatches
         end
         oldAdjPatchAvValue = patchAv
         
