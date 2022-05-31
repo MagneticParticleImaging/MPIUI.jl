@@ -457,6 +457,15 @@ function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   m.deltaT = deltaT .* 1000 # convert to ms and kHz
   m.fileModus = fileModus
 
+  if !isempty(m.dataBG)
+    if size(m.data)[1:3] != size(m.dataBG)[1:3]
+      @info "Background data does not fit to foreground data! Dropping BG data."
+      @info size(m.data)
+      @info size(m.dataBG)
+      m.dataBG = zeros(Float32,0,0,0,0,0)
+    end
+  end
+
   showAllPatches = get_gtk_property(m["cbShowAllPatches"], :active, Bool) 
   patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
   numPatches = div(size(m.data,3), patchAv)
