@@ -16,10 +16,10 @@ end
 
 function startProtocol(pw::ProtocolWidget)
   try 
-    @info "Execute protocol"
+    @info "Executing protocol"
     pw.biChannel = execute(pw.scanner, pw.protocol)
     pw.protocolState = PS_INIT
-    @info "Start event handler"
+    @info "Starting event handler"
     pw.eventHandler = Timer(timer -> eventHandler(pw, timer), 0.0, interval=0.05)
     return true
   catch e
@@ -50,7 +50,9 @@ function eventHandler(pw::ProtocolWidget, timer::Timer)
 
     if isready(channel)
       event = take!(channel)
+      @debug "GUI event handler received event of type $(typeof(event)) and is now dispatching it."
       finished = handleEvent(pw, pw.protocol, event)
+      @debug "Handled event of type $(typeof(event))."
     elseif !isopen(channel)
       finished = true
     end
@@ -372,10 +374,11 @@ function handleFinished(pw::ProtocolWidget, protocol::MPIMeasurementProtocol)
 end
 
 function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event::StorageSuccessEvent)
-  @info "Received storage success event"
+  @info "Data is ready for further operations and can be found at `$(event.filename)`."
   put!(pw.biChannel, FinishedAckEvent())
-  updateData(pw.rawDataWidget, event.filename)
-  updateExperimentStore(mpilab[], mpilab[].currentStudy)
+  @warn "Updating the raw data is currently diabled since it freezes the UI."
+  #updateData(pw.rawDataWidget, event.filename)
+  #updateExperimentStore(mpilab[], mpilab[].currentStudy)
   return true
 end
 
