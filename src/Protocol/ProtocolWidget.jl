@@ -86,9 +86,10 @@ function displayProgress(pw::ProtocolWidget)
 end
 
 function getStorageMDF(pw::ProtocolWidget)
+  @info "Creating storage MDF"
   mdf = defaultMDFv2InMemory()
   studyName(mdf, pw.currStudyName) # TODO These are never updates, is the result correct?
-  studyDate(mdf, pw.currStudyDate )
+  #studyDate(mdf, pw.currStudyDate ) # TODO: Fix error with symbol not found
   studyDescription(mdf, "")
   experimentDescription(mdf, get_gtk_property(pw["entExpDescr",EntryLeaf], :text, String))
   experimentName(mdf, get_gtk_property(pw["entExpName",EntryLeaf], :text, String))
@@ -99,7 +100,7 @@ function getStorageMDF(pw::ProtocolWidget)
   tracerVolume(mdf, [1e-3*get_gtk_property(pw["adjTracerVolume",AdjustmentLeaf], :value, Float64)])
   tracerConcentration(mdf, [1e-3*get_gtk_property(pw["adjTracerConcentration",AdjustmentLeaf], :value, Float64)])
   tracerSolute(mdf, [get_gtk_property(pw["entTracerSolute",EntryLeaf], :text, String)])
-  return params
+  return mdf
 end
 
 include("EventHandler.jl")

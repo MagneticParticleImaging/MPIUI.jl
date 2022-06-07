@@ -951,8 +951,9 @@ function openFusion(m::MPILab)
            G_.current_page(m["nbView"], 1)
         end
       catch ex
-        @show  string("Something went wrong!\n", ex, "\n\n", stacktrace(bt))
+        @show string("Something went wrong!\n", ex, "\n\n", stacktrace(bt))
         #showError(ex)
+        showerror(stdout, ex, catch_backtrace())
       end
     end
 end
