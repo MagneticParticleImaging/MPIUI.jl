@@ -83,11 +83,41 @@ end
 function initCallbacks(m_::RawDataWidget)
  let m=m_
   for sl in ["adjPatch","adjRxChan","adjMinTP","adjMaxTP",
-                   "adjMinFre","adjMaxFre", "adjPatchAv"]
+                   "adjMinFre","adjMaxFre"]
     signal_connect(m[sl], "value_changed") do w
       showData(C_NULL, m)
     end
     #signal_connect(showData, m[sl], "value_changed", Nothing, (), false, m )
+  end
+
+  oldAdjPatchAvValue = 1
+  signal_connect(m["adjPatchAv"], "value_changed") do w
+    if !m.updatingData
+      m.updatingData = true
+      patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
+      numPatches = size(m.data,3)
+      if mod(numPatches, patchAv) != 0
+        if 1 < patchAv < numPatches
+          while mod(numPatches, patchAv) != 0
+            patchAv += sign(patchAv-oldAdjPatchAvValue)*1
+          end
+        elseif patchAv < 1
+          patchAv = 1
+        elseif patchAv > numPatches
+          patchAv = numPatches
+        end
+        oldAdjPatchAvValue = patchAv
+        
+        @idle_add begin
+          set_gtk_property!(m["adjPatchAv"], :value, patchAv)
+          showAllPatchesChanged(m)
+        end
+      else
+        @idle_add showAllPatchesChanged(m)
+      end
+      oldAdjPatchAvValue = patchAv
+      m.updatingData = false
+    end
   end
 
   for cb in ["cbShowBG", "cbSubtractBG", "cbShowFreq"]
@@ -99,28 +129,30 @@ function initCallbacks(m_::RawDataWidget)
 
   signal_connect(m["cbShowAllPatches"], :toggled) do w
     @idle_add begin
-      m.updatingData = true
-      showAllPatches = get_gtk_property(m["cbShowAllPatches"], :active, Bool)
-      patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
-      numPatches = div(size(m.data,3), patchAv)
-
-      maxValTP = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
-      maxValFre = div(maxValTP,2)+1
-
-      set_gtk_property!(m["adjMinTP"],:upper,maxValTP)
-      set_gtk_property!(m["adjMinTP"],:value,1)
-      set_gtk_property!(m["adjMaxTP"],:upper,maxValTP)
-      set_gtk_property!(m["adjMaxTP"],:value,maxValTP)
-
-      set_gtk_property!(m["adjMinFre"],:upper,maxValFre)
-      set_gtk_property!(m["adjMinFre"],:value,1)
-      set_gtk_property!(m["adjMaxFre"],:upper,maxValFre)
-      set_gtk_property!(m["adjMaxFre"],:value,maxValFre)
-
-      m.updatingData = false
-
-      showData(C_NULL, m)
+      showAllPatchesChanged(m)
     end
+  end
+
+  function showAllPatchesChanged(m)
+    m.updatingData = true
+    showAllPatches = get_gtk_property(m["cbShowAllPatches"], :active, Bool)
+    patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
+    numPatches = div(size(m.data,3), patchAv)
+
+    maxValTP = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
+    maxValFre = div(maxValTP,2)+1
+
+    set_gtk_property!(m["adjMinTP"],:upper,maxValTP)
+    set_gtk_property!(m["adjMinTP"],:value,1)
+    set_gtk_property!(m["adjMaxTP"],:upper,maxValTP)
+    set_gtk_property!(m["adjMaxTP"],:value,maxValTP)
+
+    set_gtk_property!(m["adjMinFre"],:upper,maxValFre)
+    set_gtk_property!(m["adjMinFre"],:value,1)
+    set_gtk_property!(m["adjMaxFre"],:upper,maxValFre)
+    set_gtk_property!(m["adjMaxFre"],:value,maxValFre)
+    m.updatingData = false
+    showData(C_NULL, m)
   end
 
 
@@ -266,10 +298,12 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
 
     if get_gtk_property(m["cbShowAllPatches"], :active, Bool)
       data = vec( mean( reshape(m.data[:,chan,:,1,:],:, patchAv, numPatches, numSignals), dims=2) )
-      dataBG = vec(mean(reshape(m.dataBG[:,chan,:,:,:],size(m.dataBG,1), patchAv, numPatches, :, numSignals), dims=(2,4)) )
+      if length(m.dataBG) > 0
+        dataBG = vec(mean(reshape(m.dataBG[:,chan,:,:,:],size(m.dataBG,1), patchAv, numPatches, :, numSignals), dims=(2,4)) )
 
-      if length(m.dataBG) > 0 && get_gtk_property(m["cbSubtractBG"], :active, Bool)
-        data[:] .-= dataBG
+        if get_gtk_property(m["cbSubtractBG"], :active, Bool)
+          data[:] .-= dataBG
+        end
       end
     else
       if get_gtk_property(m["cbAbsFrameAverage"], :active, Bool)
@@ -309,9 +343,24 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
 
     maxPoints = 1000
     sp = length(minTP:maxTP) > maxPoints ? round(Int,length(minTP:maxTP) / maxPoints)  : 1
-    p1 = Winston.plot(timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP,1],color=colors[1],linewidth=3)
+
+    steps = minTP:sp:maxTP
+    dataCompressed = zeros(length(steps), size(data,2))
+    if sp > 1
+      for j=1:size(data,2)
+        for l=1:length(steps)
+          st = steps[l]
+          en = min(st+sp,steps[end])
+          dataCompressed[l,j] = median(data[st:en,j])
+        end
+      end
+    else
+      dataCompressed = data[steps,:]
+    end
+
+    p1 = Winston.plot(timePoints[steps],data[minTP:sp:maxTP,1],color=colors[1],linewidth=3)
     for j=2:size(data,2)
-      Winston.plot(p1, timePoints[minTP:sp:maxTP],data[minTP:sp:maxTP,j],color=colors[j],linewidth=3)
+      Winston.plot(p1, timePoints[steps],data[minTP:sp:maxTP,j],color=colors[j],linewidth=3)
     end
     Winston.ylabel("u / V")
     Winston.xlabel("t / ms")
@@ -330,9 +379,23 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
       freqdata = abs.(rfft(data, 1)) / size(data,1)
       spFr = length(minFr:maxFr) > maxPoints ? round(Int,length(minFr:maxFr) / maxPoints)  : 1
 
-      p2 = Winston.semilogy(freq[minFr:spFr:maxFr],freqdata[minFr:spFr:maxFr,1],color=colors[1],linewidth=3)
+      stepsFr = minFr:spFr:maxFr
+      freqDataCompressed = zeros(length(stepsFr), size(freqdata,2))
+      if spFr > 1
+        for j=1:size(freqdata,2)
+          for l=1:length(stepsFr)
+            st = stepsFr[l]
+            en = min(st+spFr,stepsFr[end])
+            freqDataCompressed[l,j] = maximum(freqdata[st:en,j])
+          end
+        end
+      else
+        freqDataCompressed = freqdata[stepsFr,:]
+      end
+
+      p2 = Winston.semilogy(freq[stepsFr],freqDataCompressed[:,1],color=colors[1],linewidth=3)
       for j=2:size(data,2)
-        Winston.plot(p2, freq[minFr:spFr:maxFr], freqdata[minFr:spFr:maxFr,j],color=colors[j],linewidth=3)
+        Winston.plot(p2, freq[stepsFr], freqDataCompressed[:,j],color=colors[j],linewidth=3)
       end
       #Winston.ylabel("u / V")
       Winston.xlabel("f / kHz")
@@ -393,6 +456,15 @@ function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   end
   m.deltaT = deltaT .* 1000 # convert to ms and kHz
   m.fileModus = fileModus
+
+  if !isempty(m.dataBG)
+    if size(m.data)[1:3] != size(m.dataBG)[1:3]
+      @info "Background data does not fit to foreground data! Dropping BG data."
+      @info size(m.data)
+      @info size(m.dataBG)
+      m.dataBG = zeros(Float32,0,0,0,0,0)
+    end
+  end
 
   showAllPatches = get_gtk_property(m["cbShowAllPatches"], :active, Bool) 
   patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)

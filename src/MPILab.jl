@@ -203,6 +203,7 @@ function initLogging(m::MPILab)
   m.logMessagesWidget = LogMessageListWidget()
   pane = m["paneMain"]
   push!(pane, m.logMessagesWidget)
+  set_gtk_property!(m["paneMain"], :position, 550)
 
   # Setup Loggers
   mkpath(logpath)
@@ -756,7 +757,8 @@ function initExperimentStore(m::MPILab)
   signal_connect(r2, "edited") do widget, path_, text
     try
     if hasselection(m.selectionExp)
-      currentIt = selected( m.selectionExp )
+      selectedRows = Gtk.selected_rows(m.selectionExp) # can have multiple selections
+      currentIt = selectedRows[1] #selected( m.selectionExp )
       if splitext(path(m.currentExperiment))[2] == ".mdf"
         @idle_add m.experimentStore[currentIt,2] = string(text)
         Base.GC.gc() # This is important to run all finalizers of MPIFile
