@@ -314,22 +314,18 @@ function showData(widgetptr::Ptr, m::SpectrogramWidget)
 
     timedata, sp = getData(m)
 
-    @info "size sp" size(sp.power)
     maxFr = min(maxFr,size(sp.power,1))
     spdata = sp.power[minFr:maxFr,:]
-
-    @info "deltT" m.deltaT
 
     maxT = m.deltaT*size(m.data,1)*size(m.data,3)/1000
     
     data_ = timedata[patch]
 
-    @info "data_" size(data_)
-
+    Winston.colormap(convert.(RGB{N0f8},cmap("viridis")))
     psp = Winston.imagesc( (0.0, maxT), 
                            ((minFr-1)/size(sp.power,1) / m.deltaT / 2.0, 
                                (maxFr-1)/size(sp.power,1) / m.deltaT / 2.0 ), 
-                          log.(10.0^(-(1+10*logVal)) .+ spdata ) )
+                          log.(10.0^(-(2+10*logVal)) .+ spdata ) )
     patch_ = patch/size(sp.power,2) *  maxT
     Winston.add(psp, Winston.Curve([patch_,patch_], [0,(maxFr-1)/size(sp.power,1) / m.deltaT / 2.0], 
                                    kind="solid", color="white", lw=10) )
