@@ -96,6 +96,7 @@ const colors = [(0/255,73/255,146/255), # UKE blau
 include("LogMessagesWidget.jl")
 include("GtkUtils.jl")
 include("RawDataViewer.jl")
+include("SpectrogramViewer.jl")
 #include("Measurement/MeasurementWidget.jl")
 include("Protocol/ProtocolWidget.jl")
 include("SpectrumViewer.jl")

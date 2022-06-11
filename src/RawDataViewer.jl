@@ -82,12 +82,57 @@ end
 
 function initCallbacks(m_::RawDataWidget)
  let m=m_
-  for sl in ["adjPatch","adjRxChan","adjMinTP","adjMaxTP",
-                   "adjMinFre","adjMaxFre"]
+  for sl in ["adjPatch","adjRxChan"]
     signal_connect(m[sl], "value_changed") do w
       showData(C_NULL, m)
     end
     #signal_connect(showData, m[sl], "value_changed", Nothing, (), false, m )
+  end
+
+  signal_connect(m["adjMinTP"], "value_changed") do w
+    minTP = get_gtk_property(m["adjMinTP"],:value, Int)
+    maxTP = get_gtk_property(m["adjMaxTP"],:value, Int)
+    maxValTP = get_gtk_property(m["adjMaxTP"],:upper, Int)
+    
+    if minTP > maxTP
+      @idle_add set_gtk_property!(m["adjMaxTP"],:value, min(maxValTP,minTP+10))
+    else
+      showData(C_NULL, m)
+    end
+  end
+
+  signal_connect(m["adjMaxTP"], "value_changed") do w
+    minTP = get_gtk_property(m["adjMinTP"],:value, Int)
+    maxTP = get_gtk_property(m["adjMaxTP"],:value, Int)
+    
+    if minTP > maxTP
+      @idle_add set_gtk_property!(m["adjMinTP"],:value, max(1,maxTP-10))
+    else
+      showData(C_NULL, m)
+    end
+  end
+
+  signal_connect(m["adjMinFre"], "value_changed") do w
+    minFre = get_gtk_property(m["adjMinFre"],:value, Int)
+    maxFre = get_gtk_property(m["adjMaxFre"],:value, Int)
+    maxValFre = get_gtk_property(m["adjMaxFre"],:upper, Int)
+    
+    if minFre > maxFre
+      @idle_add set_gtk_property!(m["adjMaxFre"],:value, min(maxValFre,minFre+10))
+    else
+      showData(C_NULL, m)
+    end
+  end
+
+  signal_connect(m["adjMaxFre"], "value_changed") do w
+    minFre = get_gtk_property(m["adjMinFre"],:value, Int)
+    maxFre = get_gtk_property(m["adjMaxFre"],:value, Int)
+    
+    if minFre > maxFre
+      @idle_add set_gtk_property!(m["adjMinFre"],:value, max(1,maxFre-10))
+    else
+      showData(C_NULL, m)
+    end
   end
 
   oldAdjPatchAvValue = 1
@@ -341,7 +386,7 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     timePoints = (0:(size(data,1)-1)).*m.deltaT
     numFreq = floor(Int, size(data,1) ./ 2 .+ 1)
 
-    maxPoints = 1000
+    maxPoints = 5000
     sp = length(minTP:maxTP) > maxPoints ? round(Int,length(minTP:maxTP) / maxPoints)  : 1
 
     steps = minTP:sp:maxTP
@@ -351,16 +396,19 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
         for l=1:length(steps)
           st = steps[l]
           en = min(st+sp,steps[end])
-          dataCompressed[l,j] = median(data[st:en,j])
+          med_ = median(data[st:en,j])
+          max_ = maximum(data[st:en,j])
+          min_ = minimum(data[st:en,j])
+          dataCompressed[l,j] = rand(Bool) ? max_ : min_ #abs(max_ - med_) > abs(med_ - min_) ? max_ : min_
         end
       end
     else
       dataCompressed = data[steps,:]
     end
 
-    p1 = Winston.plot(timePoints[steps],data[minTP:sp:maxTP,1],color=colors[1],linewidth=3)
+    p1 = Winston.plot(timePoints[steps],dataCompressed[:,1],color=colors[1],linewidth=3)
     for j=2:size(data,2)
-      Winston.plot(p1, timePoints[steps],data[minTP:sp:maxTP,j],color=colors[j],linewidth=3)
+      Winston.plot(p1, timePoints[steps],dataCompressed[:,j],color=colors[j],linewidth=3)
     end
     Winston.ylabel("u / V")
     Winston.xlabel("t / ms")
@@ -516,9 +564,17 @@ end
 
 function updateData(m::RawDataWidget, filenames::Vector{<:AbstractString})
   m.filenamesData = filenames
-  @idle_add set_gtk_property!(m["adjFrame"],:upper,1)
-  @idle_add set_gtk_property!(m["adjFrame"],:value,1)
-  loadData(C_NULL, m)
+  @idle_add begin
+    m.updatingData = true
+    set_gtk_property!(m["adjFrame"],:upper,1)
+    set_gtk_property!(m["adjFrame"],:value,1)
+    set_gtk_property!(m["adjPatch"],:upper,1)
+    set_gtk_property!(m["adjPatch"],:value,1)
+    set_gtk_property!(m["adjPatchAv"],:upper,1)
+    set_gtk_property!(m["adjPatchAv"],:value,1)
+    m.updatingData = false
+    loadData(C_NULL, m)
+  end
   return nothing
 end
 

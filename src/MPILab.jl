@@ -200,7 +200,7 @@ function initLogging(m::MPILab)
   m.logMessagesWidget = LogMessageListWidget()
   pane = m["paneMain"]
   push!(pane, m.logMessagesWidget)
-  set_gtk_property!(m["paneMain"], :position, 550)
+  set_gtk_property!(pane, :position, 550)
 
   # Setup Loggers
   mkpath(logpath)
@@ -702,6 +702,23 @@ function initExperimentStore(m::MPILab)
 
         updateData(m.rawDataWidget, paths)
         G_.current_page(m["nbView"], 0)
+      end
+    end
+  end
+
+  signal_connect(m["tbSpectrogramViewer"], "clicked") do widget
+    showSpectrogram()
+  end
+
+  function showSpectrogram()
+    if hasselection(m.selectionExp)
+      @idle_add begin
+        selectedRows = Gtk.selected_rows(m.selectionExp)
+        expNums = [m.experimentStore[selectedRows[j],1] for j=1:length(selectedRows)]
+        exps = [getExperiment(m.currentStudy, expNums[j]) for j=1:length(selectedRows)]
+        paths = path.(exps)
+
+        SpectrogramViewer(paths[1])
       end
     end
   end

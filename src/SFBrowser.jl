@@ -148,6 +148,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   btnSFUpdate = Button("Update")
   btnSFConvert = Button("Convert")
   btnOpenCalibrationFolder = Button("Open File Browser")
+  btnSpectrogram = Button("Spectrogram")
 
   if smallWidth
     grid = Grid()
@@ -169,6 +170,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     grid[1:2,4] = cbOpenInWindow
     grid[3:4,4] = btnSFConvert
     grid[3:4,5] = btnOpenCalibrationFolder
+    grid[1:2,5] = btnSpectrogram
   else
     hbox = Box(:h)
     push!(vbox, hbox)
@@ -221,6 +223,21 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
         openFileBrowser(calibdir(m.datasetStore))
     end
   end
+
+  signal_connect(btnSpectrogram, "clicked") do widget
+    if hasselection(selection)
+      currentIt = selected(selection)
+
+      sffilename = TreeModel(tmSorted)[currentIt,10]
+
+      SpectrogramViewer(sffilename)
+
+    end
+  end
+
+
+
+
 
   function updateShownSF( widget )
     G = tryparse(Float64,get_gtk_property(entGradient,:text,String))
@@ -409,21 +426,6 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
   end
 end
 
-function ()
-
-
-
-  grid[1,2] = Label("DF Str.")
-  grid[2,2] = entDF
-  grid[3,1] = Label("Size")
-  grid[4,1] = entSize
-  grid[3,2] = Label("Tracer")
-  grid[4,2] = entTracer
-  grid[1:2,3] = cbOpenMeas
-  grid[3:4,3] = btnSFUpdate
-  grid[1:2,4] = cbOpenInWindow
-
-end
 
 
 
