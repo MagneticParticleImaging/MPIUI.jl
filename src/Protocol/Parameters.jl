@@ -5,17 +5,23 @@ struct GenericParameterType <: RegularParameterType end
 struct SequenceParameterType <: SpecialParameterType end
 struct PositionParameterType <: SpecialParameterType end
 struct BoolParameterType <: RegularParameterType end
+struct CoordinateParameterType <: SpecialParameterType end
 function parameterType(field::Symbol, value)
   if field == :sequence
     return SequenceParameterType()
   elseif field == :positions
     return PositionParameterType()
+  elseif field == :fgPos
+    return CoordinateParameterType()
   else
     return GenericParameterType()
   end
 end
 function parameterType(::Symbol, value::Bool)
     return BoolParameterType()
+end
+function parameterType(::Symbol, value::ScannerCoords)
+  return CoordinateParameterType()
 end
 
 mutable struct GenericEntry{T} <: Gtk.GtkEntry
@@ -174,3 +180,4 @@ end
 
 include("SequenceParameter.jl")
 include("PositionsParameter.jl")
+include("CoordinateParameter.jl")
