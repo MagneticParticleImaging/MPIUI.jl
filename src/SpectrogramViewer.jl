@@ -131,8 +131,7 @@ function initCallbacks(m_::SpectrogramWidget)
     end
   end
 
-  signal_connect(m["adjGrouping"], "value_changed") do w
-    
+  function groupingChanged()
     if !m.updatingData
       @idle_add begin
         m.updatingData = true
@@ -163,6 +162,40 @@ function initCallbacks(m_::SpectrogramWidget)
     end
   end
 
+  signal_connect(m["adjGrouping"], "value_changed") do w
+    groupingChanged()
+  end
+
+  oldAdjPatchAvValue = 1
+  signal_connect(m["adjPatchAv"], "value_changed") do w
+    if !m.updatingData
+      m.updatingData = true
+      patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
+      numPatches = size(m.data,3)
+      if mod(numPatches, patchAv) != 0
+        if 1 < patchAv < numPatches
+          while mod(numPatches, patchAv) != 0
+            patchAv += sign(patchAv-oldAdjPatchAvValue)*1
+          end
+        elseif patchAv < 1
+          patchAv = 1
+        elseif patchAv > numPatches
+          patchAv = numPatches
+        end
+        oldAdjPatchAvValue = patchAv
+        
+        @idle_add begin
+          set_gtk_property!(m["adjPatchAv"], :value, patchAv)
+          groupingChanged()
+        end
+      else
+        @idle_add groupingChanged()
+      end
+      oldAdjPatchAvValue = patchAv
+      m.updatingData = false
+    end
+  end
+
   for cb in ["cbShowBG", "cbSubtractBG", "cbShowFreq"]
     signal_connect(m[cb], :toggled) do w
       showData(C_NULL, m)
@@ -171,11 +204,11 @@ function initCallbacks(m_::SpectrogramWidget)
   end
 
 
-  #=for cb in ["cbCorrTF","cbSLCorr","cbAbsFrameAverage"]
+  for cb in ["cbShowAllFrames"] #"cbCorrTF","cbSLCorr","cbAbsFrameAverage"
     signal_connect(m[cb], :toggled) do w
       loadData(C_NULL, m)
     end
-  end=#
+  end
 
   for cb in ["adjFrame"]
     signal_connect(m[cb], "value_changed") do w
@@ -221,7 +254,11 @@ function loadData(widgetptr::Ptr, m::SpectrogramWidget)
 
         @idle_add set_gtk_property!(m["adjFrame"], :upper, numFGFrames)
 
-        frame = max( get_gtk_property(m["adjFrame"], :value, Int64), 1)
+        if get_gtk_property(m["cbShowAllFrames"], :active, Bool)
+          frame = 1:numFGFrames
+        else
+          frame = max( get_gtk_property(m["adjFrame"], :value, Int64), 1)
+        end
 
         timePoints = rxTimePoints(f)
         deltaT = timePoints[2] - timePoints[1]
@@ -256,20 +293,29 @@ end
 function getData(m::SpectrogramWidget)
   chan = max(get_gtk_property(m["adjRxChan"], :value, Int64),1)
   group = get_gtk_property(m["adjGrouping"],:value,Int64)
+  patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
+  numPatches = div(size(m.data,3), patchAv)
   showBG = get_gtk_property(m["cbShowBG"], :active, Bool)
-  numPatches = size(m.data,3)
+  allFrames = get_gtk_property(m["cbShowAllFrames"],  :active, Bool)
 
-  data_ = vec( mean( reshape(m.data[:,chan,:,1,:],:, 1, numPatches, 1), dims=2) )
+@info size(m.data)
+
+  data_ = mean( reshape(m.data[:,chan,:,:,:], 
+               size(m.data,1), patchAv, numPatches, size(m.data,4), : ), dims=(2,))
   if length(m.dataBG) > 0
-    dataBG_ = vec(mean(reshape(m.dataBG[:,chan,:,:,:],size(m.dataBG,1), 1, numPatches, :, 1), dims=(2,4)) )
+    dataBG_ = mean( reshape(m.dataBG[:,chan,:,:,:],
+              size(m.dataBG,1), patchAv, numPatches, size(m.dataBG,4), : ), dims=(2,4))
 
     if get_gtk_property(m["cbSubtractBG"], :active, Bool)
-      data_[:] .-= dataBG_
+      data_ .-= dataBG_
     end
     if showBG
-      data_[:] .= dataBG_
+      data_ .= dataBG_
     end
+    dataBG_ = vec(dataBG_)
   end
+
+  data_ = vec(data_)
  
   timedata = arraysplit(data_, size(m.data,1)*group, div(size(m.data,1)*group,2))
   sp = DSP.spectrogram(vec(data_), size(m.data,1)*group)
@@ -289,9 +335,9 @@ function showData(widgetptr::Ptr, m::SpectrogramWidget)
     maxFr = max(get_gtk_property(m["adjMaxFre"], :value, Int64),1)
     group = get_gtk_property(m["adjGrouping"],:value,Int64)
     logVal = get_gtk_property(m["adjLogPlot"],:value, Float64)
-    numPatches = size(m.data,3)
     numSignals = size(m.data,5)
     showFD = get_gtk_property(m["cbShowFreq"], :active, Bool)
+    numShownFrames = size(m.data,4)
 
     autoRangingTD = true
     autoRangingFD = true
@@ -317,7 +363,7 @@ function showData(widgetptr::Ptr, m::SpectrogramWidget)
     maxFr = min(maxFr,size(sp.power,1))
     spdata = sp.power[minFr:maxFr,:]
 
-    maxT = m.deltaT*size(m.data,1)*size(m.data,3)/1000
+    maxT = m.deltaT*size(m.data,1)*size(m.data,3)*numShownFrames/1000
     
     data_ = timedata[patch]
 
