@@ -312,7 +312,7 @@ function handleEvent(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtoco
       #if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
         seq = pw.protocol.params.sequence
         deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
-        updateData(pw.rawDataWidget, frame, deltaT)
+        #updateData(pw.rawDataWidget, frame, deltaT)
       #end
     end
     # Ask for next progress
@@ -401,4 +401,47 @@ function handleEvent(pw::ProtocolWidget, protocol::ContinousMeasurementProtocol,
   progressQuery = ProgressQueryEvent()
   put!(channel, progressQuery)
   return false
+end
+
+### RobotMPIMeasurementProtocol ###
+function handleNewProgress(pw::ProtocolWidget, protocol::RobotMPIMeasurementProtocol, event::ProgressEvent)
+  @info "Asking for new frame $(event.done)"
+  dataQuery = DataQueryEvent("FRAME:$(event.done)")
+  put!(pw.biChannel, dataQuery)
+  return false
+end
+
+function handleEvent(pw::ProtocolWidget, protocol::RobotMPIMeasurementProtocol, event::DataAnswerEvent)
+  channel = pw.biChannel
+  # We were waiting on the last buffer request
+  if startswith(event.query.message, "FRAME") && pw.protocolState == PS_RUNNING
+    frame = event.data
+    if !isnothing(frame)
+      @info "Received frame"
+      #infoMessage(m, "$(m.progress.unit) $(m.progress.done) / $(m.progress.total)", "green")
+      #if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
+      seq = pw.protocol.params.sequence
+      deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
+      updateData(pw.rawDataWidget, frame, deltaT)
+      #end
+    end
+    # Ask for next progress
+    progressQuery = ProgressQueryEvent()
+    put!(channel, progressQuery)
+  end
+  return false
+end
+
+function handleFinished(pw::ProtocolWidget, protocol::RobotMPIMeasurementProtocol)
+  request = DatasetStoreStorageRequestEvent(pw.mdfstore, getStorageParams(pw))
+  put!(pw.biChannel, request)
+  return false
+end
+
+function handleEvent(pw::ProtocolWidget, protocol::RobotMPIMeasurementProtocol, event::StorageSuccessEvent)
+  @info "Received storage success event"
+  put!(pw.biChannel, FinishedAckEvent())
+  updateData(pw.rawDataWidget, event.filename)
+  updateExperimentStore(mpilab[], mpilab[].currentStudy)
+  return true
 end

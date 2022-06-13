@@ -334,6 +334,12 @@ function addProtocolParameter(pw::ProtocolWidget, ::SequenceParameterType, field
   push!(pw["boxProtocolParameter", BoxLeaf], seq)
 end
 
+function addProtocolParameter(pw::ProtocolWidget, ::CoordinateParameterType, field, value, tooltip)
+  coord = CoordinateParameter(field, value, tooltip)
+  updateCoordinate(coord, value)
+  push!(pw["boxProtocolParameter", BoxLeaf], coord)
+end
+
 function addProtocolParameter(pw::ProtocolWidget, ::PositionParameterType, field, value, tooltip)
   pos = PositionParameter(field, value)
   updatePositions(pos, value)
