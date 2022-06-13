@@ -165,7 +165,7 @@ function initCallbacks(m_::RawDataWidget)
     end
   end
 
-  for cb in ["cbShowBG", "cbSubtractBG", "cbShowFreq"]
+  for cb in ["cbShowBG", "cbSubtractBG", "cbShowFreq", "cbReversePlots"]
     signal_connect(m[cb], :toggled) do w
       showData(C_NULL, m)
     end
@@ -321,6 +321,7 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     numPatches = div(size(m.data,3), patchAv)
     numSignals = size(m.data,5)
     showFD = get_gtk_property(m["cbShowFreq"], :active, Bool)
+    reversePlots = get_gtk_property(m["cbReversePlots"], :active, Bool)
 
     autoRangingTD = true
     autoRangingFD = true
@@ -377,6 +378,9 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     end
 
     data = reshape(data, :, numSignals)
+    if reversePlots
+      reverse!(data, dims=2)
+    end
     if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
       dataBG = reshape(dataBG, :, numSignals)
     end
@@ -419,7 +423,7 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
     if size(data,2) > 1 && length(m.labels) == size(data,2)
       #legend = Legend(.1, 0.9, legendEntries, halign="right") 
       #add(p1, legend)
-      legend(m.labels)
+      legend(reversePlots ? reverse(m.labels) : m.labels)
     end
 
     if showFD
