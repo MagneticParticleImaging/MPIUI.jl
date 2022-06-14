@@ -11,7 +11,6 @@ mutable struct SpectrogramWidget <: Gtk.GtkBox
   cSpect::Canvas
   deltaT::Float64
   filenamesData::Vector{String}
-  loadingData::Bool
   updatingData::Bool
   fileModus::Bool
 end
@@ -42,7 +41,7 @@ function SpectrogramWidget(filenameConfig=nothing)
   m = SpectrogramWidget( mainBox.handle, b,
                   zeros(Float32,0,0,0,0,0), zeros(Float32,0,0,0,0,0),
                   [""], Canvas(), Canvas(), Canvas(),
-                  1.0, [""], false, false, false)
+                  1.0, [""], false, false)
   Gtk.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
@@ -228,8 +227,8 @@ function initCallbacks(m_::SpectrogramWidget)
 end
 
 @guarded function loadData(widgetptr::Ptr, m::SpectrogramWidget)
-  if !m.loadingData
-    m.loadingData = true
+  if !m.updatingData
+    m.updatingData = true
     @info "Loading Data ..."
     deltaT = 1.0
 
@@ -283,20 +282,18 @@ end
 
       updateData(m, dataFG, deltaT, true)
     end
-    m.loadingData = false
+    m.updatingData = false
   end
   return nothing
 end
 
-function getData(m::SpectrogramWidget)
+@guarded function getData(m::SpectrogramWidget)
   chan = max(get_gtk_property(m["adjRxChan"], :value, Int64),1)
   group = get_gtk_property(m["adjGrouping"],:value,Int64)
   patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
   numPatches = div(size(m.data,3), patchAv)
   showBG = get_gtk_property(m["cbShowBG"], :active, Bool)
   allFrames = get_gtk_property(m["cbShowAllFrames"],  :active, Bool)
-
-@info size(m.data)
 
   data_ = mean( reshape(m.data[:,chan,:,:,:], 
                size(m.data,1), patchAv, numPatches, size(m.data,4), : ), dims=(2,))
@@ -321,122 +318,12 @@ function getData(m::SpectrogramWidget)
   return timedata, sp
 end
 
-
-@guarded function showData(widgetptr::Ptr, m::SpectrogramWidget)
-
-  if length(m.data) > 0 && !m.updatingData
-    chan = max(get_gtk_property(m["adjRxChan"], :value, Int64),1)
-    patch = max(get_gtk_property(m["adjPatch"], :value, Int64),1)
-    minTP = max(get_gtk_property(m["adjMinTP"], :value, Int64),1)
-    maxTP = max(get_gtk_property(m["adjMaxTP"], :value, Int64),1)
-    minFr = max(get_gtk_property(m["adjMinFre"], :value, Int64),1)
-    maxFr = max(get_gtk_property(m["adjMaxFre"], :value, Int64),1)
-    group = get_gtk_property(m["adjGrouping"],:value,Int64)
-    logVal = get_gtk_property(m["adjLogPlot"],:value, Float64)
-    numSignals = size(m.data,5)
-    showFD = get_gtk_property(m["cbShowFreq"], :active, Bool)
-    numShownFrames = size(m.data,4)
-
-    autoRangingTD = true
-    autoRangingFD = true
-    minValTD_ = tryparse(Float64,get_gtk_property( m["entTDMinVal"] ,:text,String))
-    maxValTD_ = tryparse(Float64,get_gtk_property( m["entTDMaxVal"] ,:text,String))
-    minValFD_ = tryparse(Float64,get_gtk_property( m["entFDMinVal"] ,:text,String))
-    maxValFD_ = tryparse(Float64,get_gtk_property( m["entFDMaxVal"] ,:text,String))
-
-    if minValTD_ != nothing && maxValTD_ != nothing
-      minValTD = minValTD_
-      maxValTD = maxValTD_
-      autoRangingTD = false
-    end
-
-    if minValFD_ != nothing && maxValFD_ != nothing
-      minValFD = minValFD_
-      maxValFD = maxValFD_
-      autoRangingFD = false
-    end
-
-    timedata, sp = getData(m)
-
-    maxFr = min(maxFr,size(sp.power,1))
-    spdata = sp.power[minFr:maxFr,:]
-
-    maxT = m.deltaT*size(m.data,1)*size(m.data,3)*numShownFrames/1000
-    
-    data_ = timedata[patch]
-
-    Winston.colormap(convert.(RGB{N0f8},cmap("viridis")))
-    psp = Winston.imagesc( (0.0, maxT), 
-                           ((minFr-1)/size(sp.power,1) / m.deltaT / 2.0, 
-                               (maxFr-1)/size(sp.power,1) / m.deltaT / 2.0 ), 
-                          log.(10.0^(-(2+10*logVal)) .+ spdata ) )
-    patch_ = patch/size(sp.power,2) *  maxT
-    Winston.add(psp, Winston.Curve([patch_,patch_], [0,(maxFr-1)/size(sp.power,1) / m.deltaT / 2.0], 
-                                   kind="solid", color="white", lw=10) )
-
-    Winston.ylabel("freq / kHz")
-    Winston.xlabel("t / s")
-
-    @idle_add display(m.cSpect, psp)
-
-    timePoints = (0:(length(data_)-1)).*m.deltaT
-   
-    maxPoints = 5000
-    sp_ = length(minTP:maxTP) > maxPoints ? round(Int,length(minTP:maxTP) / maxPoints)  : 1
-    steps = minTP:sp_:maxTP
-  
-#    p1 = Winston.plot(timePoints[steps],data_[steps,:],color=colors[1],linewidth=3)   
-    p1 = Winston.plot(timePoints[steps], data_[steps], color=colors[1],linewidth=3)
-
-    Winston.ylabel("u / V")
-    Winston.xlabel("t / ms")
-    if !autoRangingTD
-      Winston.ylim(minValTD, maxValTD)
-    end
-
-
-    if showFD
-      numFreq = size(sp.power,1)
-      freq = collect(0:(numFreq-1))./(numFreq-1)./m.deltaT./2.0
-      freqdata = sp.power[:,:]
-      spFr = length(minFr:maxFr) > maxPoints ? round(Int,length(minFr:maxFr) / maxPoints)  : 1
-
-      stepsFr = minFr:spFr:maxFr
-
-      p2 = Winston.semilogy(freq[stepsFr],freqdata[stepsFr,patch],color=colors[1],linewidth=3)
-
-      #Winston.ylabel("u / V")
-      Winston.xlabel("f / kHz")
-      if !autoRangingFD
-          Winston.ylim(minValFD, maxValFD)
-      end
-    else
-      @guarded Gtk.draw(m.cFD) do widget
-        
-        ctx = getgc(m.cFD)
-        h = height(ctx)
-        w = width(ctx)
-        Cairo.set_source_rgb(ctx,1.0,1.0,1.0)
-        Cairo.rectangle(ctx, 0,0,w,h)
-        Cairo.paint(ctx)
-        Cairo.stroke(ctx)
-      end
-    end
-
-
-    @idle_add display(m.cTD, p1)
-    if showFD
-      @idle_add display(m.cFD, p2)
-    end
-
-  end
-  return nothing
-end
-
+################
 
 @guarded function updateData(m::SpectrogramWidget, data::Array, deltaT=1.0, fileModus=false)
   maxValTPOld = get_gtk_property(m["adjMinTP"],:upper, Int64)
   maxValFreOld = get_gtk_property(m["adjMinFre"],:upper, Int64)
+  allFrames = get_gtk_property(m["cbShowAllFrames"],  :active, Bool)
 
   if ndims(data) == 5
     m.data = data
@@ -459,7 +346,7 @@ end
   maxValTP = length(timedata[1])
   maxValFre = size(sp.power,1)
   numPatches = size(sp.power,2)
-  maxGrouping = div(numPatches,2)
+  maxGrouping = allFrames ? size(m.data,3)*size(m.data,4) : size(m.data,3)
 
   @idle_add begin
     m.updatingData = true
@@ -521,3 +408,131 @@ end
   updateData(m, [filename])
   return nothing
 end
+
+################
+
+@guarded function showData(widgetptr::Ptr, m::SpectrogramWidget)
+  if length(m.data) > 0 && !m.updatingData
+    chan = max(get_gtk_property(m["adjRxChan"], :value, Int64),1)
+    patch = max(get_gtk_property(m["adjPatch"], :value, Int64),1)
+    minTP = max(get_gtk_property(m["adjMinTP"], :value, Int64),1)
+    maxTP = max(get_gtk_property(m["adjMaxTP"], :value, Int64),1)
+    minFr = max(get_gtk_property(m["adjMinFre"], :value, Int64),1)
+    maxFr = max(get_gtk_property(m["adjMaxFre"], :value, Int64),1)
+    group = get_gtk_property(m["adjGrouping"],:value,Int64)
+    logVal = get_gtk_property(m["adjLogPlot"],:value, Float64)
+    numSignals = size(m.data,5)
+    showFD = get_gtk_property(m["cbShowFreq"], :active, Bool)
+    numShownFrames = size(m.data,4)
+
+    autoRangingTD = true
+    autoRangingFD = true
+    minValTD_ = tryparse(Float64,get_gtk_property( m["entTDMinVal"] ,:text,String))
+    maxValTD_ = tryparse(Float64,get_gtk_property( m["entTDMaxVal"] ,:text,String))
+    minValFD_ = tryparse(Float64,get_gtk_property( m["entFDMinVal"] ,:text,String))
+    maxValFD_ = tryparse(Float64,get_gtk_property( m["entFDMaxVal"] ,:text,String))
+
+    if minValTD_ != nothing && maxValTD_ != nothing
+      minValTD = minValTD_
+      maxValTD = maxValTD_
+      autoRangingTD = false
+    end
+
+    if minValFD_ != nothing && maxValFD_ != nothing
+      minValFD = minValFD_
+      maxValFD = maxValFD_
+      autoRangingFD = false
+    end
+
+    timedata, sp = getData(m)
+    data_ = timedata[patch]
+
+    maxFr = min(maxFr,size(sp.power,1))
+    maxTP = min(maxTP,size(data_,1))
+    minFr = min(minFr,size(sp.power,1))
+    minTP = min(minTP,size(data_,1))
+
+    spdata = sp.power[minFr:maxFr,:]
+    maxT = m.deltaT*size(m.data,1)*size(m.data,3)*numShownFrames/1000
+    
+    if size(spdata,1) > 2^15 # Magic number of Winston image display
+      sliceFr = 1:ceil(Int,size(spdata,1)/2^15):size(spdata,1)
+    else
+      sliceFr = Colon()
+    end
+
+    if size(spdata,2) > 2^15 # Magic number of Winston image display
+      sliceTime = 1:ceil(Int,size(spdata,2)/2^15):size(spdata,2)
+    else
+      sliceTime = Colon()
+    end
+
+    Winston.colormap(convert.(RGB{N0f8},cmap("viridis")))
+    psp = Winston.imagesc( (0.0, maxT), 
+                           ((minFr-1)/size(sp.power,1) / m.deltaT / 2.0, 
+                               (maxFr-1)/size(sp.power,1) / m.deltaT / 2.0 ), 
+                          log.(10.0^(-(2+10*logVal)) .+ spdata[sliceFr, sliceTime] ) )
+
+    patch_ = patch/size(sp.power,2) *  maxT
+    Winston.add(psp, Winston.Curve([patch_,patch_], [0,(maxFr-1)/size(sp.power,1) / m.deltaT / 2.0], 
+                                   kind="solid", color="white", lw=10) )
+
+    Winston.ylabel("freq / kHz")
+    Winston.xlabel("t / s")
+
+    @idle_add display(m.cSpect, psp)
+
+    timePoints = (0:(length(data_)-1)).*m.deltaT
+   
+    maxPoints = 5000
+    sp_ = length(minTP:maxTP) > maxPoints ? round(Int,length(minTP:maxTP) / maxPoints)  : 1
+    steps = minTP:sp_:maxTP
+   
+    p1 = Winston.plot(timePoints[steps], data_[steps], color=colors[1],linewidth=3)
+
+    Winston.ylabel("u / V")
+    Winston.xlabel("t / ms")
+    if !autoRangingTD
+      Winston.ylim(minValTD, maxValTD)
+    end
+
+
+    if showFD
+      numFreq = size(sp.power,1)
+      freq = collect(0:(numFreq-1))./(numFreq-1)./m.deltaT./2.0
+      freqdata = sp.power[:,:]
+      spFr = length(minFr:maxFr) > maxPoints ? round(Int,length(minFr:maxFr) / maxPoints)  : 1
+
+      stepsFr = minFr:spFr:maxFr
+
+      p2 = Winston.semilogy(freq[stepsFr],freqdata[stepsFr,patch],color=colors[1],linewidth=3)
+
+      #Winston.ylabel("u / V")
+      Winston.xlabel("f / kHz")
+      if !autoRangingFD
+          Winston.ylim(minValFD, maxValFD)
+      end
+    else
+      @guarded Gtk.draw(m.cFD) do widget
+        
+        ctx = getgc(m.cFD)
+        h = height(ctx)
+        w = width(ctx)
+        Cairo.set_source_rgb(ctx,1.0,1.0,1.0)
+        Cairo.rectangle(ctx, 0,0,w,h)
+        Cairo.paint(ctx)
+        Cairo.stroke(ctx)
+      end
+    end
+
+
+    @idle_add display(m.cTD, p1)
+    if showFD
+      @idle_add display(m.cFD, p2)
+    end
+
+  end
+  return nothing
+end
+
+
