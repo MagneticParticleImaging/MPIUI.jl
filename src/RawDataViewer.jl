@@ -178,7 +178,7 @@ function initCallbacks(m_::RawDataWidget)
     end
   end
 
-  function showAllPatchesChanged(m)
+  @guarded function showAllPatchesChanged(m)
     m.updatingData = true
     showAllPatches = get_gtk_property(m["cbShowAllPatches"], :active, Bool)
     patchAv = max(get_gtk_property(m["adjPatchAv"], :value, Int64),1)
@@ -246,7 +246,7 @@ end
 
 
 
-function loadData(widgetptr::Ptr, m::RawDataWidget)
+@guarded function loadData(widgetptr::Ptr, m::RawDataWidget)
   if !m.loadingData
     m.loadingData = true
     @info "Loading Data ..."
@@ -308,7 +308,7 @@ function loadData(widgetptr::Ptr, m::RawDataWidget)
 end
 
 
-function showData(widgetptr::Ptr, m::RawDataWidget)
+@guarded function showData(widgetptr::Ptr, m::RawDataWidget)
 
   if length(m.data) > 0 && !m.updatingData
     chan = max(get_gtk_property(m["adjRxChan"], :value, Int64),1)
@@ -497,7 +497,7 @@ function showData(widgetptr::Ptr, m::RawDataWidget)
 end
 
 
-function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
+@guarded function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   maxValTPOld = get_gtk_property(m["adjMinTP"],:upper, Int64)
   maxValFreOld = get_gtk_property(m["adjMinFre"],:upper, Int64)
 
@@ -566,7 +566,7 @@ function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   end
 end
 
-function updateData(m::RawDataWidget, filenames::Vector{<:AbstractString})
+@guarded function updateData(m::RawDataWidget, filenames::Vector{<:AbstractString})
   m.filenamesData = filenames
   @idle_add begin
     m.updatingData = true
@@ -582,7 +582,7 @@ function updateData(m::RawDataWidget, filenames::Vector{<:AbstractString})
   return nothing
 end
 
-function updateData(m::RawDataWidget, filename::String)
+@guarded function updateData(m::RawDataWidget, filename::String)
   updateData(m, [filename])
   return nothing
 end

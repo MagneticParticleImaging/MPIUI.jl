@@ -131,7 +131,7 @@ function initCallbacks(m_::SpectrogramWidget)
     end
   end
 
-  function groupingChanged()
+  @guarded function groupingChanged()
     if !m.updatingData
       @idle_add begin
         m.updatingData = true
@@ -227,9 +227,7 @@ function initCallbacks(m_::SpectrogramWidget)
  end
 end
 
-
-
-function loadData(widgetptr::Ptr, m::SpectrogramWidget)
+@guarded function loadData(widgetptr::Ptr, m::SpectrogramWidget)
   if !m.loadingData
     m.loadingData = true
     @info "Loading Data ..."
@@ -324,7 +322,7 @@ function getData(m::SpectrogramWidget)
 end
 
 
-function showData(widgetptr::Ptr, m::SpectrogramWidget)
+@guarded function showData(widgetptr::Ptr, m::SpectrogramWidget)
 
   if length(m.data) > 0 && !m.updatingData
     chan = max(get_gtk_property(m["adjRxChan"], :value, Int64),1)
@@ -436,7 +434,7 @@ function showData(widgetptr::Ptr, m::SpectrogramWidget)
 end
 
 
-function updateData(m::SpectrogramWidget, data::Array, deltaT=1.0, fileModus=false)
+@guarded function updateData(m::SpectrogramWidget, data::Array, deltaT=1.0, fileModus=false)
   maxValTPOld = get_gtk_property(m["adjMinTP"],:upper, Int64)
   maxValFreOld = get_gtk_property(m["adjMinFre"],:upper, Int64)
 
@@ -505,7 +503,7 @@ function updateData(m::SpectrogramWidget, data::Array, deltaT=1.0, fileModus=fal
   end
 end
 
-function updateData(m::SpectrogramWidget, filenames::Vector{<:AbstractString})
+@guarded function updateData(m::SpectrogramWidget, filenames::Vector{<:AbstractString})
   m.filenamesData = filenames
   @idle_add begin
     m.updatingData = true
@@ -519,7 +517,7 @@ function updateData(m::SpectrogramWidget, filenames::Vector{<:AbstractString})
   return nothing
 end
 
-function updateData(m::SpectrogramWidget, filename::String)
+@guarded function updateData(m::SpectrogramWidget, filename::String)
   updateData(m, [filename])
   return nothing
 end
