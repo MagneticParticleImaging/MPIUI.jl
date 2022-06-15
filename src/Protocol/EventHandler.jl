@@ -89,11 +89,13 @@ function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::IllegaleStat
 end
 
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::ExceptionEvent)
-  @error "Protocol exception"
   currExceptions = current_exceptions(protocol.executeTask)
-  for stack in currExceptions
-    showerror(stdout, stack[:exception], stack[:backtrace])
+  @error "Protocol exception" exception = (currExceptions[end][:exception], stacktrace(currExceptions[end][:backtrace]))
+  for i in 1:length(currExceptions) - 1
+    stack = currExceptions[i]
+    @error stack[:exception] trace = stacktrace(stack[:backtrace])
   end
+  showError(currExceptions[end][:exception])
   pw.protocolState = PS_FAILED
   return true
 end
