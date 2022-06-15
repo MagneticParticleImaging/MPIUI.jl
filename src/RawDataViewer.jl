@@ -17,6 +17,8 @@ mutable struct RawDataWidget <: Gtk.GtkBox
   harmViewAdj::Vector{AdjustmentLeaf}
   harmViewCanvas::Vector{Canvas}
   harmBuff::Vector{Vector{Float32}}
+  rangeTD::NTuple{2,Float64}
+  rangeFD::NTuple{2,Float64}
 end
 
 getindex(m::RawDataWidget, w::AbstractString) = G_.object(m.builder, w)
@@ -33,7 +35,8 @@ function RawDataWidget(filenameConfig=nothing)
                   [""], Canvas(), Canvas(),
                   1.0, [""], false, false, false,
                   G_.object(b,"winHarmonicViewer"),
-                  AdjustmentLeaf[], Canvas[], Vector{Vector{Float32}}())
+                  AdjustmentLeaf[], Canvas[], Vector{Vector{Float32}}(),
+                  (0.0,1.0), (0.0,1.0))
   Gtk.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
@@ -63,7 +66,7 @@ function initHarmView(m::RawDataWidget)
 
   for l=1:5
     push!(m.harmViewAdj, m["adjHarm$l"] )
-    @idle_add set_gtk_property!(m["adjHarm$l"],:value,l+1)
+    @idle_add_guarded set_gtk_property!(m["adjHarm$l"],:value,l+1)
     c = Canvas()
 
     push!(m["boxHarmView"],c)
@@ -95,7 +98,7 @@ function initCallbacks(m_::RawDataWidget)
     maxValTP = get_gtk_property(m["adjMaxTP"],:upper, Int)
     
     if minTP > maxTP
-      @idle_add set_gtk_property!(m["adjMaxTP"],:value, min(maxValTP,minTP+10))
+      @idle_add_guarded set_gtk_property!(m["adjMaxTP"],:value, min(maxValTP,minTP+10))
     else
       showData(C_NULL, m)
     end
@@ -106,7 +109,7 @@ function initCallbacks(m_::RawDataWidget)
     maxTP = get_gtk_property(m["adjMaxTP"],:value, Int)
     
     if minTP > maxTP
-      @idle_add set_gtk_property!(m["adjMinTP"],:value, max(1,maxTP-10))
+      @idle_add_guarded set_gtk_property!(m["adjMinTP"],:value, max(1,maxTP-10))
     else
       showData(C_NULL, m)
     end
@@ -118,7 +121,7 @@ function initCallbacks(m_::RawDataWidget)
     maxValFre = get_gtk_property(m["adjMaxFre"],:upper, Int)
     
     if minFre > maxFre
-      @idle_add set_gtk_property!(m["adjMaxFre"],:value, min(maxValFre,minFre+10))
+      @idle_add_guarded set_gtk_property!(m["adjMaxFre"],:value, min(maxValFre,minFre+10))
     else
       showData(C_NULL, m)
     end
@@ -129,7 +132,7 @@ function initCallbacks(m_::RawDataWidget)
     maxFre = get_gtk_property(m["adjMaxFre"],:value, Int)
     
     if minFre > maxFre
-      @idle_add set_gtk_property!(m["adjMinFre"],:value, max(1,maxFre-10))
+      @idle_add_guarded set_gtk_property!(m["adjMinFre"],:value, max(1,maxFre-10))
     else
       showData(C_NULL, m)
     end
@@ -153,12 +156,12 @@ function initCallbacks(m_::RawDataWidget)
         end
         oldAdjPatchAvValue = patchAv
         
-        @idle_add begin
+        @idle_add_guarded begin
           set_gtk_property!(m["adjPatchAv"], :value, patchAv)
           showAllPatchesChanged(m)
         end
       else
-        @idle_add showAllPatchesChanged(m)
+        @idle_add_guarded showAllPatchesChanged(m)
       end
       oldAdjPatchAvValue = patchAv
       m.updatingData = false
@@ -173,7 +176,7 @@ function initCallbacks(m_::RawDataWidget)
   end
 
   signal_connect(m["cbShowAllPatches"], :toggled) do w
-    @idle_add begin
+    @idle_add_guarded begin
       showAllPatchesChanged(m)
     end
   end
@@ -215,7 +218,7 @@ function initCallbacks(m_::RawDataWidget)
 
   signal_connect(m["cbHarmonicViewer"], :toggled) do w
       harmViewOn = get_gtk_property(m["cbHarmonicViewer"], :active, Bool)
-      @idle_add begin
+      @idle_add_guarded begin
         if harmViewOn
           clearHarmBuff(m)
           set_gtk_property!(m.winHarmView,:visible, true)
@@ -233,11 +236,37 @@ function initCallbacks(m_::RawDataWidget)
     #signal_connect(showData, m[sl], "value_changed", Nothing, (), false, m )
   end
 
+  for sl in ["TD", "FD"]
+    signal_connect(m["btn$(sl)Apply"], "clicked") do w
+      if !m.updatingData
+        @idle_add_guarded begin
+          m.updatingData = true
+          r = (sl == "TD") ? m.rangeTD : m.rangeFD
+          set_gtk_property!( m["ent$(sl)MinVal"] ,:text, string(r[1]))
+          set_gtk_property!( m["ent$(sl)MaxVal"] ,:text, string(r[2]))
+          m.updatingData = false
+          showData(C_NULL, m)
+        end
+      end
+    end
 
+    signal_connect(m["btn$(sl)Clear"], "clicked") do w
+      if !m.updatingData
+        @idle_add_guarded begin
+          m.updatingData = true
+          set_gtk_property!( m["ent$(sl)MinVal"] ,:text, "")
+          set_gtk_property!( m["ent$(sl)MaxVal"] ,:text, "")
+          m.updatingData = false
+          showData(C_NULL, m)
+        end
+      end
+    end
+  end
+  
   signal_connect(m.winHarmView, "delete-event") do widget, event
     #typeof(event)
     #@show event
-    @idle_add set_gtk_property!(m["cbHarmonicViewer"], :active, false)
+    @idle_add_guarded set_gtk_property!(m["cbHarmonicViewer"], :active, false)
   end
 
   #signal_connect(loadData, m["cbCorrTF"], "toggled", Nothing, (), false, m)
@@ -269,7 +298,7 @@ end
         params[:acqNumFGFrames] = acqNumFGFrames(f)
         params[:acqNumBGFrames] = acqNumBGFrames(f)
 
-        @idle_add set_gtk_property!(m["adjFrame"], :upper, numFGFrames)
+        @idle_add_guarded set_gtk_property!(m["adjFrame"], :upper, numFGFrames)
 
         if get_gtk_property(m["cbAbsFrameAverage"], :active, Bool)
           frame = 1:numFGFrames
@@ -330,6 +359,8 @@ end
     minValFD_ = tryparse(Float64,get_gtk_property( m["entFDMinVal"] ,:text,String))
     maxValFD_ = tryparse(Float64,get_gtk_property( m["entFDMaxVal"] ,:text,String))
 
+    @info minValTD_
+
     if minValTD_ != nothing && maxValTD_ != nothing
       minValTD = minValTD_
       maxValTD = maxValTD_
@@ -384,6 +415,7 @@ end
     if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
       dataBG = reshape(dataBG, :, numSignals)
     end
+    m.rangeTD = extrema(data)
 
     #colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
 
@@ -429,6 +461,7 @@ end
     if showFD
       freq = collect(0:(numFreq-1))./(numFreq-1)./m.deltaT./2.0
       freqdata = abs.(rfft(data, 1)) / size(data,1)
+      m.rangeFD = extrema(freqdata)
       spFr = length(minFr:maxFr) > maxPoints ? round(Int,length(minFr:maxFr) / maxPoints)  : 1
 
       stepsFr = minFr:spFr:maxFr
@@ -475,9 +508,9 @@ end
                      "k--", linewidth=3, ylog=true)
       end
     end
-    @idle_add display(m.cTD, p1)
+    @idle_add_guarded display(m.cTD, p1)
     if showFD
-      @idle_add display(m.cFD, p2)
+      @idle_add_guarded display(m.cFD, p2)
     end
 
     ### Harmonic Viewer ###
@@ -524,7 +557,7 @@ end
   maxValTP = showAllPatches ? size(m.data,1)*numPatches : size(m.data,1)
   maxValFre = div(maxValTP,2)+1
 
-  @idle_add begin
+  @idle_add_guarded begin
     m.updatingData = true
     if !fileModus
       set_gtk_property!(m["adjFrame"],:upper,size(data,4))
@@ -568,7 +601,7 @@ end
 
 @guarded function updateData(m::RawDataWidget, filenames::Vector{<:AbstractString})
   m.filenamesData = filenames
-  @idle_add begin
+  @idle_add_guarded begin
     m.updatingData = true
     set_gtk_property!(m["adjFrame"],:upper,1)
     set_gtk_property!(m["adjFrame"],:value,1)

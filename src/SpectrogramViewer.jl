@@ -1,5 +1,7 @@
 import Base: getindex
 
+export SpectrogramViewer
+
 mutable struct SpectrogramWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
   builder::Builder
@@ -13,6 +15,8 @@ mutable struct SpectrogramWidget <: Gtk.GtkBox
   filenamesData::Vector{String}
   updatingData::Bool
   fileModus::Bool
+  rangeTD::NTuple{2,Float64}
+  rangeFD::NTuple{2,Float64}
 end
 
 getindex(m::SpectrogramWidget, w::AbstractString) = G_.object(m.builder, w)
@@ -41,7 +45,8 @@ function SpectrogramWidget(filenameConfig=nothing)
   m = SpectrogramWidget( mainBox.handle, b,
                   zeros(Float32,0,0,0,0,0), zeros(Float32,0,0,0,0,0),
                   [""], Canvas(), Canvas(), Canvas(),
-                  1.0, [""], false, false)
+                  1.0, [""], false, false,
+                  (0.0,1.0), (0.0,1.0))
   Gtk.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
@@ -83,7 +88,7 @@ function initCallbacks(m_::SpectrogramWidget)
       maxValTP = get_gtk_property(m["adjMaxTP"],:upper, Int)
       
       if minTP > maxTP
-        @idle_add set_gtk_property!(m["adjMaxTP"],:value, min(maxValTP,minTP+10))
+        @idle_add_guarded set_gtk_property!(m["adjMaxTP"],:value, min(maxValTP,minTP+10))
       else
         showData(C_NULL, m)
       end
@@ -96,7 +101,7 @@ function initCallbacks(m_::SpectrogramWidget)
       maxTP = get_gtk_property(m["adjMaxTP"],:value, Int)
       
       if minTP > maxTP
-        @idle_add set_gtk_property!(m["adjMinTP"],:value, max(1,maxTP-10))
+        @idle_add_guarded set_gtk_property!(m["adjMinTP"],:value, max(1,maxTP-10))
       else
         showData(C_NULL, m)
       end
@@ -110,7 +115,7 @@ function initCallbacks(m_::SpectrogramWidget)
       maxValFre = get_gtk_property(m["adjMaxFre"],:upper, Int)
       
       if minFre > maxFre
-        @idle_add set_gtk_property!(m["adjMaxFre"],:value, min(maxValFre,minFre+10))
+        @idle_add_guarded set_gtk_property!(m["adjMaxFre"],:value, min(maxValFre,minFre+10))
       else
         showData(C_NULL, m)
       end
@@ -123,7 +128,7 @@ function initCallbacks(m_::SpectrogramWidget)
       maxFre = get_gtk_property(m["adjMaxFre"],:value, Int)
       
       if minFre > maxFre
-        @idle_add set_gtk_property!(m["adjMinFre"],:value, max(1,maxFre-10))
+        @idle_add_guarded set_gtk_property!(m["adjMinFre"],:value, max(1,maxFre-10))
       else
         showData(C_NULL, m)
       end
@@ -132,7 +137,7 @@ function initCallbacks(m_::SpectrogramWidget)
 
   @guarded function groupingChanged()
     if !m.updatingData
-      @idle_add begin
+      @idle_add_guarded begin
         m.updatingData = true
         timedata, sp = getData(m)
 
@@ -183,12 +188,12 @@ function initCallbacks(m_::SpectrogramWidget)
         end
         oldAdjPatchAvValue = patchAv
         
-        @idle_add begin
+        @idle_add_guarded begin
           set_gtk_property!(m["adjPatchAv"], :value, patchAv)
           groupingChanged()
         end
       else
-        @idle_add groupingChanged()
+        @idle_add_guarded groupingChanged()
       end
       oldAdjPatchAvValue = patchAv
       m.updatingData = false
@@ -219,7 +224,34 @@ function initCallbacks(m_::SpectrogramWidget)
     signal_connect(m[sl], "changed") do w
       showData(C_NULL, m)
     end
-    #signal_connect(showData, m[sl], "value_changed", Nothing, (), false, m )
+  end
+
+
+  for sl in ["TD", "FD"]
+    signal_connect(m["btn$(sl)Apply"], "clicked") do w
+      if !m.updatingData
+        @idle_add_guarded begin
+          m.updatingData = true
+          r = (sl == "TD") ? m.rangeTD : m.rangeFD
+          set_gtk_property!( m["ent$(sl)MinVal"] ,:text, string(r[1]))
+          set_gtk_property!( m["ent$(sl)MaxVal"] ,:text, string(r[2]))
+          m.updatingData = false
+          showData(C_NULL, m)
+        end
+      end
+    end
+
+    signal_connect(m["btn$(sl)Clear"], "clicked") do w
+      if !m.updatingData
+        @idle_add_guarded begin
+          m.updatingData = true
+          set_gtk_property!( m["ent$(sl)MinVal"] ,:text, "")
+          set_gtk_property!( m["ent$(sl)MaxVal"] ,:text, "")
+          m.updatingData = false
+          showData(C_NULL, m)
+        end
+      end
+    end
   end
 
   #signal_connect(loadData, m["cbCorrTF"], "toggled", Nothing, (), false, m)
@@ -249,7 +281,7 @@ end
         params[:acqNumFGFrames] = acqNumFGFrames(f)
         params[:acqNumBGFrames] = acqNumBGFrames(f)
 
-        @idle_add set_gtk_property!(m["adjFrame"], :upper, numFGFrames)
+        @idle_add_guarded set_gtk_property!(m["adjFrame"], :upper, numFGFrames)
 
         if get_gtk_property(m["cbShowAllFrames"], :active, Bool)
           frame = 1:numFGFrames
@@ -348,7 +380,7 @@ end
   numPatches = size(sp.power,2)
   maxGrouping = allFrames ? size(m.data,3)*size(m.data,4) : size(m.data,3)
 
-  @idle_add begin
+  @idle_add_guarded begin
     m.updatingData = true
     set_gtk_property!(m["adjGrouping"],:upper,maxGrouping)
     if !(1 <= get_gtk_property(m["adjGrouping"],:value,Int64) <= maxGrouping)
@@ -392,7 +424,7 @@ end
 
 @guarded function updateData(m::SpectrogramWidget, filenames::Vector{<:AbstractString})
   m.filenamesData = filenames
-  @idle_add begin
+  @idle_add_guarded begin
     m.updatingData = true
     set_gtk_property!(m["adjFrame"],:upper,1)
     set_gtk_property!(m["adjFrame"],:value,1)
@@ -446,6 +478,7 @@ end
 
     timedata, sp = getData(m)
     data_ = timedata[patch]
+    m.rangeTD = extrema(data_)
 
     maxFr = min(maxFr,size(sp.power,1))
     maxTP = min(maxTP,size(data_,1))
@@ -480,7 +513,7 @@ end
     Winston.ylabel("freq / kHz")
     Winston.xlabel("t / s")
 
-    @idle_add display(m.cSpect, psp)
+    @idle_add_guarded display(m.cSpect, psp)
 
     timePoints = (0:(length(data_)-1)).*m.deltaT
    
@@ -501,6 +534,7 @@ end
       numFreq = size(sp.power,1)
       freq = collect(0:(numFreq-1))./(numFreq-1)./m.deltaT./2.0
       freqdata = sp.power[:,:]
+      m.rangeFD = extrema(freqdata)
       spFr = length(minFr:maxFr) > maxPoints ? round(Int,length(minFr:maxFr) / maxPoints)  : 1
 
       stepsFr = minFr:spFr:maxFr
@@ -526,9 +560,9 @@ end
     end
 
 
-    @idle_add display(m.cTD, p1)
+    @idle_add_guarded display(m.cTD, p1)
     if showFD
-      @idle_add display(m.cFD, p2)
+      @idle_add_guarded display(m.cFD, p2)
     end
 
   end

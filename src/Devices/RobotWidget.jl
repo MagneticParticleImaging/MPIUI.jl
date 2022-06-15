@@ -24,7 +24,7 @@ function RobotWidget(robot::Robot)
   Gtk.gobject_move_ref(m, mainBox)
 
   if :namedPositions in fieldnames(typeof(params(robot)))
-    @idle_add begin
+    @idle_add_guarded begin
       for pos in keys(namedPositions(robot))
         push!(m["cmbNamedPos"], pos)
         set_gtk_property!(m["cmbNamedPos"], :active, 1)
@@ -35,7 +35,7 @@ function RobotWidget(robot::Robot)
     end
   end
 
-  @idle_add begin
+  @idle_add_guarded begin
     displayAxisRange(m)
   end
 
@@ -122,7 +122,7 @@ function initCallbacks(m::RobotWidget)
 end
 
 function displayRobotState(m::RobotWidget)
-  @idle_add begin
+  @idle_add_guarded begin
     set_gtk_property!(m["lblRobotState"], :label, string(state(m.robot)))
   end
 end
@@ -167,7 +167,7 @@ function displayNamedPosition(m::RobotWidget, pos::Nothing)
   # NOP
 end
 function displayNamedPosition(m::RobotWidget, pos)
-  @idle_add begin
+  @idle_add_guarded begin
     set_gtk_property!(m["entNamedPosX"], :text, string(ustrip(u"mm", pos[1])))
     set_gtk_property!(m["entNamedPosY"], :text, string(ustrip(u"mm", pos[2])))
     set_gtk_property!(m["entNamedPosZ"], :text, string(ustrip(u"mm", pos[3])))
@@ -186,7 +186,7 @@ function displayCurrentPosition(m::RobotWidget, pos::Nothing)
   # NOP
 end
 function displayCurrentPosition(m::RobotWidget, pos)
-  @idle_add begin
+  @idle_add_guarded begin
     set_gtk_property!(m["entCurrPosX"], :text, string(ustrip(u"mm", pos[1])))
     set_gtk_property!(m["entCurrPosY"], :text, string(ustrip(u"mm", pos[2])))
     set_gtk_property!(m["entCurrPosZ"], :text, string(ustrip(u"mm", pos[3])))
@@ -210,7 +210,7 @@ function displayAxisRange(m::RobotWidget)
 end
 
 function updatePositionCoords(m::RobotWidget, transferNewType::Function, oldType::Union{Type{ScannerCoords}, Type{RobotCoords}})
-  @idle_add begin
+  @idle_add_guarded begin
     currPosOld = currentPosition(m, oldType)
     if !isnothing(currPosOld)
       currPosNew = transferNewType(m.robot, currPosOld)
@@ -231,11 +231,11 @@ function resetRobot(m::RobotWidget)
   robot = m.robot 
   reset(robot)
   setup(robot)
-  @idle_add set_gtk_property!(m["btnReferenceDrive"],:sensitive, !isReferenced(robot))
+  @idle_add_guarded set_gtk_property!(m["btnReferenceDrive"],:sensitive, !isReferenced(robot))
 end
 
 function enableRobotMoveButtons(m::RobotWidget, enable::Bool)
-    @idle_add begin
+    @idle_add_guarded begin
       set_gtk_property!(m["btnRobotMove"],:sensitive,enable)
       set_gtk_property!(m["btnMoveNamedPos"], :sensitive, enable)
     end
@@ -308,7 +308,7 @@ function referenceDrive(m::RobotWidget)
             You can mount your sample. Press \"Close\" to proceed. """
         info_dialog(message, mpilab[]["mainWindow"])
         enableRobotMoveButtons(m,true)
-        @idle_add set_gtk_property!(m["btnReferenceDrive"],:sensitive,false)
+        @idle_add_guarded set_gtk_property!(m["btnReferenceDrive"],:sensitive,false)
       end
     end
   end

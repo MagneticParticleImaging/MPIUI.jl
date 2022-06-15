@@ -113,7 +113,7 @@ function SpectrumViewerWidget(file::MPIFile; semilogY=false)
    adjMinFreq, adjMaxFreq, adjFrame, vbox,semilogY, cbBGSubtract, bgdata)
 
   function update( widget )
-     @idle_add showData( dw )
+     @idle_add_guarded showData( dw )
   end
 
   signal_connect(update, adjFrame, "value_changed")

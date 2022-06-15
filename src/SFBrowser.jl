@@ -26,7 +26,7 @@ function updateData!(m::SFBrowserWidget, sysFuncs)
 
   m.sysFuncs = sysFuncs
 
-  @idle_add begin
+  @idle_add_guarded begin
       m.updating = true
       unselectall!(m.selection)
       empty!(m.store)
@@ -111,7 +111,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 
         sffilename = TreeModel(tmSorted)[currentIt,10]
 
-        @idle_add begin
+        @idle_add_guarded begin
           if !get_gtk_property(cbOpenMeas,:active,Bool)
             if measIsCalibProcessed(MPIFile(sffilename,fastMode=true))
               if get_gtk_property(cbOpenInWindow,:active,Bool)
@@ -219,7 +219,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   signal_connect(convSF, btnSFConvert, "clicked")
 
   signal_connect(btnOpenCalibrationFolder, "clicked") do widget
-    @idle_add begin
+    @idle_add_guarded begin
         openFileBrowser(calibdir(m.datasetStore))
     end
   end
@@ -288,20 +288,20 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   signal_connect(updateShownSF, entTracer, "changed")
 
   if gradient != nothing
-    @idle_add set_gtk_property!(entGradient,:text,string(gradient))
+    @idle_add_guarded set_gtk_property!(entGradient,:text,string(gradient))
   end
 
   if driveField != nothing
     driveField[:].*=1000
     str = join([string(df," x ") for df in driveField])[1:end-2]
-    @idle_add set_gtk_property!(entDF, :text, str)
+    @idle_add_guarded set_gtk_property!(entDF, :text, str)
   end
 
   m = SFBrowserWidget(store, tv, vbox, tmSorted, nothing, nothing, selection, false)
 
   signal_connect(m.selection, "changed") do widget
     if hasselection(m.selection) && !m.updating
-      @idle_add begin
+      @idle_add_guarded begin
         currentIt = selected( m.selection )
         filename = TreeModel(m.tmSorted)[currentIt,10]
         f = MPIFile(filename, fastMode=true)

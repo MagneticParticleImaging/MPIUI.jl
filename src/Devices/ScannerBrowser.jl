@@ -84,7 +84,7 @@ end
 function initCallbacks(m::ScannerBrowser)
 
   signal_connect(m.selection, "changed") do widget
-    @idle_add if !m.updating && hasselection(m.selection) 
+    @idle_add_guarded if !m.updating && hasselection(m.selection) 
       m.updating = true
       currentIt = selected( m.selection )
 
@@ -142,7 +142,7 @@ displayDeviceWidget(m::ScannerBrowser, dev::TemperatureSensor) = showDeviceWidge
 function updateData!(m::ScannerBrowser, scanner=nothing)
   if scanner != nothing
 
-    @idle_add begin
+    @idle_add_guarded begin
       m.updating = true
       unselectall!(m.selection)
       empty!(m.store)
@@ -173,7 +173,7 @@ end
 function updateScanner!(m::ScannerBrowser, scanner::MPIScanner)
   m.scanner = scanner
   updateData!(m, m.scanner)
-  @idle_add begin
+  @idle_add_guarded begin
     for container in values(m.widgetCache)
       popout!(container, false)
     end

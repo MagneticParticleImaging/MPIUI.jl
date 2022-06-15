@@ -18,7 +18,7 @@ function executeCalibrationProtocol(m::MeasurementWidget)
   if any(shp_ .== nothing) || any(fov_ .== nothing) || any(center_ .== nothing) || any(velRob_ .== nothing) ||
      length(shp_) != 3 || length(fov_) != 3 || length(center_) != 3 || length(velRob_) != 3
     @warn "Mismatch dimension for positions"
-    @idle_add set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
+    @idle_add_guarded set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
     return
   end
 
@@ -92,7 +92,7 @@ function calibEventHandler(m::MeasurementWidget, timerCalibration::Timer)
     if finished 
       m.calibInProgress = false
       close(timerCalibration)
-      @idle_add begin
+      @idle_add_guarded begin
         set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
         set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
         #set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
@@ -101,7 +101,7 @@ function calibEventHandler(m::MeasurementWidget, timerCalibration::Timer)
 
   catch ex
     close(timerCalibration)
-    @idle_add begin
+    @idle_add_guarded begin
       set_gtk_property!(m["tbCalibration",ToggleToolButtonLeaf], :active, false)
       set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
       #set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
@@ -111,7 +111,7 @@ function calibEventHandler(m::MeasurementWidget, timerCalibration::Timer)
 end
 
 function handleCalibEvent(m::MeasurementWidget, event::IllegaleStateEvent, ::UnwantedEvent)
-  @idle_add info_dialog(event.message, mpilab[]["mainWindow"])
+  @idle_add_guarded info_dialog(event.message, mpilab[]["mainWindow"])
   return true
 end
 

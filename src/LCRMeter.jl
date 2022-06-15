@@ -221,7 +221,7 @@ function sweepAndShow(m::LCRMeterUI)
   #               linewidth=2, ylog=true)
 
 
-  @idle_add display(m.c1 ,p1)
-  @idle_add display(m.c2 ,p2)
+  @idle_add_guarded display(m.c1 ,p1)
+  @idle_add_guarded display(m.c2 ,p2)
 
 end

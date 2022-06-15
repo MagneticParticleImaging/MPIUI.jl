@@ -115,21 +115,21 @@ end
 
 function initCallbacks(m::LogMessageListWidget)
   signal_connect(m["calFrom"], :day_selected) do w
-    @idle_add begin
+    @idle_add_guarded begin
       dt = getFromDateTime(m)
       m.logFilter.from = dt
       applyFilter!(m)
     end
   end
   signal_connect(m["spinFromHour"], :value_changed) do w
-    @idle_add begin
+    @idle_add_guarded begin
       dt = getFromDateTime(m)
       m.logFilter.from = dt
       applyFilter!(m)
     end
   end
   signal_connect(m["spinFromMin"], :value_changed) do w
-    @idle_add begin
+    @idle_add_guarded begin
       dt = getFromDateTime(m)
       m.logFilter.from = dt
       applyFilter!(m)
@@ -137,21 +137,21 @@ function initCallbacks(m::LogMessageListWidget)
   end
 
   signal_connect(m["calTo"], :day_selected) do w
-    @idle_add begin
+    @idle_add_guarded begin
       dt = getToDateTime(m)
       m.logFilter.to = dt
       applyFilter!(m)
     end
   end
   signal_connect(m["spinToHour"], :value_changed) do w
-    @idle_add begin
+    @idle_add_guarded begin
       dt = getToDateTime(m)
       m.logFilter.to = dt
       applyFilter!(m)
     end
   end
   signal_connect(m["spinToMin"], :value_changed) do w
-    @idle_add begin
+    @idle_add_guarded begin
       dt = getToDateTime(m)
       m.logFilter.to = dt
       applyFilter!(m)
@@ -159,7 +159,7 @@ function initCallbacks(m::LogMessageListWidget)
   end
 
   signal_connect(m["entryMsgRegex"], :changed) do w
-    @idle_add begin
+    @idle_add_guarded begin
       str = get_gtk_property(m["entryMsgRegex"],:text,String)
       if isempty(str)
         m.logFilter.messageFilter = nothing
@@ -172,7 +172,7 @@ function initCallbacks(m::LogMessageListWidget)
   end
 
   signal_connect(m["cbLogLevel"], :changed) do w
-    @idle_add begin
+    @idle_add_guarded begin
       str = Gtk.bytestring(GAccessor.active_text(m["cbLogLevel"]))
       level = 0
       if str == "Debug"
@@ -190,7 +190,7 @@ function initCallbacks(m::LogMessageListWidget)
   end
 
   signal_connect(m["btnDelete"], :clicked) do w
-    @idle_add begin
+    @idle_add_guarded begin
       m.updating = true
       unselectall!(m.selection)
       empty!(m.store)
@@ -199,14 +199,14 @@ function initCallbacks(m::LogMessageListWidget)
   end
 
   signal_connect(m["btnDir"], :clicked) do w
-    @idle_add begin
+    @idle_add_guarded begin
       openFileBrowser(logpath)
     end
   end
 
   signal_connect(m.selection, :changed) do w
     if hasselection(m.selection) && !m.updating
-      @idle_add begin
+      @idle_add_guarded begin
         current = selected(m.selection)
         tooltip = TreeModel(m.tmSorted)[current, 6]
         set_gtk_property!(m.tv, :tooltip_text, tooltip)
@@ -232,7 +232,7 @@ function initCallbacks(m::LogMessageListWidget)
   end
 
   signal_connect(m.tv, :size_allocate) do w, a
-    @idle_add begin
+    @idle_add_guarded begin
       m.updating = true
       if m.scrollState == ATTACHED_BOTTOM
         set_gtk_property!(vadj, :value, get_gtk_property(vadj, :upper, Float64) - get_gtk_property(vadj, :page_size, Float64))
@@ -265,11 +265,11 @@ end
 function addGroupCheckBox(widget::LogMessageListWidget, group::String)
   # Add to group immidiately to avoid multiple checkbuttons
   updateGroup!(widget.logFilter, group, true)
-  @idle_add begin
+  @idle_add_guarded begin
     check = GtkCheckButton(group)
     set_gtk_property!(check, :active, true)
     signal_connect(check, :toggled) do w
-      @idle_add begin
+      @idle_add_guarded begin
         updateGroup!(widget.logFilter, get_gtk_property(check, :label, String), get_gtk_property(check, :active, Bool))
         applyFilter!(widget)
       end
@@ -280,7 +280,7 @@ function addGroupCheckBox(widget::LogMessageListWidget, group::String)
 end
 
 function applyFilter!(widget::LogMessageListWidget)
-  @idle_add begin
+  @idle_add_guarded begin
     widget.updating = true
     try
       unselectall!(widget.selection)
@@ -322,7 +322,7 @@ function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, date
     end
     tooltip = tooltip[1:min(end, 1024)]
 
-    @idle_add begin
+    @idle_add_guarded begin
       push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "gtk-missing-image"), dateTimeString, groupString, messageString, visible, tooltip, level.level))
     end
   catch ex

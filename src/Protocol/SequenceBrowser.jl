@@ -84,7 +84,7 @@ function SequenceSelectionDialog(scanner::MPIScanner, params::Dict)
 
       seq = TreeModel(tmSorted)[currentIt,1]
 
-      @idle_add begin
+      @idle_add_guarded begin
         s = Sequence(scanner, seq)
 
         p = Winston.FramedPlot(xlabel="time / s", ylabel="field / ???")
@@ -109,7 +109,7 @@ end
 
 function updateData!(m::SequenceSelectionDialog)
 
-  @idle_add begin
+  @idle_add_guarded begin
       m.updating = true
       unselectall!(m.selection)
       empty!(m.store)

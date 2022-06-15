@@ -37,7 +37,7 @@ end
 function initCallbacks(m::DeviceWidgetContainer)
   
   signal_connect(m["btnPopout"], :toggled) do w
-    @idle_add if !m.updating
+    @idle_add_guarded if !m.updating
       m.updating = true
 
       try
@@ -51,7 +51,7 @@ function initCallbacks(m::DeviceWidgetContainer)
   end
 
   #signal_connect(m.deviceWindow, :destroy) do w
-  #  @idle_add begin
+  #  @idle_add_guarded begin
   #    empty!(m["boxDeviceWidget"])
   #    push!(m["boxDeviceWidget"], m.deviceWidget)
   #    showall(m)

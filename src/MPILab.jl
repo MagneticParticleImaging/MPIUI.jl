@@ -80,7 +80,7 @@ function MPILab(offlineMode=false)::MPILab
   w = m["mainWindow"]
   set_gtk_property!(w, :sensitive, false)
 
-  @idle_add show(w)
+  @idle_add_guarded show(w)
 
   addConfigurationPath(scannerpath)
 
@@ -122,14 +122,14 @@ function MPILab(offlineMode=false)::MPILab
   initProtocolTab(m, offlineMode)
 
 
-  @idle_add set_gtk_property!(m["lbInfo"],:use_markup,true)
-  @idle_add set_gtk_property!(m["cbDatasetStores"],:active,0)
+  @idle_add_guarded set_gtk_property!(m["lbInfo"],:use_markup,true)
+  @idle_add_guarded set_gtk_property!(m["cbDatasetStores"],:active,0)
   infoMessage(m, "")
 
   # ugly but necessary since showall unhides all widgets
-  #@idle_add visible(m["boxMeasTab"],
+  #@idle_add_guarded visible(m["boxMeasTab"],
   #    isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
-  #@idle_add visible(m["tbOpenMeasurementTab"],
+  #@idle_add_guarded visible(m["tbOpenMeasurementTab"],
   #        isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
 
   # Set the icon of MPILab
@@ -237,7 +237,7 @@ function initStoreSwitch(m::MPILab)
     @info "changing dataset store"
     
     m.activeStore = get_gtk_property(m["cbDatasetStores"], :active, Int64)+1
-    @idle_add begin
+    @idle_add_guarded begin
       m.updating = true
       scanDatasetDir(m)
       updateData!(m.sfBrowser,activeDatasetStore(m))
@@ -267,20 +267,20 @@ function initViewSwitch(m::MPILab)
     if page_num == 0
       infoMessage(m, "")
       if m.currentExperiment != nothing
-        @idle_add updateData(m.rawDataWidget, path(m.currentExperiment))
+        @idle_add_guarded updateData(m.rawDataWidget, path(m.currentExperiment))
       end
     elseif page_num == 1
       infoMessage(m, "")
     elseif page_num == 2
       infoMessage(m, "")
       if m.currentExperiment != nothing
-        @idle_add updateData!(m.recoWidget, path(m.currentExperiment) )
+        @idle_add_guarded updateData!(m.recoWidget, path(m.currentExperiment) )
       end
     elseif page_num == 4
       # TODO scanner? Previously was measurementWidget
     elseif page_num == 5
       # TODO Protocol
-      #@idle_add unselectall!(m.selectionExp)
+      #@idle_add_guarded unselectall!(m.selectionExp)
       #m.currentExperiment = nothing
       #infoMessage(m, m.measurementWidget.message)
     end
@@ -291,7 +291,7 @@ function initViewSwitch(m::MPILab)
 
   signal_connect(m["tbDataTab"], "clicked") do widget
     if !updatingTab
-      @idle_add begin
+      @idle_add_guarded begin
           updatingTab = true
           G_.current_page(m["nbView"], 0)
           G_.current_page(m["nbData"], 0)
@@ -307,7 +307,7 @@ function initViewSwitch(m::MPILab)
 
   signal_connect(m["tbCalibrationTab"], "clicked") do widget
     if !updatingTab
-      @idle_add begin
+      @idle_add_guarded begin
           updatingTab = true
           G_.current_page(m["nbView"], 3)
           G_.current_page(m["nbData"], 1)
@@ -323,7 +323,7 @@ function initViewSwitch(m::MPILab)
 
   signal_connect(m["tbScannerTab"], "clicked") do widget
     if !updatingTab
-      @idle_add begin
+      @idle_add_guarded begin
           updatingTab = true
           G_.current_page(m["nbView"], 4)
           G_.current_page(m["nbData"], 2)
@@ -338,7 +338,7 @@ function initViewSwitch(m::MPILab)
 
   signal_connect(m["tbProtocolTab"], "clicked") do widget
     if !updatingTab
-      @idle_add begin
+      @idle_add_guarded begin
           updatingTab = true
           G_.current_page(m["nbView"], 5)
           G_.current_page(m["nbData"], 0)
@@ -409,7 +409,7 @@ function initStudyStore(m::MPILab)
     # select first study so that always measurements can be performed
     iter = Gtk.mutable(Gtk.GtkTreeIter)
     Gtk.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
-    @idle_add select!(m.selectionStudy, iter)
+    @idle_add_guarded select!(m.selectionStudy, iter)
   end
 
   function selectionChanged( widget )
@@ -438,12 +438,12 @@ function initStudyStore(m::MPILab)
   end
 
   signal_connect(m.selectionStudy, "changed") do widget
-    @idle_add selectionChanged(widget)
+    @idle_add_guarded selectionChanged(widget)
   end
 
   function updateShownStudies( widget )
     if !m.updating
-      @idle_add begin
+      @idle_add_guarded begin
         m.updating = true
         unselectall!(m.selectionExp)
         unselectall!(m.selectionStudy)
@@ -479,9 +479,9 @@ function initStudyStore(m::MPILab)
 
         # TODO
         #currentIt = selected( m.selectionStudy )
-        #@idle_add delete!(TreeModel(m.studyStoreSorted), currentIt)
+        #@idle_add_guarded delete!(TreeModel(m.studyStoreSorted), currentIt)
 
-        @idle_add scanDatasetDir(m)
+        @idle_add_guarded scanDatasetDir(m)
       end
     end
   end
@@ -491,7 +491,7 @@ function initStudyStore(m::MPILab)
     name = get_gtk_property(m["entSearchStudies"], :text, String)
     study = Study(activeDatasetStore(m), name)
     addStudy(activeDatasetStore(m), study)
-    @idle_add scanDatasetDir(m)
+    @idle_add_guarded scanDatasetDir(m)
 
     iter = Gtk.mutable(Gtk.GtkTreeIter)
     Gtk.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
@@ -503,7 +503,7 @@ function initStudyStore(m::MPILab)
       end
     end
 
-    @idle_add select!(m.selectionStudy, iter)
+    @idle_add_guarded select!(m.selectionStudy, iter)
   end
 
 end
@@ -567,7 +567,7 @@ function initAnatomRefStore(m::MPILab)
       mkpath(targetPath)
       try_chmod(targetPath, 0o777, recursive=true)
       cp(filename, targetPath, force=true)
-      @idle_add updateAnatomRefStore(m)
+      @idle_add_guarded updateAnatomRefStore(m)
     end
 
   end
@@ -582,7 +582,7 @@ function initAnatomRefStore(m::MPILab)
 
         im = loaddata(filename)
         im_ = copyproperties(im,squeeze(data(im)))
-        @idle_add DataViewer(im_)
+        @idle_add_guarded DataViewer(im_)
       end
     catch ex
       showError(ex)
@@ -665,7 +665,7 @@ function initExperimentStore(m::MPILab)
 
   signal_connect(m["tbReco"], "clicked") do widget
     if hasselection(m.selectionExp)
-      @idle_add begin
+      @idle_add_guarded begin
         if m.settings["enableRecoStore", true]
           updateData!(m.recoWidget, path(m.currentExperiment), m.currentStudy, m.currentExperiment )
           G_.current_page(m["nbView"], 2)
@@ -676,7 +676,7 @@ function initExperimentStore(m::MPILab)
 
   signal_connect(m["tbOpenExperimentFolder"], "clicked") do widget
     if hasselection(m.selectionStudy)
-      @idle_add begin
+      @idle_add_guarded begin
         openFileBrowser(path(m.currentStudy))
       end
     end
@@ -694,7 +694,7 @@ function initExperimentStore(m::MPILab)
 
   function showRawData()
     if hasselection(m.selectionExp)
-      @idle_add begin
+      @idle_add_guarded begin
         selectedRows = Gtk.selected_rows(m.selectionExp)
         expNums = [m.experimentStore[selectedRows[j],1] for j=1:length(selectedRows)]
         exps = [getExperiment(m.currentStudy, expNums[j]) for j=1:length(selectedRows)]
@@ -712,7 +712,7 @@ function initExperimentStore(m::MPILab)
 
   function showSpectrogram()
     if hasselection(m.selectionExp)
-      @idle_add begin
+      @idle_add_guarded begin
         selectedRows = Gtk.selected_rows(m.selectionExp)
         expNums = [m.experimentStore[selectedRows[j],1] for j=1:length(selectedRows)]
         exps = [getExperiment(m.currentStudy, expNums[j]) for j=1:length(selectedRows)]
@@ -736,10 +736,10 @@ function initExperimentStore(m::MPILab)
       if exp != nothing && ispath(path(exp))
          m.currentExperiment = exp
 
-         @idle_add updateReconstructionStore(m)
-         #@idle_add updateAnatomRefStore(m)
+         @idle_add_guarded updateReconstructionStore(m)
+         #@idle_add_guarded updateAnatomRefStore(m)
 
-         @idle_add begin
+         @idle_add_guarded begin
          exp = m.currentExperiment
          set_gtk_property!(tv, :tooltip_text,
              """Num: $(exp.num)\n
@@ -763,7 +763,7 @@ function initExperimentStore(m::MPILab)
       if ask_dialog("Do you really want to delete the experiment $(m.currentExperiment.num)?")
         remove(m.currentExperiment)
 
-        @idle_add updateExperimentStore(m, m.currentStudy)
+        @idle_add_guarded updateExperimentStore(m, m.currentStudy)
       end
     end
   end
@@ -774,7 +774,7 @@ function initExperimentStore(m::MPILab)
       selectedRows = Gtk.selected_rows(m.selectionExp) # can have multiple selections
       currentIt = selectedRows[1] #selected( m.selectionExp )
       if splitext(path(m.currentExperiment))[2] == ".mdf"
-        @idle_add m.experimentStore[currentIt,2] = string(text)
+        @idle_add_guarded m.experimentStore[currentIt,2] = string(text)
         Base.GC.gc() # This is important to run all finalizers of MPIFile
         h5open(path(m.currentExperiment), "r+") do file
           if haskey(file, "/experiment/name")
@@ -798,7 +798,7 @@ function updateExperimentStore(m::MPILab, study::Study)
      return
   end
 
-  @idle_add begin
+  @idle_add_guarded begin
     m.clearingExpStore = true
     m.updating = true  
     unselectall!(m.selectionExp)
@@ -859,8 +859,8 @@ function initReconstructionStore(m::MPILab)
   signal_connect(tv, "row-activated") do treeview, path_, col, other...
     if hasselection(m.selectionReco)
       im = loaddata(m.currentReco.path)
-      #@idle_add DataViewer(im)
-      @idle_add begin
+      #@idle_add_guarded DataViewer(im)
+      @idle_add_guarded begin
          updateData!(m.dataViewerWidget, im)
          G_.current_page(m["nbView"], 1)
       end
@@ -873,11 +873,11 @@ function initReconstructionStore(m::MPILab)
     if hasselection(m.selectionReco)
       currentIt = selected( m.selectionReco )
 
-      @idle_add m.reconstructionStore[currentIt,3] = string(text)
+      @idle_add_guarded m.reconstructionStore[currentIt,3] = string(text)
     end
     m.currentReco.params[:description] = string(text)
     save(m.currentReco)
-    #@idle_add updateReconstructionStore(m)
+    #@idle_add_guarded updateReconstructionStore(m)
   end
 
   signal_connect(m.selectionReco, "changed") do widget
@@ -892,15 +892,15 @@ function initReconstructionStore(m::MPILab)
 
       if isfile(m.currentReco.path)
         im = loaddata(m.currentReco.path)
-        #@idle_add DataViewer(im)
-        #@idle_add begin
+        #@idle_add_guarded DataViewer(im)
+        #@idle_add_guarded begin
         #   updateData!(m.dataViewerWidget, im)
         #   G_.current_page(m["nbView"], 1)
         #end
       end
     end
 
-    @idle_add updateVisuStore(m)
+    @idle_add_guarded updateVisuStore(m)
     return false
   end
 
@@ -908,7 +908,7 @@ function initReconstructionStore(m::MPILab)
     if hasselection(m.selectionReco)
       remove(m.currentReco)
 
-      @idle_add updateReconstructionStore(m)
+      @idle_add_guarded updateReconstructionStore(m)
     end
   end
 
@@ -920,7 +920,7 @@ function initReconstructionStore(m::MPILab)
     if hasselection(m.selectionReco)
       params = m.currentReco.params
 
-      @idle_add begin
+      @idle_add_guarded begin
         updateData!(m.recoWidget, path(m.currentExperiment), params, m.currentStudy, m.currentExperiment)
         G_.current_page(m["nbView"], 2)
       end
@@ -962,7 +962,7 @@ function openFusion(m::MPILab)
 
         #DataViewer(imFG, imBG_)
 
-        @idle_add begin
+        @idle_add_guarded begin
            updateData!(m.dataViewerWidget, imFG, imBG_)
            G_.current_page(m["nbView"], 1)
         end
@@ -994,7 +994,7 @@ end
 
 function addReco(m::MPILab, image, currentStudy, currentExperiment)
   addReco(activeRecoStore(m), m.currentStudy, m.currentExperiment, image)
-  @idle_add updateReconstructionStore(m)
+  @idle_add_guarded updateReconstructionStore(m)
 end
 
 ### Visualization Store ###
@@ -1045,9 +1045,9 @@ function initVisuStore(m::MPILab)
         else
           imBG_ = nothing
         end
-        #@idle_add DataViewer(im, imBG_, params=m.currentVisu.params)
+        #@idle_add_guarded DataViewer(im, imBG_, params=m.currentVisu.params)
 
-        @idle_add begin
+        @idle_add_guarded begin
            updateData!(m.dataViewerWidget, im, imBG_, params=m.currentVisu.params)
            G_.current_page(m["nbView"], 1)
         end
@@ -1061,15 +1061,15 @@ function initVisuStore(m::MPILab)
     if hasselection(m.selectionVisu)
       currentIt = selected( m.selectionVisu )
       m.currentVisu.params[:description] = string(text)
-      @idle_add m.visuStore[currentIt,2] = string(text)
-      @idle_add save(m.currentVisu)
+      @idle_add_guarded m.visuStore[currentIt,2] = string(text)
+      @idle_add_guarded save(m.currentVisu)
     end
   end
 
   signal_connect(m["tbRemoveVisu"], "clicked") do widget
     if hasselection(m.selectionVisu)
      remove(m.currentVisu)
-     @idle_add updateVisuStore(m)
+     @idle_add_guarded updateVisuStore(m)
     end
   end
 
@@ -1113,7 +1113,7 @@ end
 function addVisu(m::MPILab, visuParams)
   if hasselection(m.selectionReco)
     addVisu(activeRecoStore(m), m.currentStudy, m.currentExperiment, m.currentReco, visuParams)
-    @idle_add updateVisuStore(m)
+    @idle_add_guarded updateVisuStore(m)
   end
 end
 
@@ -1223,11 +1223,11 @@ function infoMessage(m::MPILab, message::String, color::String)
 end
 
 function infoMessage(m::MPILab, message::String)
-  @idle_add set_gtk_property!(m["lbInfo"],:label, message)
+  @idle_add_guarded set_gtk_property!(m["lbInfo"],:label, message)
 end
 
 function progress(m::MPILab, startStop::Bool)
-  @idle_add set_gtk_property!(m["spProgress"],:active, startStop)
+  @idle_add_guarded set_gtk_property!(m["spProgress"],:active, startStop)
 end
 
 function scanner(m::MPILab)

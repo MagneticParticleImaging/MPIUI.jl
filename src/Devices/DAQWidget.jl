@@ -37,7 +37,7 @@ function initCallbacks(m::DAQWidget)
 end
 
 function init(m::DAQWidget)
-    @idle_add begin
+    @idle_add_guarded begin
         set_gtk_property!(m["entNumRxChan"],:text, numRxChannelsTotal(m.daq))
         set_gtk_property!(m["entNumTxChan"],:text, numTxChannelsTotal(m.daq))
     end
@@ -51,7 +51,7 @@ function startDAQ(m::DAQWidget)
         if !(m.updating) && typeof(m.daq) <: RedPitayaDAQ
             wp = MPIMeasurements.currentWP(m.daq.rpc)
             @info wp
-            @idle_add set_gtk_property!(m["entWP"], :text, wp)
+            @idle_add_guarded set_gtk_property!(m["entWP"], :text, wp)
         end
     end
     m.timer = Timer(update_, 0.0, interval=0.1)

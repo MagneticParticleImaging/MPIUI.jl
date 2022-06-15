@@ -101,7 +101,7 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
     selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
     @debug "" selectedProfileName
     if haskey(cache["recoParams"],selectedProfileName)
-      @idle_add setParams(m, cache["recoParams"][selectedProfileName])
+      @idle_add_guarded setParams(m, cache["recoParams"][selectedProfileName])
     end
 
   end
@@ -115,19 +115,19 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
     cache["recoParams"][key] = currentRecoParams
     savecache(cache)
 
-    @idle_add updateRecoProfiles()
+    @idle_add_guarded updateRecoProfiles()
   end
 
   function deleteRecoProfile( widget )
     selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
 
-    @idle_add @info "delete reco profile $selectedProfileName"
+    @idle_add_guarded @info "delete reco profile $selectedProfileName"
 
     cache = loadcache()
     delete!(cache["recoParams"], selectedProfileName)
     savecache(cache)
 
-    @idle_add updateRecoProfiles()
+    @idle_add_guarded updateRecoProfiles()
   end
 
   function updateRecoProfiles()
@@ -177,7 +177,7 @@ function initCallbacks(m_::RecoWidget)
         end
       end
 
-      @idle_add set_gtk_property!(m["adjSelectedSF"], :upper, length(m.bSF))
+      @idle_add_guarded set_gtk_property!(m["adjSelectedSF"], :upper, length(m.bSF))
     end
 
     updateSFParamsChanged_ = (w)->updateSFParamsChanged(m)
@@ -210,7 +210,7 @@ function saveReco(m::RecoWidget)
   if m.recoResult !== nothing
     m.recoResult.recoParams[:description] = get_gtk_property(m["entRecoDescrip"], :text, String)
     if isassigned(mpilab)
-      @idle_add addReco(mpilab[], m.recoResult, m.currentStudy, m.currentExperiment)
+      @idle_add_guarded addReco(mpilab[], m.recoResult, m.currentStudy, m.currentExperiment)
     else
       if m.currentStudy !== nothing && m.currentExperiment !== nothing
         # using MDFDatasetStore
@@ -286,7 +286,7 @@ function initBGSubtractionWidgets(m::RecoWidget)
           idxFG = i-1
         end
 
-        @idle_add set_gtk_property!(m["cbBGMeasurements"],:active, idxFG)
+        @idle_add_guarded set_gtk_property!(m["cbBGMeasurements"],:active, idxFG)
       end
     end
   end
@@ -343,7 +343,7 @@ function updateSF(m::RecoWidget)
                              numPeriodGrouping = params[:numPeriodGrouping],
                              maxMixingOrder = params[:maxMixingOrder])
 
-  #@idle_add set_gtk_property!(m["entNumFreq"], :text, string(length(m.freq)))
+  #@idle_add_guarded set_gtk_property!(m["entNumFreq"], :text, string(length(m.freq)))
 
     #TODO
 
@@ -354,7 +354,7 @@ function updateSF(m::RecoWidget)
 
   @info "Reloading SF"
   @show m.bSF
-  @idle_add begin
+  @idle_add_guarded begin
     set_gtk_property!(m["entNumFreq"], :text, string(length(m.freq)))
     infoMessage(m, "Loading System Matrix...")
   end
@@ -365,7 +365,7 @@ function updateSF(m::RecoWidget)
                       numPeriodGrouping = params[:numPeriodGrouping])
 
 
-  @idle_add infoMessage(m, "")
+  @idle_add_guarded infoMessage(m, "")
   m.sfParamsChanged = false
 
   return nothing
@@ -394,7 +394,7 @@ function performReco_(m::RecoWidget)
   try
     params = getParams(m)
 
-    @idle_add progress(m, true)
+    @idle_add_guarded progress(m, true)
 
     if m.sfParamsChanged
       updateSF(m)
@@ -409,7 +409,7 @@ function performReco_(m::RecoWidget)
       end
     end
 
-    @idle_add infoMessage(m, "Performing Reconstruction...")
+    @idle_add_guarded infoMessage(m, "Performing Reconstruction...")
 
     if typeof(m.bMeas) == BrukerFileCalib
       m.bMeas = BrukerFileMeas(m.bMeas.path,m.bMeas.params,m.bMeas.paramsProc,m.bMeas.methodRead,m.bMeas.acqpRead,m.bMeas.visupars_globalRead,m.bMeas.recoRead,m.bMeas.methrecoRead,m.bMeas.visuparsRead,m.bMeas.mpiParRead,m.bMeas.maxEntriesAcqp);
@@ -421,7 +421,7 @@ function performReco_(m::RecoWidget)
     end
     m.recoResult = conc
     m.recoResult.recoParams = getParams(m)
-    @idle_add begin
+    @idle_add_guarded begin
       updateData!(m.dv, m.recoResult)
       infoMessage(m, "")
       progress(m, false)
@@ -463,7 +463,7 @@ function getParams(m::RecoWidget)
   lastFrame = get_gtk_property(m["adjLastFrame"], :value, Int64)
   if firstFrame > lastFrame
     lastFrame = firstFrame
-    @idle_add set_gtk_property!(m["adjLastFrame"], :value, lastFrame)
+    @idle_add_guarded set_gtk_property!(m["adjLastFrame"], :value, lastFrame)
   end
   frames = firstFrame:lastFrame
   params[:frames] = frames
@@ -510,7 +510,7 @@ function getParams(m::RecoWidget)
 end
 
 function setParams(m::RecoWidget, params)
-  @idle_add begin
+  @idle_add_guarded begin
     set_gtk_property!(m["adjLambdaL2"], :value, first(params[:lambd]))
     set_gtk_property!(m["adjLambdaL1"], :value, get(params,:lambdaL1,0.0))
     set_gtk_property!(m["adjLambdaTV"], :value, get(params,:lambdaTV,0.0))
@@ -531,17 +531,17 @@ function setParams(m::RecoWidget, params)
 
   for (i,solver) in enumerate(linearSolverList())
     if solver == params[:solver]
-      @idle_add set_gtk_property!(m["cbSolver"],:active, i-1)
+      @idle_add_guarded set_gtk_property!(m["cbSolver"],:active, i-1)
     end
   end
 
   sparseTrafo = get(params, :sparseTrafo, nothing)
-  @idle_add set_gtk_property!(m["cbMatrixCompression"], :active,
+  @idle_add_guarded set_gtk_property!(m["cbMatrixCompression"], :active,
                        sparseTrafo != nothing)
   if sparseTrafo != nothing
     for (i,trafo) in enumerate(linearOperatorList())
       if trafo == sparseTrafo
-        @idle_add set_gtk_property!(m["cbSparsityTrafo"],:active, i-1)
+        @idle_add_guarded set_gtk_property!(m["cbSparsityTrafo"],:active, i-1)
       end
     end
   end
@@ -550,8 +550,8 @@ function setParams(m::RecoWidget, params)
   set_gtk_property!(m["cbRecY"], :active, in(2,params[:recChannels]))
   set_gtk_property!(m["cbRecZ"], :active, in(3,params[:recChannels]))
 
-  @idle_add set_gtk_property!(m["entRecoDescrip"], :text, get(params, :description,""))
-  @idle_add set_gtk_property!(m["cbSubtractInternalBG"], :active, get(params, :bgCorrectionInternal, false))
+  @idle_add_guarded set_gtk_property!(m["entRecoDescrip"], :text, get(params, :description,""))
+  @idle_add_guarded set_gtk_property!(m["cbSubtractInternalBG"], :active, get(params, :bgCorrectionInternal, false))
 
 
   if haskey(params, :SFPath)
@@ -559,10 +559,10 @@ function setParams(m::RecoWidget, params)
       params[:SFPath] = String[params[:SFPath]]
     end
     numSF = length(params[:SFPath])
-    @idle_add set_gtk_property!(m["adjNumSF"], :value, numSF)
+    @idle_add_guarded set_gtk_property!(m["adjNumSF"], :value, numSF)
     m.bSF = MPIFile(params[:SFPath])
   else
-    @idle_add set_gtk_property!(m["adjNumSF"], :value, 1)
+    @idle_add_guarded set_gtk_property!(m["adjNumSF"], :value, 1)
     m.bSF = MPIFile[BrukerFile()]
   end
   return nothing

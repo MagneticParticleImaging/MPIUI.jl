@@ -84,7 +84,7 @@ function MeasurementWidget(filenameConfig="")
   set_gtk_property!(m["boxMeasTabVisu",BoxLeaf],:expand,m.rawDataWidget,true)
 
   #= TODO @debug "Read safety parameters"
-  @idle_add begin
+  @idle_add_guarded begin
     empty!(m["cbSafeCoil", ComboBoxTextLeaf])
     for coil in getValidHeadScannerGeos()
         push!(m["cbSafeCoil",ComboBoxTextLeaf], coil.name)
@@ -107,7 +107,7 @@ function MeasurementWidget(filenameConfig="")
         end
     end
 
-    @idle_add begin
+    @idle_add_guarded begin
       empty!(m["cbWaveform", ComboBoxTextLeaf])
       for w in RedPitayaDAQServer.waveforms()
         push!(m["cbWaveform",ComboBoxTextLeaf], w)
@@ -122,8 +122,8 @@ function MeasurementWidget(filenameConfig="")
     setInfoParams(m)
     # TODO setParams(m, merge!(generalParams(m.scanner),toDict(getDAQ(m.scanner).params)))
     setParams(m, m.scanner)
-    @idle_add set_gtk_property!(m["entConfig",EntryLeaf],:text,filenameConfig)
-    #@idle_add set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isRobRef)
+    @idle_add_guarded set_gtk_property!(m["entConfig",EntryLeaf],:text,filenameConfig)
+    #@idle_add_guarded set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isRobRef)
     # TODO enableRobotMoveButtons(m,isRobRef)
     # TODO enableDFWaveformControls(m, get(getGeneralParams(m.scanner), "allowDFWaveformChanges", false))
 
@@ -133,13 +133,13 @@ function MeasurementWidget(filenameConfig="")
         isValid = checkCoords(getRobotSetupUI(m), getPos(rob), getMinMaxPosX(rob))
       catch
         # TODO enableRobotMoveButtons(m,false)
-        #@idle_add set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,true)
+        #@idle_add_guarded set_gtk_property!(m["btnMovePark",ButtonLeaf],:sensitive,true)
       end
     end
 
-    @idle_add updateCalibTime(C_NULL, m)
+    @idle_add_guarded updateCalibTime(C_NULL, m)
   else
-    @idle_add begin
+    @idle_add_guarded begin
       set_gtk_property!(m["tbMeasure",ToolButtonLeaf],:sensitive,false)
       set_gtk_property!(m["tbMeasureBG",ToolButtonLeaf],:sensitive,false)
       set_gtk_property!(m["tbContinous",ToggleToolButtonLeaf],:sensitive,false)
@@ -147,7 +147,7 @@ function MeasurementWidget(filenameConfig="")
     end
   end
 
-  @idle_add set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
+  @idle_add_guarded set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,false)
 
   @debug "InitCallbacks"
 
@@ -156,10 +156,10 @@ function MeasurementWidget(filenameConfig="")
   end
 
   # Dummy plotting for warmstart during measurement
-  @idle_add updateData(m.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
+  @idle_add_guarded updateData(m.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
 
   if !isnothing(m.scanner) && !isnothing(m.protocol.params.sequence)
-    @idle_add begin
+    @idle_add_guarded begin
       set_gtk_property!(m["adjNumFGFrames", AdjustmentLeaf], :value, acqNumFrames(protocol.params.sequence))
       set_gtk_property!(m["adjNumFrameAverages", AdjustmentLeaf], :value, acqNumFrameAverages(protocol.params.sequence))
       set_gtk_property!(m["adjNumAverages", AdjustmentLeaf], :value, acqNumAverages(protocol.params.sequence))
@@ -226,7 +226,7 @@ function initCallbacks(m::MeasurementWidget)
 
       timerActive = true
       counter = 0
-      #@idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
+      #@idle_add_guarded set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,false)
 
       function update_(::Timer)
         if timerActive
@@ -241,7 +241,7 @@ function initCallbacks(m::MeasurementWidget)
 
           deltaT = daq.params.dfCycle / daq.params.numSampPerPeriod
 
-          @idle_add updateData(m.rawDataWidget, uMeas, deltaT)
+          @idle_add_guarded updateData(m.rawDataWidget, uMeas, deltaT)
 
           sleep(get_gtk_property(m["adjPause",AdjustmentLeaf],:value,Float64))
 
@@ -259,7 +259,7 @@ function initCallbacks(m::MeasurementWidget)
           stopTx(daq)
           disableACPower(getSurveillanceUnit(m.scanner), m.scanner)
           MPIMeasurements.disconnect(daq)
-          #@idle_add set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
+          #@idle_add_guarded set_gtk_property!(m["btnRobotMove",ButtonLeaf],:sensitive,true)
           close(timer)
         end
       end
@@ -271,7 +271,7 @@ function initCallbacks(m::MeasurementWidget)
 
   signal_connect(m["tbCancel",ToolButtonLeaf], :clicked) do w
     try
-       @idle_add begin
+       @idle_add_guarded begin
          isnothing(m.biChannel) || !isopen(m.biChannel) || put!(m.biChannel, CancelEvent())
          m.calibInProgress = false
        end
@@ -298,7 +298,7 @@ function initCallbacks(m::MeasurementWidget)
           return
         end
       end
-      @idle_add set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
+      @idle_add_guarded set_gtk_property!(m["tbCancel",ToolButtonLeaf],:sensitive,true)
     else
       @info "Stop protocol"
       isnothing(m.biChannel) || !isopen(m.biChannel) || isfull(m.biChannel) || put!(m.biChannel, StopEvent())
@@ -385,7 +385,7 @@ function updateSequence(m::MeasurementWidget, seq::AbstractString)
   dfString = *([ string(x*1e3," x ") for x in diag(ustrip.(dfStrength(s)[1,:,:])) ]...)[1:end-3]
   dfDividerStr = *([ string(x," x ") for x in unique(vec(dfDivider(s))) ]...)[1:end-3]
 
-  @idle_add begin
+  @idle_add_guarded begin
     set_gtk_property!(m["entSequenceName",EntryLeaf], :text, seq)
 
     set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
@@ -442,7 +442,7 @@ function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
   end
   calibStr = string(calibStr,@sprintf("%.1f",calibTime/60)," min")
 
-  @idle_add set_gtk_property!(m["entCalibTime",EntryLeaf],:text, calibStr)
+  @idle_add_guarded set_gtk_property!(m["entCalibTime",EntryLeaf],:text, calibStr)
   return
 end
 
@@ -460,8 +460,8 @@ function setInfoParams(m::MeasurementWidget)
   #else
   #  freqStr = "$(round(daq.params.dfFreq[1], digits=2)) Hz"
   #end
-  #@idle_add set_gtk_property!(m["entDFFreq",EntryLeaf],:text,freqStr)
-  #@idle_add set_gtk_property!(m["entDFPeriod",EntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")
+  #@idle_add_guarded set_gtk_property!(m["entDFFreq",EntryLeaf],:text,freqStr)
+  #@idle_add_guarded set_gtk_property!(m["entDFPeriod",EntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")
   numPeriods = tryparse(Int64, get_gtk_property(m["entNumPeriods", EntryLeaf], :text, String))
 
   framePeriod = get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
@@ -471,7 +471,7 @@ function setInfoParams(m::MeasurementWidget)
   totalPeriod = framePeriod * get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64) *
                               get_gtk_property(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64)
 
-  @idle_add begin
+  @idle_add_guarded begin
     set_gtk_property!(m["entFramePeriod",EntryLeaf],:text,"$(@sprintf("%.5f",framePeriod)) s")
 
     set_gtk_property!(m["entTotalPeriod",EntryLeaf],:text,"$(@sprintf("%.2f",totalPeriod)) s")
@@ -522,28 +522,28 @@ function setParams(m::MeasurementWidget, scanner::MPIScanner)
   seq = m.protocol.params.sequence
   gen = scanner.generalParams 
 
-  @idle_add set_gtk_property!(m["adjNumAverages",AdjustmentLeaf], :value, 1 ) # TODO params["acqNumAverages"])
-  @idle_add set_gtk_property!(m["adjNumFrameAverages",AdjustmentLeaf], :value, 1 ) # TODO params["acqNumFrameAverages"])
-  @idle_add set_gtk_property!(m["adjNumSubperiods",AdjustmentLeaf], :value, 1 ) # TODO get(params,"acqNumSubperiods",1))
-  @idle_add set_gtk_property!(m["adjNumFGFrames",AdjustmentLeaf], :value, 1 ) # TODO params["acqNumFrames"])
-  @idle_add set_gtk_property!(m["adjNumBGFrames",AdjustmentLeaf], :value, 1 ) # TODO params["acqNumFrames"])
-  #@idle_add set_gtk_property!(m["entStudy"], :text, params["studyName"])
-  @idle_add set_gtk_property!(m["entExpDescr",EntryLeaf], :text, "" ) # TODO params["studyDescription"] )
-  @idle_add set_gtk_property!(m["entOperator",EntryLeaf], :text, "default" ) # gp.operator)
+  @idle_add_guarded set_gtk_property!(m["adjNumAverages",AdjustmentLeaf], :value, 1 ) # TODO params["acqNumAverages"])
+  @idle_add_guarded set_gtk_property!(m["adjNumFrameAverages",AdjustmentLeaf], :value, 1 ) # TODO params["acqNumFrameAverages"])
+  @idle_add_guarded set_gtk_property!(m["adjNumSubperiods",AdjustmentLeaf], :value, 1 ) # TODO get(params,"acqNumSubperiods",1))
+  @idle_add_guarded set_gtk_property!(m["adjNumFGFrames",AdjustmentLeaf], :value, 1 ) # TODO params["acqNumFrames"])
+  @idle_add_guarded set_gtk_property!(m["adjNumBGFrames",AdjustmentLeaf], :value, 1 ) # TODO params["acqNumFrames"])
+  #@idle_add_guarded set_gtk_property!(m["entStudy"], :text, params["studyName"])
+  @idle_add_guarded set_gtk_property!(m["entExpDescr",EntryLeaf], :text, "" ) # TODO params["studyDescription"] )
+  @idle_add_guarded set_gtk_property!(m["entOperator",EntryLeaf], :text, "default" ) # gp.operator)
   dfString = *([ string(x*1e3," x ") for x in diag(ustrip.(dfStrength(seq)[1,:,:])) ]...)[1:end-3]
-  @idle_add set_gtk_property!(m["entDFStrength",EntryLeaf], :text, dfString)
+  @idle_add_guarded set_gtk_property!(m["entDFStrength",EntryLeaf], :text, dfString)
   dfDividerStr = *([ string(x," x ") for x in unique(vec(dfDivider(seq))) ]...)[1:end-3]
-  @idle_add set_gtk_property!(m["entDFDivider",EntryLeaf], :text, dfDividerStr)
-  @idle_add set_gtk_property!(m["entSequenceName", EntryLeaf], :text, MPIFiles.name(seq))
+  @idle_add_guarded set_gtk_property!(m["entDFDivider",EntryLeaf], :text, dfDividerStr)
+  @idle_add_guarded set_gtk_property!(m["entSequenceName", EntryLeaf], :text, MPIFiles.name(seq))
 
-  #TODO @idle_add set_gtk_property!(m["entDFJumpSharpness",EntryLeaf], :text, "$(get(params,"jumpSharpness", 0.1))")
+  #TODO @idle_add_guarded set_gtk_property!(m["entDFJumpSharpness",EntryLeaf], :text, "$(get(params,"jumpSharpness", 0.1))")
 
-  #= TODO @idle_add set_gtk_property!(m["entTracerName",EntryLeaf], :text, params["tracerName"][1])
-  @idle_add set_gtk_property!(m["entTracerBatch",EntryLeaf], :text, params["tracerBatch"][1])
-  @idle_add set_gtk_property!(m["entTracerVendor",EntryLeaf], :text, params["tracerVendor"][1])
-  @idle_add set_gtk_property!(m["adjTracerVolume",AdjustmentLeaf], :value, 1000*params["tracerVolume"][1])
-  @idle_add set_gtk_property!(m["adjTracerConcentration",AdjustmentLeaf], :value, 1000*params["tracerConcentration"][1])
-  @idle_add set_gtk_property!(m["entTracerSolute",EntryLeaf], :text, params["tracerSolute"][1])
+  #= TODO @idle_add_guarded set_gtk_property!(m["entTracerName",EntryLeaf], :text, params["tracerName"][1])
+  @idle_add_guarded set_gtk_property!(m["entTracerBatch",EntryLeaf], :text, params["tracerBatch"][1])
+  @idle_add_guarded set_gtk_property!(m["entTracerVendor",EntryLeaf], :text, params["tracerVendor"][1])
+  @idle_add_guarded set_gtk_property!(m["adjTracerVolume",AdjustmentLeaf], :value, 1000*params["tracerVolume"][1])
+  @idle_add_guarded set_gtk_property!(m["adjTracerConcentration",AdjustmentLeaf], :value, 1000*params["tracerConcentration"][1])
+  @idle_add_guarded set_gtk_property!(m["entTracerSolute",EntryLeaf], :text, params["tracerSolute"][1])
   =#
 
   #=if haskey(params,"acqFFSequence")
@@ -552,19 +552,19 @@ function setParams(m::MeasurementWidget, scanner::MPIScanner)
       updateSequence(m, seq)
     end
   else
-      @idle_add set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, params["acqNumPeriodsPerFrame"])
-      @idle_add set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "1")
+      @idle_add_guarded set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, params["acqNumPeriodsPerFrame"])
+      @idle_add_guarded set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "1")
   end=#
-  @idle_add set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, acqNumPeriodsPerFrame(seq))
-  @idle_add set_gtk_property!(m["entNumPatches",EntryLeaf], :text, acqNumPatches(seq))
+  @idle_add_guarded set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, acqNumPeriodsPerFrame(seq))
+  @idle_add_guarded set_gtk_property!(m["entNumPatches",EntryLeaf], :text, acqNumPatches(seq))
 
   #= TODO if haskey(params,"dfWaveform")
     idx = findfirst_(RedPitayaDAQServer.waveforms(), params["dfWaveform"])
     if idx > 0
-      @idle_add set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, idx-1)
+      @idle_add_guarded set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, idx-1)
     end
   else
-      @idle_add set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, 0)
+      @idle_add_guarded set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, 0)
   end  =#
 
   calibProtocol = Protocol("RobotBasedSystemMatrix", m.scanner)
@@ -575,17 +575,17 @@ function setParams(m::MeasurementWidget, scanner::MPIScanner)
     fovStr = @sprintf("%.2f x %.2f x %.2f", fov[1],fov[2],fov[3])
     ctr = Float64.(ustrip.(uconvert.(Unitful.mm,MPIFiles.fieldOfViewCenter( calibProtocol.params.positions)))) # convert to mm
     ctrStr = @sprintf("%.2f x %.2f x %.2f", ctr[1],ctr[2],ctr[3])
-    @idle_add set_gtk_property!(m["entGridShape",EntryLeaf], :text, shpStr)
-    @idle_add set_gtk_property!(m["entFOV",EntryLeaf], :text, fovStr)
-    @idle_add set_gtk_property!(m["entCenter",EntryLeaf], :text, ctrStr)
-    # TODO @idle_add set_gtk_property!(m["adjNumBGMeasurements",AdjustmentLeaf], :value, p["calibNumBGMeasurements"])
+    @idle_add_guarded set_gtk_property!(m["entGridShape",EntryLeaf], :text, shpStr)
+    @idle_add_guarded set_gtk_property!(m["entFOV",EntryLeaf], :text, fovStr)
+    @idle_add_guarded set_gtk_property!(m["entCenter",EntryLeaf], :text, ctrStr)
+    # TODO @idle_add_guarded set_gtk_property!(m["adjNumBGMeasurements",AdjustmentLeaf], :value, p["calibNumBGMeasurements"])
   end
   #=velRob = getDefaultVelocity(getRobot(m.scanner))
   velRobStr = @sprintf("%.d x %.d x %.d", velRob[1],velRob[2],velRob[3])
-  @idle_add set_gtk_property!(m["entVelRob",EntryLeaf], :text, velRobStr)
-  @idle_add set_gtk_property!(m["entCurrPos",EntryLeaf], :text, "0.0 x 0.0 x 0.0")=#
+  @idle_add_guarded set_gtk_property!(m["entVelRob",EntryLeaf], :text, velRobStr)
+  @idle_add_guarded set_gtk_property!(m["entCurrPos",EntryLeaf], :text, "0.0 x 0.0 x 0.0")=#
 
-  @idle_add set_gtk_property!(m["adjPause",AdjustmentLeaf], :value, calibProtocol.params.waitTime )
+  @idle_add_guarded set_gtk_property!(m["adjPause",AdjustmentLeaf], :value, calibProtocol.params.waitTime )
 end
 
 function getRobotSetupUI(m::MeasurementWidget)
@@ -608,7 +608,7 @@ end
 
 
 function enableDFWaveformControls(m::MeasurementWidget, enable::Bool)
-  @idle_add begin
+  @idle_add_guarded begin
     set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf],:sensitive,enable)
     set_gtk_property!(m["entDFDivider",EntryLeaf],:sensitive,enable)
   end
@@ -618,7 +618,7 @@ end
 function loadArbPos(m::MeasurementWidget)
       filter = Gtk.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
       filename = open_dialog("Select Arbitrary Position File", GtkNullContainer(), (filter, ))
-      @idle_add set_gtk_property!(m["entArbitraryPos",EntryLeaf],:text,filename)
+      @idle_add_guarded set_gtk_property!(m["entArbitraryPos",EntryLeaf],:text,filename)
 end
 
 function clear(proto::ProtocolStatus)
