@@ -84,6 +84,19 @@ macro guard(ex)
   return :(try; begin $(ex) end; catch e; showError(e); end)
 end
 
+macro idle_add_guarded(ex)
+  quote
+  g_idle_add() do
+      try
+        $(esc(ex))
+      catch err
+        @warn("Error in @guarded callback", exception=(err, catch_backtrace()))
+      end
+      return false
+    end
+  end
+end
+
 const colors = [(0/255,73/255,146/255), # UKE blau
 (239/255,123/255,5/255),	# Orange (dunkel)
 (138/255,189/255,36/255),	# Grün

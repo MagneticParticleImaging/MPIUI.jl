@@ -45,7 +45,7 @@ function ProtocolWidget(scanner=nothing)
         nothing, RawDataWidget(), mdfstore, zeros(Float32,0,0,0,0), "", now())
   Gtk.gobject_move_ref(pw, mainBox)
 
-  @idle_add begin
+  @idle_add_guarded begin
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf],:sensitive,false)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf],:sensitive,false)
     set_gtk_property!(pw["tbCancel",ToolButtonLeaf],:sensitive,false)      
@@ -58,7 +58,7 @@ function ProtocolWidget(scanner=nothing)
   end
 
   # Dummy plotting for warmstart during protocol execution
-  @idle_add begin 
+  @idle_add_guarded begin 
     push!(pw["boxProtocolTabVisu",BoxLeaf], pw.rawDataWidget)
     set_gtk_property!(pw["boxProtocolTabVisu",BoxLeaf],:expand, pw.rawDataWidget, true)  
     updateData(pw.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
@@ -79,7 +79,7 @@ function displayProgress(pw::ProtocolWidget)
     progress = "FINISHED"
     fraction = 1.0
   end
-  @idle_add begin
+  @idle_add_guarded begin
     set_gtk_property!(pw["pbProtocol", ProgressBar], :text, progress)
     set_gtk_property!(pw["pbProtocol", ProgressBar], :fraction, fraction)
   end
@@ -116,7 +116,7 @@ function initCallbacks(pw::ProtocolWidget)
         info_dialog(message, mpilab[]["mainWindow"])
       else
         if initProtocol(pw)
-          @idle_add begin
+          @idle_add_guarded begin
             pw.updating = true
             est = timeEstimate(pw.protocol)
             set_gtk_property!(pw["lblRuntime", LabelLeaf], :label, est)
@@ -132,7 +132,7 @@ function initCallbacks(pw::ProtocolWidget)
     if !pw.updating
       if get_gtk_property(w, :active, Bool)
         if startProtocol(pw)
-          @idle_add begin 
+          @idle_add_guarded begin 
             pw.updating = true
             set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, false)
             set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
@@ -157,7 +157,7 @@ function initCallbacks(pw::ProtocolWidget)
       else 
         tryResumeProtocol(pw)
       end
-      @idle_add set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
+      @idle_add_guarded set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
     end
   end
 
@@ -194,14 +194,14 @@ function initCallbacks(pw::ProtocolWidget)
 
   signal_connect(pw["txtBuffProtocolDescription", GtkTextBufferLeaf], :changed) do w
     if !pw.updating
-      @idle_add set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
     end
   end
 
   #for adj in ["adjNumFrames", "adjNumAverages", "adjNumFrameAverages", "adjNumBGFrames"]
   #  signal_connect(pw[adj, AdjustmentLeaf], "value_changed") do w
   #    if !pw.updating
-  #      @idle_add set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+  #      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
   #    end
   #  end
   #end
@@ -225,7 +225,7 @@ end
 function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
   params = protocol.params
   @info "Updating protocol"
-  @idle_add begin
+  @idle_add_guarded begin
     pw.updating = true
     pw.protocol = protocol
     set_gtk_property!(pw["lblScannerName", GtkLabelLeaf], :label, name(pw.scanner))
@@ -357,7 +357,7 @@ end
 function addGenericCallback(pw::ProtocolWidget, generic)
   signal_connect(generic, "changed") do w
     if !pw.updating
-      @idle_add set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
     end
   end
 end
@@ -365,7 +365,7 @@ end
 function addGenericCallback(pw::ProtocolWidget, cb::BoolParameter)
   signal_connect(cb, "toggled") do w
     if !pw.updating
-      @idle_add set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
     end
   end
 end
@@ -388,7 +388,7 @@ end
 
 function updateScanner!(pw::ProtocolWidget, scanner::MPIScanner)
   pw.scanner = scanner
-  @idle_add begin
+  @idle_add_guarded begin
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf],:sensitive,false)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf],:sensitive,false)
     set_gtk_property!(pw["tbCancel",ToolButtonLeaf],:sensitive,false)

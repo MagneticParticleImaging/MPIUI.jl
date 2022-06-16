@@ -31,7 +31,7 @@ function updatePositions(posParam::PositionParameter, pos::Union{Positions, Noth
     fovStr = @sprintf("%.2f x %.2f x %.2f", fov[1],fov[2],fov[3])
     ctr = Float64.(ustrip.(uconvert.(Unitful.mm,MPIFiles.fieldOfViewCenter(pos)))) # convert to mm
     ctrStr = @sprintf("%.2f x %.2f x %.2f", ctr[1],ctr[2],ctr[3])
-    @idle_add begin 
+    @idle_add_guarded begin 
       set_gtk_property!(posParam["entGridShape",EntryLeaf], :text, shpStr)
       set_gtk_property!(posParam["entFOV",EntryLeaf], :text, fovStr)
       set_gtk_property!(posParam["entCenter",EntryLeaf], :text, ctrStr)
@@ -83,7 +83,7 @@ end
 function loadFilePos(posParam::PositionParameter)
   filter = Gtk.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
   filename = open_dialog("Select Position File", GtkNullContainer(), (filter, ))
-  @idle_add begin 
+  @idle_add_guarded begin 
     set_gtk_property!(posParam["entArbitraryPos",EntryLeaf],:text,filename)
     if filename != ""
       set_gtk_property!(posParam["cbUseArbitraryPos", CheckButtonLeaf], :sensitive, true)

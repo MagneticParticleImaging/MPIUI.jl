@@ -79,9 +79,9 @@ end
 function load(m::Settings)
   m.data = TOML.parsefile(settingsfile)
 
-  #@idle_add set_gtk_property!(m["entSettingsDatasetFolder"], :text, m["datasetDir"])
-  #@idle_add set_gtk_property!(m["entSettingsRecoFolder"], :text, m["reconstructionDir"])
-  #@idle_add set_gtk_property!(m["cbMDFStoreFreqData"], :active, get(m.data, "exportMDFFreqSpace", false))
+  #@idle_add_guarded set_gtk_property!(m["entSettingsDatasetFolder"], :text, m["datasetDir"])
+  #@idle_add_guarded set_gtk_property!(m["entSettingsRecoFolder"], :text, m["reconstructionDir"])
+  #@idle_add_guarded set_gtk_property!(m["cbMDFStoreFreqData"], :active, get(m.data, "exportMDFFreqSpace", false))
 
 
   #hack for backwards compatibility

@@ -8,7 +8,7 @@ EventType(m::MeasurementWidget, event::StorageSuccessEvent) = m.protocolStatus.w
 
 function measurement(widgetptr::Ptr, m::MeasurementWidget)
     try
-      @idle_add @info "Calling measurement"
+      @idle_add_guarded @info "Calling measurement"
 
       params = getParams(m)
       acqNumFrames(m.protocol.params.sequence, params["acqNumFGFrames"])
@@ -132,7 +132,7 @@ end
 
 function measurementBG(widgetptr::Ptr, m::MeasurementWidget)
   try
-    @idle_add @info "Calling BG measurement"
+    @idle_add_guarded @info "Calling BG measurement"
 
     # TODO add background paramter/triggers
     if !isnothing(m.measController)

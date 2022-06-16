@@ -59,7 +59,7 @@ function SFViewerWidget()
 
   function updateSFMixO( widget )
     if !m.updating
-      @idle_add begin
+      @idle_add_guarded begin
           m.updating = true
           mx = get_gtk_property(m["adjSFMixX"],:value, Int64)
           my = get_gtk_property(m["adjSFMixY"],:value, Int64)
@@ -82,7 +82,7 @@ function SFViewerWidget()
 
   function updateSFSignalOrdered( widget )
     if !m.updating
-      @idle_add begin
+      @idle_add_guarded begin
           m.updating = true
           k = m.SNRSortedIndices[get_gtk_property(m["adjSFSignalOrdered"],:value, Int64)]
           recChan = clamp(div(k,m.maxFreq)+1,1,3)
@@ -97,14 +97,14 @@ function SFViewerWidget()
   end
 
   signal_connect(m["cbSFBGCorr"], :toggled) do w
-    @idle_add updateSF(m)
+    @idle_add_guarded updateSF(m)
   end
   signal_connect(m["adjSFPatch"], "value_changed") do w
-    @idle_add updateSF(m)
+    @idle_add_guarded updateSF(m)
   end
   signal_connect(m["adjSFRecChan"], "value_changed") do w
     if !m.updating
-      @idle_add begin
+      @idle_add_guarded begin
           m.updating = true
           updateMix(m)
           updateSigOrd(m)
@@ -115,7 +115,7 @@ function SFViewerWidget()
   end
   signal_connect(m["adjSFFreq"], "value_changed") do w
     if !m.updating
-      @idle_add begin
+      @idle_add_guarded begin
           m.updating = true
           updateMix(m)
           updateSigOrd(m)

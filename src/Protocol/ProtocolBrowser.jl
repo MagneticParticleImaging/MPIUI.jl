@@ -76,7 +76,7 @@ end
 
 function updateData!(m::ProtocolSelectionDialog)
 
-  @idle_add begin
+  @idle_add_guarded begin
       @info "Update protocol store"
       m.updating = true
       unselectall!(m.selection)

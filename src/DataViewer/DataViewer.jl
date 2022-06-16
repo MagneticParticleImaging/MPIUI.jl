@@ -118,7 +118,7 @@ function DataViewerWidget()
     isActive = get_gtk_property(m["btnPlayMovie"], :active, Bool)
     if isActive
       m.stopPlayingMovie = false
-      @idle_add playMovie()
+      @idle_add_guarded playMovie()
     else
       m.stopPlayingMovie = true
     end
@@ -129,7 +129,7 @@ function DataViewerWidget()
     L = get_gtk_property(m["adjFrames"],:upper, Int64)
     curFrame = get_gtk_property(m["adjFrames"],:value, Int64)
     while !m.stopPlayingMovie
-      @idle_add set_gtk_property!(m["adjFrames"],:value, curFrame)
+      @idle_add_guarded set_gtk_property!(m["adjFrames"],:value, curFrame)
       yield()
       sleep(0.01)
       curFrame = mod1(curFrame+1,L)
@@ -274,18 +274,18 @@ function updateSliceWidgets(m::DataViewerWidget)
   if refdata != nothing
 
     if size(refdata,4) != sfw
-      @idle_add set_gtk_property!(m["adjFrames"],:value, 1)
-      @idle_add set_gtk_property!(m["adjFrames"],:upper,size(m.data,Axis{:time}))
+      @idle_add_guarded set_gtk_property!(m["adjFrames"],:value, 1)
+      @idle_add_guarded set_gtk_property!(m["adjFrames"],:upper,size(m.data,Axis{:time}))
     end
 
     if size(refdata,1) != sxw || size(refdata,2) != syw || size(refdata,3) != szw
-      @idle_add set_gtk_property!(m["adjSliceX"],:upper,size(refdata,1))
-      @idle_add set_gtk_property!(m["adjSliceY"],:upper,size(refdata,2))
-      @idle_add set_gtk_property!(m["adjSliceZ"],:upper,size(refdata,3))
+      @idle_add_guarded set_gtk_property!(m["adjSliceX"],:upper,size(refdata,1))
+      @idle_add_guarded set_gtk_property!(m["adjSliceY"],:upper,size(refdata,2))
+      @idle_add_guarded set_gtk_property!(m["adjSliceZ"],:upper,size(refdata,3))
 
-      @idle_add set_gtk_property!(m["adjSliceX"],:value,max(div(size(refdata,1),2),1))
-      @idle_add set_gtk_property!(m["adjSliceY"],:value,max(div(size(refdata,2),2),1))
-      @idle_add set_gtk_property!(m["adjSliceZ"],:value,max(div(size(refdata,3),2),1))
+      @idle_add_guarded set_gtk_property!(m["adjSliceX"],:value,max(div(size(refdata,1),2),1))
+      @idle_add_guarded set_gtk_property!(m["adjSliceY"],:value,max(div(size(refdata,2),2),1))
+      @idle_add_guarded set_gtk_property!(m["adjSliceZ"],:value,max(div(size(refdata,3),2),1))
     end
   end
   return
@@ -353,7 +353,7 @@ function updateData!(m::DataViewerWidget, data::ImageMeta{T,5}, dataBG=nothing; 
         end
       end
 
-      @idle_add begin
+      @idle_add_guarded begin
           empty!(m["cbChannel"])
           for i=1:numChan
             push!(m["cbChannel"], "$i")
@@ -362,7 +362,7 @@ function updateData!(m::DataViewerWidget, data::ImageMeta{T,5}, dataBG=nothing; 
           updateColoringWidgets( m )
       end
 
-      @idle_add begin
+      @idle_add_guarded begin
           strProfile = ["x direction", "y direction", "z direction","temporal"]
           empty!(m["cbProfile"])
           nd = size(data,5) > 1 ? 4 : 3
@@ -384,7 +384,7 @@ function updateData!(m::DataViewerWidget, data::ImageMeta{T,5}, dataBG=nothing; 
     updateSliceWidgets(m)
     m.updating = false
     showData(m)
-    @idle_add set_gtk_property!(m["adjPixelResizeFactor"],:value, (dataBG==nothing) ? 5 : 1  )
+    @idle_add_guarded set_gtk_property!(m["adjPixelResizeFactor"],:value, (dataBG==nothing) ? 5 : 1  )
 
     if params!=nothing
       if data != nothing
@@ -402,10 +402,10 @@ end
 function updateColoringWidgets(m::DataViewerWidget)
   m.upgradeColoringWInProgress = true
   chan = max(get_gtk_property(m["cbChannel"],:active, Int64) + 1,1)
-  @idle_add set_gtk_property!(m["adjCMin"],:value, m.coloring[chan].cmin)
-  @idle_add set_gtk_property!(m["adjCMax"],:value, m.coloring[chan].cmax)
+  @idle_add_guarded set_gtk_property!(m["adjCMin"],:value, m.coloring[chan].cmin)
+  @idle_add_guarded set_gtk_property!(m["adjCMax"],:value, m.coloring[chan].cmax)
   idx = findfirst(a->a==m.coloring[chan].cmap,existing_cmaps())-1
-  @idle_add set_gtk_property!(m["cbCMaps"],:active, idx)
+  @idle_add_guarded set_gtk_property!(m["cbCMaps"],:active, idx)
   m.upgradeColoringWInProgress = false
 end
 
@@ -546,60 +546,60 @@ function getParams(m::DataViewerWidget)
 end
 
 function setParams(m::DataViewerWidget, params)
-  @idle_add set_gtk_property!(m["adjSliceX"], :value, params[:sliceX])
-  @idle_add set_gtk_property!(m["adjSliceY"], :value, params[:sliceY])
-  @idle_add set_gtk_property!(m["adjSliceZ"], :value, params[:sliceZ])
-  @idle_add set_gtk_property!(m["adjFrames"], :value, params[:frame])
-  @idle_add set_gtk_property!(m["cbSpatialMIP"], :active, params[:spatialMIP])
+  @idle_add_guarded set_gtk_property!(m["adjSliceX"], :value, params[:sliceX])
+  @idle_add_guarded set_gtk_property!(m["adjSliceY"], :value, params[:sliceY])
+  @idle_add_guarded set_gtk_property!(m["adjSliceZ"], :value, params[:sliceZ])
+  @idle_add_guarded set_gtk_property!(m["adjFrames"], :value, params[:frame])
+  @idle_add_guarded set_gtk_property!(m["cbSpatialMIP"], :active, params[:spatialMIP])
   m.coloring = Vector{ColoringParams}(undef,0)
   for col in params[:coloring]
     push!(m.coloring, ColoringParams(col.cmin, col.cmax, col.cmap))
   end
   updateColoringWidgets(m)
-  @idle_add set_gtk_property!(m["entVisuName"], :text, params[:description])
-  @idle_add set_gtk_property!(m["cbShowSlices"], :active, get(params,:showSlices,false))
+  @idle_add_guarded set_gtk_property!(m["entVisuName"], :text, params[:description])
+  @idle_add_guarded set_gtk_property!(m["cbShowSlices"], :active, get(params,:showSlices,false))
 
   # The following is for backwards compatibility with a former data format
   # where instead of permuteBG and flipBG we stored permutionBG
   if haskey(params, :permutionBG)
     perm, flip = convertMode2PermFlip(params[:permutionBG])
-    @idle_add set_gtk_property!(m["cbPermutes"], :active, findall(x->x==perm,permuteCombinations())[1] - 1)
-    @idle_add set_gtk_property!(m["cbFlips"], :active, findall(x->x==flip,flippings())[1] - 1)
+    @idle_add_guarded set_gtk_property!(m["cbPermutes"], :active, findall(x->x==perm,permuteCombinations())[1] - 1)
+    @idle_add_guarded set_gtk_property!(m["cbFlips"], :active, findall(x->x==flip,flippings())[1] - 1)
   else
-    @idle_add set_gtk_property!(m["cbPermutes"], :active, findall(x->x==params[:permuteBG],permuteCombinations())[1] - 1)
-    @idle_add set_gtk_property!(m["cbFlips"], :active, findall(x->x==params[:flipBG],flippings())[1] - 1)
+    @idle_add_guarded set_gtk_property!(m["cbPermutes"], :active, findall(x->x==params[:permuteBG],permuteCombinations())[1] - 1)
+    @idle_add_guarded set_gtk_property!(m["cbFlips"], :active, findall(x->x==params[:flipBG],flippings())[1] - 1)
   end
 
-  @idle_add set_gtk_property!(m["adjTransX"], :value, params[:transX]*1000)
-  @idle_add set_gtk_property!(m["adjTransY"], :value, params[:transY]*1000)
-  @idle_add set_gtk_property!(m["adjTransZ"], :value, params[:transZ]*1000)
-  @idle_add set_gtk_property!(m["adjRotX"], :value, params[:rotX])
-  @idle_add set_gtk_property!(m["adjRotY"], :value, params[:rotY])
-  @idle_add set_gtk_property!(m["adjRotZ"], :value, params[:rotZ])
+  @idle_add_guarded set_gtk_property!(m["adjTransX"], :value, params[:transX]*1000)
+  @idle_add_guarded set_gtk_property!(m["adjTransY"], :value, params[:transY]*1000)
+  @idle_add_guarded set_gtk_property!(m["adjTransZ"], :value, params[:transZ]*1000)
+  @idle_add_guarded set_gtk_property!(m["adjRotX"], :value, params[:rotX])
+  @idle_add_guarded set_gtk_property!(m["adjRotY"], :value, params[:rotY])
+  @idle_add_guarded set_gtk_property!(m["adjRotZ"], :value, params[:rotZ])
 
-  @idle_add set_gtk_property!(m["adjTransBGX"], :value, get(params,:transBGX,0.0)*1000)
-  @idle_add set_gtk_property!(m["adjTransBGY"], :value, get(params,:transBGY,0.0)*1000)
-  @idle_add set_gtk_property!(m["adjTransBGZ"], :value, get(params,:transBGZ,0.0)*1000)
-  @idle_add set_gtk_property!(m["adjRotBGX"], :value, get(params,:rotBGX,0.0))
-  @idle_add set_gtk_property!(m["adjRotBGY"], :value, get(params,:rotBGY,0.0))
-  @idle_add set_gtk_property!(m["adjRotBGZ"], :value, get(params,:rotBGZ,0.0))
+  @idle_add_guarded set_gtk_property!(m["adjTransBGX"], :value, get(params,:transBGX,0.0)*1000)
+  @idle_add_guarded set_gtk_property!(m["adjTransBGY"], :value, get(params,:transBGY,0.0)*1000)
+  @idle_add_guarded set_gtk_property!(m["adjTransBGZ"], :value, get(params,:transBGZ,0.0)*1000)
+  @idle_add_guarded set_gtk_property!(m["adjRotBGX"], :value, get(params,:rotBGX,0.0))
+  @idle_add_guarded set_gtk_property!(m["adjRotBGY"], :value, get(params,:rotBGY,0.0))
+  @idle_add_guarded set_gtk_property!(m["adjRotBGZ"], :value, get(params,:rotBGZ,0.0))
 
-  @idle_add set_gtk_property!(m["adjCMinBG"], :value, params[:coloringBG].cmin)
-  @idle_add set_gtk_property!(m["adjCMaxBG"], :value, params[:coloringBG].cmax)
-  @idle_add set_gtk_property!(m["cbCMapsBG"], :active, params[:coloringBG].cmap)
-  @idle_add set_gtk_property!(m["cbHideFG"], :active, get(params,:hideFG, false))
-  @idle_add set_gtk_property!(m["cbHideBG"], :active, get(params,:hideBG, false))
-  @idle_add set_gtk_property!(m["cbShowDFFOV"], :active, get(params,:showDFFOV, false))
-  @idle_add set_gtk_property!(m["cbTranslucentBlending"], :active, get(params,:translucentBlending, false))
-  @idle_add set_gtk_property!(m["cbSpatialBGMIP"], :active, get(params,:spatialMIPBG, false))
+  @idle_add_guarded set_gtk_property!(m["adjCMinBG"], :value, params[:coloringBG].cmin)
+  @idle_add_guarded set_gtk_property!(m["adjCMaxBG"], :value, params[:coloringBG].cmax)
+  @idle_add_guarded set_gtk_property!(m["cbCMapsBG"], :active, params[:coloringBG].cmap)
+  @idle_add_guarded set_gtk_property!(m["cbHideFG"], :active, get(params,:hideFG, false))
+  @idle_add_guarded set_gtk_property!(m["cbHideBG"], :active, get(params,:hideBG, false))
+  @idle_add_guarded set_gtk_property!(m["cbShowDFFOV"], :active, get(params,:showDFFOV, false))
+  @idle_add_guarded set_gtk_property!(m["cbTranslucentBlending"], :active, get(params,:translucentBlending, false))
+  @idle_add_guarded set_gtk_property!(m["cbSpatialBGMIP"], :active, get(params,:spatialMIPBG, false))
 
-  @idle_add set_gtk_property!(m["adjTTPThresh"], :value, get(params,:TTPThresh, 0.4))
-  @idle_add set_gtk_property!(m["cbFrameProj"], :active, get(params,:frameProj, 0))
+  @idle_add_guarded set_gtk_property!(m["adjTTPThresh"], :value, get(params,:TTPThresh, 0.4))
+  @idle_add_guarded set_gtk_property!(m["cbFrameProj"], :active, get(params,:frameProj, 0))
 
-  @idle_add set_gtk_property!(m["cbBlendChannels"], :active, get(params,:blendChannels, false))
-  @idle_add set_gtk_property!(m["cbShowAxes"], :active, get(params,:showAxes, false))
+  @idle_add_guarded set_gtk_property!(m["cbBlendChannels"], :active, get(params,:blendChannels, false))
+  @idle_add_guarded set_gtk_property!(m["cbShowAxes"], :active, get(params,:showAxes, false))
 
-  @idle_add set_gtk_property!(m["cbProfile"], :active, get(params,:profile, 0))
+  @idle_add_guarded set_gtk_property!(m["cbProfile"], :active, get(params,:profile, 0))
 
   showData(m)
 end

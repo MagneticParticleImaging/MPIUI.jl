@@ -83,7 +83,7 @@ function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::ProtocolEven
 end
 
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::IllegaleStateEvent)
-  @idle_add info_dialog(event.message, mpilab[]["mainWindow"])
+  @idle_add_guarded info_dialog(event.message, mpilab[]["mainWindow"])
   pw.protocolState = PS_FAILED
   return true
 end
@@ -182,7 +182,7 @@ function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, eve
 end
 
 function confirmPauseProtocol(pw::ProtocolWidget)
-  @idle_add begin
+  @idle_add_guarded begin
     pw.updating = true
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, true)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
@@ -192,7 +192,7 @@ function confirmPauseProtocol(pw::ProtocolWidget)
 end
 
 function denyPauseProtocol(pw::ProtocolWidget)
-  @idle_add begin
+  @idle_add_guarded begin
     pw.updating = true
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, false)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
@@ -226,7 +226,7 @@ function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, eve
 end
 
 function confirmResumeProtocol(pw::ProtocolWidget)
-  @idle_add begin
+  @idle_add_guarded begin
     pw.updating = true
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, false)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
@@ -236,7 +236,7 @@ function confirmResumeProtocol(pw::ProtocolWidget)
 end
 
 function denyResumeProtocol(pw::ProtocolWidget)
-  @idle_add begin
+  @idle_add_guarded begin
     pw.updating = true
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, true)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
@@ -278,7 +278,7 @@ function handleFinished(pw::ProtocolWidget, protocol::Protocol)
 end
 
 function confirmFinishedProtocol(pw::ProtocolWidget)
-  @idle_add begin
+  @idle_add_guarded begin
     pw.updating = true
     # Sensitive
     set_gtk_property!(pw["tbInit",ToolButtonLeaf], :sensitive, true)

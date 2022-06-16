@@ -124,7 +124,7 @@ function startSurveillanceUnit(m::SurveillanceWidget)
   
           T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
   
-          @idle_add begin
+          @idle_add_guarded begin
             p = Winston.plot(T[1,:], colors[1], linewidth=3)
             for l=2:L
               Winston.plot(p, T[l,:], colors[l], linewidth=3)

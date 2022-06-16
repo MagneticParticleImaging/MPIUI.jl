@@ -114,7 +114,7 @@ function updateSequence(seqParam::SequenceParameter, seqValue::AbstractString)
 end
 
 function updateSequence(seqParam::SequenceParameter, seq::Sequence)  
-  @idle_add begin
+  @idle_add_guarded begin
     try
       @info "Try adding channels"
       empty!(seqParam["boxPeriodicChannel", BoxLeaf])

@@ -24,7 +24,7 @@ end
 getindex(m::CoordinateParameter, w::AbstractString) = G_.object(m.builder, w)
 
 function updateCoordinate(param::CoordinateParameter, coord::ScannerCoords)
-  @idle_add begin
+  @idle_add_guarded begin
     set_gtk_property!(param["entX"], :text, string(ustrip(u"mm", coord.data[1])))
     set_gtk_property!(param["entY"], :text, string(ustrip(u"mm", coord.data[2])))
     set_gtk_property!(param["entZ"], :text, string(ustrip(u"mm", coord.data[3])))

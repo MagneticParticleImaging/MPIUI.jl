@@ -103,7 +103,7 @@ end
       end
 
 
-      @idle_add begin
+      @idle_add_guarded begin
         try 
           for (i,c) in enumerate(m.canvases)
             idx = findall(d->d==i, getChannelGroups(m.sensor))
