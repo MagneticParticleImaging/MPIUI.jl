@@ -133,7 +133,7 @@ function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::MultipleChoi
   buttons = [(choice, i) for (i, choice) in enumerate(event.choices)]
   parent = mpilab[]["mainWindow"]
   widget = GtkMessageDialog(event.message, buttons, GtkDialogFlags.DESTROY_WITH_PARENT, GtkMessageType.INFO, parent)
-  showall(widget)
+  show(widget)
   reply = run(widget)
   destroy(widget)
   @show reply
@@ -283,7 +283,7 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
     end
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
     set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, false)
-    set_gtk_property!(pw["btnPickProtocol", ButtonLeaf], :sensitive, true)
+    set_gtk_property!(pw["btnPickProtocol", GtkButtonLeaf], :sensitive, true)
     # Active
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :active, false)
     set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, false)

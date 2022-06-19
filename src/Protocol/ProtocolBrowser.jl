@@ -22,37 +22,37 @@ function ProtocolSelectionDialog(scanner::MPIScanner, params::Dict)
   resize!(dialog, 1024, 600)
   box = G_.content_area(dialog)
 
-  store = ListStore(String, String, String, Bool)
+  store = GtkListStore(String, String, String, Bool)
 
-  tv = TreeView(TreeModel(store))
-  r1 = CellRendererText()
-  r2 = CellRendererToggle()
+  tv = GtkTreeView(GtkTreeModel(store))
+  r1 = GtkCellRendererText()
+  r2 = GtkCellRendererToggle()
 
-  c0 = TreeViewColumn("Name", r1, Dict("text" => 0))
-  c1 = TreeViewColumn("Type", r1, Dict("text" => 1))
-  c2 = TreeViewColumn("Description", r1, Dict("text" => 2))
+  c0 = GtkTreeViewColumn("Name", r1, Dict("text" => 0))
+  c1 = GtkTreeViewColumn("Type", r1, Dict("text" => 1))
+  c2 = GtkTreeViewColumn("Description", r1, Dict("text" => 2))
 
   for (i,c) in enumerate((c0,c1,c2))
-    G_.sort_column_id(c,i-1)
-    G_.resizable(c,true)
-    G_.max_width(c,80)
+    G_.set_sort_column_id(c,i-1)
+    G_.set_resizable(c,true)
+    G_.set_max_width(c,80)
     push!(tv,c)
   end
   @info "Pushed tv columns"
 
-  G_.max_width(c0,300)
-  G_.max_width(c1,200)
-  G_.max_width(c2,200)
+  G_.set_max_width(c0,300)
+  G_.set_max_width(c1,200)
+  G_.set_max_width(c2,200)
 
-  tmFiltered = TreeModelFilter(store)
-  G_.visible_column(tmFiltered,3)
-  tmSorted = TreeModelSort(tmFiltered)
-  G_.model(tv, tmSorted)
+  tmFiltered = GtkTreeModelFilter(store)
+  G_.set_visible_column(tmFiltered,3)
+  tmSorted = GtkTreeModelSort(tmFiltered)
+  G_.set_model(tv, tmSorted)
 
-  G_.sort_column_id(TreeSortable(tmSorted),0,GtkSortType.DESCENDING)
-  selection = G_.selection(tv)
+  G_.set_sort_column_id(GtkTreeSortable(tmSorted),0,GtkSortType.DESCENDING)
+  selection = G_.get_selection(tv)
 
-  sw = ScrolledWindow()
+  sw = GtkScrolledWindow()
   push!(sw, tv)
   push!(box, sw)
   set_gtk_property!(box, :expand, sw, true)
@@ -66,10 +66,10 @@ function ProtocolSelectionDialog(scanner::MPIScanner, params::Dict)
 
   updateData!(dlg)
 
-  showall(tv)
-  showall(box)
+  show(tv)
+  show(box)
 
-  Gtk4.gobject_move_ref(dlg, dialog)
+  Gtk4.GLib.gobject_move_ref(dlg, dialog)
 
   return dlg
 end
@@ -95,6 +95,6 @@ end
 
 function getSelectedProtocol(dlg::ProtocolSelectionDialog)
   currentItTM = selected(dlg.selection)
-  protocol =  TreeModel(dlg.tmSorted)[currentItTM,1]
+  protocol =  GtkTreeModel(dlg.tmSorted)[currentItTM,1]
   return protocol
 end

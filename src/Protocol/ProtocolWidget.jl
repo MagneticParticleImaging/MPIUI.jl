@@ -43,7 +43,7 @@ function ProtocolWidget(scanner=nothing)
 
   pw = ProtocolWidget(mainBox.handle, b, paramGtkBuilder, false, scanner, protocol, nothing, nothing, PS_UNDEFINED,
         nothing, RawDataWidget(), mdfstore, zeros(Float32,0,0,0,0), "", now())
-  Gtk4.gobject_move_ref(pw, mainBox)
+  Gtk4.GLib.gobject_move_ref(pw, mainBox)
 
   @idle_add_guarded begin
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf],:sensitive,false)
@@ -62,7 +62,7 @@ function ProtocolWidget(scanner=nothing)
     push!(pw["boxProtocolTabVisu",BoxLeaf], pw.rawDataWidget)
     set_gtk_property!(pw["boxProtocolTabVisu",BoxLeaf],:expand, pw.rawDataWidget, true)  
     updateData(pw.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
-    showall(pw.rawDataWidget)
+    show(pw.rawDataWidget)
   end
 
   @info "Finished starting ProtocolWidget"
@@ -90,15 +90,15 @@ function getStorageParams(pw::ProtocolWidget)
   params["studyName"] = pw.currStudyName # TODO These are never updates, is the result correct?
   params["studyDate"] = pw.currStudyDate 
   params["studyDescription"] = ""
-  params["experimentDescription"] = get_gtk_property(pw["entExpDescr",EntryLeaf], :text, String)
-  params["experimentName"] = get_gtk_property(pw["entExpName",EntryLeaf], :text, String)
-  params["scannerOperator"] = get_gtk_property(pw["entOperator",EntryLeaf], :text, String)
-  params["tracerName"] = [get_gtk_property(pw["entTracerName",EntryLeaf], :text, String)]
-  params["tracerBatch"] = [get_gtk_property(pw["entTracerBatch",EntryLeaf], :text, String)]
-  params["tracerVendor"] = [get_gtk_property(pw["entTracerVendor",EntryLeaf], :text, String)]
+  params["experimentDescription"] = get_gtk_property(pw["entExpDescr",GtkEntryLeaf], :text, String)
+  params["experimentName"] = get_gtk_property(pw["entExpName",GtkEntryLeaf], :text, String)
+  params["scannerOperator"] = get_gtk_property(pw["entOperator",GtkEntryLeaf], :text, String)
+  params["tracerName"] = [get_gtk_property(pw["entTracerName",GtkEntryLeaf], :text, String)]
+  params["tracerBatch"] = [get_gtk_property(pw["entTracerBatch",GtkEntryLeaf], :text, String)]
+  params["tracerVendor"] = [get_gtk_property(pw["entTracerVendor",GtkEntryLeaf], :text, String)]
   params["tracerVolume"] = [1e-3*get_gtk_property(pw["adjTracerVolume",Gtk4.GtkAdjustmentLeaf], :value, Float64)]
   params["tracerConcentration"] = [1e-3*get_gtk_property(pw["adjTracerConcentration",Gtk4.GtkAdjustmentLeaf], :value, Float64)]
-  params["tracerSolute"] = [get_gtk_property(pw["entTracerSolute",EntryLeaf], :text, String)]
+  params["tracerSolute"] = [get_gtk_property(pw["entTracerSolute",GtkEntryLeaf], :text, String)]
   return params
 end
 
@@ -118,7 +118,7 @@ function initCallbacks(pw::ProtocolWidget)
           @idle_add_guarded begin
             pw.updating = true
             est = timeEstimate(pw.protocol)
-            set_gtk_property!(pw["lblRuntime", LabelLeaf], :label, est)
+            set_gtk_property!(pw["lblRuntime", GtkLabelLeaf], :label, est)
             set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
             pw.updating = false
           end        
@@ -136,7 +136,7 @@ function initCallbacks(pw::ProtocolWidget)
             set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, false)
             set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
             set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, true)
-            set_gtk_property!(pw["btnPickProtocol", ButtonLeaf], :sensitive, false)
+            set_gtk_property!(pw["btnPickProtocol", GtkButtonLeaf], :sensitive, false)
             pw.updating = false
           end
         else
@@ -193,14 +193,14 @@ function initCallbacks(pw::ProtocolWidget)
 
   signal_connect(pw["txtBuffProtocolDescription", GtkTextBufferLeaf], :changed) do w
     if !pw.updating
-      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", GtkButton], :sensitive, true)
     end
   end
 
   #for adj in ["adjNumFrames", "adjNumAverages", "adjNumFrameAverages", "adjNumBGFrames"]
   #  signal_connect(pw[adj, Gtk4.GtkAdjustmentLeaf], "value_changed") do w
   #    if !pw.updating
-  #      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+  #      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", GtkButton], :sensitive, true)
   #    end
   #  end
   #end
@@ -252,9 +252,9 @@ function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
       end
     end
 
-    set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, false)
+    set_gtk_property!(pw["btnSaveProtocol", GtkButton], :sensitive, false)
     pw.updating = false
-    showall(pw["boxProtocolParameter", Gtk4.GtkBoxLeaf])
+    show(pw["boxProtocolParameter", Gtk4.GtkBoxLeaf])
   end
 end
 
@@ -302,7 +302,7 @@ end
 
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, regParams::RegularParameters, field::Symbol, value::T, tooltip) where {T<:Quantity}
   label = ParameterLabel(field, tooltip)
-  generic = UnitfulEntry(value)
+  generic = UnitfulGtkEntry(value)
   addGenericCallback(pw, generic.entry)
   addToRegularParams(regParams, label, generic)
 end
@@ -356,7 +356,7 @@ end
 function addGenericCallback(pw::ProtocolWidget, generic)
   signal_connect(generic, "changed") do w
     if !pw.updating
-      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", GtkButton], :sensitive, true)
     end
   end
 end
@@ -364,7 +364,7 @@ end
 function addGenericCallback(pw::ProtocolWidget, cb::BoolParameter)
   signal_connect(cb, "toggled") do w
     if !pw.updating
-      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", GtkButton], :sensitive, true)
     end
   end
 end

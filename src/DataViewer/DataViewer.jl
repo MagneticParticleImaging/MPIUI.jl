@@ -23,7 +23,7 @@ mutable struct DataViewerWidget <: Gtk4.GtkBox
   currentProfile
 end
 
-getindex(m::DataViewerWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::DataViewerWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 mutable struct DataViewer
   w::Gtk4.GtkWindowLeaf
@@ -43,7 +43,7 @@ function DataViewer()
   w = Window("Data Viewer",800,600)
   dw = DataViewerWidget()
   push!(w,dw)
-  showall(w)
+  show(w)
 
   signal_connect(w, "key-press-event") do widget, event
     if event.keyval ==  Gtk4.GConstants.GDK_KEY_c
@@ -67,14 +67,14 @@ function DataViewerWidget()
   uifile = joinpath(@__DIR__,"..","builder","dataviewer.ui")
 
   b = GtkBuilder(filename=uifile)
-  mainBox = G_.object(b, "boxDataViewer")
+  mainBox = Gtk4.G_.get_object(b, "boxDataViewer")
   m = DataViewerWidget( mainBox.handle, b,
-                         G_.object(b, "gridDataViewer2D"),
-                         G_.object(b, "gridDataViewer3D"),
+                         Gtk4.G_.get_object(b, "gridDataViewer2D"),
+                         Gtk4.G_.get_object(b, "gridDataViewer3D"),
                          Vector{ColoringParams}(), false,
                         [0.0,0.0,0.0], [0.0,0.0,0.0], false, false,
                         nothing, nothing, nothing,nothing, nothing, nothing)
-  Gtk4.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   m.grid3D[2,1] = GtkCanvas()
   m.grid3D[1,1] = GtkCanvas()
@@ -82,7 +82,7 @@ function DataViewerWidget()
   m.grid3D[1,2] = GtkCanvas()
   m.grid2D[1,1] = GtkCanvas()
 
-  showall(m)
+  show(m)
 
   choices = existing_cmaps()
   for c in choices

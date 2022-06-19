@@ -19,7 +19,7 @@ mutable struct SpectrogramWidget <: Gtk4.GtkBox
   rangeFD::NTuple{2,Float64}
 end
 
-getindex(m::SpectrogramWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::SpectrogramWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 mutable struct SpectrogramViewer
   w::Gtk4.GtkWindowLeaf
@@ -30,7 +30,7 @@ function SpectrogramViewer(filename::AbstractString)
   sw = SpectrogramWidget()
   w = Window("Spectrogram Viewer: $(filename)",800,600)
   push!(w, sw)
-  showall(w)
+  show(w)
   updateData(sw, filename)
   return SpectrogramViewer(w, sw)
 end
@@ -40,14 +40,14 @@ function SpectrogramWidget(filenameConfig=nothing)
   uifile = joinpath(@__DIR__,"builder","spectrogramViewer.ui")
 
   b = GtkBuilder(filename=uifile)
-  mainBox = G_.object(b, "boxSpectrogramViewer")
+  mainBox = Gtk4.G_.get_object(b, "boxSpectrogramViewer")
 
   m = SpectrogramWidget( mainBox.handle, b,
                   zeros(Float32,0,0,0,0,0), zeros(Float32,0,0,0,0,0),
                   [""], GtkCanvas(), GtkCanvas(), GtkCanvas(),
                   1.0, [""], false, false,
                   (0.0,1.0), (0.0,1.0))
-  Gtk4.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
 

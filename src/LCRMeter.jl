@@ -9,7 +9,7 @@ mutable struct LCRMeterUI
   c2
 end
 
-getindex(m::LCRMeterUI, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::LCRMeterUI, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 function LCRMeterUI(;minFre=20000,maxFre=30000,samples=50,average=1,volt=2.0,ip="10.167.6.187")
   @info "Starting LCRMeterUI"
@@ -83,7 +83,7 @@ function LCRMeterUI(;minFre=20000,maxFre=30000,samples=50,average=1,volt=2.0,ip=
   #  save(m)
   #end
 
-  showall(m["mainWindow"])
+  show(m["mainWindow"])
 
   @info "Finished starting LCRMeterUI"
   return m

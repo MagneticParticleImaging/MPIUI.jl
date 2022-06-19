@@ -7,7 +7,7 @@ mutable struct DAQWidget <: Gtk4.GtkBox
     timer::Union{Timer,Nothing}
 end
   
-getindex(m::DAQWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::DAQWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
   
   
   
@@ -15,10 +15,10 @@ function DAQWidget(daq::AbstractDAQ)
     uifile = joinpath(@__DIR__,"..","builder","DAQWidget.ui")
 
     b = GtkBuilder(filename=uifile)
-    mainBox = G_.object(b, "mainBox")
+    mainBox = Gtk4.G_.get_object(b, "mainBox")
 
     m = DAQWidget(mainBox.handle, b, false, daq, nothing)
-    Gtk4.gobject_move_ref(m, mainBox)
+    Gtk4.GLib.gobject_move_ref(m, mainBox)
 
     init(m)
     initCallbacks(m)

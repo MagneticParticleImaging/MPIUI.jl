@@ -3,28 +3,28 @@
 mutable struct FileBrowser <: Gtk4.GtkBox
   handle::Ptr{Gtk4.GObject}
   path::String
-  store::ListStore
-  entry::Entry
+  store::GtkListStore
+  entry::GtkEntry
   combo::GtkComboBoxText
   recentFolder::Vector{String}
 end
 
 function FileBrowser()
-  store = ListStore(String,String)
+  store = GtkListStore(String,String)
 
-  tv = TreeView(TreeModel(store))
+  tv = GtkTreeView(GtkTreeModel(store))
   G_.headers_visible(tv,false)
-  r1 = CellRendererPixbuf()
-  r2 = CellRendererText()
-  c1 = TreeViewColumn("Files", r1, Dict("stock-id" => 1))
+  r1 = GtkCellRendererPixbuf()
+  r2 = GtkCellRendererText()
+  c1 = GtkTreeViewColumn("Files", r1, Dict("text" => 1))  #Dict("stock-id" => 1))
   push!(c1,r2)
   Gtk4.add_attribute(c1,r2,"text",0)
-  G_.sort_column_id(c1,0)
-  G_.resizable(c1,true)
-  G_.max_width(c1,80)
+  G_.set_sort_column_id(c1,0)
+  G_.set_resizable(c1,true)
+  G_.set_max_width(c1,80)
   push!(tv,c1)
 
-  sw = ScrolledWindow()
+  sw = GtkScrolledWindow()
   push!(sw,tv)
 
   combo = GtkComboBoxText(true)
@@ -81,7 +81,7 @@ function FileBrowser()
     destroy(dlg)
   end
 
-  selection = G_.selection(tv)
+  selection = G_.get_selection(tv)
 
   @debug "" selection
 
@@ -104,7 +104,7 @@ function FileBrowser()
     false
   end
 
-  Gtk4.gobject_move_ref(browser, box)
+  Gtk4.GLib.gobject_move_ref(browser, box)
   browser
 end
 

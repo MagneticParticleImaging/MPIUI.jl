@@ -24,7 +24,7 @@ mutable struct RecoWidget<: Gtk4.GtkGrid
   currentExperiment
 end
 
-getindex(m::RecoWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::RecoWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 mutable struct RecoWindow
   w::Gtk4.GtkWindowLeaf
@@ -40,7 +40,7 @@ function RecoWindow(filenameMeas=nothing; params = defaultRecoParams())
     G_.transient_for(w, mpilab[]["mainWindow"])
   end
   G_.modal(w,true)
-  showall(w)
+  show(w)
 
   return RecoWindow(w,dw)
 end
@@ -50,7 +50,7 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
   uifile = joinpath(@__DIR__,"builder","reconstructionWidget.ui")
 
   b = GtkBuilder(filename=uifile)
-  mainGrid = G_.object(b, "gridReco")
+  mainGrid = Gtk4.G_.get_object(b, "gridReco")
   m = RecoWidget( mainGrid.handle, b,
                   nothing,
                   nothing,
@@ -58,15 +58,15 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
                   nothing, nothing, nothing, nothing, 1,
                   Dict{Int64,String}(),nothing,
                   nothing, nothing)
-  Gtk4.gobject_move_ref(m, mainGrid)
+  Gtk4.GLib.gobject_move_ref(m, mainGrid)
 
   spReco = m["spReco"]
   setParams(m, params)
 
   m.dv = DataViewerWidget()
   push!(m["boxDW"], m.dv)
-  set_gtk_property!(m["boxDW"], :fill, m.dv, true)
-  set_gtk_property!(m["boxDW"], :expand, m.dv, true)
+###  set_gtk_property!(m["boxDW"], :fill, m.dv, true)
+###  set_gtk_property!(m["boxDW"], :expand, m.dv, true)
 
   #if filenameMeas != nothing
   #  G_.title(m["recoWindow"], string("Reconstruction: ", filenameMeas))

@@ -33,7 +33,7 @@ mutable struct GenericEntry{T} <: Gtk4.GtkEntry
     set_gtk_property!(entry, :hexpand, true)
     set_gtk_property!(entry,:width_chars,5)
     generic = new(entry.handle, entry)
-    return Gtk4.gobject_move_ref(generic, entry)
+    return Gtk4.GLib.gobject_move_ref(generic, entry)
   end
 end
 
@@ -57,15 +57,15 @@ mutable struct GenericParameter{T} <: Gtk4.GtkGrid
     grid[1, 1] = label
     grid[2, 1] = entry
     generic = new(grid.handle, field, label, entry)
-    return Gtk4.gobject_move_ref(generic, grid)
+    return Gtk4.GLib.gobject_move_ref(generic, grid)
   end
 end
 
-mutable struct UnitfulEntry <: Gtk4.GtkGrid
+mutable struct UnitfulGtkEntry <: Gtk4.GtkGrid
   handle::Ptr{Gtk4.GObject}
   entry::GtkEntry
   unitValue
-  function UnitfulEntry(value::T) where {T<:Quantity}
+  function UnitfulGtkEntry(value::T) where {T<:Quantity}
     grid = GtkGrid()
     entry = GtkEntry()
     set_gtk_property!(entry, :text, string(ustrip(value)))
@@ -78,11 +78,11 @@ mutable struct UnitfulEntry <: Gtk4.GtkGrid
     set_gtk_property!(entry,:width_chars,5)
     set_gtk_property!(entry, :hexpand, true)
     result = new(grid.handle, entry, unitValue)
-    return Gtk4.gobject_move_ref(result, grid)
+    return Gtk4.GLib.gobject_move_ref(result, grid)
   end
 end
 
-function value(entry::UnitfulEntry)
+function value(entry::UnitfulGtkEntry)
   valueString = get_gtk_property(entry.entry, :text, String)
   value = tryparse(Float64, valueString)
   return value * entry.unitValue
@@ -91,19 +91,19 @@ mutable struct UnitfulParameter <: Gtk4.GtkGrid
   handle::Ptr{Gtk4.GObject}
   field::Symbol
   label::GtkLabel
-  entry::UnitfulEntry
+  entry::UnitfulGtkEntry
   function UnitfulParameter(field::Symbol, label::AbstractString, value::T, tooltip::Union{Nothing, AbstractString} = nothing) where {T<:Quantity}
     grid = GtkGrid()
       
-    unitfulEntry = UnitfulEntry(value)
+    unitfulGtkEntry = UnitfulGtkEntry(value)
     label = GtkLabel(label)
     set_gtk_property!(label, :xalign, 0.0)
     addTooltip(label, tooltip)
     grid[1, 1] = label
-    grid[2, 1] = unitfulEntry
+    grid[2, 1] = unitfulGtkEntry
     #set_gtk_property!(unitLabel, :hexpand, true)
-    generic = new(grid.handle, field, label, unitfulEntry)
-    return Gtk4.gobject_move_ref(generic, grid)
+    generic = new(grid.handle, field, label, unitfulGtkEntry)
+    return Gtk4.GLib.gobject_move_ref(generic, grid)
   end
 end
 
@@ -115,7 +115,7 @@ mutable struct RegularParameters <: Gtk4.GtkGrid
     set_gtk_property!(grid, :column_spacing, 5)
     set_gtk_property!(grid, :row_spacing, 5)
     result = new(grid.handle, Dict{Symbol, GObject}())
-    return Gtk4.gobject_move_ref(result, grid)
+    return Gtk4.GLib.gobject_move_ref(result, grid)
   end
 end
 
@@ -127,7 +127,7 @@ mutable struct ParameterLabel <: Gtk4.GtkLabel
     label = GtkLabel(string(field))
     addTooltip(label, tooltip)
     result = new(label.handle, field)
-    return Gtk4.gobject_move_ref(result, label)
+    return Gtk4.GLib.gobject_move_ref(result, label)
   end
 end
 
@@ -142,7 +142,7 @@ mutable struct BoolParameter <: Gtk4.GtkCheckButton
     set_gtk_property!(check, :xalign, 0.5)
     addTooltip(check, tooltip)
     cb = new(check.handle, field)
-    return Gtk4.gobject_move_ref(cb, check)
+    return Gtk4.GLib.gobject_move_ref(cb, check)
   end
 end
 

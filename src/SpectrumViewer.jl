@@ -23,7 +23,7 @@ function SpectrumViewer(file::MPIFile; semilogY=false)
   w = Window("SpectrumViewer",600,400, true, true)
   dw = SpectrumViewerWidget(file, semilogY=semilogY)
   push!(w,dw)
-  showall(w)
+  show(w)
 
   dw
 end
@@ -125,7 +125,7 @@ function SpectrumViewerWidget(file::MPIFile; semilogY=false)
 
   update( nothing )
 
-  Gtk4.gobject_move_ref(dw, vbox)
+  Gtk4.GLib.gobject_move_ref(dw, vbox)
   dw
 end
 
@@ -162,6 +162,6 @@ function showData(d::SpectrumViewerWidget)
   display(d.c,p)
 
 
-  showall(d)
+  show(d)
 
 end

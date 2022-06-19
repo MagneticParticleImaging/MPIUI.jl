@@ -10,7 +10,7 @@ mutable struct RobotWidget <: Gtk4.GtkBox
   namedPos::Union{String, Nothing}
 end
 
-getindex(m::RobotWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::RobotWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 
 #TODO make usable for different dof
@@ -18,10 +18,10 @@ function RobotWidget(robot::Robot)
   uifile = joinpath(@__DIR__,"..","builder","robotWidget.ui")
 
   b = GtkBuilder(filename=uifile)
-  mainBox = G_.object(b, "mainBox")
+  mainBox = Gtk4.G_.get_object(b, "mainBox")
 
   m = RobotWidget(mainBox.handle, b, false, robot, nothing, toScannerCoords, ScannerCoords, nothing)
-  Gtk4.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   if :namedPositions in fieldnames(typeof(params(robot)))
     @idle_add_guarded begin

@@ -6,7 +6,7 @@ function SimpleDataViewer()
   w = Window("Data Viewer",1024,768)
   dw = SimpleDataViewerWidget()
   push!(w,dw)
-  showall(w)
+  show(w)
   return dw, w
 end
 
@@ -20,15 +20,15 @@ mutable struct SimpleDataViewerWidget <: Gtk4.GtkBox
   grid2D
 end
 
-getindex(m::SimpleDataViewerWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::SimpleDataViewerWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 
 function SimpleDataViewerWidget()
   uifile = joinpath(@__DIR__,"builder","simpleDataViewer.ui")
   b = GtkBuilder(filename=uifile)
-  mainBox = G_.object(b, "boxSimpleDataViewer")
+  mainBox = Gtk4.G_.get_object(b, "boxSimpleDataViewer")
   m = SimpleDataViewerWidget( mainBox.handle, b, nothing, nothing)
-  Gtk4.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   m.grid3D = m["gridDataViewer3D"]
   m.grid2D = m["gridDataViewer2D"]

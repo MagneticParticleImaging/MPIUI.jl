@@ -8,26 +8,26 @@ mutable struct TemperatureSensorWidget <: Gtk4.GtkBox
   timer::Union{Timer,Nothing}
 end
 
-getindex(m::TemperatureSensorWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::TemperatureSensorWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 function TemperatureSensorWidget(sensor::TemperatureSensor)
   uifile = joinpath(@__DIR__,"..","builder","temperatureSensorWidget.ui")
 
   b = GtkBuilder(filename=uifile)
-  mainBox = G_.object(b, "mainBox")
+  mainBox = Gtk4.G_.get_object(b, "mainBox")
 
   numPlots = length(unique(getChannelGroups(sensor)))
   canvases = [GtkCanvas() for i=1:numPlots]
 
   m = TemperatureSensorWidget(mainBox.handle, b, false, sensor, TemperatureLog(), canvases, nothing)
-  Gtk4.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   for (i,c) in enumerate(m.canvases)
     push!(m, c)
     set_gtk_property!(m, :expand, c, true)
   end
 
-  showall(m)
+  show(m)
 
   tempInit = getTemperatures(sensor)
   L = length(tempInit)
@@ -133,7 +133,7 @@ end
               legend = Legend(.1, 0.9, legendEntries, halign="right") #size=1
               add(p, legend)
               display(c, p)
-              showall(c)
+              show(c)
               c.is_sized = true
             end
           end

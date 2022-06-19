@@ -50,55 +50,55 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
  #Name,Gradient,DFx,DFy,DFz,Size x,Size y,Size z,Bandwidth,Tracer,TracerBatch,DeltaSampleConcentration,DeltaSampleVolume,Path
 
 
-  store = ListStore(Int,String,String,Float64,String,String,
+  store = GtkListStore(Int,String,String,Float64,String,String,
                      String,String,String,String, Bool)
 
-  tv = TreeView(TreeModel(store))
-  r1 = CellRendererText()
-  r2 = CellRendererToggle()
+  tv = GtkTreeView(GtkTreeModel(store))
+  r1 = GtkCellRendererText()
+  r2 = GtkCellRendererToggle()
 
   if !smallWidth
-    c0 = TreeViewColumn("Num", r1, Dict("text" => 0))
-    c1 = TreeViewColumn("Date", r1, Dict("text" => 1))
-    c2 = TreeViewColumn("Name", r1, Dict("text" => 2))
-    c3 = TreeViewColumn("Gradient", r1, Dict("text" => 3))
-    c4 = TreeViewColumn("DF", r1, Dict("text" => 4))
-    c5 = TreeViewColumn("Size", r1, Dict("text" => 5))
-    c6 = TreeViewColumn("Tracer", r1, Dict("text" => 6))
-    c7 = TreeViewColumn("Batch", r1, Dict("text" => 7))
-    c8 = TreeViewColumn("Conc.", r1, Dict("text" => 8))
-    c9 = TreeViewColumn("Path", r1, Dict("text" => 9))
+    c0 = GtkTreeViewColumn("Num", r1, Dict("text" => 0))
+    c1 = GtkTreeViewColumn("Date", r1, Dict("text" => 1))
+    c2 = GtkTreeViewColumn("Name", r1, Dict("text" => 2))
+    c3 = GtkTreeViewColumn("Gradient", r1, Dict("text" => 3))
+    c4 = GtkTreeViewColumn("DF", r1, Dict("text" => 4))
+    c5 = GtkTreeViewColumn("Size", r1, Dict("text" => 5))
+    c6 = GtkTreeViewColumn("Tracer", r1, Dict("text" => 6))
+    c7 = GtkTreeViewColumn("Batch", r1, Dict("text" => 7))
+    c8 = GtkTreeViewColumn("Conc.", r1, Dict("text" => 8))
+    c9 = GtkTreeViewColumn("Path", r1, Dict("text" => 9))
 
     for (i,c) in enumerate((c0,c1,c2,c3,c4,c5,c6,c7,c8,c9))
-      G_.sort_column_id(c,i-1)
-      G_.resizable(c,true)
-      G_.max_width(c,80)
+      G_.set_sort_column_id(c,i-1)
+      G_.set_resizable(c,true)
+      G_.set_max_width(c,80)
       push!(tv,c)
     end
   else
-    c0 = TreeViewColumn("Num", r1, Dict("text" => 0))
-    c1 = TreeViewColumn("Date", r1, Dict("text" => 1))
-    c2 = TreeViewColumn("Name", r1, Dict("text" => 2))
-    c3 = TreeViewColumn("Path", r1, Dict("text" => 9))
+    c0 = GtkTreeViewColumn("Num", r1, Dict("text" => 0))
+    c1 = GtkTreeViewColumn("Date", r1, Dict("text" => 1))
+    c2 = GtkTreeViewColumn("Name", r1, Dict("text" => 2))
+    c3 = GtkTreeViewColumn("Path", r1, Dict("text" => 9))
 
     for (i,c) in enumerate((c0,c1,c2,c3))
-      G_.sort_column_id(c,i-1)
-      G_.resizable(c,true)
-      G_.max_width(c,80)
+      G_.set_sort_column_id(c,i-1)
+      G_.set_resizable(c,true)
+      G_.set_max_width(c,80)
       push!(tv,c)
     end
   end
-  G_.max_width(c1,200)
-  G_.max_width(c2,200)
+  G_.set_max_width(c1,200)
+  G_.set_max_width(c2,200)
 
-  tmFiltered = TreeModelFilter(store)
-  G_.visible_column(tmFiltered,10)
-  tmSorted = TreeModelSort(tmFiltered)
-  G_.model(tv, tmSorted)
+  tmFiltered = GtkTreeModelFilter(GtkTreeModel(store))
+  G_.set_visible_column(tmFiltered,10)
+  tmSorted = GtkTreeModelSort(tmFiltered)
+  G_.set_model(tv, GtkTreeModel(tmSorted))
 
-  G_.sort_column_id(TreeSortable(tmSorted),0,GtkSortType.DESCENDING)
+  G_.set_sort_column_id(GtkTreeSortable(tmSorted),0,Gtk4.SortType_DESCENDING)
 
-  selection = G_.selection(tv)
+  selection = G_.get_selection(tv)
 
   cbOpenMeas = GtkCheckButton("Open as Meas")
   cbOpenInWindow = GtkCheckButton("Open in Window")
@@ -108,7 +108,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
       if hasselection(selection)
         currentIt = selected(selection)
 
-        sffilename = TreeModel(tmSorted)[currentIt,10]
+        sffilename = GtkTreeModel(tmSorted)[currentIt,10]
 
         @idle_add_guarded begin
           if !get_gtk_property(cbOpenMeas,:active,Bool)
@@ -135,19 +135,19 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 
   vbox = GtkBox(:v)
 
-  entGradient = Entry()
-  entDF = Entry()
-  entSize = Entry()
-  entTracer = Entry()
+  entGradient = GtkEntry()
+  entDF = GtkEntry()
+  entSize = GtkEntry()
+  entTracer = GtkEntry()
 
   for ent in [entGradient,entDF,entSize,entTracer]
     set_gtk_property!(ent,:width_chars,11)
   end
 
-  btnSFUpdate = Button("Update")
-  btnSFConvert = Button("Convert")
-  btnOpenCalibrationFolder = Button("Open File Browser")
-  btnSpectrogram = Button("Spectrogram")
+  btnSFUpdate = GtkButton("Update")
+  btnSFConvert = GtkButton("Convert")
+  btnOpenCalibrationFolder = GtkButton("Open File Browser")
+  btnSpectrogram = GtkButton("Spectrogram")
 
   if smallWidth
     grid = GtkGrid()
@@ -156,13 +156,13 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     set_gtk_property!(grid, :row_spacing, 5)
     set_gtk_property!(grid, :column_spacing, 5)
 
-    grid[1,1] = Label("Grad.")
+    grid[1,1] = GtkLabel("Grad.")
     grid[2,1] = entGradient
-    grid[1,2] = Label("DF Str.")
+    grid[1,2] = GtkLabel("DF Str.")
     grid[2,2] = entDF
-    grid[3,1] = Label("Size")
+    grid[3,1] = GtkLabel("Size")
     grid[4,1] = entSize
-    grid[3,2] = Label("Tracer")
+    grid[3,2] = GtkLabel("Tracer")
     grid[4,2] = entTracer
     grid[1:2,3] = cbOpenMeas
     grid[3:4,3] = btnSFUpdate
@@ -179,24 +179,24 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     set_gtk_property!(hbox,:margin_top,5)
     set_gtk_property!(hbox,:margin_bottom,5)
 
-    push!(hbox, Label("Gradient"))
+    push!(hbox, GtkLabel("Gradient"))
     push!(hbox, entGradient)
-    push!(hbox, Label("DF Strength"))
+    push!(hbox, GtkLabel("DF Strength"))
     push!(hbox, entDF)
-    push!(hbox, Label("Size"))
+    push!(hbox, GtkLabel("Size"))
     push!(hbox, entSize)
-    push!(hbox, Label("Tracer"))
+    push!(hbox, GtkLabel("Tracer"))
     push!(hbox, entTracer)
     push!(hbox, btnSFUpdate)
   end
 
 
-  sw = ScrolledWindow()
-  push!(sw, tv)
+  sw = GtkScrolledWindow()
+  G_.set_child(sw, tv)
   push!(vbox, sw)
-  set_gtk_property!(vbox, :expand, sw, true)
-  showall(tv)
-  showall(vbox)
+###  set_gtk_property!(vbox, :expand, sw, true)
+  show(tv)
+  show(vbox)
 
   function updateSFDB(widget)
     if m.datasetStore != nothing
@@ -210,7 +210,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   function convSF(widget)
     if m.datasetStore != nothing && hasselection(m.selection)
       currentIt = selected( m.selection )
-      filename = TreeModel(m.tmSorted)[currentIt,10]
+      filename = GtkTreeModel(m.tmSorted)[currentIt,10]
       conversionDialog(m, filename)
     end
   end
@@ -227,7 +227,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     if hasselection(selection)
       currentIt = selected(selection)
 
-      sffilename = TreeModel(tmSorted)[currentIt,10]
+      sffilename = GtkTreeModel(tmSorted)[currentIt,10]
 
       SpectrogramViewer(sffilename)
 
@@ -302,7 +302,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     if hasselection(m.selection) && !m.updating
       @idle_add_guarded begin
         currentIt = selected( m.selection )
-        filename = TreeModel(m.tmSorted)[currentIt,10]
+        filename = GtkTreeModel(m.tmSorted)[currentIt,10]
         f = MPIFile(filename, fastMode=true)
         num = experimentNumber(f)
         name = experimentName(f)
@@ -312,7 +312,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
         time = acqStartTime(f)
         numPeriods = acqNumPeriodsPerFrame(f)
         numAverages = acqNumAverages(f)
-        sizeSF =  TreeModel(m.tmSorted)[currentIt,6]
+        sizeSF =  GtkTreeModel(m.tmSorted)[currentIt,6]
         str =   """Num: $(num)\n
                 Name: $(name)\n
                 Tracer: $(tname)\n
@@ -354,19 +354,19 @@ function SFSelectionDialog(;gradient = nothing, driveField = nothing)
   push!(box, sfBrowser.box)
   set_gtk_property!(box, :expand, sfBrowser.box, true)
 
-  selection = G_.selection(sfBrowser.tv)
+  selection = G_.get_selection(sfBrowser.tv)
 
   dlg = SFSelectionDialog(dialog.handle, selection, sfBrowser.store, sfBrowser.tmSorted)
 
-  showall(box)
+  show(box)
 
-  Gtk4.gobject_move_ref(dlg, dialog)
+  Gtk4.GLib.gobject_move_ref(dlg, dialog)
   return dlg
 end
 
 function getSelectedSF(dlg::SFSelectionDialog)
   currentItTM = selected(dlg.selection)
-  sffilename =  TreeModel(dlg.tmSorted)[currentItTM,10]
+  sffilename =  GtkTreeModel(dlg.tmSorted)[currentItTM,10]
   return sffilename
 end
 
@@ -392,15 +392,15 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
     set_gtk_property!(grid, :row_spacing, 5)
     set_gtk_property!(grid, :column_spacing, 5)
   
-    grid[1,1] = Label("Num Period Averages")
+    grid[1,1] = GtkLabel("Num Period Averages")
     grid[2,1] = SpinButton(1:acqNumPeriodsPerFrame(f))
     adjNumPeriodAverages = GtkAdjustment(grid[2,1])
 
-    grid[1,2] = Label("Num Period Grouping")
+    grid[1,2] = GtkLabel("Num Period Grouping")
     grid[2,2] = SpinButton(1:acqNumPeriodsPerFrame(f))
     adjNumPeriodGrouping = GtkAdjustment(grid[2,2])
 
-    showall(box)
+    show(box)
     ret = run(dialog)
 
 

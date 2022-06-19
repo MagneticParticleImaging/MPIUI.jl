@@ -37,7 +37,7 @@ function savecache(cache)
   save(cachefile, cache)
 end
 
-getindex(m::Settings, w::AbstractString) = m.data[w] #G_.object(m.builder, w)
+getindex(m::Settings, w::AbstractString) = m.data[w] #Gtk4.G_.get_object(m.builder, w)
 
 getindex(m::Settings, w::Symbol) = m.data[w]
 

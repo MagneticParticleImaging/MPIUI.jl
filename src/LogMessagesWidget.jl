@@ -60,56 +60,56 @@ const LOG_LEVEL_TO_PIX = Dict(
   2000 => "gtk-dialog-error"
 )
 
-getindex(m::LogMessageListWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::LogMessageListWidget, w::AbstractString) = G_.get_object(m.builder, w)
 
 function LogMessageListWidget()
 
   uifile = joinpath(@__DIR__,"builder","logMessagesWidget.ui")
 
   b = GtkBuilder(filename=uifile)
-  mainBox = G_.object(b, "boxLogMessages")
+  mainBox = Gtk4.G_.get_object(b, "boxLogMessages")
 
   # LogLevel, Time, Group, Message, visible, tooltip, "number" log level
-  store = ListStore(String, String, String, String, Bool, String, Int)
+  store = GtkListStore(String, String, String, String, Bool, String, Int)
 
-  tv = TreeView(TreeModel(store))
-  r0 = CellRendererPixbuf()
-  r1 = CellRendererText()
+  tv = GtkTreeView(GtkTreeModel(store))
+  r0 = GtkCellRendererPixbuf()
+  r1 = GtkCellRendererText()
 
-  c0 = TreeViewColumn("Level", r0, Dict("stock-id" => 0))
-  c1 = TreeViewColumn("Time", r1, Dict("text" => 1))
-  c2 = TreeViewColumn("Group", r1, Dict("text" => 2))
-  c3 = TreeViewColumn("Message", r1, Dict("text" => 3))
+  c0 = GtkTreeViewColumn("Level", r0, Dict("text" => 0))  #Dict("stock-id" => 0))
+  c1 = GtkTreeViewColumn("Time", r1, Dict("text" => 1))
+  c2 = GtkTreeViewColumn("Group", r1, Dict("text" => 2))
+  c3 = GtkTreeViewColumn("Message", r1, Dict("text" => 3))
 
   for (i,c) in enumerate((c0,c1,c2,c3))
-    G_.sort_column_id(c,i-1)
-    G_.resizable(c,true)
-    G_.max_width(c,80)
+    G_.set_sort_column_id(c,i-1)
+    G_.set_resizable(c,true)
+    G_.set_max_width(c,80)
     push!(tv,c)
   end
 
-  G_.max_width(c0,80)
-  G_.max_width(c1,200)
-  G_.max_width(c2,200)
-  G_.max_width(c3,500)
+  G_.set_max_width(c0,80)
+  G_.set_max_width(c1,200)
+  G_.set_max_width(c2,200)
+  G_.set_max_width(c3,500)
 
-  tmFiltered = TreeModelFilter(store)
-  G_.visible_column(tmFiltered,4)
-  tmSorted = TreeModelSort(tmFiltered)
-  G_.model(tv, tmSorted)
+  tmFiltered = GtkTreeModelFilter(GtkTreeModel(store))
+  G_.set_visible_column(tmFiltered,4)
+  tmSorted = GtkTreeModelSort(tmFiltered)
+  G_.set_model(tv, GtkTreeModel(tmSorted))
 
-  selection = G_.selection(tv)
+  selection = G_.get_selection(tv)
 
   logFilter = LogMessageFilter(nothing, 0, Dict{String, Bool}(), nothing, nothing)
   m = LogMessageListWidget(mainBox.handle, b, store, tmSorted, tv, selection, logFilter, DETACHED, false)
-  Gtk4.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
-  push!(m["wndMessages"], tv)
+  G_.set_child(m["wndMessages"], tv)
 
   # Set calendar and time to now!
   initCallbacks(m::LogMessageListWidget)
 
-  showall(tv)
+  show(tv)
   return m
 end
 
@@ -208,7 +208,7 @@ function initCallbacks(m::LogMessageListWidget)
     if hasselection(m.selection) && !m.updating
       @idle_add_guarded begin
         current = selected(m.selection)
-        tooltip = TreeModel(m.tmSorted)[current, 6]
+        tooltip = GtkTreeModel(m.tmSorted)[current, 6]
         set_gtk_property!(m.tv, :tooltip_text, tooltip)
       end
     end
@@ -274,8 +274,8 @@ function addGroupCheckBox(widget::LogMessageListWidget, group::String)
         applyFilter!(widget)
       end
     end
-    push!(widget["boxGroups"], check)
-    showall(widget["boxGroups"])
+###    push!(widget["boxGroups"], check)
+    show(widget["boxGroups"])
   end
 end
 

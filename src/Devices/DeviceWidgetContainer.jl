@@ -8,14 +8,14 @@ mutable struct DeviceWidgetContainer <: Gtk4.GtkBox
 end
 
 
-getindex(m::DeviceWidgetContainer, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::DeviceWidgetContainer, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 
 function DeviceWidgetContainer(deviceName::String, deviceWidget)
   uifile = joinpath(@__DIR__, "..", "builder", "deviceWidgetContainer.ui")
 
   b = GtkBuilder(filename=uifile)
-  mainBox = G_.object(b, "boxContainer")
+  mainBox = Gtk4.G_.get_object(b, "boxContainer")
 
   window = GtkWindow(deviceName, 800, 600)
   # Hide close button until I figure out how to prevent destroy related segfaults
@@ -27,7 +27,7 @@ function DeviceWidgetContainer(deviceName::String, deviceWidget)
   set_gtk_property!(m["lblDeviceName"], :label, deviceName)
   push!(m["boxDeviceWidget"], deviceWidget)
   set_gtk_property!(m["boxDeviceWidget"], :expand, deviceWidget, true)
-  showall(m)
+  show(m)
 
   initCallbacks(m)
   
@@ -54,7 +54,7 @@ function initCallbacks(m::DeviceWidgetContainer)
   #  @idle_add_guarded begin
   #    empty!(m["boxDeviceWidget"])
   #    push!(m["boxDeviceWidget"], m.deviceWidget)
-  #    showall(m)
+  #    show(m)
   #    #   set_gtk_property!(m["btnPopout"], :active, false)
   #  end
   #end
@@ -68,10 +68,10 @@ function popout!(m::DeviceWidgetContainer, popout::Bool)
     push!(m.deviceWindow, m.deviceWidget)
     push!(m["boxDeviceWidget"], GtkLabel("Device Widget is opened in Pop-out Window"))
     visible(m.deviceWindow, true)
-    showall(m.deviceWindow)
+    show(m.deviceWindow)
   else
     push!(m["boxDeviceWidget"], m.deviceWidget)
     visible(m.deviceWindow, false)
   end
-  showall(m)
+  show(m)
 end

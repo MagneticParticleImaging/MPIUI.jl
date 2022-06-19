@@ -42,7 +42,7 @@ end
 
 Base.show(io::IO, f::MPILab) = print(io, "MPILab")
 
-getindex(m::MPILab, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::MPILab, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 mpilab = Ref{MPILab}()
 
@@ -126,18 +126,18 @@ function MPILab(offlineMode=false)::MPILab
   @idle_add_guarded set_gtk_property!(m["cbDatasetStores"],:active,0)
   infoMessage(m, "")
 
-  # ugly but necessary since showall unhides all widgets
+  # ugly but necessary since show unhides all widgets
   #@idle_add_guarded visible(m["boxMeasTab"],
   #    isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
   #@idle_add_guarded visible(m["tbOpenMeasurementTab"],
   #        isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
 
   # Set the icon of MPILab
-  Gtk4.GError() do error_check
-    filename = joinpath(@__DIR__,"assets","MPILabIcon.png")
-    G_.icon_from_file(w, filename, error_check)
-    return true
-  end
+###  Gtk4.GError() do error_check
+###    filename = joinpath(@__DIR__,"assets","MPILabIcon.png")
+###    G_.icon_from_file(w, filename, error_check)
+###    return true
+###  end
 
   signal_connect(w, "key-press-event") do widget, event
     if event.keyval ==  Gtk4.GConstants.GDK_KEY_c
@@ -199,7 +199,7 @@ function initLogging(m::MPILab)
   # Setup Logging Widget
   m.logMessagesWidget = LogMessageListWidget()
   pane = m["paneMain"]
-  push!(pane, m.logMessagesWidget)
+  G_.set_end_child(pane, m.logMessagesWidget)
   set_gtk_property!(pane, :position, 550)
 
   # Setup Loggers
@@ -249,9 +249,9 @@ function initStoreSwitch(m::MPILab)
 
       if length(m.studyStore) > 0
         # select first study so that always measurements can be performed
-        iter = Gtk4.mutable(Gtk4.GtkTreeIter)
-        Gtk4.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
-        select!(m.selectionStudy, iter)
+###        iter = Gtk4.mutable(Gtk4.GtkTreeIter)
+###        Gtk4.get_iter_first( GtkTreeModel(m.studyStoreSorted) , iter)
+###        select!(m.selectionStudy, iter)
       end
       m.updating = false
     end
@@ -366,50 +366,50 @@ end
 
 function initStudyStore(m::MPILab)
 
-  m.studyStore = ListStore(String,String,String,String,String,Bool)
+  m.studyStore = GtkListStore(String,String,String,String,String,Bool)
 
-  tv = TreeView(TreeModel(m.studyStore))
+  tv = GtkTreeView(GtkTreeModel(m.studyStore))
   #G_.headers_visible(tv,false)
-  r1 = CellRendererText()
+  r1 = GtkCellRendererText()
 
   cols = ["Date", "Study", "Subject"]
 
   for (i,col) in enumerate(cols)
-    c = TreeViewColumn(col, r1, Dict("text" => i-1))
-    G_.sort_column_id(c,i-1)
-    G_.resizable(c,true)
-    G_.max_width(c,300)
+    c = GtkTreeViewColumn(col, r1, Dict("text" => i-1))
+    G_.set_sort_column_id(c,i-1)
+    G_.set_resizable(c,true)
+    G_.set_max_width(c,300)
     push!(tv,c)
   end
 
   #Gtk4.add_attribute(c1,r2,"text",0)
-  #G_.sort_column_id(c1,0)
-  #G_.resizable(c1,true)
-  #G_.max_width(c1,80)
+  #G_.set_sort_column_id(c1,0)
+  #G_.set_resizable(c1,true)
+  #G_.set_max_width(c1,80)
 
   sw = m["swStudy"]
-  push!(sw,tv)
-  showall(sw)
+  G_.set_child(sw,tv)
+  show(sw)
 
 
   scanDatasetDir(m)
 
-  tmFiltered = TreeModelFilter(m.studyStore)
-  G_.visible_column(tmFiltered,5)
-  m.studyStoreSorted = TreeModelSort(tmFiltered)
-  G_.model(tv, m.studyStoreSorted)
+  tmFiltered = GtkTreeModelFilter(GtkTreeModel(m.studyStore))
+  G_.set_visible_column(tmFiltered,5)
+  m.studyStoreSorted = GtkTreeModelSort(tmFiltered)
+  G_.set_model(tv, GtkTreeModel(m.studyStoreSorted))
 
-  m.selectionStudy = G_.selection(tv)
+  m.selectionStudy = G_.get_selection(tv)
 
-  #G_.sort_column_id(TreeSortable(m.studyStore),0,GtkSortType.ASCENDING)
-  G_.sort_column_id(TreeSortable(m.studyStoreSorted),0,GtkSortType.DESCENDING)
+  #G_.set_sort_column_id(GtkTreeSortable(m.studyStore),0,GtkSortType.ASCENDING)
+  G_.set_sort_column_id(GtkTreeSortable(m.studyStoreSorted),0, Gtk4.SortType_DESCENDING)
 
 
   if length(m.studyStore) > 0
     # select first study so that always measurements can be performed
-    iter = Gtk4.mutable(Gtk4.GtkTreeIter)
-    Gtk4.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
-    @idle_add_guarded select!(m.selectionStudy, iter)
+   ### iter = Gtk4.mutable(Gtk4.GtkTreeIter)
+   ### Gtk4.get_iter_first( GtkTreeModel(m.studyStoreSorted) , iter)
+   ### @idle_add_guarded select!(m.selectionStudy, iter)
   end
 
   function selectionChanged( widget )
@@ -418,11 +418,11 @@ function initStudyStore(m::MPILab)
       currentIt = selected( m.selectionStudy )
 
       m.currentStudy = Study(activeDatasetStore(m), 
-                             TreeModel(m.studyStoreSorted)[currentIt,2];
-                             foldername = TreeModel(m.studyStoreSorted)[currentIt,4],
-                             subject = TreeModel(m.studyStoreSorted)[currentIt,3],
-                             date = DateTime(string(TreeModel(m.studyStoreSorted)[currentIt,1],"T",
-				                           TreeModel(m.studyStoreSorted)[currentIt,5])))
+                             GtkTreeModel(m.studyStoreSorted)[currentIt,2];
+                             foldername = GtkTreeModel(m.studyStoreSorted)[currentIt,4],
+                             subject = GtkTreeModel(m.studyStoreSorted)[currentIt,3],
+                             date = DateTime(string(GtkTreeModel(m.studyStoreSorted)[currentIt,1],"T",
+				                           GtkTreeModel(m.studyStoreSorted)[currentIt,5])))
 
       updateExperimentStore(m, m.currentStudy)
 
@@ -479,7 +479,7 @@ function initStudyStore(m::MPILab)
 
         # TODO
         #currentIt = selected( m.selectionStudy )
-        #@idle_add_guarded delete!(TreeModel(m.studyStoreSorted), currentIt)
+        #@idle_add_guarded delete!(GtkTreeModel(m.studyStoreSorted), currentIt)
 
         @idle_add_guarded scanDatasetDir(m)
       end
@@ -494,12 +494,12 @@ function initStudyStore(m::MPILab)
     @idle_add_guarded scanDatasetDir(m)
 
     iter = Gtk4.mutable(Gtk4.GtkTreeIter)
-    Gtk4.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
+    Gtk4.get_iter_first( GtkTreeModel(m.studyStoreSorted) , iter)
     for l=1:length(m.studyStore)
-      if TreeModel(m.studyStoreSorted)[iter,2] == name
+      if GtkTreeModel(m.studyStoreSorted)[iter,2] == name
         break
       else
-        Gtk4.get_iter_next( TreeModel(m.studyStoreSorted) , iter)
+        Gtk4.get_iter_next( GtkTreeModel(m.studyStoreSorted) , iter)
       end
     end
 
@@ -532,29 +532,29 @@ end
 
 function initAnatomRefStore(m::MPILab)
 
-  m.anatomRefStore = ListStore(String, String)
+  m.anatomRefStore = GtkListStore(String, String)
 
-  tv = TreeView(TreeModel(m.anatomRefStore))
-  r1 = CellRendererText()
+  tv = GtkTreeView(GtkTreeModel(m.anatomRefStore))
+  r1 = GtkCellRendererText()
 
   cols = ["Name"]
 
   for (i,col) in enumerate(cols)
-    c = TreeViewColumn(col, r1, Dict("text" => i-1))
-    G_.sort_column_id(c,i-1)
-    G_.resizable(c,true)
-    G_.max_width(c,300)
+    c = GtkTreeViewColumn(col, r1, Dict("text" => i-1))
+    G_.set_sort_column_id(c,i-1)
+    G_.set_resizable(c,true)
+    G_.set_max_width(c,300)
     push!(tv,c)
   end
 
 
   sw = m["swAnatomData"]
-  push!(sw,tv)
-  showall(sw)
+  G_.set_child(sw,tv)
+  show(sw)
 
-  G_.sort_column_id(TreeSortable(m.anatomRefStore),0,GtkSortType.ASCENDING)
+  G_.set_sort_column_id(GtkTreeSortable(m.anatomRefStore),0,Gtk4.SortType_ASCENDING)
 
-  selection = G_.selection(tv)
+  selection = G_.get_selection(tv)
   m.selectionAnatomicRefs = selection
 
   signal_connect(m["tbAddAnatomicalData"], "clicked") do widget
@@ -628,13 +628,13 @@ end
 
 function initExperimentStore(m::MPILab)
 
-  m.experimentStore = ListStore(Int64,String,Int64,String,
+  m.experimentStore = GtkListStore(Int64,String,Int64,String,
                                  Float64,String)
   tmFiltered = nothing
 
-  tv = TreeView(TreeModel(m.experimentStore))
-  r1 = CellRendererText()
-  r2 = CellRendererText()
+  tv = GtkTreeView(GtkTreeModel(m.experimentStore))
+  r1 = GtkCellRendererText()
+  r2 = GtkCellRendererText()
   set_gtk_property!(r2, :editable, true)
 
   cols = ["Num", "Name", "Frames", "DF", "Grad"]
@@ -642,25 +642,25 @@ function initExperimentStore(m::MPILab)
   for (i,col) in enumerate(cols)
 
     if i==2 #magic number
-      c = TreeViewColumn(col, r2, Dict("text" => i-1))
+      c = GtkTreeViewColumn(col, r2, Dict("text" => i-1))
     else
-      c = TreeViewColumn(col, r1, Dict("text" => i-1))
+      c = GtkTreeViewColumn(col, r1, Dict("text" => i-1))
     end
 
-    G_.sort_column_id(c,i-1)
-    G_.resizable(c,true)
-    G_.max_width(c,300)
+    G_.set_sort_column_id(c,i-1)
+    G_.set_resizable(c,true)
+    G_.set_max_width(c,300)
     push!(tv,c)
   end
 
   sw = m["swExp"]
-  push!(sw,tv)
-  showall(sw)
+  G_.set_child(sw, tv)
+  show(sw)
 
-  G_.sort_column_id(TreeSortable(m.experimentStore),0,GtkSortType.ASCENDING)
+  G_.set_sort_column_id(GtkTreeSortable(m.experimentStore),0,Gtk4.SortType_ASCENDING)
 
-  m.selectionExp = G_.selection(tv)
-  G_.mode(m.selectionExp, GtkSelectionMode.MULTIPLE)
+  m.selectionExp = G_.get_selection(tv)
+  G_.set_mode(m.selectionExp, Gtk4.SelectionMode_MULTIPLE)
 
 
   signal_connect(m["tbReco"], "clicked") do widget
@@ -825,11 +825,11 @@ end
 function initReconstructionStore(m::MPILab)
 
   m.reconstructionStore =
-      ListStore(Int64,String,String,String,String,String,String,String, String)
+      GtkListStore(Int64,String,String,String,String,String,String,String, String)
 
-  tv = TreeView(TreeModel(m.reconstructionStore))
-  r1 = CellRendererText()
-  r2 = CellRendererText()
+  tv = GtkTreeView(GtkTreeModel(m.reconstructionStore))
+  r1 = GtkCellRendererText()
+  r2 = GtkCellRendererText()
   set_gtk_property!(r2, :editable, true)
 
   cols = ["Num","Frames","Description","Solver","Iter", "Lambda", "Averages", "SNRThresh", "User"]
@@ -837,24 +837,24 @@ function initReconstructionStore(m::MPILab)
   for (i,col) in enumerate(cols)
 
     if i==3 #magic number
-      c = TreeViewColumn(col, r2, Dict("text" => i-1))
+      c = GtkTreeViewColumn(col, r2, Dict("text" => i-1))
     else
-      c = TreeViewColumn(col, r1, Dict("text" => i-1))
+      c = GtkTreeViewColumn(col, r1, Dict("text" => i-1))
     end
 
-    G_.max_width(c,100)
-    G_.resizable(c,true)
-    G_.sort_column_id(c,i-1)
+    G_.set_max_width(c,100)
+    G_.set_resizable(c,true)
+    G_.set_sort_column_id(c,i-1)
     push!(tv,c)
   end
 
   sw = m["swReco"]
-  push!(sw,tv)
-  showall(sw)
+  G_.set_child(sw,tv)
+  show(sw)
 
-  G_.sort_column_id(TreeSortable(m.reconstructionStore),0,GtkSortType.ASCENDING)
+  G_.set_sort_column_id(GtkTreeSortable(m.reconstructionStore),0,Gtk4.SortType_ASCENDING)
 
-  m.selectionReco = G_.selection(tv)
+  m.selectionReco = G_.get_selection(tv)
 
   signal_connect(tv, "row-activated") do treeview, path_, col, other...
     if hasselection(m.selectionReco)
@@ -1001,33 +1001,33 @@ end
 
 function initVisuStore(m::MPILab)
 
-  m.visuStore = ListStore(Int64,String,String,String,String,String)
+  m.visuStore = GtkListStore(Int64,String,String,String,String,String)
 
-  tv = TreeView(TreeModel(m.visuStore))
-  r1 = CellRendererText()
-  r2 = CellRendererText()
+  tv = GtkTreeView(GtkTreeModel(m.visuStore))
+  r1 = GtkCellRendererText()
+  r2 = GtkCellRendererText()
   set_gtk_property!(r2, :editable, true)
 
   cols = ["Num","Description","Spatial MIP","Frame Proj", "Cmap", "Fusion"]
 
   for (i,col) in enumerate(cols)
     if i==2 #magic number
-      c = TreeViewColumn(col, r2, Dict("text" => i-1))
+      c = GtkTreeViewColumn(col, r2, Dict("text" => i-1))
     else
-      c = TreeViewColumn(col, r1, Dict("text" => i-1))
+      c = GtkTreeViewColumn(col, r1, Dict("text" => i-1))
     end
 
-    G_.sort_column_id(c,i-1)
+    G_.set_sort_column_id(c,i-1)
     push!(tv,c)
   end
 
   sw = m["swVisu"]
-  push!(sw,tv)
-  showall(sw)
+  G_.set_child(sw,tv)
+  show(sw)
 
-  G_.sort_column_id(TreeSortable(m.visuStore),0,GtkSortType.ASCENDING)
+  G_.set_sort_column_id(GtkTreeSortable(m.visuStore),0,Gtk4.SortType_ASCENDING)
 
-  m.selectionVisu = G_.selection(tv)
+  m.selectionVisu = G_.get_selection(tv)
 
   signal_connect(tv, "row-activated") do treeview, path_, col, other...
     if hasselection(m.selectionReco)
@@ -1127,8 +1127,8 @@ function initSFStore(m::MPILab)
 
   boxSFPane = m["boxSF"]
   push!(boxSFPane,m.sfBrowser.box)
-  set_gtk_property!(boxSFPane, :expand, m.sfBrowser.box, true)
-  showall(boxSFPane)
+###  set_gtk_property!(boxSFPane, :expand, m.sfBrowser.box, true)
+  show(boxSFPane)
 end
 
 ### Scanner Tab ###
@@ -1139,7 +1139,7 @@ function initScannerTab(m::MPILab, offlineMode=false)
     boxScannerTab = m["boxScanner"]
     push!(boxScannerTab,m.scannerBrowser)
     set_gtk_property!(boxScannerTab, :expand, m.scannerBrowser, true)
-    showall(boxScannerTab)
+    show(boxScannerTab)
   end
 end
 
@@ -1152,7 +1152,7 @@ function initProtocolTab(m::MPILab, offlineMode=false)
     boxProtoTab = m["boxProtocolTab"]
     push!(boxProtoTab, m.protocolWidget)
     set_gtk_property!(boxProtoTab, :expand, m.protocolWidget, true)
-    showall(boxProtoTab)
+    show(boxProtoTab)
   end
 end
 
@@ -1165,7 +1165,7 @@ function initImageTab(m::MPILab)
 
   boxImageTab = m["boxImageTab"]
   push!(boxImageTab,m.dataViewerWidget)
-  set_gtk_property!(boxImageTab, :expand, m.dataViewerWidget, true)
+###  set_gtk_property!(boxImageTab, :expand, m.dataViewerWidget, true)
 end
 
 ### Raw Data Tab ###
@@ -1175,8 +1175,8 @@ function initRawDataTab(m::MPILab)
   m.rawDataWidget = RawDataWidget()
   boxRawViewer = m["boxRawViewer"]
   push!(boxRawViewer,m.rawDataWidget)  
-  set_gtk_property!(boxRawViewer, :expand, m.rawDataWidget, true)
-  showall(boxRawViewer)
+###  set_gtk_property!(boxRawViewer, :expand, m.rawDataWidget, true)
+  show(boxRawViewer)
 end
 
 ### Reco Data Tab ###
@@ -1187,7 +1187,7 @@ function initRecoTab(m::MPILab)
 
   boxRecoTab = m["boxRecoTab"]
   push!(boxRecoTab,m.recoWidget)
-  set_gtk_property!(boxRecoTab, :expand, m.recoWidget, true)
+###  set_gtk_property!(boxRecoTab, :expand, m.recoWidget, true)
 end
 
 ### Raw Data Tab ###
@@ -1198,8 +1198,8 @@ function initSFViewerTab(m::MPILab)
 
   boxSFTab = m["boxSFTab"]
   push!(boxSFTab,m.sfViewerWidget)
-  set_gtk_property!(boxSFTab, :expand, m.sfViewerWidget, true)
-  showall(boxSFTab)
+###  set_gtk_property!(boxSFTab, :expand, m.sfViewerWidget, true)
+  show(boxSFTab)
 end
 
 ### Settings

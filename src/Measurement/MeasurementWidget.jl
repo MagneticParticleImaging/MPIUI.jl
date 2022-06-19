@@ -73,7 +73,7 @@ function MeasurementWidget(filenameConfig="")
                   scanner, protocol, nothing, nothing, proto, zeros(Float32,0,0,0,0), mdfstore, "", now(),
                   "", RawDataWidget(), false, "",
                   SystemMatrixRobotMeas(scanner, mdfstore), false)
-  Gtk4.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
 
@@ -100,10 +100,10 @@ function MeasurementWidget(filenameConfig="")
         ind = get_gtk_property(m["cbSafeObject",Gtk4.GtkComboBoxTextLeaf],:active,Int)+1
         if getValidHeadObjects()[ind].name==customPhantom3D.name
             sObjStr = @sprintf("%.2f x %.2f x %.2f", ustrip(customPhantom3D.length), ustrip(crosssection(customPhantom3D).width),ustrip(crosssection(customPhantom3D).height))
-            set_gtk_property!(m["entSafetyObj", EntryLeaf],:text, sObjStr)
-            set_gtk_property!(m["entSafetyObj", EntryLeaf],:sensitive,true)
+            set_gtk_property!(m["entSafetyObj", GtkEntryLeaf],:text, sObjStr)
+            set_gtk_property!(m["entSafetyObj", GtkEntryLeaf],:sensitive,true)
         else
-            set_gtk_property!(m["entSafetyObj", EntryLeaf],:sensitive,false)
+            set_gtk_property!(m["entSafetyObj", GtkEntryLeaf],:sensitive,false)
         end
     end
 
@@ -122,7 +122,7 @@ function MeasurementWidget(filenameConfig="")
     setInfoParams(m)
     # TODO setParams(m, merge!(generalParams(m.scanner),toDict(getDAQ(m.scanner).params)))
     setParams(m, m.scanner)
-    @idle_add_guarded set_gtk_property!(m["entConfig",EntryLeaf],:text,filenameConfig)
+    @idle_add_guarded set_gtk_property!(m["entConfig",GtkEntryLeaf],:text,filenameConfig)
     #@idle_add_guarded set_gtk_property!(m["btnReferenceDrive",ButtonLeaf],:sensitive,!isRobRef)
     # TODO enableRobotMoveButtons(m,isRobRef)
     # TODO enableDFWaveformControls(m, get(getGeneralParams(m.scanner), "allowDFWaveformChanges", false))
@@ -350,7 +350,7 @@ function initCallbacks(m::MeasurementWidget)
     end
   end
 
-  signal_connect(m["entGridShape",EntryLeaf], "changed") do w
+  signal_connect(m["entGridShape",GtkEntryLeaf], "changed") do w
     updateCalibTime(C_NULL, m)
   end
 
@@ -386,17 +386,17 @@ function updateSequence(m::MeasurementWidget, seq::AbstractString)
   dfDividerStr = *([ string(x," x ") for x in unique(vec(dfDivider(s))) ]...)[1:end-3]
 
   @idle_add_guarded begin
-    set_gtk_property!(m["entSequenceName",EntryLeaf], :text, seq)
+    set_gtk_property!(m["entSequenceName",GtkEntryLeaf], :text, seq)
 
-    set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
-    set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
+    set_gtk_property!(m["entNumPeriods",GtkEntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
+    set_gtk_property!(m["entNumPatches",GtkEntryLeaf], :text, "$(acqNumPatches(s))")
 
     set_gtk_property!(m["adjNumFGFrames", Gtk4.GtkAdjustmentLeaf], :value, acqNumFrames(s))
     set_gtk_property!(m["adjNumFrameAverages", Gtk4.GtkAdjustmentLeaf], :value, acqNumFrameAverages(s))
     set_gtk_property!(m["adjNumAverages", Gtk4.GtkAdjustmentLeaf], :value, acqNumAverages(s))
 
-    set_gtk_property!(m["entDFStrength",EntryLeaf], :text, dfString)
-    set_gtk_property!(m["entDFDivider",EntryLeaf], :text, dfDividerStr)
+    set_gtk_property!(m["entDFStrength",GtkEntryLeaf], :text, dfString)
+    set_gtk_property!(m["entDFDivider",GtkEntryLeaf], :text, dfDividerStr)
 
     setInfoParams(m)
   end
@@ -406,7 +406,7 @@ end
 function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
   daq = getDAQ(m.scanner)
 
-  shpString = get_gtk_property(m["entGridShape",EntryLeaf], :text, String)
+  shpString = get_gtk_property(m["entGridShape",GtkEntryLeaf], :text, String)
   shp = tryparse.(Int64,split(shpString,"x"))
   numBGMeas = get_gtk_property(m["adjNumBGMeasurements",Gtk4.GtkAdjustmentLeaf], :value, Int64)
   numBGFrames = get_gtk_property(m["adjNumBGFrames",Gtk4.GtkAdjustmentLeaf], :value, Int64)
@@ -418,7 +418,7 @@ function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
   robotMoveTime = 0.8
   robotMoveTimePark = 13.8
 
-  numPeriods = tryparse(Int64, get_gtk_property(m["entNumPeriods", EntryLeaf], :text, String))
+  numPeriods = tryparse(Int64, get_gtk_property(m["entNumPeriods", GtkEntryLeaf], :text, String))
   numPeriods = numPeriods == nothing ? 1 : numPeriods
 
   daqTime_ = get_gtk_property(m["adjNumAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64) *
@@ -442,7 +442,7 @@ function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
   end
   calibStr = string(calibStr,@sprintf("%.1f",calibTime/60)," min")
 
-  @idle_add_guarded set_gtk_property!(m["entCalibTime",EntryLeaf],:text, calibStr)
+  @idle_add_guarded set_gtk_property!(m["entCalibTime",GtkEntryLeaf],:text, calibStr)
   return
 end
 
@@ -460,9 +460,9 @@ function setInfoParams(m::MeasurementWidget)
   #else
   #  freqStr = "$(round(daq.params.dfFreq[1], digits=2)) Hz"
   #end
-  #@idle_add_guarded set_gtk_property!(m["entDFFreq",EntryLeaf],:text,freqStr)
-  #@idle_add_guarded set_gtk_property!(m["entDFPeriod",EntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")
-  numPeriods = tryparse(Int64, get_gtk_property(m["entNumPeriods", EntryLeaf], :text, String))
+  #@idle_add_guarded set_gtk_property!(m["entDFFreq",GtkEntryLeaf],:text,freqStr)
+  #@idle_add_guarded set_gtk_property!(m["entDFPeriod",GtkEntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")
+  numPeriods = tryparse(Int64, get_gtk_property(m["entNumPeriods", GtkEntryLeaf], :text, String))
 
   framePeriod = get_gtk_property(m["adjNumAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64) *
                   (numPeriods == nothing ? 1 : numPeriods)  *
@@ -472,9 +472,9 @@ function setInfoParams(m::MeasurementWidget)
                               get_gtk_property(m["adjNumFGFrames",Gtk4.GtkAdjustmentLeaf], :value, Int64)
 
   @idle_add_guarded begin
-    set_gtk_property!(m["entFramePeriod",EntryLeaf],:text,"$(@sprintf("%.5f",framePeriod)) s")
+    set_gtk_property!(m["entFramePeriod",GtkEntryLeaf],:text,"$(@sprintf("%.5f",framePeriod)) s")
 
-    set_gtk_property!(m["entTotalPeriod",EntryLeaf],:text,"$(@sprintf("%.2f",totalPeriod)) s")
+    set_gtk_property!(m["entTotalPeriod",GtkEntryLeaf],:text,"$(@sprintf("%.2f",totalPeriod)) s")
   end
 end
 
@@ -488,29 +488,29 @@ function getParams(m::MeasurementWidget)
 
   params["acqNumFGFrames"] = get_gtk_property(m["adjNumFGFrames",Gtk4.GtkAdjustmentLeaf], :value, Int64)
   params["acqNumBGFrames"] = get_gtk_property(m["adjNumBGFrames",Gtk4.GtkAdjustmentLeaf], :value, Int64)
-  #TODO params["acqNumPeriodsPerFrame"] = parse(Int64, get_gtk_property(m["entNumPeriods", EntryLeaf], :text, String))
+  #TODO params["acqNumPeriodsPerFrame"] = parse(Int64, get_gtk_property(m["entNumPeriods", GtkEntryLeaf], :text, String))
   params["studyName"] = m.currStudyName
   params["studyDate"] = m.currStudyDate
   params["studyDescription"] = ""
-  params["experimentDescription"] = get_gtk_property(m["entExpDescr",EntryLeaf], :text, String)
-  params["experimentName"] = get_gtk_property(m["entExpName",EntryLeaf], :text, String)
-  params["scannerOperator"] = get_gtk_property(m["entOperator",EntryLeaf], :text, String)
-  params["tracerName"] = [get_gtk_property(m["entTracerName",EntryLeaf], :text, String)]
-  params["tracerBatch"] = [get_gtk_property(m["entTracerBatch",EntryLeaf], :text, String)]
-  params["tracerVendor"] = [get_gtk_property(m["entTracerVendor",EntryLeaf], :text, String)]
+  params["experimentDescription"] = get_gtk_property(m["entExpDescr",GtkEntryLeaf], :text, String)
+  params["experimentName"] = get_gtk_property(m["entExpName",GtkEntryLeaf], :text, String)
+  params["scannerOperator"] = get_gtk_property(m["entOperator",GtkEntryLeaf], :text, String)
+  params["tracerName"] = [get_gtk_property(m["entTracerName",GtkEntryLeaf], :text, String)]
+  params["tracerBatch"] = [get_gtk_property(m["entTracerBatch",GtkEntryLeaf], :text, String)]
+  params["tracerVendor"] = [get_gtk_property(m["entTracerVendor",GtkEntryLeaf], :text, String)]
   params["tracerVolume"] = [1e-3*get_gtk_property(m["adjTracerVolume",Gtk4.GtkAdjustmentLeaf], :value, Float64)]
   params["tracerConcentration"] = [1e-3*get_gtk_property(m["adjTracerConcentration",Gtk4.GtkAdjustmentLeaf], :value, Float64)]
-  params["tracerSolute"] = [get_gtk_property(m["entTracerSolute",EntryLeaf], :text, String)]
+  params["tracerSolute"] = [get_gtk_property(m["entTracerSolute",GtkEntryLeaf], :text, String)]
 
-  dfString = get_gtk_property(m["entDFStrength",EntryLeaf], :text, String)
+  dfString = get_gtk_property(m["entDFStrength",GtkEntryLeaf], :text, String)
   params["dfStrength"] = parse.(Float64,split(dfString," x "))*1e-3
-  dfDividerStr = get_gtk_property(m["entDFDivider",EntryLeaf], :text, String)
+  dfDividerStr = get_gtk_property(m["entDFDivider",GtkEntryLeaf], :text, String)
   params["dfDivider"] = parse.(Int64,split(dfDividerStr," x "))
 
-  params["acqFFSequence"] = get_gtk_property(m["entSequenceName",EntryLeaf], :text, String)
+  params["acqFFSequence"] = get_gtk_property(m["entSequenceName",GtkEntryLeaf], :text, String)
   #params["dfWaveform"] = RedPitayaDAQServer.waveforms()[get_gtk_property(m["cbWaveform",Gtk4.GtkComboBoxTextLeaf], :active, Int)+1]
 
-  #jump = get_gtk_property(m["entDFJumpSharpness",EntryLeaf], :text, String)
+  #jump = get_gtk_property(m["entDFJumpSharpness",GtkEntryLeaf], :text, String)
   #params["jumpSharpness"] = parse(Float64, jump)
 
   params["storeAsSystemMatrix"] = get_gtk_property(m["cbStoreAsSystemMatrix",CheckButtonLeaf],:active, Bool)
@@ -528,22 +528,22 @@ function setParams(m::MeasurementWidget, scanner::MPIScanner)
   @idle_add_guarded set_gtk_property!(m["adjNumFGFrames",Gtk4.GtkAdjustmentLeaf], :value, 1 ) # TODO params["acqNumFrames"])
   @idle_add_guarded set_gtk_property!(m["adjNumBGFrames",Gtk4.GtkAdjustmentLeaf], :value, 1 ) # TODO params["acqNumFrames"])
   #@idle_add_guarded set_gtk_property!(m["entStudy"], :text, params["studyName"])
-  @idle_add_guarded set_gtk_property!(m["entExpDescr",EntryLeaf], :text, "" ) # TODO params["studyDescription"] )
-  @idle_add_guarded set_gtk_property!(m["entOperator",EntryLeaf], :text, "default" ) # gp.operator)
+  @idle_add_guarded set_gtk_property!(m["entExpDescr",GtkEntryLeaf], :text, "" ) # TODO params["studyDescription"] )
+  @idle_add_guarded set_gtk_property!(m["entOperator",GtkEntryLeaf], :text, "default" ) # gp.operator)
   dfString = *([ string(x*1e3," x ") for x in diag(ustrip.(dfStrength(seq)[1,:,:])) ]...)[1:end-3]
-  @idle_add_guarded set_gtk_property!(m["entDFStrength",EntryLeaf], :text, dfString)
+  @idle_add_guarded set_gtk_property!(m["entDFStrength",GtkEntryLeaf], :text, dfString)
   dfDividerStr = *([ string(x," x ") for x in unique(vec(dfDivider(seq))) ]...)[1:end-3]
-  @idle_add_guarded set_gtk_property!(m["entDFDivider",EntryLeaf], :text, dfDividerStr)
-  @idle_add_guarded set_gtk_property!(m["entSequenceName", EntryLeaf], :text, MPIFiles.name(seq))
+  @idle_add_guarded set_gtk_property!(m["entDFDivider",GtkEntryLeaf], :text, dfDividerStr)
+  @idle_add_guarded set_gtk_property!(m["entSequenceName", GtkEntryLeaf], :text, MPIFiles.name(seq))
 
-  #TODO @idle_add_guarded set_gtk_property!(m["entDFJumpSharpness",EntryLeaf], :text, "$(get(params,"jumpSharpness", 0.1))")
+  #TODO @idle_add_guarded set_gtk_property!(m["entDFJumpSharpness",GtkEntryLeaf], :text, "$(get(params,"jumpSharpness", 0.1))")
 
-  #= TODO @idle_add_guarded set_gtk_property!(m["entTracerName",EntryLeaf], :text, params["tracerName"][1])
-  @idle_add_guarded set_gtk_property!(m["entTracerBatch",EntryLeaf], :text, params["tracerBatch"][1])
-  @idle_add_guarded set_gtk_property!(m["entTracerVendor",EntryLeaf], :text, params["tracerVendor"][1])
+  #= TODO @idle_add_guarded set_gtk_property!(m["entTracerName",GtkEntryLeaf], :text, params["tracerName"][1])
+  @idle_add_guarded set_gtk_property!(m["entTracerBatch",GtkEntryLeaf], :text, params["tracerBatch"][1])
+  @idle_add_guarded set_gtk_property!(m["entTracerVendor",GtkEntryLeaf], :text, params["tracerVendor"][1])
   @idle_add_guarded set_gtk_property!(m["adjTracerVolume",Gtk4.GtkAdjustmentLeaf], :value, 1000*params["tracerVolume"][1])
   @idle_add_guarded set_gtk_property!(m["adjTracerConcentration",Gtk4.GtkAdjustmentLeaf], :value, 1000*params["tracerConcentration"][1])
-  @idle_add_guarded set_gtk_property!(m["entTracerSolute",EntryLeaf], :text, params["tracerSolute"][1])
+  @idle_add_guarded set_gtk_property!(m["entTracerSolute",GtkEntryLeaf], :text, params["tracerSolute"][1])
   =#
 
   #=if haskey(params,"acqFFSequence")
@@ -552,11 +552,11 @@ function setParams(m::MeasurementWidget, scanner::MPIScanner)
       updateSequence(m, seq)
     end
   else
-      @idle_add_guarded set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, params["acqNumPeriodsPerFrame"])
-      @idle_add_guarded set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "1")
+      @idle_add_guarded set_gtk_property!(m["entNumPeriods",GtkEntryLeaf], :text, params["acqNumPeriodsPerFrame"])
+      @idle_add_guarded set_gtk_property!(m["entNumPatches",GtkEntryLeaf], :text, "1")
   end=#
-  @idle_add_guarded set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, acqNumPeriodsPerFrame(seq))
-  @idle_add_guarded set_gtk_property!(m["entNumPatches",EntryLeaf], :text, acqNumPatches(seq))
+  @idle_add_guarded set_gtk_property!(m["entNumPeriods",GtkEntryLeaf], :text, acqNumPeriodsPerFrame(seq))
+  @idle_add_guarded set_gtk_property!(m["entNumPatches",GtkEntryLeaf], :text, acqNumPatches(seq))
 
   #= TODO if haskey(params,"dfWaveform")
     idx = findfirst_(RedPitayaDAQServer.waveforms(), params["dfWaveform"])
@@ -575,15 +575,15 @@ function setParams(m::MeasurementWidget, scanner::MPIScanner)
     fovStr = @sprintf("%.2f x %.2f x %.2f", fov[1],fov[2],fov[3])
     ctr = Float64.(ustrip.(uconvert.(Unitful.mm,MPIFiles.fieldOfViewCenter( calibProtocol.params.positions)))) # convert to mm
     ctrStr = @sprintf("%.2f x %.2f x %.2f", ctr[1],ctr[2],ctr[3])
-    @idle_add_guarded set_gtk_property!(m["entGridShape",EntryLeaf], :text, shpStr)
-    @idle_add_guarded set_gtk_property!(m["entFOV",EntryLeaf], :text, fovStr)
-    @idle_add_guarded set_gtk_property!(m["entCenter",EntryLeaf], :text, ctrStr)
+    @idle_add_guarded set_gtk_property!(m["entGridShape",GtkEntryLeaf], :text, shpStr)
+    @idle_add_guarded set_gtk_property!(m["entFOV",GtkEntryLeaf], :text, fovStr)
+    @idle_add_guarded set_gtk_property!(m["entCenter",GtkEntryLeaf], :text, ctrStr)
     # TODO @idle_add_guarded set_gtk_property!(m["adjNumBGMeasurements",Gtk4.GtkAdjustmentLeaf], :value, p["calibNumBGMeasurements"])
   end
   #=velRob = getDefaultVelocity(getRobot(m.scanner))
   velRobStr = @sprintf("%.d x %.d x %.d", velRob[1],velRob[2],velRob[3])
-  @idle_add_guarded set_gtk_property!(m["entVelRob",EntryLeaf], :text, velRobStr)
-  @idle_add_guarded set_gtk_property!(m["entCurrPos",EntryLeaf], :text, "0.0 x 0.0 x 0.0")=#
+  @idle_add_guarded set_gtk_property!(m["entVelRob",GtkEntryLeaf], :text, velRobStr)
+  @idle_add_guarded set_gtk_property!(m["entCurrPos",GtkEntryLeaf], :text, "0.0 x 0.0 x 0.0")=#
 
   @idle_add_guarded set_gtk_property!(m["adjPause",Gtk4.GtkAdjustmentLeaf], :value, calibProtocol.params.waitTime )
 end
@@ -599,7 +599,7 @@ function getRobotSetupUI(m::MeasurementWidget)
 end
 
 function getCustomPhantom(m::MeasurementWidget)
-    cPStr = get_gtk_property(m["entSafetyObj",EntryLeaf],:text,String)
+    cPStr = get_gtk_property(m["entSafetyObj",GtkEntryLeaf],:text,String)
     cP_ = tryparse.(Float64,split(cPStr,"x"))
     cP= cP_ .*1Unitful.mm
     return Cuboid(Rectangle(cP[2],cP[3], "UI Custom Phantom"),cP[1],"UI Custom Phantom 3D")
@@ -610,7 +610,7 @@ end
 function enableDFWaveformControls(m::MeasurementWidget, enable::Bool)
   @idle_add_guarded begin
     set_gtk_property!(m["cbWaveform",Gtk4.GtkComboBoxTextLeaf],:sensitive,enable)
-    set_gtk_property!(m["entDFDivider",EntryLeaf],:sensitive,enable)
+    set_gtk_property!(m["entDFDivider",GtkEntryLeaf],:sensitive,enable)
   end
 end
 
@@ -618,7 +618,7 @@ end
 function loadArbPos(m::MeasurementWidget)
       filter = Gtk4.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
       filename = open_dialog("Select Arbitrary Position File", GtkNullContainer(), (filter, ))
-      @idle_add_guarded set_gtk_property!(m["entArbitraryPos",EntryLeaf],:text,filename)
+      @idle_add_guarded set_gtk_property!(m["entArbitraryPos",GtkEntryLeaf],:text,filename)
 end
 
 function clear(proto::ProtocolStatus)

@@ -21,31 +21,31 @@ mutable struct RawDataWidget <: Gtk4.GtkBox
   rangeFD::NTuple{2,Float64}
 end
 
-getindex(m::RawDataWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::RawDataWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 function RawDataWidget(filenameConfig=nothing)
   @info "Starting RawDataWidget"
   uifile = joinpath(@__DIR__,"builder","rawDataViewer.ui")
 
   b = GtkBuilder(filename=uifile)
-  mainBox = G_.object(b, "boxRawViewer")
+  mainBox = Gtk4.G_.get_object(b, "boxRawViewer")
 
   m = RawDataWidget( mainBox.handle, b,
                   zeros(Float32,0,0,0,0,0), zeros(Float32,0,0,0,0,0),
                   [""], GtkCanvas(), GtkCanvas(),
                   1.0, [""], false, false, false,
-                  G_.object(b,"winHarmonicViewer"),
+                  Gtk4.G_.get_object(b,"winHarmonicViewer"),
                   Gtk4.GtkAdjustmentLeaf[], GtkCanvas[], Vector{Vector{Float32}}(),
                   (0.0,1.0), (0.0,1.0))
-  Gtk4.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
 
   push!(m["boxTD"],m.cTD)
-  set_gtk_property!(m["boxTD"],:expand,m.cTD,true)
+###  set_gtk_property!(m["boxTD"],:expand,m.cTD,true)
 
   push!(m["boxFD"],m.cFD)
-  set_gtk_property!(m["boxFD"],:expand,m.cFD,true)
+###  set_gtk_property!(m["boxFD"],:expand,m.cFD,true)
 
   @debug "InitCallbacks"
 
@@ -70,7 +70,7 @@ function initHarmView(m::RawDataWidget)
     c = GtkCanvas()
 
     push!(m["boxHarmView"],c)
-    set_gtk_property!(m["boxHarmView"],:expand,c,true)
+###    set_gtk_property!(m["boxHarmView"],:expand,c,true)
     push!(m.harmViewGtkCanvas, c)
     push!(m.harmBuff, zeros(Float32,0))
   end
@@ -222,7 +222,7 @@ function initCallbacks(m_::RawDataWidget)
         if harmViewOn
           clearHarmBuff(m)
           set_gtk_property!(m.winHarmView,:visible, true)
-          showall(m.winHarmView)
+          show(m.winHarmView)
         else
           set_gtk_property!(m.winHarmView,:visible, false)
         end

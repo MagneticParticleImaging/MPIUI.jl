@@ -9,19 +9,19 @@ mutable struct CoordinateParameter <: Gtk4.GtkGrid
     grid = GtkGrid()
     uifile = joinpath(@__DIR__, "..", "builder", "positionsWidget.ui")
     b = GtkBuilder(filename=uifile)
-    coordEntry = G_.object(b, "gridCoord")
+    coordGtkEntry = Gtk4.G_.get_object(b, "gridCoord")
     label = GtkLabel(string(field))
     set_gtk_property!(label, :xalign, 0.0)
     addTooltip(label, tooltip)
     grid[1, 1] = label
-    grid[2, 1] = coordEntry
+    grid[2, 1] = coordGtkEntry
     coordParam = new(grid.handle, b, field)
     updateCoordinate(coordParam, coord)
-    return Gtk4.gobject_move_ref(coordParam, grid)
+    return Gtk4.GLib.gobject_move_ref(coordParam, grid)
   end
 end
 
-getindex(m::CoordinateParameter, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::CoordinateParameter, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 function updateCoordinate(param::CoordinateParameter, coord::ScannerCoords)
   @idle_add_guarded begin

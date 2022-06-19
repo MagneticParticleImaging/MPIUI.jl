@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.22.2 -->
 <interface>
-  <requires lib="gtk+" version="3.20"/>
+  <requires lib="gtk" version="4.0"/>
   <object class="GtkAdjustment" id="adjFrame">
     <property name="lower">1</property>
     <property name="upper">1000000</property>
@@ -33,299 +32,259 @@
     <property name="page_increment">10</property>
   </object>
   <object class="GtkExpander" id="expSequence">
-    <property name="visible">True</property>
-    <property name="can_focus">True</property>
-    <property name="expanded">True</property>
+    <property name="focusable">1</property>
+    <property name="expanded">1</property>
     <child>
       <object class="GtkGrid" id="grid1">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
         <property name="row_spacing">5</property>
         <property name="column_spacing">5</property>
         <child>
           <object class="GtkLabel" id="label10">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="halign">start</property>
-            <property name="label" translatable="yes"># Frames</property>
+            <property name="label" translatable="1"># Frames</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">0</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">0</property>
-          </packing>
         </child>
         <child>
           <object class="GtkSpinButton" id="spinbutton7">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="hexpand">True</property>
+            <property name="focusable">1</property>
+            <property name="hexpand">1</property>
             <property name="width_chars">0</property>
-            <property name="text" translatable="yes">1</property>
+            <property name="text" translatable="1">1</property>
             <property name="adjustment">adjNumFrames</property>
             <property name="value">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">0</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">0</property>
-          </packing>
         </child>
         <child>
           <object class="GtkLabel" id="label52">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="halign">start</property>
-            <property name="label" translatable="yes"># Averages</property>
+            <property name="label" translatable="1"># Averages</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">1</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">1</property>
-          </packing>
         </child>
         <child>
           <object class="GtkSpinButton" id="spinbutton22">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
+            <property name="focusable">1</property>
             <property name="width_chars">0</property>
-            <property name="text" translatable="yes">1</property>
+            <property name="text" translatable="1">1</property>
             <property name="adjustment">adjNumAverages</property>
             <property name="value">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">1</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">1</property>
-          </packing>
         </child>
         <child>
           <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="halign">start</property>
-            <property name="label" translatable="yes"># Periods</property>
+            <property name="label" translatable="1"># Periods</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">3</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">3</property>
-          </packing>
         </child>
         <child>
           <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="halign">start</property>
-            <property name="label" translatable="yes"># Subperiods</property>
+            <property name="label" translatable="1"># Subperiods</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">5</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">5</property>
-          </packing>
         </child>
         <child>
           <object class="GtkSpinButton">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
+            <property name="focusable">1</property>
             <property name="width_chars">0</property>
-            <property name="text" translatable="yes">1</property>
+            <property name="text" translatable="1">1</property>
             <property name="adjustment">adjNumSubperiods</property>
             <property name="value">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">5</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">5</property>
-          </packing>
         </child>
         <child>
           <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="halign">start</property>
-            <property name="label" translatable="yes">Sequence</property>
+            <property name="label" translatable="1">Sequence</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">7</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">7</property>
-          </packing>
         </child>
         <child>
           <object class="GtkSpinButton">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
+            <property name="focusable">1</property>
             <property name="width_chars">3</property>
-            <property name="text" translatable="yes">1</property>
+            <property name="text" translatable="1">1</property>
             <property name="adjustment">adjNumFrameAverages</property>
             <property name="value">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">2</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">2</property>
-          </packing>
         </child>
         <child>
           <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="halign">start</property>
-            <property name="label" translatable="yes"># Frame Av.</property>
+            <property name="label" translatable="1"># Frame Av.</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">2</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">2</property>
-          </packing>
         </child>
         <child>
           <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="halign">start</property>
-            <property name="label" translatable="yes"># Patches</property>
+            <property name="label" translatable="1"># Patches</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">4</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">4</property>
-          </packing>
         </child>
         <child>
           <object class="GtkEntry" id="entNumPatches">
-            <property name="visible">True</property>
-            <property name="sensitive">False</property>
-            <property name="can_focus">True</property>
-            <property name="editable">False</property>
+            <property name="sensitive">0</property>
+            <property name="focusable">1</property>
+            <property name="editable">0</property>
             <property name="width_chars">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">4</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">4</property>
-          </packing>
         </child>
         <child>
           <object class="GtkEntry" id="entNumPeriods">
-            <property name="visible">True</property>
-            <property name="sensitive">False</property>
-            <property name="can_focus">True</property>
-            <property name="editable">False</property>
+            <property name="sensitive">0</property>
+            <property name="focusable">1</property>
+            <property name="editable">0</property>
             <property name="width_chars">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">3</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">3</property>
-          </packing>
         </child>
         <child>
           <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="halign">start</property>
-            <property name="label" translatable="yes">DF Jump</property>
+            <property name="label" translatable="1">DF Jump</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">9</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">9</property>
-          </packing>
         </child>
         <child>
           <object class="GtkEntry" id="entDFJumpSharpness">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
+            <property name="focusable">1</property>
             <property name="width_chars">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">9</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">9</property>
-          </packing>
         </child>
         <child>
           <object class="GtkEntry" id="entSequenceName">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="editable">False</property>
+            <property name="focusable">1</property>
+            <property name="editable">0</property>
             <property name="width_chars">1</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">8</property>
+              <property name="column-span">2</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">8</property>
-            <property name="width">2</property>
-          </packing>
         </child>
         <child>
           <object class="GtkButton" id="btnSelectSequence">
-            <property name="label" translatable="yes">Select</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
+            <property name="label" translatable="1">Select</property>
+            <property name="focusable">1</property>
+            <property name="receives_default">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">7</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">7</property>
-          </packing>
         </child>
         <child>
           <object class="GtkNotebook">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="scrollable">True</property>
+            <property name="focusable">1</property>
+            <property name="scrollable">1</property>
             <child>
-              <object class="GtkBox" id="boxPeriodicChannel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="orientation">vertical</property>
-                <child>
-                  <placeholder/>
-                </child>
+              <object class="GtkNotebookPage">
+                <property name="child">
+                  <object class="GtkBox" id="boxPeriodicChannel">
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                </property>
+                <property name="tab">
+                  <object class="GtkLabel">
+                    <property name="label" translatable="1">Periodic Channel</property>
+                  </object>
+                </property>
               </object>
-            </child>
-            <child type="tab">
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Periodic Channel</property>
-              </object>
-              <packing>
-                <property name="tab_fill">False</property>
-              </packing>
             </child>
             <child>
-              <object class="GtkBox" id="boxAcyclicChannel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="orientation">vertical</property>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-              </object>
-              <packing>
+              <object class="GtkNotebookPage">
                 <property name="position">1</property>
-              </packing>
-            </child>
-            <child type="tab">
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Acyclic Channel</property>
+                <property name="child">
+                  <object class="GtkBox" id="boxAcyclicChannel">
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                </property>
+                <property name="tab">
+                  <object class="GtkLabel">
+                    <property name="label" translatable="1">Acyclic Channel</property>
+                  </object>
+                </property>
               </object>
-              <packing>
-                <property name="position">1</property>
-                <property name="tab_fill">False</property>
-              </packing>
             </child>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">6</property>
+              <property name="column-span">2</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">6</property>
-            <property name="width">2</property>
-          </packing>
         </child>
       </object>
     </child>
     <child type="label">
       <object class="GtkLabel" id="lblSequence">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Sequence</property>
+        <property name="label" translatable="1">Sequence</property>
       </object>
     </child>
   </object>

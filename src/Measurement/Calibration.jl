@@ -1,14 +1,14 @@
 
 function executeCalibrationProtocol(m::MeasurementWidget)
   @info "Getting positions"
-  shpString = get_gtk_property(m["entGridShape",EntryLeaf], :text, String)
+  shpString = get_gtk_property(m["entGridShape",GtkEntryLeaf], :text, String)
   shp_ = tryparse.(Int64,split(shpString,"x"))
-  fovString = get_gtk_property(m["entFOV",EntryLeaf], :text, String)
+  fovString = get_gtk_property(m["entFOV",GtkEntryLeaf], :text, String)
   fov_ = tryparse.(Float64,split(fovString,"x"))
-  centerString = get_gtk_property(m["entCenter",EntryLeaf], :text, String)
+  centerString = get_gtk_property(m["entCenter",GtkEntryLeaf], :text, String)
   center_ = tryparse.(Float64,split(centerString,"x"))
 
-  velRobString = get_gtk_property(m["entVelRob",EntryLeaf], :text, String)
+  velRobString = get_gtk_property(m["entVelRob",GtkEntryLeaf], :text, String)
   velRob_ = tryparse.(Int64,split(velRobString,"x"))
 
   numBGMeas = get_gtk_property(m["adjNumBGMeasurements",Gtk4.GtkAdjustmentLeaf], :value, Int64)
@@ -30,7 +30,7 @@ function executeCalibrationProtocol(m::MeasurementWidget)
   if get_gtk_property(m["cbUseArbitraryPos",CheckButtonLeaf], :active, Bool) == false
       cartGrid = RegularGridPositions(shp,fov,ctr)#
   else
-      filename = get_gtk_property(m["entArbitraryPos",EntryLeaf],:text,String)
+      filename = get_gtk_property(m["entArbitraryPos",GtkEntryLeaf],:text,String)
       if filename != ""
           cartGrid = h5open(filename, "r") do file
               positions = Positions(file)

@@ -77,7 +77,7 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
    #dv[].grid3D[1:2,4] = pb
    #set_gtk_property!(pb,:fraction,0.1)
    
-   showall(dv[].dvw)
+   show(dv[].dvw)
 
   frequencies = filterFrequencies(bSF, minFreq=minFreq, maxFreq=maxFreq,
                                   recChannels=recChannels, SNRThresh=SNRThresh, sortBySNR=sortBySNR)
@@ -114,7 +114,7 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
       frame = skipFrames==0 ? currFrame : min.(frame+skipFrames, currFrame) #skip frames, if measurement is fast enough
       newframe = true
       #set_gtk_property!(pb,:fraction, currFrame / acqNumFrames(b))
-      #showall(dv[].dvw)
+      #show(dv[].dvw)
       
     end
 

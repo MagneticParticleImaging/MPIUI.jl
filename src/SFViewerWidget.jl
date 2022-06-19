@@ -20,7 +20,7 @@ mutable struct SFViewerWidget <: Gtk4.GtkBox
   grid::Gtk4.GtkGridLeaf
 end
 
-getindex(m::SFViewerWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::SFViewerWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 mutable struct SFViewer
   w::Gtk4.GtkWindowLeaf
@@ -31,7 +31,7 @@ function SFViewer(filename::AbstractString)
   sfViewerWidget = SFViewerWidget()
   w = Window("SF Viewer: $(filename)",800,600)
   push!(w,sfViewerWidget)
-  showall(w)
+  show(w)
   updateData!(sfViewerWidget, filename)
   return SFViewer(w, sfViewerWidget)
 end
@@ -40,12 +40,12 @@ function SFViewerWidget()
   uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
   b = GtkBuilder(filename=uifile)
-  mainBox = GtkBox(:h) #G_.object(b, "boxSFViewer")
+  mainBox = GtkBox(:h) #Gtk4.G_.get_object(b, "boxSFViewer")
 
   m = SFViewerWidget(mainBox.handle, b, DataViewerWidget(),
                   BrukerFile(), false, 0, 0, zeros(0,0,0),
                   zeros(0), zeros(0), zeros(0,0), zeros(0), zeros(0), GtkGrid())
-  Gtk4.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   m.grid[1,1] = m.dv
   m.grid[1,2] = GtkCanvas()
@@ -53,8 +53,8 @@ function SFViewerWidget()
   #set_gtk_property!(m.grid, :row_homogeneous, true)
   #set_gtk_property!(m.grid, :column_homogeneous, true)
   push!(m, m.grid)
-  set_gtk_property!(m, :fill, m.grid, true)
-  set_gtk_property!(m, :expand, m.grid, true)
+###  set_gtk_property!(m, :fill, m.grid, true)
+###  set_gtk_property!(m, :expand, m.grid, true)
   push!(m, m["swSFViewer"])
 
   function updateSFMixO( widget )
@@ -196,7 +196,7 @@ function updateSF(m::SFViewerWidget)
   Winston.xlabel("f / kHz")
   Winston.title("SNR")
   display(m.grid[1,2] ,p)
-  showall(m)
+  show(m)
 
   c = reshape(sfData, 1, size(sfData,1), size(sfData,2), size(sfData,3), 1)
   c_ = cat(abs.(c),angle.(c), dims=1)

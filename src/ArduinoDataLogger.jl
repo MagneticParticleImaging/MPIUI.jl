@@ -20,7 +20,7 @@ struct ArduinoDataLogger
   delim::String
 end
 
-getindex(m::ArduinoDataLoggerUI, w::AbstractString)= G_.object(m.builder,w)
+getindex(m::ArduinoDataLoggerUI, w::AbstractString)= Gtk4.G_.get_object(m.builder,w)
 
 function ArduinoDataLoggerUI()
         @info "Starting ArduinoDataLoggerUI"
@@ -34,7 +34,7 @@ function ArduinoDataLoggerUI()
         signal_connect(m["btnConnect"], :clicked) do w
             connectToArduino(m)
         end
-        showall(m["mainWindow"])
+        show(m["mainWindow"])
         @info "Finished starting ArduinoDataLoggerUI"
     return m
 end

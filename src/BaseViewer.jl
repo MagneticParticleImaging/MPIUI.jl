@@ -16,11 +16,11 @@ function baseViewerStandAlone()
   set_gtk_property!(w,:vexpand,true)
   m, bv = baseViewer()
   push!(w, bv)
-  showall(w)
+  show(w)
   return w,m,bv
 end
 
-getindex(m::BaseViewerWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::BaseViewerWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 function baseViewer()
   uifile = joinpath(@__DIR__,"builder","baseViewer.ui")
