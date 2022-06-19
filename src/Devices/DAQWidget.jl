@@ -1,6 +1,6 @@
 
-mutable struct DAQWidget <: Gtk.GtkBox
-    handle::Ptr{Gtk.GObject}
+mutable struct DAQWidget <: Gtk4.GtkBox
+    handle::Ptr{Gtk4.GObject}
     builder::GtkBuilder
     updating::Bool
     daq::AbstractDAQ
@@ -14,11 +14,11 @@ getindex(m::DAQWidget, w::AbstractString) = G_.object(m.builder, w)
 function DAQWidget(daq::AbstractDAQ)
     uifile = joinpath(@__DIR__,"..","builder","DAQWidget.ui")
 
-    b = Builder(filename=uifile)
+    b = GtkBuilder(filename=uifile)
     mainBox = G_.object(b, "mainBox")
 
     m = DAQWidget(mainBox.handle, b, false, daq, nothing)
-    Gtk.gobject_move_ref(m, mainBox)
+    Gtk4.gobject_move_ref(m, mainBox)
 
     init(m)
     initCallbacks(m)

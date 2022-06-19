@@ -40,13 +40,13 @@ function saveTemperatureLog(filename::String, log::TemperatureLog)
     end
 end
   
-mutable struct SurveillanceWidget <: Gtk.GtkBox
-    handle::Ptr{Gtk.GObject}
+mutable struct SurveillanceWidget <: Gtk4.GtkBox
+    handle::Ptr{Gtk4.GObject}
     builder::GtkBuilder
     updating::Bool
     su::SurveillanceUnit
     temperatureLog::TemperatureLog
-    canvas::GtkCanvasLeaf
+    canvas::Gtk4.GtkCanvasLeaf
     timer::Union{Timer,Nothing}
 end
   
@@ -55,11 +55,11 @@ getindex(m::SurveillanceWidget, w::AbstractString) = G_.object(m.builder, w)
 function SurveillanceWidget(su::SurveillanceUnit)
     uifile = joinpath(@__DIR__,"..","builder","surveillanceWidget.ui")
 
-    b = Builder(filename=uifile)
+    b = GtkBuilder(filename=uifile)
     mainBox = G_.object(b, "mainBox")
 
-    m = SurveillanceWidget(mainBox.handle, b, false, su, TemperatureLog(), Canvas(), nothing)
-    Gtk.gobject_move_ref(m, mainBox)
+    m = SurveillanceWidget(mainBox.handle, b, false, su, TemperatureLog(), GtkCanvas(), nothing)
+    Gtk4.gobject_move_ref(m, mainBox)
   
     push!(m, m.canvas)
     set_gtk_property!(m,:expand, m.canvas, true)
@@ -95,7 +95,7 @@ function initCallbacks(m::SurveillanceWidget)
     
     signal_connect(m["btnSaveTemp"], :clicked) do w
         m.updating = true
-        filter = Gtk.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
+        filter = Gtk4.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
         filename = save_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
         if filename != ""
             filenamebase, ext = splitext(filename)

@@ -1,6 +1,6 @@
 
-mutable struct RobotWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct RobotWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   updating::Bool
   robot::Robot
@@ -17,11 +17,11 @@ getindex(m::RobotWidget, w::AbstractString) = G_.object(m.builder, w)
 function RobotWidget(robot::Robot)
   uifile = joinpath(@__DIR__,"..","builder","robotWidget.ui")
 
-  b = Builder(filename=uifile)
+  b = GtkBuilder(filename=uifile)
   mainBox = G_.object(b, "mainBox")
 
   m = RobotWidget(mainBox.handle, b, false, robot, nothing, toScannerCoords, ScannerCoords, nothing)
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.gobject_move_ref(m, mainBox)
 
   if :namedPositions in fieldnames(typeof(params(robot)))
     @idle_add_guarded begin
@@ -174,7 +174,7 @@ function displayNamedPosition(m::RobotWidget, pos)
   end
 end
 function displayNamedPosition(m::RobotWidget)
-  m.namedPos = Gtk.bytestring(GAccessor.active_text(m["cmbNamedPos"]))
+  m.namedPos = Gtk4.bytestring(GAccessor.active_text(m["cmbNamedPos"]))
   pos = m.coordTransferfunction(m.robot, MPIMeasurements.namedPosition(m.robot, m.namedPos))
   @show pos
   if length(pos) == 3

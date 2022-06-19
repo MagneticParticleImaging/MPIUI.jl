@@ -25,11 +25,11 @@ getindex(m::ArduinoDataLoggerUI, w::AbstractString)= G_.object(m.builder,w)
 function ArduinoDataLoggerUI()
         @info "Starting ArduinoDataLoggerUI"
         uifile= joinpath(@__DIR__,"builder","ArduinoDataLogger.ui")
-        b= Builder(filename=uifile)
+        b= GtkBuilder(filename=uifile)
 
         m= ArduinoDataLoggerUI(b,nothing, nothing,nothing, nothing, nothing,nothing,nothing,nothing,nothing,nothing)
-        m.c1 =Canvas()
-        m.c2=Canvas()
+        m.c1 =GtkCanvas()
+        m.c2=GtkCanvas()
 
         signal_connect(m["btnConnect"], :clicked) do w
             connectToArduino(m)
@@ -66,7 +66,7 @@ function connectToArduino(m::ArduinoDataLoggerUI)
         Arduino=ArduinoDataLogger(MPIMeasurements.SerialDevice(sp,pause_ms, timeout_ms, delim_read, delim_write),CommandStart,CommandEnd,delim)
     end
 
-    m.c1 = Canvas()
+    m.c1 = GtkCanvas()
     push!(m["boxMain"],m.c1)
     set_gtk_property!(m["boxMain"],:expand,m.c1,true)
     while get_gtk_property(m["ONOFF"],:activate, Bool)

@@ -3,8 +3,8 @@ export SFViewer
 import Base: getindex
 
 
-mutable struct SFViewerWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct SFViewerWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   dv::DataViewerWidget
   bSF::MPIFile
@@ -17,13 +17,13 @@ mutable struct SFViewerWidget <: Gtk.GtkBox
   mixFac::Array{Float64,2}
   mxyz::Array{Float64,1}
   frequencies::Array{Float64,1}
-  grid::GtkGridLeaf
+  grid::Gtk4.GtkGridLeaf
 end
 
 getindex(m::SFViewerWidget, w::AbstractString) = G_.object(m.builder, w)
 
 mutable struct SFViewer
-  w::Window
+  w::Gtk4.GtkWindowLeaf
   sf::SFViewerWidget
 end
 
@@ -39,16 +39,16 @@ end
 function SFViewerWidget()
   uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
-  b = Builder(filename=uifile)
-  mainBox = Box(:h) #G_.object(b, "boxSFViewer")
+  b = GtkBuilder(filename=uifile)
+  mainBox = GtkBox(:h) #G_.object(b, "boxSFViewer")
 
   m = SFViewerWidget(mainBox.handle, b, DataViewerWidget(),
                   BrukerFile(), false, 0, 0, zeros(0,0,0),
-                  zeros(0), zeros(0), zeros(0,0), zeros(0), zeros(0), Grid())
-  Gtk.gobject_move_ref(m, mainBox)
+                  zeros(0), zeros(0), zeros(0,0), zeros(0), zeros(0), GtkGrid())
+  Gtk4.gobject_move_ref(m, mainBox)
 
   m.grid[1,1] = m.dv
-  m.grid[1,2] = Canvas()
+  m.grid[1,2] = GtkCanvas()
   set_gtk_property!(m.grid[1,2], :height_request, 200)
   #set_gtk_property!(m.grid, :row_homogeneous, true)
   #set_gtk_property!(m.grid, :column_homogeneous, true)

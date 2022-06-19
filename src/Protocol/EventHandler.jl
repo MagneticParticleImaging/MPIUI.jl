@@ -1,7 +1,7 @@
 function initProtocol(pw::ProtocolWidget)
   try 
     @info "Setting protocol parameters"
-    for parameterObj in pw["boxProtocolParameter", BoxLeaf]
+    for parameterObj in pw["boxProtocolParameter", Gtk4.GtkBoxLeaf]
       setProtocolParameter(parameterObj, pw.protocol.params)
     end
     @info "Init protocol"

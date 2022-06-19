@@ -1,14 +1,14 @@
-using Gtk, Gtk.ShortNames, Cairo
+using Gtk4
 
 export DataViewer, DataViewerWidget
 
 ########### DataViewerWidget #################
 
-mutable struct DataViewerWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
-  builder::Builder
-  grid2D::Grid
-  grid3D::Grid
+mutable struct DataViewerWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
+  builder::GtkBuilder
+  grid2D::Gtk4.GtkGridLeaf
+  grid3D::Gtk4.GtkGridLeaf
   coloring::Vector{ColoringParams}
   upgradeColoringWInProgress::Bool
   cacheSelectedFovXYZ::Array{Float64,1}
@@ -26,7 +26,7 @@ end
 getindex(m::DataViewerWidget, w::AbstractString) = G_.object(m.builder, w)
 
 mutable struct DataViewer
-  w::Window
+  w::Gtk4.GtkWindowLeaf
   dvw::DataViewerWidget
 end
 
@@ -46,7 +46,7 @@ function DataViewer()
   showall(w)
 
   signal_connect(w, "key-press-event") do widget, event
-    if event.keyval ==  Gtk.GConstants.GDK_KEY_c
+    if event.keyval ==  Gtk4.GConstants.GDK_KEY_c
       if event.state & 0x04 != 0x00 # Control key is pressed
         @debug "copy visu params to clipboard..."
         str = string( getParams(dw) )
@@ -66,7 +66,7 @@ function DataViewerWidget()
 
   uifile = joinpath(@__DIR__,"..","builder","dataviewer.ui")
 
-  b = Builder(filename=uifile)
+  b = GtkBuilder(filename=uifile)
   mainBox = G_.object(b, "boxDataViewer")
   m = DataViewerWidget( mainBox.handle, b,
                          G_.object(b, "gridDataViewer2D"),
@@ -74,13 +74,13 @@ function DataViewerWidget()
                          Vector{ColoringParams}(), false,
                         [0.0,0.0,0.0], [0.0,0.0,0.0], false, false,
                         nothing, nothing, nothing,nothing, nothing, nothing)
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.gobject_move_ref(m, mainBox)
 
-  m.grid3D[2,1] = Canvas()
-  m.grid3D[1,1] = Canvas()
-  m.grid3D[2,2] = Canvas()
-  m.grid3D[1,2] = Canvas()
-  m.grid2D[1,1] = Canvas()
+  m.grid3D[2,1] = GtkCanvas()
+  m.grid3D[1,1] = GtkCanvas()
+  m.grid3D[2,2] = GtkCanvas()
+  m.grid3D[1,2] = GtkCanvas()
+  m.grid2D[1,1] = GtkCanvas()
 
   showall(m)
 

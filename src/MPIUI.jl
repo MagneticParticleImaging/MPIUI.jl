@@ -24,7 +24,7 @@ ENV["MPILIB_UI"] = "Nothing"
 
 using ImageUtils: makeAxisArray
 
-using Gtk, Gtk.ShortNames, Gtk.GLib
+using Gtk4, Gtk4.G_, Gtk4.GLib
 using Cairo
 using Images
 #using HDF5
@@ -41,8 +41,8 @@ export openFileBrowser
 
 const dateTimeFormatter = DateFormat("yyyy-mm-dd HH:MM:SS.sss")
 
-function object_(builder::Builder,name::AbstractString, T::Type)::T
-   return convert(T,ccall((:gtk_builder_get_object,Gtk.libgtk),Ptr{Gtk.GObject},(Ptr{Gtk.GObject},Ptr{UInt8}),builder,name))
+function object_(builder::GtkBuilder,name::AbstractString, T::Type)::T
+   return convert(T,ccall((:gtk_builder_get_object,Gtk4.libgtk),Ptr{Gtk4.GObject},(Ptr{Gtk4.GObject},Ptr{UInt8}),builder,name))
 end
 
 function openFileBrowser(dir::String)

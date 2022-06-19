@@ -1,7 +1,7 @@
 
 
-mutable struct FileBrowser <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct FileBrowser <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   path::String
   store::ListStore
   entry::Entry
@@ -18,7 +18,7 @@ function FileBrowser()
   r2 = CellRendererText()
   c1 = TreeViewColumn("Files", r1, Dict("stock-id" => 1))
   push!(c1,r2)
-  Gtk.add_attribute(c1,r2,"text",0)
+  Gtk4.add_attribute(c1,r2,"text",0)
   G_.sort_column_id(c1,0)
   G_.resizable(c1,true)
   G_.max_width(c1,80)
@@ -42,7 +42,7 @@ function FileBrowser()
   G_.style(toolbar,GtkToolbarStyle.ICONS)
   G_.icon_size(toolbar,GtkIconSize.MENU)
 
-  box = Box(:v)
+  box = GtkBox(:v)
   push!(box,combo)
   push!(box,toolbar)
   push!(box,sw)
@@ -75,7 +75,7 @@ function FileBrowser()
                              "gtk-cancel", GtkResponseType.CANCEL,
                              "gtk-open", GtkResponseType.ACCEPT)
     if ret == GtkResponseType.ACCEPT
-      path = Gtk.bytestring(Gtk._.filename(dlg),true)
+      path = Gtk4.bytestring(Gtk4._.filename(dlg),true)
       changedir!(browser,path)
     end
     destroy(dlg)
@@ -104,7 +104,7 @@ function FileBrowser()
     false
   end
 
-  Gtk.gobject_move_ref(browser, box)
+  Gtk4.gobject_move_ref(browser, box)
   browser
 end
 

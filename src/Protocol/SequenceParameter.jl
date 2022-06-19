@@ -1,5 +1,5 @@
-mutable struct SequenceParameter <: Gtk.GtkExpander
-  handle::Ptr{Gtk.GObject}
+mutable struct SequenceParameter <: Gtk4.GtkExpander
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   field::Symbol
   value::Sequence
@@ -7,11 +7,11 @@ mutable struct SequenceParameter <: Gtk.GtkExpander
 
   function SequenceParameter(field::Symbol, value::Sequence, scanner::MPIScanner)
     uifile = joinpath(@__DIR__, "..", "builder", "sequenceWidget.ui")
-    b = Builder(filename=uifile)
+    b = GtkBuilder(filename=uifile)
     exp = G_.object(b, "expSequence")
     #addTooltip(object_(pw.builder, "lblSequence", GtkLabel), tooltip)
     seq = new(exp.handle, b, field, value, scanner)
-    Gtk.gobject_move_ref(seq, exp)
+    Gtk4.gobject_move_ref(seq, exp)
     initCallbacks(seq)
     return seq
   end
@@ -20,8 +20,8 @@ end
 getindex(m::SequenceParameter, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
 
-mutable struct PeriodicChannelParameter <: Gtk.GtkExpander
-  handle::Ptr{Gtk.GObject}
+mutable struct PeriodicChannelParameter <: Gtk4.GtkExpander
+  handle::Ptr{Gtk4.GObject}
   channel::PeriodicElectricalChannel
   box::GtkBox
   function PeriodicChannelParameter(idx::Int64, ch::PeriodicElectricalChannel, waveforms::Vector{Waveform})
@@ -40,17 +40,17 @@ mutable struct PeriodicChannelParameter <: Gtk.GtkExpander
       push!(box, compParam)
     end
     result = new(expander.handle, ch, box)
-    return Gtk.gobject_move_ref(result, expander)
+    return Gtk4.gobject_move_ref(result, expander)
   end
 end
 
-mutable struct ComponentParameter <: Gtk.GtkGrid
-  handle::Ptr{Gtk.GObject}
+mutable struct ComponentParameter <: Gtk4.GtkGrid
+  handle::Ptr{Gtk4.GObject}
   idLabel::GtkLabel
   divider::GenericEntry
   amplitude::UnitfulEntry
   phase::UnitfulEntry
-  waveform::ComboBoxTextLeaf
+  waveform::Gtk4.GtkComboBoxTextLeaf
   waveforms::Vector{Waveform}
 
   function ComponentParameter(comp::PeriodicElectricalComponent, waveforms::Vector{Waveform})
@@ -79,7 +79,7 @@ mutable struct ComponentParameter <: Gtk.GtkGrid
     grid[2, 4] = pha
 
     # Waveform
-    wav = ComboBoxTextLeaf()
+    wav = Gtk4.GtkComboBoxTextLeaf()
     waveformsStr = fromWaveform.(waveforms)
     for w in waveformsStr
       push!(wav, w)
@@ -90,7 +90,7 @@ mutable struct ComponentParameter <: Gtk.GtkGrid
     grid[1, 5] = GtkLabel("Waveform", xalign = 0.0)
     grid[2, 5] = wav
     gridResult = new(grid.handle, idLabel, div, amp, pha, wav, waveforms)
-    return Gtk.gobject_move_ref(gridResult, grid)
+    return Gtk4.gobject_move_ref(gridResult, grid)
   end
 end
 
@@ -117,24 +117,24 @@ function updateSequence(seqParam::SequenceParameter, seq::Sequence)
   @idle_add_guarded begin
     try
       @info "Try adding channels"
-      empty!(seqParam["boxPeriodicChannel", BoxLeaf])
+      empty!(seqParam["boxPeriodicChannel", Gtk4.GtkBoxLeaf])
       for channel in periodicElectricalTxChannels(seq)
         daq = getDAQ(seqParam.scanner)
         idx = MPIMeasurements.channelIdx(daq, id(channel))
         waveforms = MPIMeasurements.allowedWaveforms(daq, id(channel)) 
         channelParam = PeriodicChannelParameter(idx, channel, waveforms)
-        push!(seqParam["boxPeriodicChannel", BoxLeaf], channelParam)
+        push!(seqParam["boxPeriodicChannel", Gtk4.GtkBoxLeaf], channelParam)
       end
-      showall(seqParam["boxPeriodicChannel", BoxLeaf])
+      showall(seqParam["boxPeriodicChannel", Gtk4.GtkBoxLeaf])
       @info "Finished adding channels"
 
 
       set_gtk_property!(seqParam["entSequenceName",EntryLeaf], :text, MPIFiles.name(seq)) 
       set_gtk_property!(seqParam["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(seq))")
       set_gtk_property!(seqParam["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(seq))")
-      set_gtk_property!(seqParam["adjNumFrames", AdjustmentLeaf], :value, acqNumFrames(seq))
-      set_gtk_property!(seqParam["adjNumFrameAverages", AdjustmentLeaf], :value, acqNumFrameAverages(seq))
-      set_gtk_property!(seqParam["adjNumAverages", AdjustmentLeaf], :value, acqNumAverages(seq))
+      set_gtk_property!(seqParam["adjNumFrames", Gtk4.GtkAdjustmentLeaf], :value, acqNumFrames(seq))
+      set_gtk_property!(seqParam["adjNumFrameAverages", Gtk4.GtkAdjustmentLeaf], :value, acqNumFrameAverages(seq))
+      set_gtk_property!(seqParam["adjNumAverages", Gtk4.GtkAdjustmentLeaf], :value, acqNumAverages(seq))
       seqParam.value = seq
     catch e 
       @error e
@@ -146,11 +146,11 @@ function setProtocolParameter(seqParam::SequenceParameter, params::ProtocolParam
   @info "Trying to set sequence"
   seq = seqParam.value
 
-  acqNumFrames(seq, get_gtk_property(seqParam["adjNumFrames",AdjustmentLeaf], :value, Int64))
-  acqNumFrameAverages(seq, get_gtk_property(seqParam["adjNumFrameAverages",AdjustmentLeaf], :value, Int64))
-  acqNumAverages(seq, get_gtk_property(seqParam["adjNumAverages",AdjustmentLeaf], :value, Int64))
+  acqNumFrames(seq, get_gtk_property(seqParam["adjNumFrames",Gtk4.GtkAdjustmentLeaf], :value, Int64))
+  acqNumFrameAverages(seq, get_gtk_property(seqParam["adjNumFrameAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64))
+  acqNumAverages(seq, get_gtk_property(seqParam["adjNumAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64))
   
-  for channelParam in seqParam["boxPeriodicChannel", BoxLeaf]
+  for channelParam in seqParam["boxPeriodicChannel", Gtk4.GtkBoxLeaf]
     setProtocolParameter(channelParam)
   end
   setfield!(params, seqParam.field, seq)

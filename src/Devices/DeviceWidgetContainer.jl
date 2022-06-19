@@ -1,10 +1,10 @@
-mutable struct DeviceWidgetContainer <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct DeviceWidgetContainer <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   updating::Bool
   embedded::Bool
-  deviceWindow::Gtk.GtkWindow
-  deviceWidget::Gtk.GtkContainer
+  deviceWindow::Gtk4.GtkWindowLeaf
+  deviceWidget# TODO ::Gtk4.GtkContainer
 end
 
 
@@ -14,7 +14,7 @@ getindex(m::DeviceWidgetContainer, w::AbstractString) = G_.object(m.builder, w)
 function DeviceWidgetContainer(deviceName::String, deviceWidget)
   uifile = joinpath(@__DIR__, "..", "builder", "deviceWidgetContainer.ui")
 
-  b = Builder(filename=uifile)
+  b = GtkBuilder(filename=uifile)
   mainBox = G_.object(b, "boxContainer")
 
   window = GtkWindow(deviceName, 800, 600)

@@ -1,21 +1,21 @@
 import Base: getindex
 
-mutable struct RawDataWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
-  builder::Builder
+mutable struct RawDataWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
+  builder::GtkBuilder
   data::Array{Float32,5}
   dataBG::Array{Float32,5}
   labels::Vector{String}
-  cTD::Canvas
-  cFD::Canvas
+  cTD::GtkCanvas
+  cFD::GtkCanvas
   deltaT::Float64
   filenamesData::Vector{String}
   loadingData::Bool
   updatingData::Bool
   fileModus::Bool
-  winHarmView::WindowLeaf
-  harmViewAdj::Vector{AdjustmentLeaf}
-  harmViewCanvas::Vector{Canvas}
+  winHarmView::Gtk4.GtkWindowLeaf
+  harmViewAdj::Vector{Gtk4.GtkAdjustmentLeaf}
+  harmViewGtkCanvas::Vector{GtkCanvas}
   harmBuff::Vector{Vector{Float32}}
   rangeTD::NTuple{2,Float64}
   rangeFD::NTuple{2,Float64}
@@ -27,17 +27,17 @@ function RawDataWidget(filenameConfig=nothing)
   @info "Starting RawDataWidget"
   uifile = joinpath(@__DIR__,"builder","rawDataViewer.ui")
 
-  b = Builder(filename=uifile)
+  b = GtkBuilder(filename=uifile)
   mainBox = G_.object(b, "boxRawViewer")
 
   m = RawDataWidget( mainBox.handle, b,
                   zeros(Float32,0,0,0,0,0), zeros(Float32,0,0,0,0,0),
-                  [""], Canvas(), Canvas(),
+                  [""], GtkCanvas(), GtkCanvas(),
                   1.0, [""], false, false, false,
                   G_.object(b,"winHarmonicViewer"),
-                  AdjustmentLeaf[], Canvas[], Vector{Vector{Float32}}(),
+                  Gtk4.GtkAdjustmentLeaf[], GtkCanvas[], Vector{Vector{Float32}}(),
                   (0.0,1.0), (0.0,1.0))
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
 
@@ -60,18 +60,18 @@ end
 
 function initHarmView(m::RawDataWidget)
 
-  m.harmViewAdj = AdjustmentLeaf[]
-  m.harmViewCanvas = Canvas[]
+  m.harmViewAdj = Gtk4.GtkAdjustmentLeaf[]
+  m.harmViewGtkCanvas = GtkCanvas[]
   m.harmBuff = Vector{Vector{Float32}}()
 
   for l=1:5
     push!(m.harmViewAdj, m["adjHarm$l"] )
     @idle_add_guarded set_gtk_property!(m["adjHarm$l"],:value,l+1)
-    c = Canvas()
+    c = GtkCanvas()
 
     push!(m["boxHarmView"],c)
     set_gtk_property!(m["boxHarmView"],:expand,c,true)
-    push!(m.harmViewCanvas, c)
+    push!(m.harmViewGtkCanvas, c)
     push!(m.harmBuff, zeros(Float32,0))
   end
 
@@ -488,7 +488,7 @@ end
           Winston.ylim(minValFD, maxValFD)
       end
     else
-      @guarded Gtk.draw(m.cFD) do widget
+      @guarded Gtk4.draw(m.cFD) do widget
         
         ctx = getgc(m.cFD)
         h = height(ctx)
@@ -522,7 +522,7 @@ end
         p = Winston.semilogy(m.harmBuff[l], "b-o", linewidth=3)
         Winston.ylabel("Harmonic $f")
         Winston.xlabel("Time")
-        display(m.harmViewCanvas[l] ,p)
+        display(m.harmViewGtkCanvas[l] ,p)
       end
     end
   end

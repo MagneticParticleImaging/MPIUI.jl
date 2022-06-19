@@ -1,4 +1,4 @@
-using Cairo, Gtk.ShortNames, Colors
+using Cairo, Colors
 
 using Graphics
 
@@ -9,8 +9,8 @@ function Base.copy!(ctx::CairoContext, img::AbstractArray{C}) where C<:Union{Col
     image(ctx, image_surface(img), 0, 0, width(ctx), height(ctx))
     restore(ctx)
 end
-Base.copy!(c::Canvas, img) = copy!(getgc(c), img)
-function Base.fill!(c::Canvas, color::Colorant)
+Base.copy!(c::GtkCanvas, img) = copy!(getgc(c), img)
+function Base.fill!(c::GtkCanvas, color::Colorant)
     ctx = getgc(c)
     w, h = width(c), height(c)
     rectangle(ctx, 0, 0, w, h)

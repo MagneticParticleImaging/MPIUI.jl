@@ -1,10 +1,10 @@
-mutable struct TemperatureSensorWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct TemperatureSensorWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   updating::Bool
   sensor::TemperatureSensor
   temperatureLog::TemperatureLog
-  canvases::Vector{GtkCanvasLeaf}
+  canvases::Vector{Gtk4.GtkCanvasLeaf}
   timer::Union{Timer,Nothing}
 end
 
@@ -13,14 +13,14 @@ getindex(m::TemperatureSensorWidget, w::AbstractString) = G_.object(m.builder, w
 function TemperatureSensorWidget(sensor::TemperatureSensor)
   uifile = joinpath(@__DIR__,"..","builder","temperatureSensorWidget.ui")
 
-  b = Builder(filename=uifile)
+  b = GtkBuilder(filename=uifile)
   mainBox = G_.object(b, "mainBox")
 
   numPlots = length(unique(getChannelGroups(sensor)))
-  canvases = [Canvas() for i=1:numPlots]
+  canvases = [GtkCanvas() for i=1:numPlots]
 
   m = TemperatureSensorWidget(mainBox.handle, b, false, sensor, TemperatureLog(), canvases, nothing)
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.gobject_move_ref(m, mainBox)
 
   for (i,c) in enumerate(m.canvases)
     push!(m, c)
@@ -58,7 +58,7 @@ function initCallbacks(m::TemperatureSensorWidget)
   
   signal_connect(m["btnSaveTemp"], :clicked) do w
       m.updating = true
-      filter = Gtk.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
+      filter = Gtk4.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
       filename = save_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
       if filename != ""
           filenamebase, ext = splitext(filename)

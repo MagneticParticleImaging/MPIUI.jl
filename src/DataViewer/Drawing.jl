@@ -1,9 +1,9 @@
 
 
 function getMetaDataSlices(m::DataViewerWidget)
-  ctxZY = Gtk.getgc(m.grid3D[2,1])
-  ctxZX = Gtk.getgc(m.grid3D[1,1])
-  ctxXY = Gtk.getgc(m.grid3D[2,2])
+  ctxZY = Gtk4.getgc(m.grid3D[2,1])
+  ctxZX = Gtk4.getgc(m.grid3D[1,1])
+  ctxXY = Gtk4.getgc(m.grid3D[2,2])
   hZY = height(ctxZY)
   wZY = width(ctxZY)
   hZX = height(ctxZX)
@@ -105,7 +105,7 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
   drawSlice(m,slices,isDrawSectionalLines,isDrawRectangle,isDrawAxes, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
 
   m.grid3D[1,1].mouse.button3press = @guarded (widget, event) -> begin
-    @guarded Gtk.draw(widget) do widget
+    @guarded Gtk4.draw(widget) do widget
       if isDrawRectangle
         @debug "mouse event ZX"
         ctxZY,ctxZX,ctxXY,hZY,wZY,hZX,wZX,hXY,wXY = getMetaDataSlices(m)
@@ -126,7 +126,7 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
     end
   end
   m.grid3D[2,1].mouse.button3press = @guarded (widget, event) -> begin
-   @guarded Gtk.draw(widget) do widget
+   @guarded Gtk4.draw(widget) do widget
      if isDrawRectangle
        @debug "mouse event ZY"
        ctxZY,ctxZX,ctxXY,hZY,wZY,hZX,wZX,hXY,wXY = getMetaDataSlices(m)
@@ -147,7 +147,7 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
    end
  end
  m.grid3D[2,2].mouse.button3press = @guarded (widget, event) -> begin
-   @guarded Gtk.draw(widget) do widget
+   @guarded Gtk4.draw(widget) do widget
      if isDrawRectangle
        @debug "mouse event XY"
        ctxZY,ctxZX,ctxXY,hZY,wZY,hZX,wZX,hXY,wXY = getMetaDataSlices(m)
@@ -181,7 +181,7 @@ end
 
 function drawImageCairo(c, image, isDrawSectionalLines, isDrawAxes, xsec, ysec,
                         flipX, flipY, adjX, adjY, isDrawRectangle, xy, xyOffset, slide)
- @guarded Gtk.draw(c) do widget
+ @guarded Gtk4.draw(c) do widget
   #c = reshape(c,size(c,1), size(c,2))
   ctx = getgc(c)
   h = height(ctx)

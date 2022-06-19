@@ -1,6 +1,6 @@
 export LogMessageListWidget, LogMessageWidget, WidgetLogger, min_enabled_level, shoudlog, handle_message  
 
-abstract type LogMessageWidget <: Gtk.GtkBox end
+abstract type LogMessageWidget <: Gtk4.GtkBox end
 
 mutable struct LogMessageFilter
   messageFilter::Union{Regex, Nothing}
@@ -42,7 +42,7 @@ hasGroup(filter::LogMessageFilter, group::String) = haskey(filter.groups, group)
 @enum AutoScrollState DETACHED ATTACHED_TOP ATTACHED_BOTTOM
 
 mutable struct LogMessageListWidget <: LogMessageWidget
-  handle::Ptr{Gtk.GObject}
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   store
   tmSorted
@@ -66,7 +66,7 @@ function LogMessageListWidget()
 
   uifile = joinpath(@__DIR__,"builder","logMessagesWidget.ui")
 
-  b = Builder(filename=uifile)
+  b = GtkBuilder(filename=uifile)
   mainBox = G_.object(b, "boxLogMessages")
 
   # LogLevel, Time, Group, Message, visible, tooltip, "number" log level
@@ -102,7 +102,7 @@ function LogMessageListWidget()
 
   logFilter = LogMessageFilter(nothing, 0, Dict{String, Bool}(), nothing, nothing)
   m = LogMessageListWidget(mainBox.handle, b, store, tmSorted, tv, selection, logFilter, DETACHED, false)
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.gobject_move_ref(m, mainBox)
 
   push!(m["wndMessages"], tv)
 
@@ -173,7 +173,7 @@ function initCallbacks(m::LogMessageListWidget)
 
   signal_connect(m["cbLogLevel"], :changed) do w
     @idle_add_guarded begin
-      str = Gtk.bytestring(GAccessor.active_text(m["cbLogLevel"]))
+      str = Gtk4.bytestring(GAccessor.active_text(m["cbLogLevel"]))
       level = 0
       if str == "Debug"
         level = -1000

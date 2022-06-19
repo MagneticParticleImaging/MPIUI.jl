@@ -66,7 +66,7 @@ function MPILab(offlineMode=false)::MPILab
 
   uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
-  m_ = MPILab( Builder(filename=uifile), nothing, 1, DatasetStore[],
+  m_ = MPILab( GtkBuilder(filename=uifile), nothing, 1, DatasetStore[],
               nothing, nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
@@ -133,21 +133,21 @@ function MPILab(offlineMode=false)::MPILab
   #        isMeasurementStore(m.measurementWidget,activeDatasetStore(m)) )
 
   # Set the icon of MPILab
-  Gtk.GError() do error_check
+  Gtk4.GError() do error_check
     filename = joinpath(@__DIR__,"assets","MPILabIcon.png")
     G_.icon_from_file(w, filename, error_check)
     return true
   end
 
   signal_connect(w, "key-press-event") do widget, event
-    if event.keyval ==  Gtk.GConstants.GDK_KEY_c
+    if event.keyval ==  Gtk4.GConstants.GDK_KEY_c
       if event.state & 0x04 != 0x00 # Control key is pressed
         @debug "copy visu params to clipboard..."
         str = string( getParams(m.dataViewerWidget) )
         # str_ = replace(str,",Pair",",\n  Pair")
         clipboard( str )
       end
-    elseif event.keyval == Gtk.GConstants.GDK_KEY_v
+    elseif event.keyval == Gtk4.GConstants.GDK_KEY_v
         if event.state & 0x04 != 0x00 # Control key is pressed
           @debug "copy visu params from clipboard to UI..."
           str = clipboard()
@@ -249,8 +249,8 @@ function initStoreSwitch(m::MPILab)
 
       if length(m.studyStore) > 0
         # select first study so that always measurements can be performed
-        iter = Gtk.mutable(Gtk.GtkTreeIter)
-        Gtk.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
+        iter = Gtk4.mutable(Gtk4.GtkTreeIter)
+        Gtk4.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
         select!(m.selectionStudy, iter)
       end
       m.updating = false
@@ -382,7 +382,7 @@ function initStudyStore(m::MPILab)
     push!(tv,c)
   end
 
-  #Gtk.add_attribute(c1,r2,"text",0)
+  #Gtk4.add_attribute(c1,r2,"text",0)
   #G_.sort_column_id(c1,0)
   #G_.resizable(c1,true)
   #G_.max_width(c1,80)
@@ -407,8 +407,8 @@ function initStudyStore(m::MPILab)
 
   if length(m.studyStore) > 0
     # select first study so that always measurements can be performed
-    iter = Gtk.mutable(Gtk.GtkTreeIter)
-    Gtk.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
+    iter = Gtk4.mutable(Gtk4.GtkTreeIter)
+    Gtk4.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
     @idle_add_guarded select!(m.selectionStudy, iter)
   end
 
@@ -493,13 +493,13 @@ function initStudyStore(m::MPILab)
     addStudy(activeDatasetStore(m), study)
     @idle_add_guarded scanDatasetDir(m)
 
-    iter = Gtk.mutable(Gtk.GtkTreeIter)
-    Gtk.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
+    iter = Gtk4.mutable(Gtk4.GtkTreeIter)
+    Gtk4.get_iter_first( TreeModel(m.studyStoreSorted) , iter)
     for l=1:length(m.studyStore)
       if TreeModel(m.studyStoreSorted)[iter,2] == name
         break
       else
-        Gtk.get_iter_next( TreeModel(m.studyStoreSorted) , iter)
+        Gtk4.get_iter_next( TreeModel(m.studyStoreSorted) , iter)
       end
     end
 
@@ -695,7 +695,7 @@ function initExperimentStore(m::MPILab)
   function showRawData()
     if hasselection(m.selectionExp)
       @idle_add_guarded begin
-        selectedRows = Gtk.selected_rows(m.selectionExp)
+        selectedRows = Gtk4.selected_rows(m.selectionExp)
         expNums = [m.experimentStore[selectedRows[j],1] for j=1:length(selectedRows)]
         exps = [getExperiment(m.currentStudy, expNums[j]) for j=1:length(selectedRows)]
         paths = path.(exps)
@@ -713,7 +713,7 @@ function initExperimentStore(m::MPILab)
   function showSpectrogram()
     if hasselection(m.selectionExp)
       @idle_add_guarded begin
-        selectedRows = Gtk.selected_rows(m.selectionExp)
+        selectedRows = Gtk4.selected_rows(m.selectionExp)
         expNums = [m.experimentStore[selectedRows[j],1] for j=1:length(selectedRows)]
         exps = [getExperiment(m.currentStudy, expNums[j]) for j=1:length(selectedRows)]
         paths = path.(exps)
@@ -728,7 +728,7 @@ function initExperimentStore(m::MPILab)
     if !m.updating && hasselection(m.selectionExp) && !m.clearingStudyStore &&
       m.currentStudy != nothing && !m.clearingExpStore
 
-      selectedRows = Gtk.selected_rows(m.selectionExp) # can have multiple selections
+      selectedRows = Gtk4.selected_rows(m.selectionExp) # can have multiple selections
       currentIt = selectedRows[1] #selected( m.selectionExp )
       
       exp = getExperiment(m.currentStudy, m.experimentStore[currentIt,1])
@@ -771,7 +771,7 @@ function initExperimentStore(m::MPILab)
   signal_connect(r2, "edited") do widget, path_, text
     try
     if hasselection(m.selectionExp)
-      selectedRows = Gtk.selected_rows(m.selectionExp) # can have multiple selections
+      selectedRows = Gtk4.selected_rows(m.selectionExp) # can have multiple selections
       currentIt = selectedRows[1] #selected( m.selectionExp )
       if splitext(path(m.currentExperiment))[2] == ".mdf"
         @idle_add_guarded m.experimentStore[currentIt,2] = string(text)
@@ -930,7 +930,7 @@ function initReconstructionStore(m::MPILab)
   signal_connect(m["tbExportRecoData"], "clicked") do widget
    try
     if hasselection(m.selectionReco)
-      filter = Gtk.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
+      filter = Gtk4.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
       filenameData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
       if filenameData != ""
         image = sliceColorDim( loaddata(m.currentReco.path), 1)

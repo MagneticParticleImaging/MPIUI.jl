@@ -1,17 +1,17 @@
-mutable struct PositionParameter <: Gtk.GtkExpander
-  handle::Ptr{Gtk.GObject}
+mutable struct PositionParameter <: Gtk4.GtkExpander
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   field::Symbol
 
   function PositionParameter(field::Symbol, posValue::Union{Positions, Nothing})
     uifile = joinpath(@__DIR__, "..", "builder", "positionsWidget.ui")
-    b = Builder(filename=uifile)
+    b = GtkBuilder(filename=uifile)
     posObj = G_.object(b, "expPositions")
     #addTooltip(object_(pw.builder, "lblPositions", GtkLabel), tooltip)
     posParam = new(posObj.handle, b, field)
     updatePositions(posParam, posValue)
     initCallbacks(posParam)
-    return Gtk.gobject_move_ref(posParam, posObj)
+    return Gtk4.gobject_move_ref(posParam, posObj)
   end
 end
 
@@ -81,7 +81,7 @@ function setProtocolParameter(posParam::PositionParameter, params::ProtocolParam
 end
 
 function loadFilePos(posParam::PositionParameter)
-  filter = Gtk.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
+  filter = Gtk4.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
   filename = open_dialog("Select Position File", GtkNullContainer(), (filter, ))
   @idle_add_guarded begin 
     set_gtk_property!(posParam["entArbitraryPos",EntryLeaf],:text,filename)

@@ -2,15 +2,15 @@ import Base: getindex
 
 export SpectrogramViewer
 
-mutable struct SpectrogramWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
-  builder::Builder
+mutable struct SpectrogramWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
+  builder::GtkBuilder
   data::Array{Float32,5}
   dataBG::Array{Float32,5}
   labels::Vector{String}
-  cTD::Canvas
-  cFD::Canvas
-  cSpect::Canvas
+  cTD::GtkCanvas
+  cFD::GtkCanvas
+  cSpect::GtkCanvas
   deltaT::Float64
   filenamesData::Vector{String}
   updatingData::Bool
@@ -22,7 +22,7 @@ end
 getindex(m::SpectrogramWidget, w::AbstractString) = G_.object(m.builder, w)
 
 mutable struct SpectrogramViewer
-  w::Window
+  w::Gtk4.GtkWindowLeaf
   sw::SpectrogramWidget
 end
 
@@ -39,15 +39,15 @@ function SpectrogramWidget(filenameConfig=nothing)
   @info "Starting SpectrogramWidget"
   uifile = joinpath(@__DIR__,"builder","spectrogramViewer.ui")
 
-  b = Builder(filename=uifile)
+  b = GtkBuilder(filename=uifile)
   mainBox = G_.object(b, "boxSpectrogramViewer")
 
   m = SpectrogramWidget( mainBox.handle, b,
                   zeros(Float32,0,0,0,0,0), zeros(Float32,0,0,0,0,0),
-                  [""], Canvas(), Canvas(), Canvas(),
+                  [""], GtkCanvas(), GtkCanvas(), GtkCanvas(),
                   1.0, [""], false, false,
                   (0.0,1.0), (0.0,1.0))
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
 
@@ -547,7 +547,7 @@ end
           Winston.ylim(minValFD, maxValFD)
       end
     else
-      @guarded Gtk.draw(m.cFD) do widget
+      @guarded Gtk4.draw(m.cFD) do widget
         
         ctx = getgc(m.cFD)
         h = height(ctx)

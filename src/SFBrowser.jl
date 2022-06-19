@@ -1,4 +1,3 @@
-using Gtk.ShortNames, Gtk.GConstants
 
 mutable struct SFBrowserWidget
   store
@@ -101,8 +100,8 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 
   selection = G_.selection(tv)
 
-  cbOpenMeas = CheckButton("Open as Meas")
-  cbOpenInWindow = CheckButton("Open in Window")
+  cbOpenMeas = GtkCheckButton("Open as Meas")
+  cbOpenInWindow = GtkCheckButton("Open in Window")
 
   if smallWidth
     signal_connect(tv, "row-activated") do treeview, path, col, other...
@@ -134,7 +133,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     end
   end
 
-  vbox = Box(:v)
+  vbox = GtkBox(:v)
 
   entGradient = Entry()
   entDF = Entry()
@@ -151,7 +150,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   btnSpectrogram = Button("Spectrogram")
 
   if smallWidth
-    grid = Grid()
+    grid = GtkGrid()
     push!(vbox, grid)
     #set_gtk_property!(vbox, :expand, grid, true)
     set_gtk_property!(grid, :row_spacing, 5)
@@ -172,7 +171,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     grid[3:4,5] = btnOpenCalibrationFolder
     grid[1:2,5] = btnSpectrogram
   else
-    hbox = Box(:h)
+    hbox = GtkBox(:h)
     push!(vbox, hbox)
     set_gtk_property!(hbox,:spacing,5)
     set_gtk_property!(hbox,:margin_left,5)
@@ -332,8 +331,8 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 end
 
 
-mutable struct SFSelectionDialog <: Gtk.GtkDialog
-  handle::Ptr{Gtk.GObject}
+mutable struct SFSelectionDialog <: Gtk4.GtkDialog
+  handle::Ptr{Gtk4.GObject}
   selection
   store
   tmSorted
@@ -361,7 +360,7 @@ function SFSelectionDialog(;gradient = nothing, driveField = nothing)
 
   showall(box)
 
-  Gtk.gobject_move_ref(dlg, dialog)
+  Gtk4.gobject_move_ref(dlg, dialog)
   return dlg
 end
 
@@ -387,7 +386,7 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
 
     box = G_.content_area(dialog)
 
-    grid = Grid()
+    grid = GtkGrid()
     push!(box, grid)
     set_gtk_property!(box, :expand, grid, true)
     set_gtk_property!(grid, :row_spacing, 5)
@@ -395,11 +394,11 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
   
     grid[1,1] = Label("Num Period Averages")
     grid[2,1] = SpinButton(1:acqNumPeriodsPerFrame(f))
-    adjNumPeriodAverages = Adjustment(grid[2,1])
+    adjNumPeriodAverages = GtkAdjustment(grid[2,1])
 
     grid[1,2] = Label("Num Period Grouping")
     grid[2,2] = SpinButton(1:acqNumPeriodsPerFrame(f))
-    adjNumPeriodGrouping = Adjustment(grid[2,2])
+    adjNumPeriodGrouping = GtkAdjustment(grid[2,2])
 
     showall(box)
     ret = run(dialog)

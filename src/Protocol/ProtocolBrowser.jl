@@ -1,12 +1,12 @@
 export ProtocolSelectionDialog
 
-mutable struct ProtocolSelectionDialog <: Gtk.GtkDialog
-  handle::Ptr{Gtk.GObject}
+mutable struct ProtocolSelectionDialog <: Gtk4.GtkDialog
+  handle::Ptr{Gtk4.GObject}
   store
   tmSorted
   tv
   selection
-  box::Box
+  box::Gtk4.GtkBoxLeaf
   scanner::MPIScanner
   protocols::Vector{String}
   updating::Bool
@@ -69,7 +69,7 @@ function ProtocolSelectionDialog(scanner::MPIScanner, params::Dict)
   showall(tv)
   showall(box)
 
-  Gtk.gobject_move_ref(dlg, dialog)
+  Gtk4.gobject_move_ref(dlg, dialog)
 
   return dlg
 end

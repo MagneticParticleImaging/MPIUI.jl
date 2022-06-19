@@ -6,8 +6,8 @@ function linearSolverList()
   Any["kaczmarz", "cgnr", "fusedlasso"]
 end
 
-mutable struct RecoWidget<: Gtk.GtkGrid
-  handle::Ptr{Gtk.GObject}
+mutable struct RecoWidget<: Gtk4.GtkGrid
+  handle::Ptr{Gtk4.GObject}
   builder
   dv
   bMeas
@@ -27,7 +27,7 @@ end
 getindex(m::RecoWidget, w::AbstractString) = G_.object(m.builder, w)
 
 mutable struct RecoWindow
-  w::Window
+  w::Gtk4.GtkWindowLeaf
   rw::RecoWidget
 end
 
@@ -49,7 +49,7 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
 
   uifile = joinpath(@__DIR__,"builder","reconstructionWidget.ui")
 
-  b = Builder(filename=uifile)
+  b = GtkBuilder(filename=uifile)
   mainGrid = G_.object(b, "gridReco")
   m = RecoWidget( mainGrid.handle, b,
                   nothing,
@@ -58,7 +58,7 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
                   nothing, nothing, nothing, nothing, 1,
                   Dict{Int64,String}(),nothing,
                   nothing, nothing)
-  Gtk.gobject_move_ref(m, mainGrid)
+  Gtk4.gobject_move_ref(m, mainGrid)
 
   spReco = m["spReco"]
   setParams(m, params)
@@ -98,7 +98,7 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
 
     cache = loadcache()
 
-    selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
+    selectedProfileName = Gtk4.bytestring( G_.active_text(m["cbRecoProfiles"]))
     @debug "" selectedProfileName
     if haskey(cache["recoParams"],selectedProfileName)
       @idle_add_guarded setParams(m, cache["recoParams"][selectedProfileName])
@@ -119,7 +119,7 @@ function RecoWidget(filenameMeas=nothing; params = defaultRecoParams())
   end
 
   function deleteRecoProfile( widget )
-    selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
+    selectedProfileName = Gtk4.bytestring( G_.active_text(m["cbRecoProfiles"]))
 
     @idle_add_guarded @info "delete reco profile $selectedProfileName"
 
@@ -228,7 +228,7 @@ end
 function updateBGMeas(m::RecoWidget)
   if get_gtk_property(m["cbBGMeasurements"],"active", Int) >= 0
 
-    bgstr =  Gtk.bytestring( G_.active_text(m["cbBGMeasurements"]))
+    bgstr =  Gtk4.bytestring( G_.active_text(m["cbBGMeasurements"]))
     if !isempty(bgstr)
       bgnum =  parse(Int64, bgstr)
       filenameBG = m.bgExperiments[bgnum]

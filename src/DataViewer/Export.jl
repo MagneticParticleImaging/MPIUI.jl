@@ -56,7 +56,7 @@ end
 
 function exportImages(m::DataViewerWidget)
   if m.currentlyShownImages != nothing
-    filter = Gtk.GtkFileFilter(pattern=String("*.png"), mimetype=String("image/png"))
+    filter = Gtk4.GtkFileFilter(pattern=String("*.png"), mimetype=String("image/png"))
     filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
     if filenameImageData != ""
       pixelResizeFactor = get_gtk_property(m["adjPixelResizeFactor"],:value,Int64)
@@ -68,7 +68,7 @@ end
 
 function exportTikz(m::DataViewerWidget)
   if m.currentlyShownImages != nothing
-    filter = Gtk.GtkFileFilter(pattern=String("*.tikz*"), mimetype=String("image/tikz"))
+    filter = Gtk4.GtkFileFilter(pattern=String("*.tikz*"), mimetype=String("image/tikz"))
     filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
     if filenameImageData != ""
       pixelResizeFactor = get_gtk_property(m["adjPixelResizeFactor"],:value,Int64)
@@ -83,7 +83,7 @@ function exportTikz(m::DataViewerWidget)
 end
 
 function exportMovi(m::DataViewerWidget)
-  filter = Gtk.GtkFileFilter(pattern=String("*.gif"), mimetype=String("image/gif"))
+  filter = Gtk4.GtkFileFilter(pattern=String("*.gif"), mimetype=String("image/gif"))
   filenameMovie = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
   if filenameMovie != ""
     params = getParams(m)
@@ -96,7 +96,7 @@ end
 
 function exportAllData(m::DataViewerWidget)
   if m.data != nothing
-    filter = Gtk.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
+    filter = Gtk4.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
     filenameData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
     if filenameData != ""
 
@@ -135,7 +135,7 @@ end
 
 function exportRealDataAllFr(m::DataViewerWidget)
   if m.data != nothing && m.dataBG != nothing
-    filter = Gtk.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
+    filter = Gtk4.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
     filenameData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
     if filenameData != ""
       params = getParams(m)
@@ -154,7 +154,7 @@ end
 
 function exportData(m::DataViewerWidget)
   if m.currentlyShownData != nothing
-    filter = Gtk.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
+    filter = Gtk4.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
     filenameData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
     if filenameData != ""
 
@@ -189,7 +189,7 @@ end
 
 function exportProfile(m::DataViewerWidget)
   if m.currentlyShownData != nothing
-    filter = Gtk.GtkFileFilter(pattern=String("*.csv"), mimetype=String("text/comma-separated-values"))
+    filter = Gtk4.GtkFileFilter(pattern=String("*.csv"), mimetype=String("text/comma-separated-values"))
     filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
     if filenameImageData != "" && m.currentProfile != nothing
       @info "Export Image as" filenameImageData

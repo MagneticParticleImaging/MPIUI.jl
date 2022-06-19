@@ -1,12 +1,12 @@
 export SequenceSelectionDialog
 
-mutable struct SequenceSelectionDialog <: Gtk.GtkDialog
-  handle::Ptr{Gtk.GObject}
+mutable struct SequenceSelectionDialog <: Gtk4.GtkDialog
+  handle::Ptr{Gtk4.GObject}
   store
   tmSorted
   tv
   selection
-  box::Box
+  box::Gtk4.GtkBoxLeaf
   canvas
   scanner::MPIScanner
   sequences::Vector{String}
@@ -62,7 +62,7 @@ function SequenceSelectionDialog(scanner::MPIScanner, params::Dict)
   push!(box, sw)
   set_gtk_property!(box, :expand, sw, true)
 
-  canvas = Canvas()
+  canvas = GtkCanvas()
   push!(box,canvas)
   set_gtk_property!(box,:expand, canvas, true)
 
@@ -76,7 +76,7 @@ function SequenceSelectionDialog(scanner::MPIScanner, params::Dict)
   showall(tv)
   showall(box)
 
-  Gtk.gobject_move_ref(dlg, dialog)
+  Gtk4.gobject_move_ref(dlg, dialog)
 
   signal_connect(selection, "changed") do widget
     if hasselection(selection)

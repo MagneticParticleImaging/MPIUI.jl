@@ -5,8 +5,8 @@ include("DAQWidget.jl")
 include("TemperatureSensorWidget.jl")
 include("DeviceWidgetContainer.jl")
 
-mutable struct ScannerBrowser <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct ScannerBrowser <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   store
   tmSorted
@@ -24,7 +24,7 @@ function ScannerBrowser(scanner, deviceBox)
   @info "Starting ScannerBrowser"
   uifile = joinpath(@__DIR__,"..", "builder","scannerBrowser.ui")
 
-  b = Builder(filename=uifile)
+  b = GtkBuilder(filename=uifile)
   mainBox = G_.object(b, "boxScannerBrowser")
 
   # IsPresent/Online Icon, Device ID, Device Type, IsPresent value, Visible
@@ -65,8 +65,8 @@ function ScannerBrowser(scanner, deviceBox)
 
   # TODO Add widget that shows properties of selected Device
 
-  m = ScannerBrowser(mainBox.handle, b, store, tmSorted, tv, selection, false, deviceBox, scanner, Dict{Device, Gtk.GtkContainer}())
-  Gtk.gobject_move_ref(m, mainBox)
+  m = ScannerBrowser(mainBox.handle, b, store, tmSorted, tv, selection, false, deviceBox, scanner, Dict{Device, Gtk4.GtkContainer}())
+  Gtk4.gobject_move_ref(m, mainBox)
 
   set_gtk_property!(m["lblScannerName"], :label, name(scanner))
 
@@ -119,7 +119,7 @@ function showDeviceWidget(m::ScannerBrowser, widget)
   set_gtk_property!(m.deviceBox, :expand, widget, true)
   showall(widget)
 end
-function getDeviceWidget(m::ScannerBrowser, dev::Device, widgetType::Type{<:Gtk.GtkContainer})
+function getDeviceWidget(m::ScannerBrowser, dev::Device, widgetType) #::Type{<:Gtk4.GtkObject})
   if haskey(m.widgetCache, dev)
     return m.widgetCache[dev]
   else
@@ -178,6 +178,6 @@ function updateScanner!(m::ScannerBrowser, scanner::MPIScanner)
       popout!(container, false)
     end
     empty!(m.deviceBox)
-    m.widgetCache = Dict{Device, Gtk.GtkContainer}()
+    m.widgetCache = Dict{Device, Gtk4.GtkContainer}()
   end
 end

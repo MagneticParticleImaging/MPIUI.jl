@@ -1,9 +1,9 @@
-using Gtk, Gtk.ShortNames
+using Gtk4
 
 export SpectrumViewer, SpectrumViewerWidget
 
-mutable struct SpectrumViewerWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct SpectrumViewerWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   file
   freq
   c
@@ -30,14 +30,14 @@ end
 
 function SpectrumViewerWidget(file::MPIFile; semilogY=false)
 
-  vbox = Box(:v)
-  hbox = Box(:h)
+  vbox = GtkBox(:v)
+  hbox = GtkBox(:h)
   push!(vbox, hbox)
 
   #set_gtk_property!(vbox, :expand, hbox, true)
 
-  cc = Canvas()
-  g = Gtk.Grid()
+  cc = GtkCanvas()
+  g = Gtk4.GtkGrid()
 
   push!(vbox, g)
 
@@ -60,7 +60,7 @@ function SpectrumViewerWidget(file::MPIFile; semilogY=false)
   push!(hbox, cbChan)
 
   scFrame = Scale(false, 1:100)
-  adjFrame = Adjustment(scFrame)
+  adjFrame = GtkAdjustment(scFrame)
   push!(hbox,Label("Frame"))
   push!(hbox,scFrame)
   G_.value(scFrame, 0)
@@ -69,7 +69,7 @@ function SpectrumViewerWidget(file::MPIFile; semilogY=false)
   set_gtk_property!(hbox, :expand, scFrame, true)
 
   scMinFreq = Scale(false, 1:100)
-  adjMinFreq = Adjustment(scMinFreq)
+  adjMinFreq = GtkAdjustment(scMinFreq)
   push!(hbox,Label("MinFreq"))
   push!(hbox,scMinFreq)
   G_.value(scMinFreq, 0)
@@ -78,7 +78,7 @@ function SpectrumViewerWidget(file::MPIFile; semilogY=false)
   set_gtk_property!(hbox, :expand, scMinFreq, true)
 
   scMaxFreq = Scale(false, 1:100)
-  adjMaxFreq = Adjustment(scMaxFreq)
+  adjMaxFreq = GtkAdjustment(scMaxFreq)
   push!(hbox,Label("MaxFreq"))
   push!(hbox,scMaxFreq)
   G_.value(scMaxFreq, 1)
@@ -86,7 +86,7 @@ function SpectrumViewerWidget(file::MPIFile; semilogY=false)
   set_gtk_property!(adjMaxFreq,:upper,1)
   set_gtk_property!(hbox, :expand, scMaxFreq, true)
 
-  cbBGSubtract = CheckButton("Subtract last 100 frames as BG")
+  cbBGSubtract = GtkCheckButton("Subtract last 100 frames as BG")
   push!(hbox,cbBGSubtract)
 
   g[1,1] = cc
@@ -125,7 +125,7 @@ function SpectrumViewerWidget(file::MPIFile; semilogY=false)
 
   update( nothing )
 
-  Gtk.gobject_move_ref(dw, vbox)
+  Gtk4.gobject_move_ref(dw, vbox)
   dw
 end
 
@@ -148,7 +148,7 @@ function showData(d::SpectrumViewerWidget)
 
   plotfunc=d.semilogY ? Winston.semilogy : Winston.plot
 
-  activeDomainText = Gtk.bytestring( G_.active_text(d.cbDomain))
+  activeDomainText = Gtk4.bytestring( G_.active_text(d.cbDomain))
   if activeDomainText == "Abs"
     p = plotfunc(freq, abs( vec( data ) ) )
   elseif activeDomainText == "Real"

@@ -1,4 +1,4 @@
-using Gtk, Gtk.ShortNames, Cairo
+using Gtk4, Cairo
 
 export SimpleDataViewer, SimpleDataViewerWidget, simpleDrawImageCairo
 
@@ -13,8 +13,8 @@ end
 ########### SimpleDataViewerWidget #################
 
 
-mutable struct SimpleDataViewerWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct SimpleDataViewerWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder
   grid3D
   grid2D
@@ -25,19 +25,19 @@ getindex(m::SimpleDataViewerWidget, w::AbstractString) = G_.object(m.builder, w)
 
 function SimpleDataViewerWidget()
   uifile = joinpath(@__DIR__,"builder","simpleDataViewer.ui")
-  b = Builder(filename=uifile)
+  b = GtkBuilder(filename=uifile)
   mainBox = G_.object(b, "boxSimpleDataViewer")
   m = SimpleDataViewerWidget( mainBox.handle, b, nothing, nothing)
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.gobject_move_ref(m, mainBox)
 
   m.grid3D = m["gridDataViewer3D"]
   m.grid2D = m["gridDataViewer2D"]
 
-  m.grid3D[2,1] = Canvas()
-  m.grid3D[1,1] = Canvas()
-  m.grid3D[2,2] = Canvas()
-  m.grid3D[1,2] = Canvas()
-  m.grid2D[1,1] = Canvas()
+  m.grid3D[2,1] = GtkCanvas()
+  m.grid3D[1,1] = GtkCanvas()
+  m.grid3D[2,2] = GtkCanvas()
+  m.grid3D[1,2] = GtkCanvas()
+  m.grid2D[1,1] = GtkCanvas()
 
   return m
 end
@@ -77,7 +77,7 @@ end
 
 function simpleDrawImageCairo(c, image, drawSectionalLines, xsec, ysec,
                         flipX, flipY)
- @guarded Gtk.draw(c) do widget
+ @guarded Gtk4.draw(c) do widget
   ctx = getgc(c)
   h = height(ctx)
   w = width(ctx)

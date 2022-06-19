@@ -14,9 +14,9 @@ mutable struct ProtocolStatus
   waitingOnReply::Union{ProtocolEvent, Nothing}
 end
 
-mutable struct MeasurementWidget{T} <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
-  builder::Builder
+mutable struct MeasurementWidget{T} <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
+  builder::GtkBuilder
   scanner::T
   protocol::Union{Protocol, Nothing}
   biChannel::Union{BidirectionalChannel{ProtocolEvent}, Nothing}
@@ -65,7 +65,7 @@ function MeasurementWidget(filenameConfig="")
     protocol = nothing
   end
 
-  b = Builder(filename=uifile)
+  b = GtkBuilder(filename=uifile)
   mainBox = object_(b, "boxMeasurement",BoxLeaf)
 
   proto = ProtocolStatus(nothing)
@@ -73,7 +73,7 @@ function MeasurementWidget(filenameConfig="")
                   scanner, protocol, nothing, nothing, proto, zeros(Float32,0,0,0,0), mdfstore, "", now(),
                   "", RawDataWidget(), false, "",
                   SystemMatrixRobotMeas(scanner, mdfstore), false)
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
 
@@ -85,19 +85,19 @@ function MeasurementWidget(filenameConfig="")
 
   #= TODO @debug "Read safety parameters"
   @idle_add_guarded begin
-    empty!(m["cbSafeCoil", ComboBoxTextLeaf])
+    empty!(m["cbSafeCoil", Gtk4.GtkComboBoxTextLeaf])
     for coil in getValidHeadScannerGeos()
-        push!(m["cbSafeCoil",ComboBoxTextLeaf], coil.name)
+        push!(m["cbSafeCoil",Gtk4.GtkComboBoxTextLeaf], coil.name)
     end
-    set_gtk_property!(m["cbSafeCoil",ComboBoxTextLeaf], :active, 0)
-    empty!(m["cbSafeObject", ComboBoxTextLeaf])
+    set_gtk_property!(m["cbSafeCoil",Gtk4.GtkComboBoxTextLeaf], :active, 0)
+    empty!(m["cbSafeObject", Gtk4.GtkComboBoxTextLeaf])
     for obj in getValidHeadObjects()
-        push!(m["cbSafeObject",ComboBoxTextLeaf], name(obj))
+        push!(m["cbSafeObject",Gtk4.GtkComboBoxTextLeaf], name(obj))
     end
-    set_gtk_property!(m["cbSafeObject",ComboBoxTextLeaf], :active, 0)
+    set_gtk_property!(m["cbSafeObject",Gtk4.GtkComboBoxTextLeaf], :active, 0)
 
-    signal_connect(m["cbSafeObject",ComboBoxTextLeaf], :changed) do w
-        ind = get_gtk_property(m["cbSafeObject",ComboBoxTextLeaf],:active,Int)+1
+    signal_connect(m["cbSafeObject",Gtk4.GtkComboBoxTextLeaf], :changed) do w
+        ind = get_gtk_property(m["cbSafeObject",Gtk4.GtkComboBoxTextLeaf],:active,Int)+1
         if getValidHeadObjects()[ind].name==customPhantom3D.name
             sObjStr = @sprintf("%.2f x %.2f x %.2f", ustrip(customPhantom3D.length), ustrip(crosssection(customPhantom3D).width),ustrip(crosssection(customPhantom3D).height))
             set_gtk_property!(m["entSafetyObj", EntryLeaf],:text, sObjStr)
@@ -108,11 +108,11 @@ function MeasurementWidget(filenameConfig="")
     end
 
     @idle_add_guarded begin
-      empty!(m["cbWaveform", ComboBoxTextLeaf])
+      empty!(m["cbWaveform", Gtk4.GtkComboBoxTextLeaf])
       for w in RedPitayaDAQServer.waveforms()
-        push!(m["cbWaveform",ComboBoxTextLeaf], w)
+        push!(m["cbWaveform",Gtk4.GtkComboBoxTextLeaf], w)
       end
-      set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, 0) 
+      set_gtk_property!(m["cbWaveform",Gtk4.GtkComboBoxTextLeaf], :active, 0) 
     end
   end =#
 
@@ -160,9 +160,9 @@ function MeasurementWidget(filenameConfig="")
 
   if !isnothing(m.scanner) && !isnothing(m.protocol.params.sequence)
     @idle_add_guarded begin
-      set_gtk_property!(m["adjNumFGFrames", AdjustmentLeaf], :value, acqNumFrames(protocol.params.sequence))
-      set_gtk_property!(m["adjNumFrameAverages", AdjustmentLeaf], :value, acqNumFrameAverages(protocol.params.sequence))
-      set_gtk_property!(m["adjNumAverages", AdjustmentLeaf], :value, acqNumAverages(protocol.params.sequence))
+      set_gtk_property!(m["adjNumFGFrames", Gtk4.GtkAdjustmentLeaf], :value, acqNumFrames(protocol.params.sequence))
+      set_gtk_property!(m["adjNumFrameAverages", Gtk4.GtkAdjustmentLeaf], :value, acqNumFrameAverages(protocol.params.sequence))
+      set_gtk_property!(m["adjNumAverages", Gtk4.GtkAdjustmentLeaf], :value, acqNumAverages(protocol.params.sequence))
     end
   end
 
@@ -243,7 +243,7 @@ function initCallbacks(m::MeasurementWidget)
 
           @idle_add_guarded updateData(m.rawDataWidget, uMeas, deltaT)
 
-          sleep(get_gtk_property(m["adjPause",AdjustmentLeaf],:value,Float64))
+          sleep(get_gtk_property(m["adjPause",Gtk4.GtkAdjustmentLeaf],:value,Float64))
 
           if mod(counter,20) == 0
             # This is a hack. The RP gets issues when measuring to long (about 30 minutes)
@@ -314,39 +314,39 @@ function initCallbacks(m::MeasurementWidget)
   #signal_connect(invalidateBG, m["adjNumPeriods"], , Nothing, (), false, m)
 
   for adj in ["adjDFStrength", "adjNumSubperiods"]
-    signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
+    signal_connect(m[adj,Gtk4.GtkAdjustmentLeaf], "value_changed") do w
       invalidateBG(C_NULL, m)
     end
   end
 
   for adj in ["adjNumBGMeasurements","adjPause","adjNumAverages"]
-    signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
+    signal_connect(m[adj,Gtk4.GtkAdjustmentLeaf], "value_changed") do w
       updateCalibTime(C_NULL, m)
       setInfoParams(m)
     end
   end
 
   for adj in ["adjNumFGFrames","adjNumFrameAverages"]
-    signal_connect(m[adj,AdjustmentLeaf], "value_changed") do w
+    signal_connect(m[adj,Gtk4.GtkAdjustmentLeaf], "value_changed") do w
       setInfoParams(m)
     end
   end
 
   # Update sequence
-  signal_connect(m["adjNumFGFrames", AdjustmentLeaf], "value_changed") do w
+  signal_connect(m["adjNumFGFrames", Gtk4.GtkAdjustmentLeaf], "value_changed") do w
     if !isnothing(m.protocol.params.sequence)
-      acqNumFrames(m.protocol.params.sequence, get_gtk_property(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64))
+      acqNumFrames(m.protocol.params.sequence, get_gtk_property(m["adjNumFGFrames",Gtk4.GtkAdjustmentLeaf], :value, Int64))
     end
   end
-  signal_connect(m["adjNumFrameAverages",AdjustmentLeaf], "value_changed") do w
+  signal_connect(m["adjNumFrameAverages",Gtk4.GtkAdjustmentLeaf], "value_changed") do w
     if !isnothing(m.protocol.params.sequence)
-      acqNumFrameAverages(m.protocol.params.sequence, get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64))
+      acqNumFrameAverages(m.protocol.params.sequence, get_gtk_property(m["adjNumFrameAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64))
     end
 
   end
-  signal_connect(m["adjNumAverages",AdjustmentLeaf], "value_changed") do w
+  signal_connect(m["adjNumAverages",Gtk4.GtkAdjustmentLeaf], "value_changed") do w
     if !isnothing(m.protocol.params.sequence)
-      acqNumAverages(m.protocol.params.sequence, get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64))
+      acqNumAverages(m.protocol.params.sequence, get_gtk_property(m["adjNumAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64))
     end
   end
 
@@ -374,7 +374,7 @@ function initCallbacks(m::MeasurementWidget)
   
 
 
-  signal_connect(m["cbWaveform",ComboBoxTextLeaf], :changed) do w
+  signal_connect(m["cbWaveform",Gtk4.GtkComboBoxTextLeaf], :changed) do w
     invalidateBG(C_NULL, m)
   end
 
@@ -391,9 +391,9 @@ function updateSequence(m::MeasurementWidget, seq::AbstractString)
     set_gtk_property!(m["entNumPeriods",EntryLeaf], :text, "$(acqNumPeriodsPerFrame(s))")
     set_gtk_property!(m["entNumPatches",EntryLeaf], :text, "$(acqNumPatches(s))")
 
-    set_gtk_property!(m["adjNumFGFrames", AdjustmentLeaf], :value, acqNumFrames(s))
-    set_gtk_property!(m["adjNumFrameAverages", AdjustmentLeaf], :value, acqNumFrameAverages(s))
-    set_gtk_property!(m["adjNumAverages", AdjustmentLeaf], :value, acqNumAverages(s))
+    set_gtk_property!(m["adjNumFGFrames", Gtk4.GtkAdjustmentLeaf], :value, acqNumFrames(s))
+    set_gtk_property!(m["adjNumFrameAverages", Gtk4.GtkAdjustmentLeaf], :value, acqNumFrameAverages(s))
+    set_gtk_property!(m["adjNumAverages", Gtk4.GtkAdjustmentLeaf], :value, acqNumAverages(s))
 
     set_gtk_property!(m["entDFStrength",EntryLeaf], :text, dfString)
     set_gtk_property!(m["entDFDivider",EntryLeaf], :text, dfDividerStr)
@@ -408,8 +408,8 @@ function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
 
   shpString = get_gtk_property(m["entGridShape",EntryLeaf], :text, String)
   shp = tryparse.(Int64,split(shpString,"x"))
-  numBGMeas = get_gtk_property(m["adjNumBGMeasurements",AdjustmentLeaf], :value, Int64)
-  numBGFrames = get_gtk_property(m["adjNumBGFrames",AdjustmentLeaf], :value, Int64)
+  numBGMeas = get_gtk_property(m["adjNumBGMeasurements",Gtk4.GtkAdjustmentLeaf], :value, Int64)
+  numBGFrames = get_gtk_property(m["adjNumBGFrames",Gtk4.GtkAdjustmentLeaf], :value, Int64)
 
   if any(shp .== nothing) length(shp) != 3
     return
@@ -421,14 +421,14 @@ function updateCalibTime(widgetptr::Ptr, m::MeasurementWidget)
   numPeriods = tryparse(Int64, get_gtk_property(m["entNumPeriods", EntryLeaf], :text, String))
   numPeriods = numPeriods == nothing ? 1 : numPeriods
 
-  daqTime_ = get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
+  daqTime_ = get_gtk_property(m["adjNumAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64) *
                      numPeriods * ustrip.(dfCycle(m.protocol.params.sequence))
 
-  daqTime = daqTime_ * (get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64)+1)
+  daqTime = daqTime_ * (get_gtk_property(m["adjNumFrameAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64)+1)
 
   daqTimeBG = daqTime_ * (numBGFrames + 1)
 
-  pauseTime = get_gtk_property(m["adjPause",AdjustmentLeaf],:value,Float64)
+  pauseTime = get_gtk_property(m["adjPause",Gtk4.GtkAdjustmentLeaf],:value,Float64)
 
   calibTime = (daqTime + pauseTime + robotMoveTime) * prod(shp) +
               (daqTimeBG + pauseTime + robotMoveTimePark) * numBGMeas
@@ -464,12 +464,12 @@ function setInfoParams(m::MeasurementWidget)
   #@idle_add_guarded set_gtk_property!(m["entDFPeriod",EntryLeaf],:text,"$(daq.params.dfCycle*1000) ms")
   numPeriods = tryparse(Int64, get_gtk_property(m["entNumPeriods", EntryLeaf], :text, String))
 
-  framePeriod = get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64) *
+  framePeriod = get_gtk_property(m["adjNumAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64) *
                   (numPeriods == nothing ? 1 : numPeriods)  *
                   ustrip(dfCycle(m.protocol.params.sequence))
 
-  totalPeriod = framePeriod * get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64) *
-                              get_gtk_property(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64)
+  totalPeriod = framePeriod * get_gtk_property(m["adjNumFrameAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64) *
+                              get_gtk_property(m["adjNumFGFrames",Gtk4.GtkAdjustmentLeaf], :value, Int64)
 
   @idle_add_guarded begin
     set_gtk_property!(m["entFramePeriod",EntryLeaf],:text,"$(@sprintf("%.5f",framePeriod)) s")
@@ -482,12 +482,12 @@ end
 function getParams(m::MeasurementWidget)
   params = Dict{String,Any}() # TODO toDict(getDAQ(m.scanner).params)
 
-  params["acqNumAverages"] = get_gtk_property(m["adjNumAverages",AdjustmentLeaf], :value, Int64)
-  params["acqNumFrameAverages"] = get_gtk_property(m["adjNumFrameAverages",AdjustmentLeaf], :value, Int64)
-  params["acqNumSubperiods"] = get_gtk_property(m["adjNumSubperiods",AdjustmentLeaf], :value, Int64)
+  params["acqNumAverages"] = get_gtk_property(m["adjNumAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64)
+  params["acqNumFrameAverages"] = get_gtk_property(m["adjNumFrameAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64)
+  params["acqNumSubperiods"] = get_gtk_property(m["adjNumSubperiods",Gtk4.GtkAdjustmentLeaf], :value, Int64)
 
-  params["acqNumFGFrames"] = get_gtk_property(m["adjNumFGFrames",AdjustmentLeaf], :value, Int64)
-  params["acqNumBGFrames"] = get_gtk_property(m["adjNumBGFrames",AdjustmentLeaf], :value, Int64)
+  params["acqNumFGFrames"] = get_gtk_property(m["adjNumFGFrames",Gtk4.GtkAdjustmentLeaf], :value, Int64)
+  params["acqNumBGFrames"] = get_gtk_property(m["adjNumBGFrames",Gtk4.GtkAdjustmentLeaf], :value, Int64)
   #TODO params["acqNumPeriodsPerFrame"] = parse(Int64, get_gtk_property(m["entNumPeriods", EntryLeaf], :text, String))
   params["studyName"] = m.currStudyName
   params["studyDate"] = m.currStudyDate
@@ -498,8 +498,8 @@ function getParams(m::MeasurementWidget)
   params["tracerName"] = [get_gtk_property(m["entTracerName",EntryLeaf], :text, String)]
   params["tracerBatch"] = [get_gtk_property(m["entTracerBatch",EntryLeaf], :text, String)]
   params["tracerVendor"] = [get_gtk_property(m["entTracerVendor",EntryLeaf], :text, String)]
-  params["tracerVolume"] = [1e-3*get_gtk_property(m["adjTracerVolume",AdjustmentLeaf], :value, Float64)]
-  params["tracerConcentration"] = [1e-3*get_gtk_property(m["adjTracerConcentration",AdjustmentLeaf], :value, Float64)]
+  params["tracerVolume"] = [1e-3*get_gtk_property(m["adjTracerVolume",Gtk4.GtkAdjustmentLeaf], :value, Float64)]
+  params["tracerConcentration"] = [1e-3*get_gtk_property(m["adjTracerConcentration",Gtk4.GtkAdjustmentLeaf], :value, Float64)]
   params["tracerSolute"] = [get_gtk_property(m["entTracerSolute",EntryLeaf], :text, String)]
 
   dfString = get_gtk_property(m["entDFStrength",EntryLeaf], :text, String)
@@ -508,7 +508,7 @@ function getParams(m::MeasurementWidget)
   params["dfDivider"] = parse.(Int64,split(dfDividerStr," x "))
 
   params["acqFFSequence"] = get_gtk_property(m["entSequenceName",EntryLeaf], :text, String)
-  #params["dfWaveform"] = RedPitayaDAQServer.waveforms()[get_gtk_property(m["cbWaveform",ComboBoxTextLeaf], :active, Int)+1]
+  #params["dfWaveform"] = RedPitayaDAQServer.waveforms()[get_gtk_property(m["cbWaveform",Gtk4.GtkComboBoxTextLeaf], :active, Int)+1]
 
   #jump = get_gtk_property(m["entDFJumpSharpness",EntryLeaf], :text, String)
   #params["jumpSharpness"] = parse(Float64, jump)
@@ -522,11 +522,11 @@ function setParams(m::MeasurementWidget, scanner::MPIScanner)
   seq = m.protocol.params.sequence
   gen = scanner.generalParams 
 
-  @idle_add_guarded set_gtk_property!(m["adjNumAverages",AdjustmentLeaf], :value, 1 ) # TODO params["acqNumAverages"])
-  @idle_add_guarded set_gtk_property!(m["adjNumFrameAverages",AdjustmentLeaf], :value, 1 ) # TODO params["acqNumFrameAverages"])
-  @idle_add_guarded set_gtk_property!(m["adjNumSubperiods",AdjustmentLeaf], :value, 1 ) # TODO get(params,"acqNumSubperiods",1))
-  @idle_add_guarded set_gtk_property!(m["adjNumFGFrames",AdjustmentLeaf], :value, 1 ) # TODO params["acqNumFrames"])
-  @idle_add_guarded set_gtk_property!(m["adjNumBGFrames",AdjustmentLeaf], :value, 1 ) # TODO params["acqNumFrames"])
+  @idle_add_guarded set_gtk_property!(m["adjNumAverages",Gtk4.GtkAdjustmentLeaf], :value, 1 ) # TODO params["acqNumAverages"])
+  @idle_add_guarded set_gtk_property!(m["adjNumFrameAverages",Gtk4.GtkAdjustmentLeaf], :value, 1 ) # TODO params["acqNumFrameAverages"])
+  @idle_add_guarded set_gtk_property!(m["adjNumSubperiods",Gtk4.GtkAdjustmentLeaf], :value, 1 ) # TODO get(params,"acqNumSubperiods",1))
+  @idle_add_guarded set_gtk_property!(m["adjNumFGFrames",Gtk4.GtkAdjustmentLeaf], :value, 1 ) # TODO params["acqNumFrames"])
+  @idle_add_guarded set_gtk_property!(m["adjNumBGFrames",Gtk4.GtkAdjustmentLeaf], :value, 1 ) # TODO params["acqNumFrames"])
   #@idle_add_guarded set_gtk_property!(m["entStudy"], :text, params["studyName"])
   @idle_add_guarded set_gtk_property!(m["entExpDescr",EntryLeaf], :text, "" ) # TODO params["studyDescription"] )
   @idle_add_guarded set_gtk_property!(m["entOperator",EntryLeaf], :text, "default" ) # gp.operator)
@@ -541,8 +541,8 @@ function setParams(m::MeasurementWidget, scanner::MPIScanner)
   #= TODO @idle_add_guarded set_gtk_property!(m["entTracerName",EntryLeaf], :text, params["tracerName"][1])
   @idle_add_guarded set_gtk_property!(m["entTracerBatch",EntryLeaf], :text, params["tracerBatch"][1])
   @idle_add_guarded set_gtk_property!(m["entTracerVendor",EntryLeaf], :text, params["tracerVendor"][1])
-  @idle_add_guarded set_gtk_property!(m["adjTracerVolume",AdjustmentLeaf], :value, 1000*params["tracerVolume"][1])
-  @idle_add_guarded set_gtk_property!(m["adjTracerConcentration",AdjustmentLeaf], :value, 1000*params["tracerConcentration"][1])
+  @idle_add_guarded set_gtk_property!(m["adjTracerVolume",Gtk4.GtkAdjustmentLeaf], :value, 1000*params["tracerVolume"][1])
+  @idle_add_guarded set_gtk_property!(m["adjTracerConcentration",Gtk4.GtkAdjustmentLeaf], :value, 1000*params["tracerConcentration"][1])
   @idle_add_guarded set_gtk_property!(m["entTracerSolute",EntryLeaf], :text, params["tracerSolute"][1])
   =#
 
@@ -561,10 +561,10 @@ function setParams(m::MeasurementWidget, scanner::MPIScanner)
   #= TODO if haskey(params,"dfWaveform")
     idx = findfirst_(RedPitayaDAQServer.waveforms(), params["dfWaveform"])
     if idx > 0
-      @idle_add_guarded set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, idx-1)
+      @idle_add_guarded set_gtk_property!(m["cbWaveform",Gtk4.GtkComboBoxTextLeaf], :active, idx-1)
     end
   else
-      @idle_add_guarded set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf], :active, 0)
+      @idle_add_guarded set_gtk_property!(m["cbWaveform",Gtk4.GtkComboBoxTextLeaf], :active, 0)
   end  =#
 
   calibProtocol = Protocol("RobotBasedSystemMatrix", m.scanner)
@@ -578,19 +578,19 @@ function setParams(m::MeasurementWidget, scanner::MPIScanner)
     @idle_add_guarded set_gtk_property!(m["entGridShape",EntryLeaf], :text, shpStr)
     @idle_add_guarded set_gtk_property!(m["entFOV",EntryLeaf], :text, fovStr)
     @idle_add_guarded set_gtk_property!(m["entCenter",EntryLeaf], :text, ctrStr)
-    # TODO @idle_add_guarded set_gtk_property!(m["adjNumBGMeasurements",AdjustmentLeaf], :value, p["calibNumBGMeasurements"])
+    # TODO @idle_add_guarded set_gtk_property!(m["adjNumBGMeasurements",Gtk4.GtkAdjustmentLeaf], :value, p["calibNumBGMeasurements"])
   end
   #=velRob = getDefaultVelocity(getRobot(m.scanner))
   velRobStr = @sprintf("%.d x %.d x %.d", velRob[1],velRob[2],velRob[3])
   @idle_add_guarded set_gtk_property!(m["entVelRob",EntryLeaf], :text, velRobStr)
   @idle_add_guarded set_gtk_property!(m["entCurrPos",EntryLeaf], :text, "0.0 x 0.0 x 0.0")=#
 
-  @idle_add_guarded set_gtk_property!(m["adjPause",AdjustmentLeaf], :value, calibProtocol.params.waitTime )
+  @idle_add_guarded set_gtk_property!(m["adjPause",Gtk4.GtkAdjustmentLeaf], :value, calibProtocol.params.waitTime )
 end
 
 function getRobotSetupUI(m::MeasurementWidget)
-    coil = getValidHeadScannerGeos()[get_gtk_property(m["cbSafeCoil",ComboBoxTextLeaf], :active, Int)+1]
-    obj = getValidHeadObjects()[get_gtk_property(m["cbSafeObject",ComboBoxTextLeaf], :active, Int)+1]
+    coil = getValidHeadScannerGeos()[get_gtk_property(m["cbSafeCoil",Gtk4.GtkComboBoxTextLeaf], :active, Int)+1]
+    obj = getValidHeadObjects()[get_gtk_property(m["cbSafeObject",Gtk4.GtkComboBoxTextLeaf], :active, Int)+1]
     if obj.name == customPhantom3D.name
         obj = getCustomPhantom(m)
     end
@@ -609,14 +609,14 @@ end
 
 function enableDFWaveformControls(m::MeasurementWidget, enable::Bool)
   @idle_add_guarded begin
-    set_gtk_property!(m["cbWaveform",ComboBoxTextLeaf],:sensitive,enable)
+    set_gtk_property!(m["cbWaveform",Gtk4.GtkComboBoxTextLeaf],:sensitive,enable)
     set_gtk_property!(m["entDFDivider",EntryLeaf],:sensitive,enable)
   end
 end
 
 
 function loadArbPos(m::MeasurementWidget)
-      filter = Gtk.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
+      filter = Gtk4.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
       filename = open_dialog("Select Arbitrary Position File", GtkNullContainer(), (filter, ))
       @idle_add_guarded set_gtk_property!(m["entArbitraryPos",EntryLeaf],:text,filename)
 end

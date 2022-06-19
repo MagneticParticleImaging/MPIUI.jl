@@ -1,8 +1,8 @@
-mutable struct ProtocolWidget{T} <: Gtk.GtkBox
+mutable struct ProtocolWidget{T} <: Gtk4.GtkBox
   # Gtk 
-  handle::Ptr{Gtk.GObject}
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
-  paramBuilder::Dict
+  paramGtkBuilder::Dict
   updating::Bool
   # Protocol Interaction
   scanner::T
@@ -36,14 +36,14 @@ function ProtocolWidget(scanner=nothing)
     protocol = nothing
   end
     
-  b = Builder(filename=uifile)
+  b = GtkBuilder(filename=uifile)
   mainBox = object_(b, "boxProtocol",BoxLeaf)
 
-  paramBuilder = Dict(:sequence => "expSequence", :positions => "expPositions")
+  paramGtkBuilder = Dict(:sequence => "expSequence", :positions => "expPositions")
 
-  pw = ProtocolWidget(mainBox.handle, b, paramBuilder, false, scanner, protocol, nothing, nothing, PS_UNDEFINED,
+  pw = ProtocolWidget(mainBox.handle, b, paramGtkBuilder, false, scanner, protocol, nothing, nothing, PS_UNDEFINED,
         nothing, RawDataWidget(), mdfstore, zeros(Float32,0,0,0,0), "", now())
-  Gtk.gobject_move_ref(pw, mainBox)
+  Gtk4.gobject_move_ref(pw, mainBox)
 
   @idle_add_guarded begin
     set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf],:sensitive,false)
@@ -96,8 +96,8 @@ function getStorageParams(pw::ProtocolWidget)
   params["tracerName"] = [get_gtk_property(pw["entTracerName",EntryLeaf], :text, String)]
   params["tracerBatch"] = [get_gtk_property(pw["entTracerBatch",EntryLeaf], :text, String)]
   params["tracerVendor"] = [get_gtk_property(pw["entTracerVendor",EntryLeaf], :text, String)]
-  params["tracerVolume"] = [1e-3*get_gtk_property(pw["adjTracerVolume",AdjustmentLeaf], :value, Float64)]
-  params["tracerConcentration"] = [1e-3*get_gtk_property(pw["adjTracerConcentration",AdjustmentLeaf], :value, Float64)]
+  params["tracerVolume"] = [1e-3*get_gtk_property(pw["adjTracerVolume",Gtk4.GtkAdjustmentLeaf], :value, Float64)]
+  params["tracerConcentration"] = [1e-3*get_gtk_property(pw["adjTracerConcentration",Gtk4.GtkAdjustmentLeaf], :value, Float64)]
   params["tracerSolute"] = [get_gtk_property(pw["entTracerSolute",EntryLeaf], :text, String)]
   return params
 end
@@ -180,7 +180,7 @@ function initCallbacks(pw::ProtocolWidget)
   signal_connect(pw["btnSaveProtocol", GtkButton], "clicked") do w
     try 
       # TODO try to pick protocol folder of current scanner?
-      filter = Gtk.GtkFileFilter(pattern=String("*.toml"))
+      filter = Gtk4.GtkFileFilter(pattern=String("*.toml"))
       fileName = save_dialog("Save Protocol", GtkNullContainer(), (filter, ))
       if fileName != ""
         saveProtocol(pw::ProtocolWidget, fileName)
@@ -198,7 +198,7 @@ function initCallbacks(pw::ProtocolWidget)
   end
 
   #for adj in ["adjNumFrames", "adjNumAverages", "adjNumFrameAverages", "adjNumBGFrames"]
-  #  signal_connect(pw[adj, AdjustmentLeaf], "value_changed") do w
+  #  signal_connect(pw[adj, Gtk4.GtkAdjustmentLeaf], "value_changed") do w
   #    if !pw.updating
   #      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
   #    end
@@ -232,7 +232,7 @@ function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
     set_gtk_property!(pw["txtBuffProtocolDescription", GtkTextBufferLeaf], :text, MPIMeasurements.description(protocol))
     set_gtk_property!(pw["lblProtocolName", GtkLabelLeaf], :label, name(protocol))
     # Clear old parameters
-    empty!(pw["boxProtocolParameter", BoxLeaf])
+    empty!(pw["boxProtocolParameter", Gtk4.GtkBoxLeaf])
 
     regular = [field for field in fieldnames(typeof(params)) if parameterType(field, nothing) isa RegularParameterType]
     special = setdiff(fieldnames(typeof(params)), regular)
@@ -254,7 +254,7 @@ function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
 
     set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, false)
     pw.updating = false
-    showall(pw["boxProtocolParameter", BoxLeaf])
+    showall(pw["boxProtocolParameter", Gtk4.GtkBoxLeaf])
   end
 end
 
@@ -269,7 +269,7 @@ function addRegularProtocolParameter(pw::ProtocolWidget, params::ProtocolParams,
       end
       addProtocolParameter(pw, parameterType(field, value), paramGrid, field, value, tooltip)
     end
-    push!(pw["boxProtocolParameter", BoxLeaf], paramGrid)
+    push!(pw["boxProtocolParameter", Gtk4.GtkBoxLeaf], paramGrid)
   catch ex 
     @error ex
   end
@@ -278,19 +278,19 @@ end
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value, tooltip)
   generic = GenericParameter{typeof(value)}(field, string(field), string(value), tooltip)
   addGenericCallback(pw, generic.entry)
-  push!(pw["boxProtocolParameter", BoxLeaf], generic)
+  push!(pw["boxProtocolParameter", Gtk4.GtkBoxLeaf], generic)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value::T, tooltip) where {T<:Quantity}
   generic = UnitfulParameter(field, string(field), value, tooltip)
   addGenericCallback(pw, generic.entry)
-  push!(pw["boxProtocolParameter", BoxLeaf], generic)
+  push!(pw["boxProtocolParameter", Gtk4.GtkBoxLeaf], generic)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::BoolParameterType, field, value, tooltip)
   cb = BoolParameter(field, string(field), value, tooltip)
   addGenericCallback(pw, cb)
-  push!(pw["boxProtocolParameter", BoxLeaf], cb)
+  push!(pw["boxProtocolParameter", Gtk4.GtkBoxLeaf], cb)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, regParams::RegularParameters, field::Symbol, value, tooltip)
@@ -330,19 +330,19 @@ end
 function addProtocolParameter(pw::ProtocolWidget, ::SequenceParameterType, field, value::Sequence, tooltip)
   seq = SequenceParameter(field, value, pw.scanner)
   updateSequence(seq, value) # Set default sequence values
-  push!(pw["boxProtocolParameter", BoxLeaf], seq)
+  push!(pw["boxProtocolParameter", Gtk4.GtkBoxLeaf], seq)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::CoordinateParameterType, field, value, tooltip)
   coord = CoordinateParameter(field, value, tooltip)
   updateCoordinate(coord, value)
-  push!(pw["boxProtocolParameter", BoxLeaf], coord)
+  push!(pw["boxProtocolParameter", Gtk4.GtkBoxLeaf], coord)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::PositionParameterType, field, value, tooltip)
   pos = PositionParameter(field, value)
   updatePositions(pos, value)
-  push!(pw["boxProtocolParameter", BoxLeaf], pos)
+  push!(pw["boxProtocolParameter", Gtk4.GtkBoxLeaf], pos)
 end
 
 function addTooltip(object, tooltip::AbstractString)

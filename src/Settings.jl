@@ -67,7 +67,7 @@ function Settings()
     cp(defaultSettingsFile, settingsfile)
   end
 
-  m = Settings( Builder(filename=uifile), nothing)
+  m = Settings( GtkBuilder(filename=uifile), nothing)
 
   load(m)
 

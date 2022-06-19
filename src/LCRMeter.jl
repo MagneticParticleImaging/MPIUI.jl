@@ -15,12 +15,12 @@ function LCRMeterUI(;minFre=20000,maxFre=30000,samples=50,average=1,volt=2.0,ip=
   @info "Starting LCRMeterUI"
   uifile = joinpath(@__DIR__,"builder","lcrMeter.ui")
 
-  b = Builder(filename=uifile)
+  b = GtkBuilder(filename=uifile)
 
   m = LCRMeterUI( b, nothing, nothing, nothing, nothing, nothing)
  
-  m.c1 = Canvas()
-  m.c2 = Canvas() 
+  m.c1 = GtkCanvas()
+  m.c2 = GtkCanvas() 
 
   push!(m["boxMain"],m.c1)
   set_gtk_property!(m["boxMain"],:expand,m.c1,true)
@@ -71,7 +71,7 @@ function LCRMeterUI(;minFre=20000,maxFre=30000,samples=50,average=1,volt=2.0,ip=
 
 
   signal_connect(m["btnSave"], :clicked) do w
-    filter = Gtk.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
+    filter = Gtk4.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
     filename = save_dialog("Select Data File", GtkNullContainer(), (filter, ))
     if filename != ""
       filenamebase, ext = splitext(filename)
