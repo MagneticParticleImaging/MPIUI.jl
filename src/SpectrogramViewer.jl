@@ -53,15 +53,21 @@ function SpectrogramWidget(filenameConfig=nothing)
 
   push!(m["boxTD"],m.cTD)
 ###  set_gtk_property!(m["boxTD"],:expand,m.cTD,true)
+  m.cTD.hexpand = true
+  m.cTD.vexpand = true
 
   pane = m["paned"]
   set_gtk_property!(pane, :position, 300)
 
   push!(m["boxSpectro"], m.cSpect)
 ###  set_gtk_property!(m["boxSpectro"],:expand, m.cSpect, true)
+  m.cSpect.hexpand = true
+  m.cSpect.vexpand = true
 
   push!(m["boxFD"],m.cFD)
 ###  set_gtk_property!(m["boxFD"],:expand,m.cFD,true)
+  m.cFD.hexpand = true
+  m.cFD.vexpand = true
 
   @debug "InitCallbacks"
 
