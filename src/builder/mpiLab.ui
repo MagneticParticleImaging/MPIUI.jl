@@ -1,225 +1,222 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.10.2 -->
 <interface>
+  <!-- interface-name mpiLab.ui -->
   <requires lib="gtk" version="4.0"/>
   <object class="GtkAdjustment" id="adjAverages">
     <property name="lower">1</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">10000</property>
     <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjCMax">
+    <property name="page-increment">10</property>
     <property name="upper">1</property>
     <property name="value">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjCMaxBG">
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">1</property>
     <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjCMin">
+    <property name="page-increment">10</property>
+    <property name="step-increment">2.2351741811588166e-10</property>
     <property name="upper">1</property>
-    <property name="step_increment">2.2351741811588166e-10</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjCMinBG">
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjFirstFrameBG">
     <property name="lower">1</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
     <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjFrame">
     <property name="lower">1</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">1000000</property>
     <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjFrames">
     <property name="lower">1</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
     <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjIterations">
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100000000</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjLambdaL1">
+    <property name="page-increment">10</property>
+    <property name="step-increment">0.01</property>
     <property name="upper">100000000</property>
-    <property name="step_increment">0.01</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjLambdaL2">
+    <property name="page-increment">10</property>
+    <property name="step-increment">0.01</property>
     <property name="upper">100000000</property>
-    <property name="step_increment">0.01</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjLambdaTV">
+    <property name="page-increment">10</property>
+    <property name="step-increment">0.01</property>
     <property name="upper">100000000</property>
-    <property name="step_increment">0.01</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjLastFrame">
     <property name="lower">1</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">1000000</property>
     <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjLastFrameBG">
     <property name="lower">1</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
     <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjMaxFreq">
+    <property name="page-increment">10</property>
+    <property name="step-increment">10</property>
     <property name="upper">1250</property>
     <property name="value">1250</property>
-    <property name="step_increment">10</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjMinFreq">
+    <property name="page-increment">10</property>
+    <property name="step-increment">10</property>
     <property name="upper">1250</property>
     <property name="value">80</property>
-    <property name="step_increment">10</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjNumSF">
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
     <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjPixelResizeFactor">
     <property name="lower">1</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
     <property name="value">5</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjRedFactor">
+    <property name="page-increment">10</property>
+    <property name="step-increment">0.01</property>
     <property name="upper">1</property>
     <property name="value">0.01</property>
-    <property name="step_increment">0.01</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjRotBGX">
     <property name="lower">-3.1499999999999999</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">0.01</property>
     <property name="upper">3.1499999999999999</property>
-    <property name="step_increment">0.01</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjRotBGY">
     <property name="lower">-3.1499999999999999</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">0.01</property>
     <property name="upper">3.1499999999999999</property>
-    <property name="step_increment">0.01</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjRotBGZ">
     <property name="lower">-3.1499999999999999</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">0.01</property>
     <property name="upper">3.1499999999999999</property>
-    <property name="step_increment">0.01</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjRotX">
     <property name="lower">-3.1499999999999999</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">0.01</property>
     <property name="upper">3.1499999999999999</property>
-    <property name="step_increment">0.01</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjRotY">
     <property name="lower">-3.1499999999999999</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">0.01</property>
     <property name="upper">3.1499999999999999</property>
-    <property name="step_increment">0.01</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjRotZ">
     <property name="lower">-3.1499999999999999</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">0.01</property>
     <property name="upper">3.1499999999999999</property>
-    <property name="step_increment">0.01</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjSFFreq">
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
     <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjSFMixX">
     <property name="lower">-100</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjSFMixY">
     <property name="lower">-100</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjSFMixZ">
     <property name="lower">-100</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjSFPatch">
     <property name="lower">1</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjSFRecChan">
     <property name="lower">1</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">3</property>
     <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjSFSignalOrdered">
     <property name="lower">1</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkScrolledWindow" id="swSFViewer">
-    <property name="focusable">1</property>
-    <property name="hexpand">0</property>
-    <property name="min_content_width">215</property>
     <property name="child">
       <object class="GtkViewport" id="viewport2">
-        <property name="margin_top">2</property>
-        <property name="margin_bottom">3</property>
         <property name="child">
           <object class="GtkBox" id="boxRecoParams1">
-            <property name="margin-start">4</property>
             <property name="margin-end">4</property>
+            <property name="margin-start">4</property>
             <property name="orientation">vertical</property>
             <property name="spacing">6</property>
             <child>
               <object class="GtkExpander" id="expander12">
-                <property name="focusable">1</property>
                 <property name="expanded">1</property>
+                <property name="focusable">1</property>
                 <child>
                   <object class="GtkGrid" id="grid12">
-                    <property name="row_spacing">5</property>
-                    <property name="column_spacing">5</property>
+                    <property name="column-spacing">5</property>
+                    <property name="row-spacing">5</property>
                     <child>
                       <object class="GtkLabel" id="label59">
                         <property name="halign">start</property>
-                        <property name="label" translatable="1">Freq</property>
+                        <property name="label" translatable="yes">Freq</property>
                         <layout>
                           <property name="column">0</property>
                           <property name="row">0</property>
@@ -229,7 +226,7 @@
                     <child>
                       <object class="GtkLabel" id="label60">
                         <property name="halign">start</property>
-                        <property name="label" translatable="1">Rec Chan</property>
+                        <property name="label" translatable="yes">Rec Chan</property>
                         <layout>
                           <property name="column">0</property>
                           <property name="row">1</property>
@@ -238,9 +235,9 @@
                     </child>
                     <child>
                       <object class="GtkSpinButton" id="spinbutton25">
-                        <property name="focusable">1</property>
-                        <property name="text" translatable="1">1</property>
                         <property name="adjustment">adjSFRecChan</property>
+                        <property name="focusable">1</property>
+                        <property name="text" translatable="yes">1</property>
                         <property name="value">1</property>
                         <layout>
                           <property name="column">1</property>
@@ -250,10 +247,10 @@
                     </child>
                     <child>
                       <object class="GtkSpinButton" id="spinbutton23">
+                        <property name="adjustment">adjSFFreq</property>
                         <property name="focusable">1</property>
                         <property name="hexpand">1</property>
-                        <property name="text" translatable="1">1</property>
-                        <property name="adjustment">adjSFFreq</property>
+                        <property name="text" translatable="yes">1</property>
                         <property name="value">1</property>
                         <layout>
                           <property name="column">1</property>
@@ -264,7 +261,7 @@
                     <child>
                       <object class="GtkLabel" id="label61">
                         <property name="halign">start</property>
-                        <property name="label" translatable="1">Patch</property>
+                        <property name="label" translatable="yes">Patch</property>
                         <layout>
                           <property name="column">0</property>
                           <property name="row">2</property>
@@ -273,9 +270,9 @@
                     </child>
                     <child>
                       <object class="GtkSpinButton" id="spinbutton24">
-                        <property name="focusable">1</property>
-                        <property name="text" translatable="1">1</property>
                         <property name="adjustment">adjSFPatch</property>
+                        <property name="focusable">1</property>
+                        <property name="text" translatable="yes">1</property>
                         <property name="value">1</property>
                         <layout>
                           <property name="column">1</property>
@@ -286,7 +283,7 @@
                     <child>
                       <object class="GtkLabel" id="label64">
                         <property name="halign">start</property>
-                        <property name="label" translatable="1">Signal Ord.</property>
+                        <property name="label" translatable="yes">Signal Ord.</property>
                         <layout>
                           <property name="column">0</property>
                           <property name="row">3</property>
@@ -295,9 +292,9 @@
                     </child>
                     <child>
                       <object class="GtkSpinButton" id="spinbutton28">
-                        <property name="focusable">1</property>
-                        <property name="text" translatable="1">1</property>
                         <property name="adjustment">adjSFSignalOrdered</property>
+                        <property name="focusable">1</property>
+                        <property name="text" translatable="yes">1</property>
                         <property name="value">1</property>
                         <layout>
                           <property name="column">1</property>
@@ -308,7 +305,7 @@
                     <child>
                       <object class="GtkLabel">
                         <property name="halign">start</property>
-                        <property name="label" translatable="1">mz</property>
+                        <property name="label" translatable="yes">mz</property>
                         <layout>
                           <property name="column">0</property>
                           <property name="row">6</property>
@@ -318,7 +315,7 @@
                     <child>
                       <object class="GtkLabel">
                         <property name="halign">start</property>
-                        <property name="label" translatable="1">my</property>
+                        <property name="label" translatable="yes">my</property>
                         <layout>
                           <property name="column">0</property>
                           <property name="row">5</property>
@@ -328,7 +325,7 @@
                     <child>
                       <object class="GtkLabel">
                         <property name="halign">start</property>
-                        <property name="label" translatable="1">mx</property>
+                        <property name="label" translatable="yes">mx</property>
                         <layout>
                           <property name="column">0</property>
                           <property name="row">4</property>
@@ -337,8 +334,8 @@
                     </child>
                     <child>
                       <object class="GtkSpinButton">
-                        <property name="focusable">1</property>
                         <property name="adjustment">adjSFMixX</property>
+                        <property name="focusable">1</property>
                         <layout>
                           <property name="column">1</property>
                           <property name="row">4</property>
@@ -347,8 +344,8 @@
                     </child>
                     <child>
                       <object class="GtkSpinButton">
-                        <property name="focusable">1</property>
                         <property name="adjustment">adjSFMixY</property>
+                        <property name="focusable">1</property>
                         <layout>
                           <property name="column">1</property>
                           <property name="row">5</property>
@@ -357,8 +354,8 @@
                     </child>
                     <child>
                       <object class="GtkSpinButton">
-                        <property name="focusable">1</property>
                         <property name="adjustment">adjSFMixZ</property>
+                        <property name="focusable">1</property>
                         <layout>
                           <property name="column">1</property>
                           <property name="row">6</property>
@@ -369,22 +366,22 @@
                 </child>
                 <child type="label">
                   <object class="GtkLabel" id="label57">
-                    <property name="label" translatable="1">Frequency Selection</property>
+                    <property name="label" translatable="yes">Frequency Selection</property>
                   </object>
                 </child>
               </object>
             </child>
             <child>
               <object class="GtkExpander" id="expander13">
-                <property name="focusable">1</property>
                 <property name="expanded">1</property>
+                <property name="focusable">1</property>
                 <child>
                   <object class="GtkGrid" id="grid13">
-                    <property name="row_spacing">5</property>
-                    <property name="column_spacing">5</property>
+                    <property name="column-spacing">5</property>
+                    <property name="row-spacing">5</property>
                     <child>
                       <object class="GtkLabel" id="label65">
-                        <property name="label" translatable="1">SNR</property>
+                        <property name="label" translatable="yes">SNR</property>
                         <layout>
                           <property name="column">0</property>
                           <property name="row">0</property>
@@ -393,10 +390,10 @@
                     </child>
                     <child>
                       <object class="GtkEntry" id="entSFSNR">
+                        <property name="editable">0</property>
                         <property name="focusable">1</property>
                         <property name="hexpand">1</property>
-                        <property name="editable">0</property>
-                        <property name="width_chars">0</property>
+                        <property name="width-chars">0</property>
                         <layout>
                           <property name="column">1</property>
                           <property name="row">0</property>
@@ -405,19 +402,19 @@
                     </child>
                     <child>
                       <object class="GtkCheckButton" id="cbSFBGCorr">
-                        <property name="label" translatable="1">Background Correction</property>
-                        <property name="focusable">1</property>
                         <property name="active">1</property>
+                        <property name="focusable">1</property>
+                        <property name="label" translatable="yes">Background Correction</property>
                         <layout>
                           <property name="column">0</property>
-                          <property name="row">1</property>
                           <property name="column-span">2</property>
+                          <property name="row">1</property>
                         </layout>
                       </object>
                     </child>
                     <child>
                       <object class="GtkLabel">
-                        <property name="label" translatable="1">SNR 2</property>
+                        <property name="label" translatable="yes">SNR 2</property>
                         <layout>
                           <property name="column">0</property>
                           <property name="row">2</property>
@@ -426,9 +423,9 @@
                     </child>
                     <child>
                       <object class="GtkEntry" id="entSFSNR2">
-                        <property name="focusable">1</property>
                         <property name="editable">0</property>
-                        <property name="width_chars">0</property>
+                        <property name="focusable">1</property>
+                        <property name="width-chars">0</property>
                         <layout>
                           <property name="column">1</property>
                           <property name="row">2</property>
@@ -439,89 +436,94 @@
                 </child>
                 <child type="label">
                   <object class="GtkLabel" id="label58">
-                    <property name="label" translatable="1">Misc</property>
+                    <property name="label" translatable="yes">Misc</property>
                   </object>
                 </child>
               </object>
             </child>
           </object>
         </property>
+        <property name="margin-bottom">3</property>
+        <property name="margin-top">2</property>
       </object>
     </property>
+    <property name="focusable">1</property>
+    <property name="hexpand">0</property>
+    <property name="min-content-width">215</property>
   </object>
   <object class="GtkAdjustment" id="adjSNRThresh">
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">1000000</property>
     <property name="value">2</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjSelectedSF">
     <property name="lower">1</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">1</property>
     <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjSliceX">
     <property name="lower">1</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
     <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjSliceY">
     <property name="lower">1</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
     <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjSliceZ">
     <property name="lower">1</property>
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
     <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjTTPThresh">
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">1</property>
     <property name="value">0.40000000000000002</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjTransBGX">
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjTransBGY">
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjTransBGZ">
+    <property name="page-increment">10</property>
+    <property name="step-increment">1</property>
     <property name="upper">100</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjTransX">
+    <property name="page-increment">10</property>
+    <property name="step-increment">0.10000000000000001</property>
     <property name="upper">100</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjTransY">
+    <property name="page-increment">10</property>
+    <property name="step-increment">0.10000000000000001</property>
     <property name="upper">100</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjTransZ">
+    <property name="page-increment">10</property>
+    <property name="step-increment">0.10000000000000001</property>
     <property name="upper">100</property>
-    <property name="step_increment">0.10000000000000001</property>
-    <property name="page_increment">10</property>
   </object>
   <object class="GtkGrid" id="gridSettings">
-    <property name="row_spacing">8</property>
-    <property name="column_spacing">8</property>
+    <property name="column-spacing">8</property>
+    <property name="row-spacing">8</property>
     <child>
       <object class="GtkEntry" id="entSettingsDatasetFolder">
         <property name="focusable">1</property>
@@ -533,7 +535,7 @@
     </child>
     <child>
       <object class="GtkLabel" id="label49">
-        <property name="label" translatable="1">Measurement Folder</property>
+        <property name="label" translatable="yes">Measurement Folder</property>
         <layout>
           <property name="column">0</property>
           <property name="row">0</property>
@@ -542,9 +544,9 @@
     </child>
     <child>
       <object class="GtkButton" id="btnSettingsDatasetFolder">
-        <property name="label" translatable="1">Browse</property>
         <property name="focusable">1</property>
-        <property name="receives_default">1</property>
+        <property name="label" translatable="yes">Browse</property>
+        <property name="receives-default">1</property>
         <layout>
           <property name="column">2</property>
           <property name="row">0</property>
@@ -553,7 +555,7 @@
     </child>
     <child>
       <object class="GtkLabel" id="label50">
-        <property name="label" translatable="1">Reconstruction Folder</property>
+        <property name="label" translatable="yes">Reconstruction Folder</property>
         <layout>
           <property name="column">0</property>
           <property name="row">1</property>
@@ -571,9 +573,9 @@
     </child>
     <child>
       <object class="GtkButton" id="btnSettingsRecoFolder">
-        <property name="label" translatable="1">Browse</property>
         <property name="focusable">1</property>
-        <property name="receives_default">1</property>
+        <property name="label" translatable="yes">Browse</property>
+        <property name="receives-default">1</property>
         <layout>
           <property name="column">2</property>
           <property name="row">1</property>
@@ -582,7 +584,7 @@
     </child>
     <child>
       <object class="GtkLabel" id="label40">
-        <property name="label" translatable="1">Update SF Database</property>
+        <property name="label" translatable="yes">Update SF Database</property>
         <layout>
           <property name="column">0</property>
           <property name="row">2</property>
@@ -591,7 +593,7 @@
     </child>
     <child>
       <object class="GtkLabel" id="label54">
-        <property name="label" translatable="1">(lasts more than 1 min)</property>
+        <property name="label" translatable="yes">(lasts more than 1 min)</property>
         <layout>
           <property name="column">1</property>
           <property name="row">2</property>
@@ -600,9 +602,9 @@
     </child>
     <child>
       <object class="GtkButton" id="btnUpdateSFDatabase">
-        <property name="label" translatable="1">Update</property>
         <property name="focusable">1</property>
-        <property name="receives_default">1</property>
+        <property name="label" translatable="yes">Update</property>
+        <property name="receives-default">1</property>
         <layout>
           <property name="column">2</property>
           <property name="row">2</property>
@@ -611,59 +613,49 @@
     </child>
     <child>
       <object class="GtkCheckButton" id="cbMDFStoreFreqData">
-        <property name="label" translatable="1">Export MDF in Frequency Space</property>
         <property name="focusable">1</property>
+        <property name="label" translatable="yes">Export MDF in Frequency Space</property>
         <layout>
           <property name="column">0</property>
-          <property name="row">3</property>
           <property name="column-span">2</property>
+          <property name="row">3</property>
         </layout>
       </object>
     </child>
-    <child>
-      <placeholder/>
-    </child>
   </object>
-  <object class="GtkImage" id="imCalib">
-  </object>
-  <object class="GtkImage" id="imData">
-  </object>
-  <object class="GtkImage" id="imProtocol">
-  </object>
-  <object class="GtkImage" id="imScanner">
-  </object>
+  <object class="GtkImage" id="imCalib"/>
+  <object class="GtkImage" id="imData"/>
+  <object class="GtkImage" id="imProtocol"/>
+  <object class="GtkImage" id="imScanner"/>
   <object class="GtkWindow" id="mainWindow">
-    <property name="default_width">1024</property>
-    <property name="default_height">768</property>
-    <property name="icon_name">MPILab</property>
     <property name="child">
       <object class="GtkPaned">
+        <property name="focusable">1</property>
+        <property name="margin-bottom">2</property>
+        <property name="margin-end">3</property>
+        <property name="margin-start">3</property>
+        <property name="margin-top">3</property>
+        <property name="position">300</property>
+        <property name="position-set">1</property>
+        <property name="resize-start-child">0</property>
         <property name="shrink-end-child">0</property>
         <property name="shrink-start-child">0</property>
-        <property name="resize-start-child">0</property>
-        <property name="focusable">1</property>
-        <property name="margin-start">3</property>
-        <property name="margin-end">3</property>
-        <property name="margin_top">3</property>
-        <property name="margin_bottom">2</property>
-        <property name="position">301</property>
-        <property name="position_set">1</property>
         <child>
           <object class="GtkBox" id="box2">
             <property name="orientation">vertical</property>
             <property name="spacing">2</property>
             <child>
               <object class="GtkNotebook" id="nbData">
-                <property name="vexpand">1</property>
                 <property name="focusable">1</property>
-                <property name="show_tabs">0</property>
+                <property name="show-tabs">0</property>
+                <property name="vexpand">1</property>
                 <child>
                   <object class="GtkNotebookPage">
                     <property name="child">
                       <object class="GtkPaned">
-                        <property name="resize-start-child">0</property>
                         <property name="focusable">1</property>
                         <property name="orientation">vertical</property>
+                        <property name="resize-start-child">0</property>
                         <child>
                           <object class="GtkBox">
                             <property name="orientation">vertical</property>
@@ -672,27 +664,26 @@
                                 <property name="spacing">2</property>
                                 <child>
                                   <object class="GtkSearchEntry" id="entSearchStudies">
-                                    <property name="hexpand">1</property>
                                     <property name="focusable">1</property>
-                                    <property name="width_chars">0</property>
+                                    <property name="hexpand">1</property>
+                                    <property name="width-chars">0</property>
                                   </object>
                                 </child>
                                 <child>
                                   <object class="GtkBox">
-                                    <property name="css-classes">toolbar</property>
-                                    <property name="can_focus">0</property>
+                                    <property name="can-focus">0</property>
                                     <child>
                                       <object class="GtkButton" id="tbAddStudy">
-                                        <property name="can_focus">0</property>
-                                        <property name="label" translatable="1">__glade_unnamed_10</property>
-                                        <property name="use_underline">1</property>
+                                        <property name="can-focus">0</property>
+                                        <property name="icon-name">list-add</property>
+                                        <property name="use-underline">1</property>
                                       </object>
                                     </child>
                                     <child>
                                       <object class="GtkButton" id="tbRemoveStudy">
-                                        <property name="can_focus">0</property>
-                                        <property name="label" translatable="1">__glade_unnamed_10</property>
-                                        <property name="use_underline">1</property>
+                                        <property name="can-focus">0</property>
+                                        <property name="icon-name">edit-delete</property>
+                                        <property name="use-underline">1</property>
                                       </object>
                                     </child>
                                   </object>
@@ -701,13 +692,10 @@
                             </child>
                             <child>
                               <object class="GtkScrolledWindow" id="swStudy">
-                                <property name="vexpand">1</property>
-                                <property name="width_request">278</property>
-                                <property name="height_request">150</property>
                                 <property name="focusable">1</property>
-                                <child>
-                                  <placeholder/>
-                                </child>
+                                <property name="height-request">150</property>
+                                <property name="vexpand">1</property>
+                                <property name="width-request">278</property>
                               </object>
                             </child>
                           </object>
@@ -719,9 +707,9 @@
                               <object class="GtkNotebookPage">
                                 <property name="child">
                                   <object class="GtkPaned">
-                                    <property name="resize-start-child">0</property>
                                     <property name="focusable">1</property>
                                     <property name="orientation">vertical</property>
+                                    <property name="resize-start-child">0</property>
                                     <child>
                                       <object class="GtkBox">
                                         <property name="orientation">vertical</property>
@@ -729,54 +717,59 @@
                                           <object class="GtkBox" id="box4">
                                             <child>
                                               <object class="GtkBox" id="toolbar1">
+                                                <property name="can-focus">0</property>
                                                 <property name="hexpand">1</property>
-                                                <property name="css-classes">toolbar</property>
-                                                <property name="can_focus">0</property>
                                                 <child>
                                                   <object class="GtkButton" id="tbRemoveExp">
-                                                    <property name="can_focus">0</property>
-                                                    <property name="tooltip_text" translatable="1">Remove Dataset</property>
-                                                    <property name="label" translatable="1">toolbutton</property>
-                                                    <property name="use_underline">1</property>
+                                                    <property name="can-focus">0</property>
+                                                    <property name="icon-name">edit-delete</property>
+                                                    <property name="label" translatable="yes">toolbutton</property>
+                                                    <property name="tooltip-text" translatable="yes">Remove Dataset</property>
+                                                    <property name="use-underline">1</property>
                                                   </object>
                                                 </child>
                                                 <child>
                                                   <object class="GtkButton" id="tbRawData">
-                                                    <property name="can_focus">0</property>
-                                                    <property name="tooltip_text" translatable="1">Show Raw Data</property>
-                                                    <property name="label" translatable="1">Raw Data</property>
-                                                    <property name="use_underline">1</property>
+                                                    <property name="can-focus">0</property>
+                                                    <property name="icon-name">media-playback-start</property>
+                                                    <property name="label" translatable="yes">Raw Data</property>
+                                                    <property name="tooltip-text" translatable="yes">Show Raw Data</property>
+                                                    <property name="use-underline">1</property>
                                                   </object>
                                                 </child>
                                                 <child>
                                                   <object class="GtkButton" id="tbReco">
-                                                    <property name="can_focus">0</property>
-                                                    <property name="tooltip_text" translatable="1">Reconstruct Data</property>
-                                                    <property name="label" translatable="1">Reconstruction</property>
-                                                    <property name="use_underline">1</property>
+                                                    <property name="can-focus">0</property>
+                                                    <property name="icon-name">emblem-default</property>
+                                                    <property name="label" translatable="yes">Reconstruction</property>
+                                                    <property name="tooltip-text" translatable="yes">Reconstruct Data</property>
+                                                    <property name="use-underline">1</property>
                                                   </object>
                                                 </child>
                                                 <child>
                                                   <object class="GtkButton" id="tbExportToMDF">
-                                                    <property name="can_focus">0</property>
-                                                    <property name="tooltip_text" translatable="1">Export to MDF</property>
-                                                    <property name="label" translatable="1">Export To MDF</property>
-                                                    <property name="use_underline">1</property>
+                                                    <property name="can-focus">0</property>
+                                                    <property name="icon-name">system-log-out</property>
+                                                    <property name="label" translatable="yes">Export To MDF</property>
+                                                    <property name="tooltip-text" translatable="yes">Export to MDF</property>
+                                                    <property name="use-underline">1</property>
                                                   </object>
                                                 </child>
                                                 <child>
                                                   <object class="GtkButton" id="tbOpenExperimentFolder">
-                                                    <property name="can_focus">0</property>
-                                                    <property name="label" translatable="1">Open Experiment Folder</property>
-                                                    <property name="use_underline">1</property>
+                                                    <property name="can-focus">0</property>
+                                                    <property name="icon-name">folder</property>
+                                                    <property name="label" translatable="yes">Open Experiment Folder</property>
+                                                    <property name="use-underline">1</property>
                                                   </object>
                                                 </child>
                                                 <child>
                                                   <object class="GtkButton" id="tbSpectrogramViewer">
-                                                    <property name="can_focus">0</property>
-                                                    <property name="tooltip_text" translatable="1">Spectrogram Viewer</property>
-                                                    <property name="label" translatable="1">Spectrogram Viewer</property>
-                                                    <property name="use_underline">1</property>
+                                                    <property name="can-focus">0</property>
+                                                    <property name="icon-name">dialog-warning</property>
+                                                    <property name="label" translatable="yes">Spectrogram Viewer</property>
+                                                    <property name="tooltip-text" translatable="yes">Spectrogram Viewer</property>
+                                                    <property name="use-underline">1</property>
                                                   </object>
                                                 </child>
                                               </object>
@@ -785,21 +778,18 @@
                                         </child>
                                         <child>
                                           <object class="GtkScrolledWindow" id="swExp">
-                                            <property name="vexpand">1</property>
-                                            <property name="height_request">120</property>
                                             <property name="focusable">1</property>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
+                                            <property name="height-request">120</property>
+                                            <property name="vexpand">1</property>
                                           </object>
                                         </child>
                                       </object>
                                     </child>
                                     <child>
                                       <object class="GtkPaned" id="panedReco">
-                                        <property name="resize-start-child">0</property>
                                         <property name="focusable">1</property>
                                         <property name="orientation">vertical</property>
+                                        <property name="resize-start-child">0</property>
                                         <child>
                                           <object class="GtkBox">
                                             <property name="orientation">vertical</property>
@@ -807,47 +797,50 @@
                                               <object class="GtkBox" id="box7">
                                                 <child>
                                                   <object class="GtkLabel" id="label3">
-                                                    <property name="halign">center</property>
-                                                    <property name="label" translatable="1">Reconstructions</property>
-                                                    <property name="justify">center</property>
                                                     <property name="ellipsize">middle</property>
+                                                    <property name="halign">center</property>
+                                                    <property name="justify">center</property>
+                                                    <property name="label" translatable="yes">Reconstructions</property>
                                                   </object>
                                                 </child>
                                                 <child>
                                                   <object class="GtkBox" id="toolbar2">
-                                                    <property name="css-classes">toolbar</property>
-                                                    <property name="can_focus">0</property>
+                                                    <property name="can-focus">0</property>
                                                     <property name="hexpand">1</property>
                                                     <child>
                                                       <object class="GtkButton" id="tbRemoveReco">
-                                                        <property name="can_focus">0</property>
-                                                        <property name="tooltip_text" translatable="1">Remove Reconstructed Data</property>
-                                                        <property name="label" translatable="1">Remove</property>
-                                                        <property name="use_underline">1</property>
+                                                        <property name="can-focus">0</property>
+                                                        <property name="icon-name">edit-delete</property>
+                                                        <property name="label" translatable="yes">Remove</property>
+                                                        <property name="tooltip-text" translatable="yes">Remove Reconstructed Data</property>
+                                                        <property name="use-underline">1</property>
                                                       </object>
                                                     </child>
                                                     <child>
                                                       <object class="GtkButton" id="tbOpenFusion">
-                                                        <property name="can_focus">0</property>
-                                                        <property name="tooltip_text" translatable="1">Fuse Data</property>
-                                                        <property name="label" translatable="1">Fuse Data</property>
-                                                        <property name="use_underline">1</property>
+                                                        <property name="can-focus">0</property>
+                                                        <property name="icon-name">weather-showers</property>
+                                                        <property name="label" translatable="yes">Fuse Data</property>
+                                                        <property name="tooltip-text" translatable="yes">Fuse Data</property>
+                                                        <property name="use-underline">1</property>
                                                       </object>
                                                     </child>
                                                     <child>
                                                       <object class="GtkButton" id="tbRedoReco">
-                                                        <property name="can_focus">0</property>
-                                                        <property name="tooltip_text" translatable="1">Redo Reconstruction</property>
-                                                        <property name="label" translatable="1">Redo Reco</property>
-                                                        <property name="use_underline">1</property>
+                                                        <property name="can-focus">0</property>
+                                                        <property name="icon-name">edit-redo</property>
+                                                        <property name="label" translatable="yes">Redo Reco</property>
+                                                        <property name="tooltip-text" translatable="yes">Redo Reconstruction</property>
+                                                        <property name="use-underline">1</property>
                                                       </object>
                                                     </child>
                                                     <child>
                                                       <object class="GtkButton" id="tbExportRecoData">
-                                                        <property name="can_focus">0</property>
-                                                        <property name="tooltip_text" translatable="1">Export Reco Data (i.e. to Nifti)</property>
-                                                        <property name="label" translatable="1">Export</property>
-                                                        <property name="use_underline">1</property>
+                                                        <property name="can-focus">0</property>
+                                                        <property name="icon-name">system-log-out</property>
+                                                        <property name="label" translatable="yes">Export</property>
+                                                        <property name="tooltip-text" translatable="yes">Export Reco Data (i.e. to Nifti)</property>
+                                                        <property name="use-underline">1</property>
                                                       </object>
                                                     </child>
                                                   </object>
@@ -856,12 +849,9 @@
                                             </child>
                                             <child>
                                               <object class="GtkScrolledWindow" id="swReco">
-                                                <property name="vexpand">1</property>
-                                                <property name="height_request">80</property>
                                                 <property name="focusable">1</property>
-                                                <child>
-                                                  <placeholder/>
-                                                </child>
+                                                <property name="height-request">80</property>
+                                                <property name="vexpand">1</property>
                                               </object>
                                             </child>
                                           </object>
@@ -873,19 +863,19 @@
                                               <object class="GtkBox" id="box10">
                                                 <child>
                                                   <object class="GtkLabel" id="label39">
-                                                    <property name="label" translatable="1">Visualizations</property>
+                                                    <property name="label" translatable="yes">Visualizations</property>
                                                   </object>
                                                 </child>
                                                 <child>
                                                   <object class="GtkBox" id="toolbar4">
-                                                    <property name="css-classes">toolbar</property>
-                                                    <property name="can_focus">0</property>
+                                                    <property name="can-focus">0</property>
                                                     <child>
                                                       <object class="GtkButton" id="tbRemoveVisu">
-                                                        <property name="can_focus">0</property>
-                                                        <property name="tooltip_text" translatable="1">Remove Visualization</property>
-                                                        <property name="label" translatable="1">Remove</property>
-                                                        <property name="use_underline">1</property>
+                                                        <property name="can-focus">0</property>
+                                                        <property name="icon-name">edit-delete</property>
+                                                        <property name="label" translatable="yes">Remove</property>
+                                                        <property name="tooltip-text" translatable="yes">Remove Visualization</property>
+                                                        <property name="use-underline">1</property>
                                                       </object>
                                                     </child>
                                                   </object>
@@ -894,11 +884,8 @@
                                             </child>
                                             <child>
                                               <object class="GtkScrolledWindow" id="swVisu">
-                                                <property name="vexpand">1</property>
                                                 <property name="focusable">1</property>
-                                                <child>
-                                                  <placeholder/>
-                                                </child>
+                                                <property name="vexpand">1</property>
                                               </object>
                                             </child>
                                           </object>
@@ -909,14 +896,13 @@
                                 </property>
                                 <property name="tab">
                                   <object class="GtkLabel">
-                                    <property name="label" translatable="1">Experiments</property>
+                                    <property name="label" translatable="yes">Experiments</property>
                                   </object>
                                 </property>
                               </object>
                             </child>
                             <child>
                               <object class="GtkNotebookPage">
-                                <property name="position">1</property>
                                 <property name="child">
                                   <object class="GtkBox">
                                     <property name="orientation">vertical</property>
@@ -924,13 +910,12 @@
                                       <object class="GtkBox" id="box9">
                                         <child>
                                           <object class="GtkBox" id="toolbar3">
-                                            <property name="css-classes">toolbar</property>
-                                            <property name="can_focus">0</property>
+                                            <property name="can-focus">0</property>
                                             <child>
                                               <object class="GtkButton" id="tbAddAnatomicalData">
-                                                <property name="can_focus">0</property>
-                                                <property name="label" translatable="1">Add</property>
-                                                <property name="use_underline">1</property>
+                                                <property name="can-focus">0</property>
+                                                <property name="label" translatable="yes">Add</property>
+                                                <property name="use-underline">1</property>
                                               </object>
                                             </child>
                                           </object>
@@ -939,18 +924,16 @@
                                     </child>
                                     <child>
                                       <object class="GtkScrolledWindow" id="swAnatomData">
-                                        <property name="vexpand">1</property>
                                         <property name="focusable">1</property>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
+                                        <property name="vexpand">1</property>
                                       </object>
                                     </child>
                                   </object>
                                 </property>
+                                <property name="position">1</property>
                                 <property name="tab">
                                   <object class="GtkLabel">
-                                    <property name="label" translatable="1">Anatomical Data</property>
+                                    <property name="label" translatable="yes">Anatomical Data</property>
                                   </object>
                                 </property>
                               </object>
@@ -961,43 +944,37 @@
                     </property>
                     <property name="tab">
                       <object class="GtkLabel">
-                        <property name="label" translatable="1">Studies</property>
+                        <property name="label" translatable="yes">Studies</property>
                       </object>
                     </property>
                   </object>
                 </child>
                 <child>
                   <object class="GtkNotebookPage">
-                    <property name="position">1</property>
                     <property name="child">
                       <object class="GtkBox" id="boxSF">
                         <property name="orientation">vertical</property>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </object>
                     </property>
+                    <property name="position">1</property>
                     <property name="tab">
                       <object class="GtkLabel">
-                        <property name="label" translatable="1">System Functions</property>
+                        <property name="label" translatable="yes">System Functions</property>
                       </object>
                     </property>
                   </object>
                 </child>
                 <child>
                   <object class="GtkNotebookPage">
-                    <property name="position">2</property>
                     <property name="child">
                       <object class="GtkBox" id="boxScanner">
                         <property name="orientation">vertical</property>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </object>
                     </property>
+                    <property name="position">2</property>
                     <property name="tab">
                       <object class="GtkLabel">
-                        <property name="label" translatable="1">Scanner Settings</property>
+                        <property name="label" translatable="yes">Scanner Settings</property>
                       </object>
                     </property>
                   </object>
@@ -1008,142 +985,115 @@
         </child>
         <child>
           <object class="GtkPaned" id="paneMain">
-            <property name="shrink-start-child">0</property>
             <property name="focusable">1</property>
             <property name="orientation">vertical</property>
             <property name="position">300</property>
-            <property name="wide_handle">1</property>
+            <property name="shrink-start-child">0</property>
+            <property name="wide-handle">1</property>
             <child>
               <object class="GtkNotebook" id="nbView">
                 <property name="focusable">1</property>
-                <property name="show_tabs">0</property>
+                <property name="show-tabs">0</property>
                 <child>
                   <object class="GtkNotebookPage">
                     <property name="child">
                       <object class="GtkBox" id="boxRawViewer">
                         <property name="orientation">vertical</property>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </object>
                     </property>
                     <property name="tab">
                       <object class="GtkLabel" id="gridRawData">
-                        <property name="label" translatable="1">Raw Data</property>
+                        <property name="label" translatable="yes">Raw Data</property>
                       </object>
                     </property>
                   </object>
                 </child>
                 <child>
                   <object class="GtkNotebookPage">
-                    <property name="position">1</property>
                     <property name="child">
                       <object class="GtkBox" id="boxImageTab">
                         <property name="orientation">vertical</property>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </object>
                     </property>
+                    <property name="position">1</property>
                     <property name="tab">
                       <object class="GtkLabel">
-                        <property name="label" translatable="1">Image Data</property>
+                        <property name="label" translatable="yes">Image Data</property>
                       </object>
                     </property>
                   </object>
                 </child>
                 <child>
                   <object class="GtkNotebookPage">
-                    <property name="position">2</property>
                     <property name="child">
                       <object class="GtkBox" id="boxRecoTab">
                         <property name="orientation">vertical</property>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </object>
                     </property>
+                    <property name="position">2</property>
                     <property name="tab">
                       <object class="GtkLabel">
-                        <property name="label" translatable="1">Reconstruction</property>
+                        <property name="label" translatable="yes">Reconstruction</property>
                       </object>
                     </property>
                   </object>
                 </child>
                 <child>
                   <object class="GtkNotebookPage">
-                    <property name="position">3</property>
                     <property name="child">
                       <object class="GtkBox" id="boxSFTab">
                         <property name="hexpand">1</property>
-                        <property name="vexpand">1</property>
                         <property name="orientation">vertical</property>
-                        <child>
-                          <placeholder/>
-                        </child>
+                        <property name="vexpand">1</property>
                       </object>
                     </property>
+                    <property name="position">3</property>
                     <property name="tab">
                       <object class="GtkLabel">
-                        <property name="label" translatable="1">System Matrix</property>
+                        <property name="label" translatable="yes">System Matrix</property>
                       </object>
                     </property>
                   </object>
                 </child>
                 <child>
                   <object class="GtkNotebookPage">
-                    <property name="position">4</property>
                     <property name="child">
                       <object class="GtkBox" id="boxScannerTab">
                         <property name="orientation">vertical</property>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </object>
                     </property>
+                    <property name="position">4</property>
                     <property name="tab">
                       <object class="GtkLabel">
-                        <property name="label" translatable="1">Scanner</property>
+                        <property name="label" translatable="yes">Scanner</property>
                       </object>
                     </property>
                   </object>
                 </child>
                 <child>
                   <object class="GtkNotebookPage">
-                    <property name="position">5</property>
                     <property name="child">
                       <object class="GtkBox" id="boxProtocolTab">
                         <property name="orientation">vertical</property>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </object>
                     </property>
+                    <property name="position">5</property>
                     <property name="tab">
                       <object class="GtkLabel">
-                        <property name="label" translatable="1">Protocol</property>
+                        <property name="label" translatable="yes">Protocol</property>
                       </object>
                     </property>
                   </object>
                 </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
               </object>
-            </child>
-            <child>
-              <placeholder/>
             </child>
           </object>
         </child>
       </object>
     </property>
+    <property name="default-height">900</property>
+    <property name="default-width">1200</property>
+    <property name="icon-name">MPILab</property>
     <child type="titlebar">
       <object class="GtkHeaderBar">
         <child>
@@ -1152,25 +1102,29 @@
         <child>
           <object class="GtkToggleButton" id="tbDataTab">
             <property name="focusable">1</property>
-            <property name="receives_default">1</property>
+            <property name="icon-name">go-home</property>
+            <property name="receives-default">1</property>
           </object>
         </child>
         <child>
           <object class="GtkToggleButton" id="tbCalibrationTab">
             <property name="focusable">1</property>
-            <property name="receives_default">1</property>
+            <property name="icon-name">format-justify-fill</property>
+            <property name="receives-default">1</property>
           </object>
         </child>
         <child>
           <object class="GtkToggleButton" id="tbProtocolTab">
             <property name="focusable">1</property>
-            <property name="receives_default">1</property>
+            <property name="icon-name">face-devilish</property>
+            <property name="receives-default">1</property>
           </object>
         </child>
         <child>
           <object class="GtkToggleButton" id="tbScannerTab">
             <property name="focusable">1</property>
-            <property name="receives_default">1</property>
+            <property name="icon-name">preferences-desktop</property>
+            <property name="receives-default">1</property>
           </object>
         </child>
         <child>
@@ -1183,31 +1137,17 @@
     </child>
   </object>
   <object class="GtkWindow" id="recoWindow">
-    <property name="title" translatable="1">Reconstruction</property>
-    <property name="default_width">1280</property>
-    <property name="default_height">1024</property>
-    <child>
-      <placeholder/>
-    </child>
-    <child type="titlebar">
-      <placeholder/>
-    </child>
+    <property name="default-height">1024</property>
+    <property name="default-width">1280</property>
+    <property name="title" translatable="yes">Reconstruction</property>
   </object>
   <object class="GtkDialog" id="sfSelectorDialog">
     <child internal-child="content_area">
       <object class="GtkBox" id="dialog-vbox1">
-        <property name="visible">0</property>
         <property name="orientation">vertical</property>
         <property name="spacing">2</property>
-        <child>
-          <placeholder/>
-        </child>
+        <property name="visible">0</property>
       </object>
-    </child>
-    <child type="titlebar">
-      <placeholder/>
-    </child>
-    <child internal-child="action_area">
     </child>
   </object>
 </interface>
