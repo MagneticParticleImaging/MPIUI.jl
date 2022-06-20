@@ -139,12 +139,11 @@ function MPILab(offlineMode=false)::MPILab
 ###    return true
 ###  end
 
-  signal_connect(w, "key-press-event") do widget, event
+ #= signal_connect(w, "key-press-event") do widget, event
     if event.keyval ==  Gtk4.GConstants.GDK_KEY_c
       if event.state & 0x04 != 0x00 # Control key is pressed
         @debug "copy visu params to clipboard..."
         str = string( getParams(m.dataViewerWidget) )
-        # str_ = replace(str,",Pair",",\n  Pair")
         clipboard( str )
       end
     elseif event.keyval == Gtk4.GConstants.GDK_KEY_v
@@ -158,22 +157,23 @@ function MPILab(offlineMode=false)::MPILab
           @warn "not the right format for SetParams in clipboard..."
         end
         end
-    end
-  end
+    end 
+  end =#
 
 
   
-  signal_connect(w, "delete-event") do widget, event
+  signal_connect(w, "close-request") do widget #, event
     if m.protocolWidget != nothing && m.scanner != nothing
       close(m.scanner)
       #stopSurveillance(m.measurementWidget) # TODO I think this is now in the scanner browser
     end
-    return false
+    return #false
   end
 
   @info "Finished starting MPILab"
 
   set_gtk_property!(w, :sensitive, true)
+  w.sensitive = true
 
   end
 

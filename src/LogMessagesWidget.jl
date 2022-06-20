@@ -54,10 +54,10 @@ mutable struct LogMessageListWidget <: LogMessageWidget
 end
 
 const LOG_LEVEL_TO_PIX = Dict(
-  -1000 => "gtk-execute",
-  0 => "gtk-info",
-  1000 => "gtk-dialog-warning",
-  2000 => "gtk-dialog-error"
+  -1000 => "applications-system",
+  0 => "dialog-information",
+  1000 => "dialog-warning",
+  2000 => "dialog-error"
 )
 
 getindex(m::LogMessageListWidget, w::AbstractString) = G_.get_object(m.builder, w)
@@ -76,7 +76,7 @@ function LogMessageListWidget()
   r0 = GtkCellRendererPixbuf()
   r1 = GtkCellRendererText()
 
-  c0 = GtkTreeViewColumn("Level", r0, Dict("text" => 0))  #Dict("stock-id" => 0))
+  c0 = GtkTreeViewColumn("Level", r0, Dict("icon-name" => 0))  #Dict("stock-id" => 0))
   c1 = GtkTreeViewColumn("Time", r1, Dict("text" => 1))
   c2 = GtkTreeViewColumn("Group", r1, Dict("text" => 2))
   c3 = GtkTreeViewColumn("Message", r1, Dict("text" => 3))
@@ -173,7 +173,7 @@ function initCallbacks(m::LogMessageListWidget)
 
   signal_connect(m["cbLogLevel"], :changed) do w
     @idle_add_guarded begin
-      str = Gtk4.bytestring(GAccessor.active_text(m["cbLogLevel"]))
+      str = Gtk4.bytestring(Gtk4.G_.get_active_text(m["cbLogLevel"]))
       level = 0
       if str == "Debug"
         level = -1000
@@ -231,7 +231,7 @@ function initCallbacks(m::LogMessageListWidget)
     end
   end
 
-  signal_connect(m.tv, :size_allocate) do w, a
+  #= signal_connect(m.tv, :size_allocate) do w, a TODO
     @idle_add_guarded begin
       m.updating = true
       if m.scrollState == ATTACHED_BOTTOM
@@ -241,7 +241,7 @@ function initCallbacks(m::LogMessageListWidget)
       end
       m.updating = false
     end
-  end
+  end=#
 end
 
 function getToDateTime(widget::LogMessageListWidget)
@@ -323,7 +323,7 @@ function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, date
     tooltip = tooltip[1:min(end, 1024)]
 
     @idle_add_guarded begin
-      push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "gtk-missing-image"), dateTimeString, groupString, messageString, visible, tooltip, level.level))
+      push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "missing-image"), dateTimeString, groupString, messageString, visible, tooltip, level.level))
     end
   catch ex
     # Avoid endless loop

@@ -274,7 +274,7 @@ function initCallbacks(m_::RawDataWidget)
     end
   end
   
-  signal_connect(m.winHarmView, "delete-event") do widget, event
+  signal_connect(m.winHarmView, "close-request") do widget, event
     #typeof(event)
     #@show event
     @idle_add_guarded set_gtk_property!(m["cbHarmonicViewer"], :active, false)

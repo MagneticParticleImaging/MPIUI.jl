@@ -277,18 +277,12 @@
         <child>
           <object class="GtkComboBoxText" id="cbLogLevel">
             <property name="active">1</property>
-            <property name="has_entry">1</property>
             <items>
               <item translatable="yes">Debug</item>
               <item translatable="yes">Info</item>
               <item translatable="yes">Warning</item>
               <item translatable="yes">Error</item>
             </items>
-            <property name="child">
-              <object class="GtkEntry">
-                <property name="visible">0</property>
-              </object>
-            </property>
             <layout>
               <property name="column">4</property>
               <property name="row">1</property>
