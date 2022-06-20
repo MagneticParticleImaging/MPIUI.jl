@@ -246,11 +246,7 @@
             <property name="focusable">1</property>
             <property name="receives_default">1</property>
             <property name="popover">popOptions</property>
-            <child>
-              <object class="GtkImage">
-                <property name="stock">gtk-properties</property>
-              </object>
-            </child>
+            <property name="icon-name">list-add</property>
             <layout>
               <property name="column">4</property>
               <property name="row">1</property>
@@ -345,22 +341,14 @@
                       <object class="GtkButton" id="btnTDApply">
                         <property name="focusable">1</property>
                         <property name="receives_default">1</property>
-                        <child>
-                          <object class="GtkImage" id="btnApply">
-                            <property name="stock">gtk-apply</property>
-                          </object>
-                        </child>
+                        <property name="icon-name">list-add</property>
                       </object>
                     </child>
                     <child>
                       <object class="GtkButton" id="btnTDClear">
                         <property name="focusable">1</property>
                         <property name="receives_default">1</property>
-                        <child>
-                          <object class="GtkImage">
-                            <property name="stock">gtk-delete</property>
-                          </object>
-                        </child>
+                        <property name="icon-name">list-add</property>
                       </object>
                     </child>
                   </object>
@@ -410,22 +398,14 @@
                       <object class="GtkButton" id="btnFDApply">
                         <property name="focusable">1</property>
                         <property name="receives_default">1</property>
-                        <child>
-                          <object class="GtkImage">
-                            <property name="stock">gtk-apply</property>
-                          </object>
-                        </child>
+                        <property name="icon-name">list-add</property>
                       </object>
                     </child>
                     <child>
                       <object class="GtkButton" id="btnFDClear">
                         <property name="focusable">1</property>
                         <property name="receives_default">1</property>
-                        <child>
-                          <object class="GtkImage">
-                            <property name="stock">gtk-delete</property>
-                          </object>
-                        </child>
+                        <property name="icon-name">list-add</property>
                       </object>
                     </child>
                   </object>

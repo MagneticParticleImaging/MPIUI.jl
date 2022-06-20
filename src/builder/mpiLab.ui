@@ -671,6 +671,9 @@
                                 </child>
                                 <child>
                                   <object class="GtkBox">
+                                     <style>
+                                     <class name="toolbar"/>
+                                     </style>
                                     <property name="can-focus">0</property>
                                     <child>
                                       <object class="GtkButton" id="tbAddStudy">
@@ -719,11 +722,13 @@
                                               <object class="GtkBox" id="toolbar1">
                                                 <property name="can-focus">0</property>
                                                 <property name="hexpand">1</property>
+                                                <style>
+                                                  <class name="toolbar"/>
+                                                </style>
                                                 <child>
                                                   <object class="GtkButton" id="tbRemoveExp">
                                                     <property name="can-focus">0</property>
                                                     <property name="icon-name">edit-delete</property>
-                                                    <property name="label" translatable="yes">toolbutton</property>
                                                     <property name="tooltip-text" translatable="yes">Remove Dataset</property>
                                                     <property name="use-underline">1</property>
                                                   </object>
@@ -732,7 +737,6 @@
                                                   <object class="GtkButton" id="tbRawData">
                                                     <property name="can-focus">0</property>
                                                     <property name="icon-name">media-playback-start</property>
-                                                    <property name="label" translatable="yes">Raw Data</property>
                                                     <property name="tooltip-text" translatable="yes">Show Raw Data</property>
                                                     <property name="use-underline">1</property>
                                                   </object>
@@ -741,7 +745,6 @@
                                                   <object class="GtkButton" id="tbReco">
                                                     <property name="can-focus">0</property>
                                                     <property name="icon-name">emblem-default</property>
-                                                    <property name="label" translatable="yes">Reconstruction</property>
                                                     <property name="tooltip-text" translatable="yes">Reconstruct Data</property>
                                                     <property name="use-underline">1</property>
                                                   </object>
@@ -750,7 +753,6 @@
                                                   <object class="GtkButton" id="tbExportToMDF">
                                                     <property name="can-focus">0</property>
                                                     <property name="icon-name">system-log-out</property>
-                                                    <property name="label" translatable="yes">Export To MDF</property>
                                                     <property name="tooltip-text" translatable="yes">Export to MDF</property>
                                                     <property name="use-underline">1</property>
                                                   </object>
@@ -759,7 +761,7 @@
                                                   <object class="GtkButton" id="tbOpenExperimentFolder">
                                                     <property name="can-focus">0</property>
                                                     <property name="icon-name">folder</property>
-                                                    <property name="label" translatable="yes">Open Experiment Folder</property>
+                                                    <property name="tooltip-text" translatable="yes">Open Experiment Folder</property>
                                                     <property name="use-underline">1</property>
                                                   </object>
                                                 </child>
@@ -767,7 +769,6 @@
                                                   <object class="GtkButton" id="tbSpectrogramViewer">
                                                     <property name="can-focus">0</property>
                                                     <property name="icon-name">dialog-warning</property>
-                                                    <property name="label" translatable="yes">Spectrogram Viewer</property>
                                                     <property name="tooltip-text" translatable="yes">Spectrogram Viewer</property>
                                                     <property name="use-underline">1</property>
                                                   </object>
@@ -795,6 +796,9 @@
                                             <property name="orientation">vertical</property>
                                             <child>
                                               <object class="GtkBox" id="box7">
+                                                <style>
+                                                  <class name="toolbar"/>
+                                                </style>
                                                 <child>
                                                   <object class="GtkLabel" id="label3">
                                                     <property name="ellipsize">middle</property>
@@ -811,7 +815,6 @@
                                                       <object class="GtkButton" id="tbRemoveReco">
                                                         <property name="can-focus">0</property>
                                                         <property name="icon-name">edit-delete</property>
-                                                        <property name="label" translatable="yes">Remove</property>
                                                         <property name="tooltip-text" translatable="yes">Remove Reconstructed Data</property>
                                                         <property name="use-underline">1</property>
                                                       </object>
@@ -820,7 +823,6 @@
                                                       <object class="GtkButton" id="tbOpenFusion">
                                                         <property name="can-focus">0</property>
                                                         <property name="icon-name">weather-showers</property>
-                                                        <property name="label" translatable="yes">Fuse Data</property>
                                                         <property name="tooltip-text" translatable="yes">Fuse Data</property>
                                                         <property name="use-underline">1</property>
                                                       </object>
@@ -829,7 +831,6 @@
                                                       <object class="GtkButton" id="tbRedoReco">
                                                         <property name="can-focus">0</property>
                                                         <property name="icon-name">edit-redo</property>
-                                                        <property name="label" translatable="yes">Redo Reco</property>
                                                         <property name="tooltip-text" translatable="yes">Redo Reconstruction</property>
                                                         <property name="use-underline">1</property>
                                                       </object>
@@ -838,7 +839,6 @@
                                                       <object class="GtkButton" id="tbExportRecoData">
                                                         <property name="can-focus">0</property>
                                                         <property name="icon-name">system-log-out</property>
-                                                        <property name="label" translatable="yes">Export</property>
                                                         <property name="tooltip-text" translatable="yes">Export Reco Data (i.e. to Nifti)</property>
                                                         <property name="use-underline">1</property>
                                                       </object>
@@ -861,6 +861,9 @@
                                             <property name="orientation">vertical</property>
                                             <child>
                                               <object class="GtkBox" id="box10">
+                                                <style>
+                                                  <class name="toolbar"/>
+                                                </style>
                                                 <child>
                                                   <object class="GtkLabel" id="label39">
                                                     <property name="label" translatable="yes">Visualizations</property>
@@ -873,7 +876,6 @@
                                                       <object class="GtkButton" id="tbRemoveVisu">
                                                         <property name="can-focus">0</property>
                                                         <property name="icon-name">edit-delete</property>
-                                                        <property name="label" translatable="yes">Remove</property>
                                                         <property name="tooltip-text" translatable="yes">Remove Visualization</property>
                                                         <property name="use-underline">1</property>
                                                       </object>
@@ -910,6 +912,9 @@
                                       <object class="GtkBox" id="box9">
                                         <child>
                                           <object class="GtkBox" id="toolbar3">
+                                            <style>
+                                               <class name="toolbar"/>
+                                            </style>
                                             <property name="can-focus">0</property>
                                             <child>
                                               <object class="GtkButton" id="tbAddAnatomicalData">

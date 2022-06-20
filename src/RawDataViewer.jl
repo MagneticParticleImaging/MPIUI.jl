@@ -17,8 +17,8 @@ mutable struct RawDataWidget <: Gtk4.GtkBox
   harmViewAdj::Vector{Gtk4.GtkAdjustmentLeaf}
   harmViewGtkCanvas::Vector{GtkCanvas}
   harmBuff::Vector{Vector{Float32}}
-  rangeTD::NTuple{2,Float64}
-  rangeFD::NTuple{2,Float64}
+  rangeTD::NTuple{2,Float32}
+  rangeFD::NTuple{2,Float32}
 end
 
 getindex(m::RawDataWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
@@ -42,9 +42,20 @@ function RawDataWidget(filenameConfig=nothing)
   @debug "Type constructed"
 
   push!(m["boxTD"],m.cTD)
+
+  show(m.cTD)
+  show(m["boxTD"])
+
+  draw(m.cTD)
+
+  m.cTD.hexpand = true
+  m.cTD.vexpand = true
 ###  set_gtk_property!(m["boxTD"],:expand,m.cTD,true)
 
   push!(m["boxFD"],m.cFD)
+
+  m.cFD.hexpand = true
+  m.cFD.vexpand = true
 ###  set_gtk_property!(m["boxFD"],:expand,m.cFD,true)
 
   @debug "InitCallbacks"

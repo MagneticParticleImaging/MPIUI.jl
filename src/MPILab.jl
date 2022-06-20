@@ -293,8 +293,8 @@ function initViewSwitch(m::MPILab)
     if !updatingTab
       @idle_add_guarded begin
           updatingTab = true
-          G_.current_page(m["nbView"], 0)
-          G_.current_page(m["nbData"], 0)
+          Gtk4.G_.set_current_page(m["nbView"], 0)
+          Gtk4.G_.set_current_page(m["nbData"], 0)
           set_gtk_property!(m["tbDataTab"], :active, true)
           set_gtk_property!(m["tbCalibrationTab"], :active, false)
           set_gtk_property!(m["tbScannerTab"], :active, false)
@@ -309,8 +309,8 @@ function initViewSwitch(m::MPILab)
     if !updatingTab
       @idle_add_guarded begin
           updatingTab = true
-          G_.current_page(m["nbView"], 3)
-          G_.current_page(m["nbData"], 1)
+          Gtk4.G_.set_current_page(m["nbView"], 3)
+          Gtk4.G_.set_current_page(m["nbData"], 1)
           set_gtk_property!(m["tbDataTab"], :active, false)
           set_gtk_property!(m["tbCalibrationTab"], :active, true)
           set_gtk_property!(m["tbScannerTab"], :active, false)
@@ -325,8 +325,8 @@ function initViewSwitch(m::MPILab)
     if !updatingTab
       @idle_add_guarded begin
           updatingTab = true
-          G_.current_page(m["nbView"], 4)
-          G_.current_page(m["nbData"], 2)
+          Gtk4.G_.set_current_page(m["nbView"], 4)
+          Gtk4.G_.set_current_page(m["nbData"], 2)
           set_gtk_property!(m["tbDataTab"], :active, false)
           set_gtk_property!(m["tbCalibrationTab"], :active, false)
           set_gtk_property!(m["tbScannerTab"], :active, true)
@@ -340,8 +340,8 @@ function initViewSwitch(m::MPILab)
     if !updatingTab
       @idle_add_guarded begin
           updatingTab = true
-          G_.current_page(m["nbView"], 5)
-          G_.current_page(m["nbData"], 0)
+          Gtk4.G_.set_current_page(m["nbView"], 5)
+          Gtk4.G_.set_current_page(m["nbData"], 0)
           set_gtk_property!(m["tbDataTab"], :active, false)
           set_gtk_property!(m["tbCalibrationTab"], :active, false)
           set_gtk_property!(m["tbScannerTab"], :active, false)
@@ -668,7 +668,7 @@ function initExperimentStore(m::MPILab)
       @idle_add_guarded begin
         if m.settings["enableRecoStore", true]
           updateData!(m.recoWidget, path(m.currentExperiment), m.currentStudy, m.currentExperiment )
-          G_.current_page(m["nbView"], 2)
+          Gtk4.G_.set_current_page(m["nbView"], 2)
         end
       end
     end
@@ -701,7 +701,7 @@ function initExperimentStore(m::MPILab)
         paths = path.(exps)
 
         updateData(m.rawDataWidget, paths)
-        G_.current_page(m["nbView"], 0)
+        Gtk4.G_.set_current_page(m["nbView"], 0)
       end
     end
   end
@@ -862,7 +862,7 @@ function initReconstructionStore(m::MPILab)
       #@idle_add_guarded DataViewer(im)
       @idle_add_guarded begin
          updateData!(m.dataViewerWidget, im)
-         G_.current_page(m["nbView"], 1)
+         Gtk4.G_.set_current_page(m["nbView"], 1)
       end
     end
     false
@@ -895,7 +895,7 @@ function initReconstructionStore(m::MPILab)
         #@idle_add_guarded DataViewer(im)
         #@idle_add_guarded begin
         #   updateData!(m.dataViewerWidget, im)
-        #   G_.current_page(m["nbView"], 1)
+        #   Gtk4.G_.set_current_page(m["nbView"], 1)
         #end
       end
     end
@@ -922,7 +922,7 @@ function initReconstructionStore(m::MPILab)
 
       @idle_add_guarded begin
         updateData!(m.recoWidget, path(m.currentExperiment), params, m.currentStudy, m.currentExperiment)
-        G_.current_page(m["nbView"], 2)
+        Gtk4.G_.set_current_page(m["nbView"], 2)
       end
     end
   end
@@ -964,7 +964,7 @@ function openFusion(m::MPILab)
 
         @idle_add_guarded begin
            updateData!(m.dataViewerWidget, imFG, imBG_)
-           G_.current_page(m["nbView"], 1)
+           Gtk4.G_.set_current_page(m["nbView"], 1)
         end
       catch ex
         @show  string("Something went wrong!\n", ex, "\n\n", stacktrace(bt))
@@ -1049,7 +1049,7 @@ function initVisuStore(m::MPILab)
 
         @idle_add_guarded begin
            updateData!(m.dataViewerWidget, im, imBG_, params=m.currentVisu.params)
-           G_.current_page(m["nbView"], 1)
+           Gtk4.G_.set_current_page(m["nbView"], 1)
         end
       end
     end

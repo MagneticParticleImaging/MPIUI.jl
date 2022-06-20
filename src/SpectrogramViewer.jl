@@ -15,8 +15,8 @@ mutable struct SpectrogramWidget <: Gtk4.GtkBox
   filenamesData::Vector{String}
   updatingData::Bool
   fileModus::Bool
-  rangeTD::NTuple{2,Float64}
-  rangeFD::NTuple{2,Float64}
+  rangeTD::NTuple{2,Float32}
+  rangeFD::NTuple{2,Float32}
 end
 
 getindex(m::SpectrogramWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
@@ -28,7 +28,7 @@ end
 
 function SpectrogramViewer(filename::AbstractString)
   sw = SpectrogramWidget()
-  w = Window("Spectrogram Viewer: $(filename)",800,600)
+  w = GtkWindow("Spectrogram Viewer: $(filename)",800,600)
   push!(w, sw)
   show(w)
   updateData(sw, filename)
@@ -52,16 +52,16 @@ function SpectrogramWidget(filenameConfig=nothing)
   @debug "Type constructed"
 
   push!(m["boxTD"],m.cTD)
-  set_gtk_property!(m["boxTD"],:expand,m.cTD,true)
+###  set_gtk_property!(m["boxTD"],:expand,m.cTD,true)
 
   pane = m["paned"]
   set_gtk_property!(pane, :position, 300)
 
   push!(m["boxSpectro"], m.cSpect)
-  set_gtk_property!(m["boxSpectro"],:expand, m.cSpect, true)
+###  set_gtk_property!(m["boxSpectro"],:expand, m.cSpect, true)
 
   push!(m["boxFD"],m.cFD)
-  set_gtk_property!(m["boxFD"],:expand,m.cFD,true)
+###  set_gtk_property!(m["boxFD"],:expand,m.cFD,true)
 
   @debug "InitCallbacks"
 

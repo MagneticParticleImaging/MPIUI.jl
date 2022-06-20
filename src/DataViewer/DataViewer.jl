@@ -472,14 +472,14 @@ function showData(m::DataViewerWidget)
         if ndims(m.data) >= 3 && slicesInRawData != (0,0,0)
           showProfile(m, params, slicesInRawData)
         end
-        G_.current_page(m["nb2D3D"], 0)
+        Gtk4.G_.set_current_page(m["nb2D3D"], 0)
         m.currentlyShownImages = [cdata_xy, cdata_zx, cdata_zy]
       else
         dat = vec(data_)
         p = Winston.FramedPlot(xlabel="x", ylabel="y")
         Winston.add(p, Winston.Curve(1:length(dat), dat, color="blue", linewidth=4))
         display(m.grid2D[1,1],p)
-        G_.current_page(m["nb2D3D"], 1)
+        Gtk4.G_.set_current_page(m["nb2D3D"], 1)
 
         #m.currentlyShownImages = cdata
       end

@@ -59,7 +59,7 @@ function showData(m::SimpleDataViewerWidget, cdata_zy, cdata_zx, cdata_xy, drawS
     # Winston.add(p, Winston.Curve(1:length(m.currentProfile), m.currentProfile, color="blue", linewidth=4))
     #
     # display(m.grid3D[1,2], p)
-    G_.current_page(m["nb2D3D"], 0)
+    Gtk4.G_.set_current_page(m["nb2D3D"], 0)
   catch ex
     @warn "Exception" ex stacktrace(catch_backtrace())
   end
@@ -69,7 +69,7 @@ function showData(m::SimpleDataViewerWidget, cdata)
   try
     pZ = drawImage( convert(Array,cdata.data) )
     display(m.grid2D[1,1],pZ)
-    G_.current_page(m["nb2D3D"], 1)
+    Gtk4.G_.set_current_page(m["nb2D3D"], 1)
   catch ex
     @warn "Exception" ex stacktrace(catch_backtrace())
   end

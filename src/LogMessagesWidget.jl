@@ -275,7 +275,7 @@ function addGroupCheckBox(widget::LogMessageListWidget, group::String)
       end
     end
 ###    push!(widget["boxGroups"], check)
-    show(widget["boxGroups"])
+###    show(widget["boxGroups"])
   end
 end
 

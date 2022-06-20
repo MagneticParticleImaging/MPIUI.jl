@@ -117,7 +117,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
                 SFViewer(sffilename)
               else
                 updateData!(mpilab[].sfViewerWidget, sffilename)
-                G_.current_page(mpilab[]["nbView"], 3)
+                Gtk4.G_.set_current_page(mpilab[]["nbView"], 3)
               end
             else
               @show sffilename
@@ -125,7 +125,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
             end
           else
             updateData(mpilab[].rawDataWidget, sffilename)
-            G_.current_page(mpilab[]["nbView"], 0)
+            Gtk4.G_.set_current_page(mpilab[]["nbView"], 0)
           end
         end
       end
