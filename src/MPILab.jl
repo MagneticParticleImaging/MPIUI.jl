@@ -1104,7 +1104,7 @@ function updateVisuStore(m::MPILab)
       push!(m.visuStore, ( visu.num ,get(params,:description,""),
                              string(get(params,:spatialMIP,"")),
                              string(get(params,:frameProj,"")),
-                             existing_cmaps()[params[:coloring][1].cmap+1], anatomicRef))
+                             important_cmaps()[params[:coloring][1].cmap+1], anatomicRef))
     end
   end
   return
