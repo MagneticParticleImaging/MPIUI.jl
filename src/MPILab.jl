@@ -920,6 +920,11 @@ function initReconstructionStore(m::MPILab)
     if hasselection(m.selectionReco)
       params = m.currentReco.params
 
+      # get absolute path of system matrices
+      if haskey(params, :SFPath)
+        params[:SFPath] =  MPIFiles.extendPath.([activeRecoStore(m)],params[:SFPath])
+      end
+
       @idle_add_guarded begin
         updateData!(m.recoWidget, path(m.currentExperiment), params, m.currentStudy, m.currentExperiment)
         G_.current_page(m["nbView"], 2)
