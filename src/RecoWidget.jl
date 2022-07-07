@@ -365,7 +365,7 @@ function updateSF(m::RecoWidget)
                       redFactor = params[:redFactor], numPeriodAverages = params[:numPeriodAverages], 
                       numPeriodGrouping = params[:numPeriodGrouping], gridsize = params[:gridShape])
 
-  @idle_add_guarded set_gtk_property!(m["entGridShape"], :text, string(m.recoGrid.shape[1])*" x "*string(m.recoGrid.shape[2])*" x "*string(m.recoGrid.shape[3]))
+  @idle_add_guarded set_gtk_property!(m["entGridShape"], :text, @sprintf("%d x %d x %d", m.recoGrid.shape...))
 
   @idle_add_guarded infoMessage(m, "")
   m.sfParamsChanged = false
@@ -572,5 +572,11 @@ function setParams(m::RecoWidget, params)
     @idle_add_guarded set_gtk_property!(m["adjNumSF"], :value, 1)
     m.bSF = MPIFile[BrukerFile()]
   end
+
+  # grid shape
+  shp = get(params,:gridShape,"")
+  shpStr = (shp != "") ? @sprintf("%d x %d x %d", shp...) : ""
+  @idle_add_guarded set_gtk_property!(m["entGridShape"], :text, shpStr)
+
   return nothing
 end
