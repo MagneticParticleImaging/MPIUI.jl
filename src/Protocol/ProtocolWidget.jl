@@ -89,7 +89,7 @@ function getStorageMDF(pw::ProtocolWidget)
   @info "Creating storage MDF"
   mdf = defaultMDFv2InMemory()
   studyName(mdf, pw.currStudyName) # TODO These are never updates, is the result correct?
-  #studyDate(mdf, pw.currStudyDate ) # TODO: Fix error with symbol not found
+  studyTime(mdf, pw.currStudyDate )
   studyDescription(mdf, "")
   experimentDescription(mdf, get_gtk_property(pw["entExpDescr",EntryLeaf], :text, String))
   experimentName(mdf, get_gtk_property(pw["entExpName",EntryLeaf], :text, String))
