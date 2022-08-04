@@ -923,6 +923,11 @@ function initReconstructionStore(m::MPILab)
     if hasselection(m.selectionReco)
       params = m.currentReco.params
 
+      # get absolute path of system matrices
+      if haskey(params, :SFPath)
+        params[:SFPath] =  MPIFiles.extendPath.([activeRecoStore(m)],params[:SFPath])
+      end
+
       @idle_add_guarded begin
         updateData!(m.recoWidget, path(m.currentExperiment), params, m.currentStudy, m.currentExperiment)
         G_.current_page(m["nbView"], 2)
@@ -1108,7 +1113,7 @@ function updateVisuStore(m::MPILab)
       push!(m.visuStore, ( visu.num ,get(params,:description,""),
                              string(get(params,:spatialMIP,"")),
                              string(get(params,:frameProj,"")),
-                             existing_cmaps()[params[:coloring][1].cmap+1], anatomicRef))
+                             important_cmaps()[params[:coloring][1].cmap+1], anatomicRef))
     end
   end
   return

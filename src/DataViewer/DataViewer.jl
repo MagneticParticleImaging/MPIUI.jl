@@ -84,13 +84,13 @@ function DataViewerWidget()
 
   showall(m)
 
-  choices = existing_cmaps()
+  choices = important_cmaps()
   for c in choices
     push!(m["cbCMaps"], c)
     push!(m["cbCMapsBG"], c)
   end
-  set_gtk_property!(m["cbCMaps"],:active,length(choices)-1)
-  set_gtk_property!(m["cbCMapsBG"],:active,0)
+  set_gtk_property!(m["cbCMaps"],:active,5) # default: viridis
+  set_gtk_property!(m["cbCMapsBG"],:active,0) # default: gray
 
   permutes = permuteCombinationsName()
   for c in permutes
@@ -218,13 +218,13 @@ function initCallbacks(m_::DataViewerWidget)
 
         coloringInt = ColoringParamsInt[]
         for c in coloring
-          idx = findfirst(a->a==c.cmap,existing_cmaps())-1
+          idx = findfirst(a->a==c.cmap,important_cmaps())-1
           push!(coloringInt, ColoringParamsInt(c.cmin, c.cmax, idx))
         end
         params[:coloring] = coloringInt
 
         c = params[:coloringBG]
-        idx = findfirst(a->a==c.cmap,existing_cmaps())-1
+        idx = findfirst(a->a==c.cmap,important_cmaps())-1
         params[:coloringBG] = ColoringParamsInt(c.cmin, c.cmax, idx)
 
         addVisu(mpilab[], params)
@@ -404,7 +404,7 @@ function updateColoringWidgets(m::DataViewerWidget)
   chan = max(get_gtk_property(m["cbChannel"],:active, Int64) + 1,1)
   @idle_add_guarded set_gtk_property!(m["adjCMin"],:value, m.coloring[chan].cmin)
   @idle_add_guarded set_gtk_property!(m["adjCMax"],:value, m.coloring[chan].cmax)
-  idx = findfirst(a->a==m.coloring[chan].cmap,existing_cmaps())-1
+  idx = findfirst(a->a==m.coloring[chan].cmap,important_cmaps())-1
   @idle_add_guarded set_gtk_property!(m["cbCMaps"],:active, idx)
   m.upgradeColoringWInProgress = false
 end
@@ -413,7 +413,7 @@ function updateColoring(m::DataViewerWidget)
   chan = max(get_gtk_property(m["cbChannel"],:active, Int64) + 1,1)
   cmin = get_gtk_property(m["adjCMin"],:value, Float64)
   cmax = get_gtk_property(m["adjCMax"],:value, Float64)
-  cmap = existing_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
+  cmap = important_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
   m.coloring[chan] = ColoringParams(cmin,cmax,cmap)
 end
 

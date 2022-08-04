@@ -198,6 +198,7 @@ function initCallbacks(m_::RecoWidget)
     signal_connect(updateSFParamsChanged_, m["cbSparsityTrafo"], "changed")
     signal_connect(updateSFParamsChanged_, m["adjPeriodAverages"], "value_changed")
     signal_connect(updateSFParamsChanged_, m["adjPeriodGrouping"], "value_changed")
+    signal_connect(updateSFParamsChanged_, m["entGridShape"], "changed")
 
     signal_connect((w)->saveReco(m), m["tbSaveReco"], "clicked")
     signal_connect((w)->updateBGMeas(m), m["cbBGMeasurements"], "changed")
@@ -362,8 +363,9 @@ function updateSF(m::RecoWidget)
   m.sysMatrix, m.recoGrid = getSF(m.bSF, m.freq, params[:sparseTrafo], params[:solver], bgcorrection=bgcorrection,
                       loadasreal = params[:loadasreal], loadas32bit = params[:loadas32bit],
                       redFactor = params[:redFactor], numPeriodAverages = params[:numPeriodAverages], 
-                      numPeriodGrouping = params[:numPeriodGrouping])
+                      numPeriodGrouping = params[:numPeriodGrouping], gridsize = params[:gridShape])
 
+  @idle_add_guarded set_gtk_property!(m["entGridShape"], :text, @sprintf("%d x %d x %d", m.recoGrid.shape...))
 
   @idle_add_guarded infoMessage(m, "")
   m.sfParamsChanged = false
@@ -408,6 +410,7 @@ function performReco_(m::RecoWidget)
         params[:bEmpty] = bbEmpty_
       end
     end
+
 
     @idle_add_guarded infoMessage(m, "Performing Reconstruction...")
 
@@ -506,6 +509,10 @@ function getParams(m::RecoWidget)
   params[:numPeriodAverages] = get_gtk_property(m["adjPeriodAverages"], :value, Int64)
   params[:numPeriodGrouping] = get_gtk_property(m["adjPeriodGrouping"], :value, Int64)
 
+  shpString = get_gtk_property(m["entGridShape"], :text, String)
+  shp = tryparse.(Int64,split(shpString,"x"))
+  params[:gridShape] = (shp[1] == nothing) ? MPIReco.gridSizeCommon(m.bSF) : shp
+
   return params
 end
 
@@ -565,5 +572,11 @@ function setParams(m::RecoWidget, params)
     @idle_add_guarded set_gtk_property!(m["adjNumSF"], :value, 1)
     m.bSF = MPIFile[BrukerFile()]
   end
+
+  # grid shape
+  shp = get(params,:gridShape,"")
+  shpStr = (shp != "") ? @sprintf("%d x %d x %d", shp...) : ""
+  @idle_add_guarded set_gtk_property!(m["entGridShape"], :text, shpStr)
+
   return nothing
 end
