@@ -17,6 +17,7 @@ mutable struct SFViewerWidget <: Gtk.GtkBox
   mixFac::Array{Float64,2}
   mxyz::Array{Float64,1}
   frequencies::Array{Float64,1}
+  frequencySelection::Array{Int,1}
   grid::GtkGridLeaf
 end
 
@@ -44,7 +45,7 @@ function SFViewerWidget()
 
   m = SFViewerWidget(mainBox.handle, b, DataViewerWidget(),
                   BrukerFile(), false, 0, 0, zeros(0,0,0),
-                  zeros(0), zeros(0), zeros(0,0), zeros(0), zeros(0), Grid())
+                  zeros(0), zeros(0), zeros(0,0), zeros(0), zeros(0), zeros(Int,0), Grid())
   Gtk.gobject_move_ref(m, mainBox)
 
   m.grid[1,1] = m.dv
@@ -164,12 +165,22 @@ function updateSF(m::SFViewerWidget)
   period = get_gtk_property(m["adjSFPatch"],:value, Int64)
 
   bgcorrection = get_gtk_property(m["cbSFBGCorr"],:active, Bool)
+  # disable BG correction if no BG frames are available
+  if maximum(Int.(measIsBackgroundFrame(m.bSF))) == 0
+    bgcorrection = false
+    set_gtk_property!(m["cbSFBGCorr"],:active,false)
+  end
 
   k = freq + m.maxFreq*((recChan-1))
   #  + m.maxChan*(period-1)
 
-  sfData_ = getSF(m.bSF, Int64[k], returnasmatrix = true, bgcorrection=bgcorrection)[1][:,period]
-  sfData_[:] ./= rxNumSamplingPoints(m.bSF)
+  if !measIsFrequencySelection(m.bSF) || k in m.frequencySelection
+    sfData_ = getSF(m.bSF, Int64[k], returnasmatrix = true, bgcorrection=bgcorrection)[1][:,period]
+    sfData_[:] ./= rxNumSamplingPoints(m.bSF)
+  else
+    # set sfData to one for frequencies ∉ frequencySelection
+    sfData_ = ones(ComplexF32,prod(calibSize(m.bSF)))
+  end
 
   sfData = reshape(sfData_, calibSize(m.bSF)...)
 
@@ -247,9 +258,17 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   m.maxChan = rxNumChannels(m.bSF)
   m.frequencies = rxFrequencies(m.bSF)./1000
   m.maxFreq = length(m.frequencies)
+  if measIsFrequencySelection(m.bSF)
+    # Workaround for FrequencySelection
+    m.frequencySelection = vcat([measFrequencySelection(m.bSF).+i*m.maxFreq for i=0:m.maxChan-1]...)
+  end
   m.updating = true
   set_gtk_property!(m["adjSFFreq"],:value, 2  )
   set_gtk_property!(m["adjSFFreq"],:upper, m.maxFreq-1  )
+  if measIsFrequencySelection(m.bSF)
+    # first frequency of frequencySelection
+    set_gtk_property!(m["adjSFFreq"],:value, m.frequencySelection[1]-1 )
+  end
   set_gtk_property!(m["adjSFSignalOrdered"],:value, 1  )
   set_gtk_property!(m["adjSFSignalOrdered"],:upper, m.maxFreq*m.maxChan  )
   set_gtk_property!(m["adjSFMixX"],:value, 0 )
@@ -264,6 +283,12 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   set_gtk_property!(m["adjSFPatch"],:upper, acqNumPeriodsPerFrame(m.bSF) )
 
   m.SNR = calibSNR(m.bSF)[:,:,:]
+  if measIsFrequencySelection(m.bSF)
+    # set SNR to one for frequencies ∉ frequencySelection
+    snr = ones(Float64, m.maxFreq*size(m.SNR,2), size(m.SNR,3))
+    snr[m.frequencySelection,:] = reshape(calibSNR(m.bSF), size(m.SNR,1)*size(m.SNR,2), :)
+    m.SNR = reshape(snr, m.maxFreq, size(m.SNR,2), size(m.SNR,3))
+  end
   #m.SNR = calculateSystemMatrixSNR(m.bSF)
   m.SNRSortedIndices = reverse(sortperm(vec(m.SNR)))
   m.SNRSortedIndicesInverse = sortperm(m.SNRSortedIndices)
