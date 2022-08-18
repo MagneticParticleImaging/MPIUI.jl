@@ -14,6 +14,8 @@ mutable struct SFViewerWidget <: Gtk.GtkBox
   SNR::Array{Float64,3}
   SNRSortedIndices::Array{Float64,1}
   SNRSortedIndicesInverse::Array{Float64,1}
+  SNRSortedIndicesRecChan::Array{Array{Float64,1},1}
+  SNRSortedIndicesRecChanInverse::Array{Array{Float64,1},1}
   mixFac::Array{Float64,2}
   mxyz::Array{Float64,1}
   frequencies::Array{Float64,1}
@@ -45,7 +47,7 @@ function SFViewerWidget()
 
   m = SFViewerWidget(mainBox.handle, b, DataViewerWidget(),
                   BrukerFile(), false, 0, 0, zeros(0,0,0),
-                  zeros(0), zeros(0), zeros(0,0), zeros(0), zeros(0), zeros(Int,0), Grid())
+                  zeros(0), zeros(0), zeros(0), zeros(0), zeros(0,0), zeros(0), zeros(0), zeros(Int,0), Grid())
   Gtk.gobject_move_ref(m, mainBox)
 
   m.grid[1,1] = m.dv
@@ -85,8 +87,14 @@ function SFViewerWidget()
     if !m.updating
       @idle_add_guarded begin
           m.updating = true
-          k = m.SNRSortedIndices[get_gtk_property(m["adjSFSignalOrdered"],:value, Int64)]
-          recChan = clamp(div(k,m.maxFreq)+1,1,3)
+	  if !(get_gtk_property(m["cbFixRecChan"],:active, Bool))
+            k = m.SNRSortedIndices[get_gtk_property(m["adjSFSignalOrdered"],:value, Int64)]
+            recChan = clamp(div(k,m.maxFreq)+1,1,3)
+	  else
+	    # fix the current receive channel for ordered signal
+	    recChan = get_gtk_property(m["adjSFRecChan"],:value, Int64)
+	    k = m.SNRSortedIndicesRecChan[recChan][get_gtk_property(m["adjSFSignalOrdered"],:value, Int64)]
+	  end
           freq = clamp(mod1(k-1,m.maxFreq),0,m.maxFreq-1)
           updateFreq(m, freq)
           updateRecChan(m, recChan)
@@ -130,6 +138,9 @@ function SFViewerWidget()
     signal_connect(updateSFMixO, m[w], "value_changed")
   end
 
+  signal_connect(m["cbFixRecChan"], :toggled) do w
+    @idle_add_guarded updateSigOrd(m)
+  end
   signal_connect(updateSFSignalOrdered, m["adjSFSignalOrdered"], "value_changed")
 
   return m
@@ -147,8 +158,13 @@ end
 function updateSigOrd(m::SFViewerWidget)
   freq = get_gtk_property(m["adjSFFreq"],:value, Int64)+1
   recChan = get_gtk_property(m["adjSFRecChan"],:value, Int64)
-  k = freq + m.maxFreq*((recChan-1))
-  set_gtk_property!(m["adjSFSignalOrdered"],:value, m.SNRSortedIndicesInverse[k] )
+  if !(get_gtk_property(m["cbFixRecChan"],:active, Bool))
+    k = freq + m.maxFreq*((recChan-1))
+    set_gtk_property!(m["adjSFSignalOrdered"],:value, m.SNRSortedIndicesInverse[k] )
+  else 
+    # fix the current receive channel for ordered signal
+    set_gtk_property!(m["adjSFSignalOrdered"],:value, m.SNRSortedIndicesRecChanInverse[recChan][freq] )
+  end
 end
 
 function updateMix(m::SFViewerWidget)
@@ -292,6 +308,9 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   #m.SNR = calculateSystemMatrixSNR(m.bSF)
   m.SNRSortedIndices = reverse(sortperm(vec(m.SNR)))
   m.SNRSortedIndicesInverse = sortperm(m.SNRSortedIndices)
+  # sort SNR channel-wise
+  m.SNRSortedIndicesRecChan = [reverse(sortperm(m.SNR[:,i])) for i=1:m.maxChan]
+  m.SNRSortedIndicesRecChanInverse = [sortperm(snr) for snr in m.SNRSortedIndicesRecChan]
   m.mixFac = MPIFiles.mixingFactors(m.bSF)
   mxyz, mask, freqNumber = MPIFiles.calcPrefactors(m.bSF)
   m.mxyz = mxyz
