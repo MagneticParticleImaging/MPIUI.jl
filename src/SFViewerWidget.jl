@@ -213,7 +213,9 @@ function updateSF(m::SFViewerWidget)
   sfData = reshape(sfData_, calibSize(m.bSF)...)
 
   set_gtk_property!(m["entSFSNR"],:text,string(round(m.SNR[freq,recChan,period],digits=2)))
-  set_gtk_property!(m["entSFSNR2"],:text,string(round(calcSNRF(sfData_),digits=2)))
+  #set_gtk_property!(m["entSFSNR2"],:text,string(round(calcSNRF(sfData_),digits=2)))
+  snr5 = [string(sum(m.SNR[:,d,1] .> 5),"   ") for d=1:size(m.SNR,2)]
+  set_gtk_property!(m["entSFSNR2"],:text, prod( snr5 ) )
 
 
   maxPoints = 5000
@@ -323,6 +325,7 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
     snr[m.frequencySelection,:] = reshape(calibSNR(m.bSF), size(m.SNR,1)*size(m.SNR,2), :)
     m.SNR = reshape(snr, m.maxFreq, size(m.SNR,2), size(m.SNR,3))
   end
+
   #m.SNR = calculateSystemMatrixSNR(m.bSF)
   m.SNRSortedIndices = reverse(sortperm(vec(m.SNR)))
   m.SNRSortedIndicesInverse = sortperm(m.SNRSortedIndices)
