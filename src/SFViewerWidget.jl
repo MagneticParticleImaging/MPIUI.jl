@@ -327,7 +327,7 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   m.SNRSortedIndices = reverse(sortperm(vec(m.SNR)))
   m.SNRSortedIndicesInverse = sortperm(m.SNRSortedIndices)
   # sort SNR channel-wise
-  m.SNRSortedIndicesRecChan = [reverse(sortperm(m.SNR[:,i])) for i=1:m.maxChan]
+  m.SNRSortedIndicesRecChan = [reverse(sortperm(m.SNR[:,i,1])) for i=1:m.maxChan]
   m.SNRSortedIndicesRecChanInverse = [sortperm(snr) for snr in m.SNRSortedIndicesRecChan]
   m.mixFac = MPIFiles.mixingFactors(m.bSF)
   mxyz, mask, freqNumber = MPIFiles.calcPrefactors(m.bSF)
