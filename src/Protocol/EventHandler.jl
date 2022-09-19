@@ -77,6 +77,11 @@ function eventHandler(pw::ProtocolWidget, timer::Timer)
   end
 end
 
+function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::UndefinedEvent)
+  @warn "Protocol $(typeof(protocol)) send undefined event in response to $(typeof(event.event))"
+  return false
+end
+
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::ProtocolEvent)
   @warn "No handler defined for event $(typeof(event)) and protocol $(typeof(protocol))"
   return false
