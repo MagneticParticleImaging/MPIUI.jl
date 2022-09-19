@@ -430,7 +430,7 @@ function performReco_(m::RecoWidget)
       progress(m, false)
     end
   catch ex
-    showError(ex)
+    #showError(ex)
   end
   return nothing
 end

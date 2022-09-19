@@ -314,7 +314,7 @@ function handleEvent(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtoco
       #if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
         seq = pw.protocol.params.sequence
         deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
-        #updateData(pw.rawDataWidget, frame, deltaT)
+        updateData(pw.rawDataWidget, frame, deltaT)
       #end
     end
     # Ask for next progress
@@ -379,8 +379,8 @@ function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event
   @info "Data is ready for further operations and can be found at `$(event.filename)`."
   put!(pw.biChannel, FinishedAckEvent())
   @warn "Updating the raw data is currently diabled since it freezes the UI."
-  #updateData(pw.rawDataWidget, event.filename)
-  #updateExperimentStore(mpilab[], mpilab[].currentStudy)
+  updateData(pw.rawDataWidget, event.filename)
+  updateExperimentStore(mpilab[], mpilab[].currentStudy)
   return true
 end
 
@@ -435,7 +435,7 @@ function handleEvent(pw::ProtocolWidget, protocol::RobotMPIMeasurementProtocol, 
 end
 
 function handleFinished(pw::ProtocolWidget, protocol::RobotMPIMeasurementProtocol)
-  request = DatasetStoreStorageRequestEvent(pw.mdfstore, getStorageParams(pw))
+  request = DatasetStoreStorageRequestEvent(pw.mdfstore, getStorageMDF(pw))
   put!(pw.biChannel, request)
   return false
 end
