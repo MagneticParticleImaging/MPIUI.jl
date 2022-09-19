@@ -401,6 +401,12 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
     grid[2,2] = SpinButton(1:acqNumPeriodsPerFrame(f))
     adjNumPeriodGrouping = Adjustment(grid[2,2])
 
+    grid[1,3] = Label("Apply Calib Postprocessing")
+    grid[2,3] = CheckButton(active=true)
+
+    grid[1,4] = Label("Fix Distortions")
+    grid[2,4] = CheckButton(active=false)
+
     showall(box)
     ret = run(dialog)
 
@@ -408,6 +414,8 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
     if ret == GtkResponseType.ACCEPT
       numPeriodAverages = get_gtk_property(adjNumPeriodAverages,:value,Int64)
       numPeriodGrouping = get_gtk_property(adjNumPeriodGrouping,:value,Int64)
+      applyCalibPostprocessing = get_gtk_property(grid[2,3],:active,Bool)
+      fixDistortions = get_gtk_property(grid[2,4],:active,Bool)
 
       @info numPeriodAverages  numPeriodGrouping
 
@@ -415,8 +423,11 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
 
       filenameNew = joinpath(calibdir(m.datasetStore),string(calibNum)*".mdf")
       @info "Start converting System Matrix"
-      saveasMDF(filenameNew, f, applyCalibPostprocessing=true, experimentNumber=calibNum,
+      saveasMDF(filenameNew, f, applyCalibPostprocessing=applyCalibPostprocessing, 
+                experimentNumber = calibNum, fixDistortions=fixDistortions,
                 numPeriodAverages = numPeriodAverages, numPeriodGrouping = numPeriodGrouping)
+
+                
 
       updateData!(m, m.datasetStore)
     end

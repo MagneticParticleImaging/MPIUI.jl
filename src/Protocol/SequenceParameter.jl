@@ -44,6 +44,9 @@ mutable struct PeriodicChannelParameter <: Gtk.GtkExpander
   end
 end
 
+struct ArbitraryElectricalComponent
+end
+
 mutable struct ComponentParameter <: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
   idLabel::GtkLabel

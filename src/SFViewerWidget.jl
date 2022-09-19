@@ -108,9 +108,19 @@ function SFViewerWidget()
   signal_connect(m["cbSFBGCorr"], :toggled) do w
     @idle_add_guarded updateSF(m)
   end
+  
   signal_connect(m["adjSFPatch"], "value_changed") do w
     @idle_add_guarded updateSF(m)
   end
+  
+  signal_connect(m["adjSNRMinFreq"], "value_changed") do w
+    @idle_add_guarded updateSF(m)
+  end
+
+  signal_connect(m["adjSNRMaxFreq"], "value_changed") do w
+    @idle_add_guarded updateSF(m)
+  end
+
   signal_connect(m["adjSFRecChan"], "value_changed") do w
     if !m.updating
       @idle_add_guarded begin
@@ -179,6 +189,8 @@ function updateSF(m::SFViewerWidget)
   freq = get_gtk_property(m["adjSFFreq"],:value, Int64)+1
   recChan = get_gtk_property(m["adjSFRecChan"],:value, Int64)
   period = get_gtk_property(m["adjSFPatch"],:value, Int64)
+  minFr = get_gtk_property(m["adjSNRMinFreq"],:value, Int64)+1
+  maxFr = get_gtk_property(m["adjSNRMaxFreq"],:value, Int64)+1
 
   bgcorrection = get_gtk_property(m["cbSFBGCorr"],:active, Bool)
   # disable BG correction if no BG frames are available
@@ -201,24 +213,27 @@ function updateSF(m::SFViewerWidget)
   sfData = reshape(sfData_, calibSize(m.bSF)...)
 
   set_gtk_property!(m["entSFSNR"],:text,string(round(m.SNR[freq,recChan,period],digits=2)))
-  set_gtk_property!(m["entSFSNR2"],:text,string(round(calcSNRF(sfData_),digits=2)))
+  #set_gtk_property!(m["entSFSNR2"],:text,string(round(calcSNRF(sfData_),digits=2)))
+  snr5 = [string(sum(m.SNR[:,d,1] .> 5),"   ") for d=1:size(m.SNR,2)]
+  set_gtk_property!(m["entSFSNR2"],:text, prod( snr5 ) )
 
-  blockSize = 900
-  step = max( div(m.maxFreq, blockSize) ,1)
-  f = 1:step:m.maxFreq
 
-  if step > 1
-    snr = zeros(length(f))
-    for l=1:length(f)
-      st = f[l]
-      en = min(st+step,f[end])
-      snr[l] = maximum(m.SNR[st:en,recChan,period])
+  maxPoints = 5000
+  spFr = length(minFr:maxFr) > maxPoints ? round(Int,length(minFr:maxFr) / maxPoints)  : 1
+
+  stepsFr = minFr:spFr:maxFr
+  snrCompressed = zeros(length(stepsFr))
+  if spFr > 1
+    for l=1:length(stepsFr)
+      st = stepsFr[l]
+      en = min(st+spFr,stepsFr[end])
+      snrCompressed[l] = maximum(m.SNR[st:en,recChan,period])
     end
   else
-    snr = vec(m.SNR[:,recChan,period])
+    snrCompressed = vec(m.SNR[stepsFr,recChan,period])
   end
 
-  p = Winston.semilogy(m.frequencies[f], snr,"b-",linewidth=5)
+  p = Winston.semilogy(m.frequencies[stepsFr], snrCompressed,"b-",linewidth=5)
   Winston.plot(p,[m.frequencies[freq]],[m.SNR[freq,recChan,period]],"rx",linewidth=5,ylog=true)
   Winston.xlabel("f / kHz")
   Winston.title("SNR")
@@ -297,6 +312,11 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   set_gtk_property!(m["adjSFRecChan"],:upper, m.maxChan )
   set_gtk_property!(m["adjSFPatch"],:value, 1 )
   set_gtk_property!(m["adjSFPatch"],:upper, acqNumPeriodsPerFrame(m.bSF) )
+  set_gtk_property!(m["adjSNRMinFreq"],:upper, m.maxFreq-1 )
+  set_gtk_property!(m["adjSNRMaxFreq"],:upper, m.maxFreq-1 )
+  set_gtk_property!(m["adjSNRMinFreq"],:value, 0 )
+  set_gtk_property!(m["adjSNRMaxFreq"],:value, m.maxFreq-1 )
+
 
   m.SNR = calibSNR(m.bSF)[:,:,:]
   if measIsFrequencySelection(m.bSF)
@@ -305,11 +325,12 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
     snr[m.frequencySelection,:] = reshape(calibSNR(m.bSF), size(m.SNR,1)*size(m.SNR,2), :)
     m.SNR = reshape(snr, m.maxFreq, size(m.SNR,2), size(m.SNR,3))
   end
+
   #m.SNR = calculateSystemMatrixSNR(m.bSF)
   m.SNRSortedIndices = reverse(sortperm(vec(m.SNR)))
   m.SNRSortedIndicesInverse = sortperm(m.SNRSortedIndices)
   # sort SNR channel-wise
-  m.SNRSortedIndicesRecChan = [reverse(sortperm(m.SNR[:,i])) for i=1:m.maxChan]
+  m.SNRSortedIndicesRecChan = [reverse(sortperm(m.SNR[:,i,1])) for i=1:m.maxChan]
   m.SNRSortedIndicesRecChanInverse = [sortperm(snr) for snr in m.SNRSortedIndicesRecChan]
   m.mixFac = MPIFiles.mixingFactors(m.bSF)
   mxyz, mask, freqNumber = MPIFiles.calcPrefactors(m.bSF)
