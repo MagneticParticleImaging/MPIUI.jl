@@ -51,6 +51,7 @@ mutable struct LogMessageListWidget <: LogMessageWidget
   logFilter::LogMessageFilter
   scrollState::AutoScrollState
   updating::Bool
+  lock::ReentrantLock
 end
 
 const LOG_LEVEL_TO_PIX = Dict(
@@ -101,7 +102,7 @@ function LogMessageListWidget()
   selection = G_.selection(tv)
 
   logFilter = LogMessageFilter(nothing, 0, Dict{String, Bool}(), nothing, nothing)
-  m = LogMessageListWidget(mainBox.handle, b, store, tmSorted, tv, selection, logFilter, DETACHED, false)
+  m = LogMessageListWidget(mainBox.handle, b, store, tmSorted, tv, selection, logFilter, DETACHED, false, ReentrantLock())
   Gtk.gobject_move_ref(m, mainBox)
 
   push!(m["wndMessages"], tv)
@@ -297,6 +298,7 @@ function applyFilter!(widget::LogMessageListWidget)
 end
 
 function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, dateTime::Union{DateTime, Missing}, group, message, filepath, line; kwargs...)
+  lock(widget.lock)
   try 
     messageString = string(message)
     
@@ -330,6 +332,8 @@ function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, date
     with_logger(ConsoleLogger()) do 
       @warn "Could not buffer log message" ex
     end
+  finally
+    unlock(widget.lock)
   end
 end
 
