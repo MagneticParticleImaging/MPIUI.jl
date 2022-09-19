@@ -392,8 +392,8 @@ function performReco(m::RecoWidget)
   Threads.@spawn performReco_(m)
 end
 
-function performReco_(m::RecoWidget)
-  try
+@guarded function performReco_(m::RecoWidget)
+  
     params = getParams(m)
 
     @idle_add_guarded progress(m, true)
@@ -411,16 +411,25 @@ function performReco_(m::RecoWidget)
       end
     end
 
+    # If S is processed and fits not to the measurements because of numPeriodsGrouping
+    # or numPeriodAverages being applied we need to set these so that the 
+    # measurements are loaded correctly
+    if rxNumSamplingPoints(m.bSF[1]) > rxNumSamplingPoints(m.bMeas)
+      params[:numPeriodGrouping] = rxNumSamplingPoints(m.bSF[1]) ÷ rxNumSamplingPoints(m.bMeas)
+    end
+    if acqNumPeriodsPerFrame(m.bSF[1]) < acqNumPeriodsPerFrame(m.bMeas)
+      params[:numPeriodAverages] = acqNumPeriodsPerFrame(m.bMeas) ÷ (acqNumPeriodsPerFrame(m.bSF[1]) * params[:numPeriodGrouping])
+    end
 
     @idle_add_guarded infoMessage(m, "Performing Reconstruction...")
 
     if typeof(m.bMeas) == BrukerFileCalib
       m.bMeas = BrukerFileMeas(m.bMeas.path,m.bMeas.params,m.bMeas.paramsProc,m.bMeas.methodRead,m.bMeas.acqpRead,m.bMeas.visupars_globalRead,m.bMeas.recoRead,m.bMeas.methrecoRead,m.bMeas.visuparsRead,m.bMeas.mpiParRead,m.bMeas.maxEntriesAcqp);
 
-      conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
+      conc = MPIReco.reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
 
     else
-      conc = reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
+      conc = MPIReco.reconstruction(m.sysMatrix, m.bSF, m.bMeas, m.freq, m.recoGrid; params...)
     end
     m.recoResult = conc
     m.recoResult.recoParams = getParams(m)
@@ -429,9 +438,10 @@ function performReco_(m::RecoWidget)
       infoMessage(m, "")
       progress(m, false)
     end
-  catch ex
-    #showError(ex)
-  end
+  #catch ex
+  #  @show ex
+  #  showError(ex)
+  #end
   return nothing
 end
 
@@ -508,6 +518,9 @@ function getParams(m::RecoWidget)
 
   params[:numPeriodAverages] = get_gtk_property(m["adjPeriodAverages"], :value, Int64)
   params[:numPeriodGrouping] = get_gtk_property(m["adjPeriodGrouping"], :value, Int64)
+
+
+
 
   shpString = get_gtk_property(m["entGridShape"], :text, String)
   shp = tryparse.(Int64,split(shpString,"x"))
