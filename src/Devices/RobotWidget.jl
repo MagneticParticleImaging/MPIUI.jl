@@ -289,26 +289,23 @@ end
 
 function referenceDrive(m::RobotWidget)
   robot = m.robot
-  if !isReferenced(robot)
-    message = """IselRobot is NOT referenced and needs to be referenced! \n
-            Remove all attached devices from the robot before the robot will be referenced and move around!\n
-            Press \"Ok\" if you have done so """
+  message = """ Remove all attached devices from the robot before the robot will be referenced and move around!\n
+          Press \"Ok\" if you have done so """
+  if ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"])
+    message = """Are you sure you have removed everything and the robot can move
+          freely without damaging anything? Press \"Ok\" if you want to continue"""
     if ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"])
-      message = """Are you sure you have removed everything and the robot can move
-            freely without damaging anything? Press \"Ok\" if you want to continue"""
-      if ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"])
-        enable(robot)
-        doReferenceDrive(robot)
-        if in("park", keys(namedPositions(m.robot)))
-          moveNamedPosition(m, "park")
-        end
-        disable(robot)
-        displayCurrentPosition(m)
-        message = """The robot is now referenced.
-            You can mount your sample. Press \"Close\" to proceed. """
-        info_dialog(message, mpilab[]["mainWindow"])
-        enableRobotMoveButtons(m,true)
+      enable(robot)
+      doReferenceDrive(robot)
+      if in("park", keys(namedPositions(m.robot)))
+        moveNamedPosition(m, "park")
       end
+      disable(robot)
+      displayCurrentPosition(m)
+      message = """The robot is now referenced.
+          You can mount your sample. Press \"Close\" to proceed. """
+      info_dialog(message, mpilab[]["mainWindow"])
+      enableRobotMoveButtons(m,true)
     end
   end
 end
