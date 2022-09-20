@@ -308,7 +308,6 @@ function referenceDrive(m::RobotWidget)
             You can mount your sample. Press \"Close\" to proceed. """
         info_dialog(message, mpilab[]["mainWindow"])
         enableRobotMoveButtons(m,true)
-        @idle_add_guarded set_gtk_property!(m["btnReferenceDrive"],:sensitive,false)
       end
     end
   end
