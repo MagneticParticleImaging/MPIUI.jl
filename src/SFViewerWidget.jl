@@ -194,7 +194,7 @@ function updateSF(m::SFViewerWidget)
 
   bgcorrection = get_gtk_property(m["cbSFBGCorr"],:active, Bool)
   # disable BG correction if no BG frames are available
-  if maximum(Int.(measIsBackgroundFrame(m.bSF))) == 0
+  if maximum(Int.(measIsBGFrame(m.bSF))) == 0
     bgcorrection = false
     set_gtk_property!(m["cbSFBGCorr"],:active,false)
   end

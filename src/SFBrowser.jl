@@ -33,7 +33,7 @@ function updateData!(m::SFBrowserWidget, sysFuncs)
 
       uuids = Dict{String,Any}()
       for l = 2:size(sysFuncs,1)
-        f = MPIFile(sysFuncs[l,14],fastMode=true)
+        f = MPIFile(string(sysFuncs[l,14]),fastMode=true)
         uuid = string(experimentUuid(f))
         if !haskey(uuids, uuid)
           uuids[uuid] = Int[]
