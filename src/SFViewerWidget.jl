@@ -50,10 +50,9 @@ function SFViewerWidget()
                   zeros(0), zeros(0), zeros(0), zeros(0), zeros(0,0), zeros(0), zeros(0), zeros(Int,0), Grid())
   Gtk.gobject_move_ref(m, mainBox)
 
-  m.grid[1,1] = m.dv
-  m.grid[1,2] = Canvas()
-  set_gtk_property!(m.grid[1,2], :height_request, 200)
-  #set_gtk_property!(m.grid, :row_homogeneous, true)
+  m.grid[1,1:2] = m.dv
+  m.grid[1,3] = Canvas()
+  set_gtk_property!(m.grid, :row_homogeneous, true)
   #set_gtk_property!(m.grid, :column_homogeneous, true)
   push!(m, m.grid)
   set_gtk_property!(m, :fill, m.grid, true)
@@ -237,7 +236,7 @@ function updateSF(m::SFViewerWidget)
   Winston.plot(p,[m.frequencies[freq]],[m.SNR[freq,recChan,period]],"rx",linewidth=5,ylog=true)
   Winston.xlabel("f / kHz")
   Winston.title("SNR")
-  display(m.grid[1,2] ,p)
+  display(m.grid[1,3] ,p)
   showall(m)
 
   c = reshape(sfData, 1, size(sfData,1), size(sfData,2), size(sfData,3), 1)
