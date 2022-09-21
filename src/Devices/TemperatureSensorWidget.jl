@@ -69,7 +69,7 @@ function initCallbacks(m::TemperatureSensorWidget)
 
   signal_connect(m["btnLoadTemp"], :clicked) do w
     m.updating = true
-    filter = Gtk.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
+    filter = Gtk.GtkFileFilter(pattern=String("*.toml, *.mdf"), mimetype=String("application/toml"))
     filename = open_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
     if filename != ""
         filenamebase, ext = splitext(filename)
@@ -157,7 +157,7 @@ end
 
 
 function startSensor(m::TemperatureSensorWidget)
-  m.timer = Timer(timer -> updateSensor(timer, m), 0.0, interval=1.5)
+  m.timer = Timer(timer -> updateSensor(timer, m), 0.0, interval=4)
 end
 
 function stopSensor(m::TemperatureSensorWidget)
