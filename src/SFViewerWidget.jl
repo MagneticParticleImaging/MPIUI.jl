@@ -335,6 +335,14 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   mxyz, mask, freqNumber = MPIFiles.calcPrefactors(m.bSF)
   m.mxyz = mxyz
 
+  # show frequency component with highest SNR
+  k = m.SNRSortedIndices[1]
+  recChan = clamp(div(k,m.maxFreq)+1,1,3)
+  freq = clamp(mod1(k-1,m.maxFreq),0,m.maxFreq-1)
+  updateFreq(m, freq)
+  updateRecChan(m, recChan)
+
+
   updateMix(m)
   updateSigOrd(m)
   updateSF(m)
