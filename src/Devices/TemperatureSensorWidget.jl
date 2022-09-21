@@ -66,6 +66,19 @@ function initCallbacks(m::TemperatureSensorWidget)
       end
       m.updating = false
   end  
+
+  signal_connect(m["btnLoadTemp"], :clicked) do w
+    m.updating = true
+    filter = Gtk.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
+    filename = open_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
+    if filename != ""
+        filenamebase, ext = splitext(filename)
+        m.temperatureLog = TemperatureLog(filename)
+        @idle_add showData(m)
+    end
+    m.updating = false  #
+  end  
+  
 end
 
 
@@ -79,72 +92,69 @@ end
 
       push!(m.temperatureLog, te, time)
 
-      #colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
-      lines = ["solid", "dashed", "dotted"]
-
-      L = min(m.temperatureLog.numChan,length(colors) * length(lines))
-
-      T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
-      timesDT = copy(m.temperatureLog.times) 
-      timesDT .-= timesDT[1]
-      times = Dates.value.(timesDT) / 1000 # seconds
-   
-      if maximum(times) > 2*60*60*24
-        times ./= 60*60*24
-        strTime = "t / d"
-      elseif maximum(times) > 2*60*60
-        times ./= 60*60
-        strTime = "t / h"
-      elseif  maximum(times) > 2*60
-        times ./= 60
-        strTime = "t / min"
-      else
-        strTime = "t / s"
-      end
-
-
-      @idle_add_guarded begin
-        try 
-          for (i,c) in enumerate(m.canvases)
-            idx = findall(d->d==i, getChannelGroups(m.sensor))
-            if length(idx) > 0
-              p = FramedPlot()
-              Winston.plot(T[idx[1],:], color=colors[1], linewidth=3)
-
-
-              Winston.setattr(p, "xlabel", strTime)
-              Winston.setattr(p, "ylabel", "T / °C")
-
-              legendEntries = []
-              channelNames = []
-              if hasmethod(getChannelNames, (typeof(m.sensor),))
-                channelNames = getChannelNames(m.sensor)
-              end
-              for l=1:length(idx)
-                curve = Curve(times, T[idx[l],:], color = colors[mod1(l, length(colors))], linewidth=5) #linekind=lines[div(l-1, length(colors)) + 1]
-                if !isempty(channelNames) 
-                  setattr(curve, label = channelNames[idx[l]])
-                  push!(legendEntries, curve)
-                end
-                add(p, curve)
-              end
-              # setattr(p, xlim=(-100, size(T, 2))) does not work. Idea was to shift the legend
-
-              legend = Legend(.1, 0.9, legendEntries, halign="right") #size=1
-              add(p, legend)
-              display(c, p)
-              showall(c)
-              c.is_sized = true
-            end
-          end
-        catch e
-          @warn "Error"
-          println(e)
-        end
-      end
+      @idle_add showData(m)
     end
   end
 end
+
+@guarded function showData(m::TemperatureSensorWidget)
+  #colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
+  lines = ["solid", "dashed", "dotted"]
+
+  L = min(m.temperatureLog.numChan,length(colors) * length(lines))
+
+  T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
+  timesDT = copy(m.temperatureLog.times) 
+  timesDT .-= timesDT[1]
+  times = Dates.value.(timesDT) / 1000 # seconds
+
+  if maximum(times) > 2*60*60*24
+    times ./= 60*60*24
+    strTime = "t / d"
+  elseif maximum(times) > 2*60*60
+    times ./= 60*60
+    strTime = "t / h"
+  elseif  maximum(times) > 2*60
+    times ./= 60
+    strTime = "t / min"
+  else
+    strTime = "t / s"
+  end
+
+  for (i,c) in enumerate(m.canvases)
+    idx = findall(d->d==i, getChannelGroups(m.sensor))
+    if length(idx) > 0
+      p = FramedPlot()
+      Winston.plot(T[idx[1],:], color=colors[1], linewidth=3)
+
+
+      Winston.setattr(p, "xlabel", strTime)
+      Winston.setattr(p, "ylabel", "T / °C")
+
+      legendEntries = []
+      channelNames = []
+      if hasmethod(getChannelNames, (typeof(m.sensor),))
+        channelNames = getChannelNames(m.sensor)
+      end
+      for l=1:length(idx)
+        curve = Curve(times, T[idx[l],:], color = colors[mod1(l, length(colors))], linewidth=5) #linekind=lines[div(l-1, length(colors)) + 1]
+        if !isempty(channelNames) 
+          setattr(curve, label = channelNames[idx[l]])
+          push!(legendEntries, curve)
+        end
+        add(p, curve)
+      end
+      # setattr(p, xlim=(-100, size(T, 2))) does not work. Idea was to shift the legend
+
+      legend = Legend(.1, 0.9, legendEntries, halign="right") #size=1
+      add(p, legend)
+      display(c, p)
+      showall(c)
+      c.is_sized = true
+    end
+  end
+end
+
 
 function startSensor(m::TemperatureSensorWidget)
   m.timer = Timer(timer -> updateSensor(timer, m), 0.0, interval=1.5)
