@@ -375,11 +375,12 @@ function initStudyStore(m::MPILab)
   #G_.headers_visible(tv,false)
   r1 = CellRendererText()
 
-  cols = ["Date", "Study", "Subject"]
+  cols = ["Date", "Study", "Subject", "Time"]
+  colMap = [0,1,2,4]
 
   for (i,col) in enumerate(cols)
-    c = TreeViewColumn(col, r1, Dict("text" => i-1))
-    G_.sort_column_id(c,i-1)
+    c = TreeViewColumn(col, r1, Dict("text" => colMap[i]))
+    G_.sort_column_id(c,colMap[i])
     G_.resizable(c,true)
     G_.max_width(c,300)
     push!(tv,c)

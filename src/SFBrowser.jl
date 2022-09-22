@@ -336,6 +336,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
         numAverages = acqNumAverages(f)
         sizeSF =  TreeModel(m.tmSorted)[currentIt,6]
         isCalibProcessed = measIsCalibProcessed(f)
+        dfStr = TreeModel(m.tmSorted)[currentIt,5]
         str =   """Num: $(num)\n
                 Name: $(name)\n
                 Tracer: $(tname)\n
@@ -345,6 +346,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
                 Averages: $(numAverages)\n
                 Periods: $(numPeriods)\n
                 Size: $(sizeSF)\n
+                DF Strength: $(dfStr)\n
                 IsProcessed: $(isCalibProcessed)"""
         set_gtk_property!(m.tv, :tooltip_text, str)
       end
