@@ -18,8 +18,6 @@ function DeviceWidgetContainer(deviceName::String, deviceWidget)
   mainBox = G_.object(b, "boxContainer")
 
   window = GtkWindow(deviceName, 800, 600)
-  # Hide close button until I figure out how to prevent destroy related segfaults
-  set_gtk_property!(window, :deletable, false)
   visible(window, false)
 
   m = DeviceWidgetContainer(mainBox.handle, b, false, true, window, deviceWidget)
@@ -50,14 +48,12 @@ function initCallbacks(m::DeviceWidgetContainer)
     end
   end
 
-  #signal_connect(m.deviceWindow, :destroy) do w
-  #  @idle_add_guarded begin
-  #    empty!(m["boxDeviceWidget"])
-  #    push!(m["boxDeviceWidget"], m.deviceWidget)
-  #    showall(m)
-  #    #   set_gtk_property!(m["btnPopout"], :active, false)
-  #  end
-  #end
+  signal_connect(m.deviceWindow, "delete-event") do w, event
+    @idle_add_guarded begin
+      set_gtk_property!(m["btnPopout"], :active, false)
+    end
+    return true
+  end
 
 end
 
