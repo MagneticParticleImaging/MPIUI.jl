@@ -152,6 +152,10 @@ function SFViewerWidget()
   end
   signal_connect(updateSFSignalOrdered, m["adjSFSignalOrdered"], "value_changed")
 
+  signal_connect(m["btnRecalcSNR"], :clicked) do w
+    @idle_add_guarded recalcSNR(m)
+  end  
+
   return m
 end
 
@@ -250,39 +254,6 @@ function updateSF(m::SFViewerWidget)
   updateData!(m.dv, imMeta, ampPhase=true)
 end
 
-function calcSNRF(im)
-  imFT = fft(im)
-  N = size(imFT)
-  if ndims(im) == 1
-    Noise = mean(abs.(imFT[div(N[1],2):div(N[1],2)+1]))
-  elseif ndims(im) == 2
-    x = mean(abs.(imFT[div(N[1],2):div(N[1],2)+1,:]))
-    y = mean(abs.(imFT[:,div(N[2],2):div(N[2],2)+1]))
-    Noise = (x+y)/2
-  elseif ndims(im) == 3
-    x = mean(abs.(imFT[div(N[1],2):div(N[1],2)+1,:,:]))
-    y = mean(abs.(imFT[:,div(N[2],2):div(N[2],2)+1,:]))
-    z = mean(abs.(imFT[:,:,div(N[3],2):div(N[3],2)+1]))
-    Noise = (x+y+z)/3
-  else
-    error("not implemented")
-  end
-  Sig = maximum(abs.(im))
-  return Sig / Noise * prod(sqrt.(N))
-end
-
-function calcSNR(im)
-  im = squeeze(im)
-  N = size(im)
-  imFilt = im #imfilter(abs.(im), Kernel.gaussian(2))
-  Sig = maximum(abs.(im))
-  mask = abs.(imFilt)/Sig .< 0.02
-  Noise = mean(abs.(im[mask]))
-  return Sig / Noise
-end
-
-
-
 function updateData!(m::SFViewerWidget, filenameSF::String)
   m.bSF = MPIFile(filenameSF, fastMode=true)
   m.maxChan = rxNumChannels(m.bSF)
@@ -325,12 +296,8 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
     m.SNR = reshape(snr, m.maxFreq, size(m.SNR,2), size(m.SNR,3))
   end
 
-  #m.SNR = calculateSystemMatrixSNR(m.bSF)
-  m.SNRSortedIndices = reverse(sortperm(vec(m.SNR)))
-  m.SNRSortedIndicesInverse = sortperm(m.SNRSortedIndices)
-  # sort SNR channel-wise
-  m.SNRSortedIndicesRecChan = [reverse(sortperm(m.SNR[:,i,1])) for i=1:m.maxChan]
-  m.SNRSortedIndicesRecChanInverse = [sortperm(snr) for snr in m.SNRSortedIndicesRecChan]
+  updateDerivedSNRLUTs(m)
+
   m.mixFac = MPIFiles.mixingFactors(m.bSF)
   mxyz, mask, freqNumber = MPIFiles.calcPrefactors(m.bSF)
   m.mxyz = mxyz
@@ -347,4 +314,22 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   updateSigOrd(m)
   updateSF(m)
   m.updating = false
+end
+
+function recalcSNR(m)
+  @info "Recalculate SNR"
+  m.updating = true
+  m.SNR = calculateSystemMatrixSNR(m.bSF)
+  updateDerivedSNRLUTs(m)
+  m.updating = false
+  updateSF(m)
+end
+
+function updateDerivedSNRLUTs(m)
+  m.SNRSortedIndices = reverse(sortperm(vec(m.SNR)))
+  m.SNRSortedIndicesInverse = sortperm(m.SNRSortedIndices)
+  # sort SNR channel-wise
+  m.SNRSortedIndicesRecChan = [reverse(sortperm(m.SNR[:,i,1])) for i=1:m.maxChan]
+  m.SNRSortedIndicesRecChanInverse = [sortperm(snr) for snr in m.SNRSortedIndicesRecChan]
+  return
 end
