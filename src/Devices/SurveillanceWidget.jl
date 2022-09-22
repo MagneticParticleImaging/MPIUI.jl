@@ -111,7 +111,19 @@ function initCallbacks(m::SurveillanceWidget)
             saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
         end
         m.updating = false
-    end  
+    end
+
+    signal_connect(m["btnEnableAC"], :clicked) do w
+      if ask_dialog("Confirm that you want to enable AC power", "Cancel", "Confirm", mpilab[]["mainWindow"])
+        enableACPower(m.su)
+      end
+    end
+
+    signal_connect(m["btnDisableAC"], :clicked) do w
+      if ask_dialog("Confirm that you want to disable AC power", "Cancel", "Confirm", mpilab[]["mainWindow"])
+        disableACPower(m.su)
+      end
+    end
 end
 
   
