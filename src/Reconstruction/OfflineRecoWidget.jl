@@ -79,6 +79,18 @@ function initCallbacks(m::OfflineRecoWidget)
   signal_connect((w)->saveReco(m), m["tbSaveReco"], "clicked")
 end
 
+function setParams(m::OfflineRecoWidget, params)
+  return setParams(m.params, params)
+end
+
+function getParams(m::OfflineRecoWidget)
+  return getParams(m.params)
+end
+
+function setSF(m::OfflineRecoWidget, path)
+  return setSF(m.params, path)
+end
+
 function saveReco(m::OfflineRecoWidget)
   if m.recoResult !== nothing
     m.recoResult.recoParams[:description] = get_gtk_property(m.params["entRecoDescrip"], :text, String)
@@ -128,7 +140,7 @@ end
 function updateSF(m::OfflineRecoWidget)
   params = getParams(m.params)
 
-  bgcorrection = params[:emptyMeasPath] != nothing || params[:bgCorrectionInternal]
+  bgcorrection = (params[:emptyMeasPath] != nothing) || params[:bgCorrectionInternal]
                  
   m.freq = filterFrequencies(m.params.bSF, minFreq=params[:minFreq], maxFreq=params[:maxFreq],
                              SNRThresh=params[:SNRThresh], recChannels=params[:recChannels],

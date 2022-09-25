@@ -12,6 +12,7 @@
     ## Test frequency selections
     @testset "Frequency selection" begin
         # freq and patch
+        set_gtk_property!(sf["adjSFRecChan"],:value, 1)
         set_gtk_property!(sf["adjSFFreq"],:value, 3)
         set_gtk_property!(sf["adjSFPatch"],:value, 5)
         sleep(0.5)
@@ -110,7 +111,7 @@
         write_to_png(getgc(dv.grid3D[1,2]).surface,"img/cbProfile_y.png")
         @testImg("cbProfile_y.png")
         write_to_png(getgc(dv.grid3D[1,2]).surface,"img/cbProfile_y.png")
-        write_to_png(getgc(sf.grid[1,2]).surface,"img/SNR.png")
+        write_to_png(getgc(sf.grid[1,3]).surface,"img/SNR.png")
         @testImg("SNR.png")
     end
 

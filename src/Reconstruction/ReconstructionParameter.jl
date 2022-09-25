@@ -179,7 +179,7 @@ function getParams(m::ReconstructionParameter)
 
   if params[:solver] == "kaczmarz"
     #params[:loadasreal] = true
-    params[:lambd] = [params[:lambd], params[:lambdaL1]^2 ] #params[:lambdaTV], params[:lambdaL1]]
+    params[:lambd] = [params[:lambd], params[:lambdaL1] ] #params[:lambdaTV], params[:lambdaL1]]
     params[:regName] = ["L2", "L1"] #"TV", "L1"]
   end
 
@@ -232,7 +232,8 @@ function getParams(m::ReconstructionParameter)
 
   shpString = get_gtk_property(m["entGridShape"], :text, String)
   shp = tryparse.(Int64,split(shpString,"x"))
-  params[:gridShape] = (shp[1] == nothing) ? MPIReco.gridSizeCommon(m.bSF) : shp
+
+  params[:gridShape] = (shp[1] == nothing) ? (isfile(filepath(m.bSF[1])) ? calibSize(m.bSF[1]) : [1, 1, 1]) : shp
 
   return params
 end
@@ -325,9 +326,9 @@ end
 @guarded function updateSFParamsChanged(m::ReconstructionParameter)
   m.sfParamsChanged = true
 
-  if m.bSF != nothing
-    @idle_add_guarded begin
-      params = getParams(m)
+  @idle_add_guarded begin
+    params = getParams(m)
+    if m.bSF != nothing && isfile(filepath(m.bSF[1]))
       freq = filterFrequencies(m.bSF, minFreq=params[:minFreq], maxFreq=params[:maxFreq],
             SNRThresh=params[:SNRThresh], recChannels=params[:recChannels],
             numPeriodAverages = params[:numPeriodAverages], 
@@ -386,12 +387,13 @@ function setSF(m::ReconstructionParameter, filename)
   m.bSF[m.selectedSF] = MPIFile( filename )
 
   @idle_add_guarded begin
+    if isfile(filepath(m.bSF[m.selectedSF]))
+      set_gtk_property!(m["entSF"], :text, filename)
+      set_gtk_property!(m["adjMinFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
+      set_gtk_property!(m["adjMaxFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
 
-    set_gtk_property!(m["entSF"], :text, filename)
-    set_gtk_property!(m["adjMinFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
-    set_gtk_property!(m["adjMaxFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
-
-    set_gtk_property!(m["entGridShape"], :text, @sprintf("%d x %d x %d", calibSize(m.bSF[m.selectedSF])...))
+      set_gtk_property!(m["entGridShape"], :text, @sprintf("%d x %d x %d", calibSize(m.bSF[m.selectedSF])...))
+    end
     m.sfParamsChanged = true
   end
 

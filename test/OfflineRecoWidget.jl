@@ -93,7 +93,7 @@
             MPIUI.setParams(rw,params)
             sleep(1)
             paramsTest = MPIUI.getParams(rw)
-            @test paramsTest[:lambd] == [0.05, 0.1]
+            @test paramsTest[:lambd] ≈ [0.05, 0.1]
             @test paramsTest[:solver] == "kaczmarz"
 
             # FusedLasso
@@ -104,7 +104,7 @@
             MPIUI.setParams(rw,params)
             sleep(1)
             paramsTest = MPIUI.getParams(rw)
-            @test paramsTest[:lambd] == [0.1, 0.2]
+            @test paramsTest[:lambd] ≈ [0.1, 0.2]
             @test paramsTest[:solver] == "fusedlasso"
             @test paramsTest[:loadasreal] == true
             
@@ -127,7 +127,7 @@
         end
 
         @testset "Load/Save Reco Profil" begin
-            set_gtk_property!(rw["entRecoParamsName"], :text, "TestParameter")
+            set_gtk_property!(rw.params["entRecoParamsName"], :text, "TestParameter")
             # TODO: Access to saveRecoParams and loadRecoParams
         end
 
@@ -141,6 +141,7 @@
         @testset "Setup System Matrix" begin
             params = defaultRecoParams()
             MPIUI.setParams(rw,params)
+            sleep(1)
             MPIUI.setSF(rw,pathSF)
             MPIUI.updateSF(rw)
             sleep(20)
