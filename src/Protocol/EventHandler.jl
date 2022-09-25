@@ -316,11 +316,11 @@ function handleEvent(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtoco
     @info "Received current signal"
     frame = event.data
     if !isnothing(frame)
-      #if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
+      if get_gtk_property(pw["cbOnlineDisplay",CheckButtonLeaf], :active, Bool)
         seq = pw.protocol.params.sequence
         deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
         updateData(pw.rawDataWidget, frame, deltaT)
-      #end
+      end
     end
     # Ask for next progress
     progressQuery = ProgressQueryEvent()
@@ -360,12 +360,13 @@ function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event
     frame = event.data
     if !isnothing(frame)
       @info "Received frame"
-      #infoMessage(m, "$(m.progress.unit) $(m.progress.done) / $(m.progress.total)", "green")
-      #if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
-      seq = pw.protocol.params.sequence
-      deltaT = ustrip(u"s", MPIMeasurements.dfCycle(seq) / rxNumSamplesPerPeriod(seq))
-      updateData(pw.rawDataWidget, frame, deltaT)
-      #end
+      if get_gtk_property(pw["cbOnlineDisplay",CheckButtonLeaf], :active, Bool)
+        seq = pw.protocol.params.sequence
+        deltaT = ustrip(u"s", MPIMeasurements.dfCycle(seq) / rxNumSamplesPerPeriod(seq))
+        updateData(pw.rawDataWidget, frame, deltaT)
+
+        ### Here to the online Reco
+      end
     end
     # Ask for next progress
     progressQuery = ProgressQueryEvent()
@@ -425,12 +426,11 @@ function handleEvent(pw::ProtocolWidget, protocol::RobotMPIMeasurementProtocol, 
     frame = event.data
     if !isnothing(frame)
       @info "Received frame"
-      #infoMessage(m, "$(m.progress.unit) $(m.progress.done) / $(m.progress.total)", "green")
-      #if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
-      seq = pw.protocol.params.sequence
-      deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
-      updateData(pw.rawDataWidget, frame, deltaT)
-      #end
+      if get_gtk_property(pw["cbOnlineDisplay",CheckButtonLeaf], :active, Bool)
+        seq = pw.protocol.params.sequence
+        deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
+        updateData(pw.rawDataWidget, frame, deltaT)
+      end
     end
     # Ask for next progress
     progressQuery = ProgressQueryEvent()

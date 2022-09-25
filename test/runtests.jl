@@ -35,4 +35,4 @@ end
 
 # tests
 include("SFViewer.jl")
-include("RecoWidget.jl")
+include("OfflineRecoWidget.jl")

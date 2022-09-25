@@ -13,6 +13,7 @@ mutable struct ProtocolWidget{T} <: Gtk.GtkBox
   # Display
   progress::Union{ProgressEvent, Nothing}
   rawDataWidget::RawDataWidget
+  dataViewerWidget::DataViewerWidget
   # Storage
   mdfstore::MDFDatasetStore
   dataBGStore::Array{Float32,4}
@@ -42,7 +43,7 @@ function ProtocolWidget(scanner=nothing)
   paramBuilder = Dict(:sequence => "expSequence", :positions => "expPositions")
 
   pw = ProtocolWidget(mainBox.handle, b, paramBuilder, false, scanner, protocol, nothing, nothing, PS_UNDEFINED,
-        nothing, RawDataWidget(), mdfstore, zeros(Float32,0,0,0,0), "", now())
+        nothing, RawDataWidget(), DataViewerWidget(), mdfstore, zeros(Float32,0,0,0,0), "", now())
   Gtk.gobject_move_ref(pw, mainBox)
 
   @idle_add_guarded begin
@@ -58,11 +59,19 @@ function ProtocolWidget(scanner=nothing)
   end
 
   # Dummy plotting for warmstart during protocol execution
-  @idle_add_guarded begin 
-    push!(pw["boxProtocolTabVisu",BoxLeaf], pw.rawDataWidget)
-    set_gtk_property!(pw["boxProtocolTabVisu",BoxLeaf],:expand, pw.rawDataWidget, true)  
+  @idle_add_guarded begin
+    nb = Notebook()
+
+    push!(nb, pw.rawDataWidget, "RawData")
+    push!(nb, pw.dataViewerWidget, "OnlineReco")
+    
+    push!(pw["boxProtocolTabVisu",BoxLeaf], nb)
+
+    set_gtk_property!(pw["boxProtocolTabVisu",BoxLeaf], :expand, nb, true)  
+    
     updateData(pw.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
     showall(pw.rawDataWidget)
+    showall(nb)
   end
 
   @info "Finished starting ProtocolWidget"
@@ -332,6 +341,11 @@ function addProtocolParameter(pw::ProtocolWidget, ::SequenceParameterType, field
   seq = SequenceParameter(field, value, pw.scanner)
   updateSequence(seq, value) # Set default sequence values
   push!(pw["boxProtocolParameter", BoxLeaf], seq)
+end
+
+function addProtocolParameter(pw::ProtocolWidget, ::ReconstructionParameterType, field, value, tooltip)
+  reco = OnlineRecoWidget(field)
+  push!(pw["boxProtocolParameter", BoxLeaf], reco)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::CoordinateParameterType, field, value, tooltip)

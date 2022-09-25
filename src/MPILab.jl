@@ -1193,7 +1193,7 @@ end
 
 function initRecoTab(m::MPILab)
 
-  m.recoWidget = RecoWidget()
+  m.recoWidget = OfflineRecoWidget()
 
   boxRecoTab = m["boxRecoTab"]
   push!(boxRecoTab,m.recoWidget)

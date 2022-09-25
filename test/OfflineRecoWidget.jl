@@ -1,4 +1,4 @@
-@testset "RecoWidget" begin
+@testset "OfflineRecoWidget" begin
     # Download data
     study = (getStudies(datasetstore,"BackgroundDrift") == Study[]) ? Study(datasetstore, "BackgroundDrift") : getStudies(datasetstore,"BackgroundDrift")[1]
     pathExp = joinpath(path(study),"1.mdf")
@@ -8,12 +8,12 @@
     # path SF
     pathSF = joinpath(calibdir(datasetstore),"1.mdf")
 
-    # Start RecoWidget
+    # Start OfflineRecoWidget
     r = RecoWindow(pathExp);
     sleep(5)
-    rw = r.rw # RecoWidget
+    rw = r.rw # OfflineRecoWidget
 
-    # add study and experiment to RecoWidget
+    # add study and experiment to OfflineRecoWidget
     rw.currentStudy = study
     rw.currentExperiment = exp
 

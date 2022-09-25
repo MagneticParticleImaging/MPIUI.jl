@@ -34,7 +34,7 @@ function TemperatureControllerWidget(tempCont::TemperatureControllerWidget)
   return m
 end
 
-function initCallbacks(m::SurveillanceWidget)
+function initCallbacks(m::TemperatureControllerWidget)
 
   signal_connect(m["btnEnable"], :clicked) do w
     if ask_dialog("Confirm that you want to enable temperature control", "Cancel", "Confirm", mpilab[]["mainWindow"])
