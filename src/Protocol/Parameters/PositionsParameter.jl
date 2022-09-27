@@ -4,7 +4,7 @@ mutable struct PositionParameter <: Gtk.GtkExpander
   field::Symbol
 
   function PositionParameter(field::Symbol, posValue::Union{Positions, Nothing})
-    uifile = joinpath(@__DIR__, "..", "builder", "positionsWidget.ui")
+    uifile = joinpath(@__DIR__, "..", "..", "builder", "positionsWidget.ui")
     b = Builder(filename=uifile)
     posObj = G_.object(b, "expPositions")
     #addTooltip(object_(pw.builder, "lblPositions", GtkLabel), tooltip)

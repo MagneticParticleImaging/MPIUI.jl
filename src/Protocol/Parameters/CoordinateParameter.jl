@@ -7,7 +7,7 @@ mutable struct CoordinateParameter <: Gtk.GtkGrid
 
   function CoordinateParameter(field::Symbol, coord::Union{ScannerCoords, Nothing}, tooltip::Union{Nothing, AbstractString} = nothing)
     grid = GtkGrid()
-    uifile = joinpath(@__DIR__, "..", "builder", "positionsWidget.ui")
+    uifile = joinpath(@__DIR__, "..", "..", "builder", "positionsWidget.ui")
     b = Builder(filename=uifile)
     coordEntry = G_.object(b, "gridCoord")
     label = GtkLabel(string(field))
