@@ -60,14 +60,10 @@ function ProtocolWidget(scanner=nothing)
 
   # Dummy plotting for warmstart during protocol execution
   @idle_add_guarded begin
-    nb = Notebook()
+    nb = pw["nbDataWidgets", Notebook]
 
     push!(nb, pw.rawDataWidget, "RawData")
     push!(nb, pw.dataViewerWidget, "OnlineReco")
-    
-    push!(pw["boxProtocolTabVisu",BoxLeaf], nb)
-
-    set_gtk_property!(pw["boxProtocolTabVisu",BoxLeaf], :expand, nb, true)  
     
     updateData(pw.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
     showall(pw.rawDataWidget)
