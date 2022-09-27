@@ -21,7 +21,8 @@ mutable struct ProtocolWidget{T} <: Gtk.GtkBox
   currStudyDate::DateTime
 end
 
-include("Parameters.jl")
+include("Parameters/Parameters.jl")
+include("")
 
 getindex(m::ProtocolWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
