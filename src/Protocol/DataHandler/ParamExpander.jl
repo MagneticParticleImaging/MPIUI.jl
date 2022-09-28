@@ -27,6 +27,7 @@ end
 
 function enable!(param::ParamExpander, val::Bool)
   @idle_add_guarded begin
+    enable!(param.handler, val) # Why is this needed???? For some reason the next setter does not fire always
     set_gtk_property!(param["switchEnable", Gtk.GtkSwitch], :active, val)
   end
 end

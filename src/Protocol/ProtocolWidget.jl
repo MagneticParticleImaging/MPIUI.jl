@@ -230,7 +230,7 @@ function updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
     push!(paramBox, expander)
     showall(expander)
     showall(display)
-    set_gtk_property!(expander, :expand, i == 1)
+    set_gtk_property!(expander, :expand, i == 1) # This does not expand
     enable!(expander, i == 1)
   end
   pw.dataHandler = handlers

@@ -20,8 +20,10 @@ end
 handleProgress(handler::AbstractDataHandler, protocol::Protocol, event::ProgressEvent) = nothing
 # Ask for something before protocol finishes, such a storage request
 handleFinished(handler::AbstractDataHandler, protocol::Protocol) = nothing
-# Ask for something in response to a successfull storage request
+# Ask for something in response to a successful storage request
 handleStorage(handler::AbstractDataHandler, protocol::Protocol, event::StorageSuccessEvent) = nothing
 
 include("ParamExpander.jl")
 include("RawDataHandler.jl")
+include("SpectrogramHandler.jl")
+include("OnlineRecoHandler.jl")

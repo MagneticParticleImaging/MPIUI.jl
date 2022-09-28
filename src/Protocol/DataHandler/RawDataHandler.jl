@@ -16,14 +16,14 @@ function RawDataHandler(scanner=nothing)
   return RawDataHandler(data, StorageParameter(scanner), true, true, 0)
 end
 
-for prot in [:RobotMPIMeasurementProtocol, :MPIMeasurementProtocol, :ContinousMeasurementProtocol, :RobotBasedSystemMatrixProtocol]
-  @eval begin 
+#for prot in [:RobotMPIMeasurementProtocol, :MPIMeasurementProtocol, :ContinousMeasurementProtocol, :RobotBasedSystemMatrixProtocol]
+#  @eval begin 
     function init(handler::RawDataHandler, protocol::Protocol)
       seq = protocol.params.sequence
       handler.deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
     end 
-  end
-end
+#  end
+#end
 
 isMeasurementStore(handler::RawDataHandler, d::DatasetStore) = handler.params.mdfstore.path == d.path
 

@@ -299,7 +299,7 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
 end
 
 ### Protocols and Data Handlers ###
-defaultDataHandler(protocol::Protocol) = [RawDataHandler]
+defaultDataHandler(protocol::Protocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 
 function handleNewProgress(pw::ProtocolWidget, protocol::Protocol, event::ProgressEvent)
   if !informNewProgress(pw, protocol, event)
