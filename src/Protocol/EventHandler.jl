@@ -14,7 +14,7 @@ function initProtocol(pw::ProtocolWidget)
   end
 end
 
-function startProtocol(pw::ProtocolWidget)
+@guarded function startProtocol(pw::ProtocolWidget)
   try 
     @info "Executing protocol"
     pw.biChannel = execute(pw.scanner, pw.protocol)
@@ -364,8 +364,9 @@ function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event
         seq = pw.protocol.params.sequence
         deltaT = ustrip(u"s", MPIMeasurements.dfCycle(seq) / rxNumSamplesPerPeriod(seq))
         updateData(pw.rawDataWidget, frame, deltaT)
-
+        updateData(pw.spectrogramWidget, frame, deltaT)
         ### Here to the online Reco
+        execute_(pw.onlineRecoWidget, frame, pw.dataViewerWidget)
       end
     end
     # Ask for next progress
@@ -386,6 +387,7 @@ function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event
   put!(pw.biChannel, FinishedAckEvent())
   @warn "Updating the raw data is currently diabled since it freezes the UI."
   updateData(pw.rawDataWidget, event.filename)
+  updateData(pw.spectrogramWidget, event.filename)
   updateExperimentStore(mpilab[], mpilab[].currentStudy)
   return true
 end
@@ -405,6 +407,8 @@ function handleEvent(pw::ProtocolWidget, protocol::ContinousMeasurementProtocol,
     seq = pw.protocol.params.sequence
     deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
     updateData(pw.rawDataWidget, meas, deltaT)
+    updateData(pw.spectrogramWidget, meas, deltaT)
+    execute_(pw.onlineRecoWidget, meas, pw.dataViewerWidget)
   end
   progressQuery = ProgressQueryEvent()
   put!(channel, progressQuery)

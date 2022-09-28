@@ -13,7 +13,9 @@ mutable struct ProtocolWidget{T} <: Gtk.GtkBox
   # Display
   progress::Union{ProgressEvent, Nothing}
   rawDataWidget::RawDataWidget
+  spectrogramWidget::SpectrogramWidget
   dataViewerWidget::DataViewerWidget
+  onlineRecoWidget::OnlineRecoWidget
   # Storage
   mdfstore::MDFDatasetStore
   dataBGStore::Array{Float32,4}
@@ -43,7 +45,8 @@ function ProtocolWidget(scanner=nothing)
   paramBuilder = Dict(:sequence => "expSequence", :positions => "expPositions")
 
   pw = ProtocolWidget(mainBox.handle, b, paramBuilder, false, scanner, protocol, nothing, nothing, PS_UNDEFINED,
-        nothing, RawDataWidget(), DataViewerWidget(), mdfstore, zeros(Float32,0,0,0,0), "", now())
+        nothing, RawDataWidget(), SpectrogramWidget(), DataViewerWidget(), OnlineRecoWidget(:test),
+        mdfstore, zeros(Float32,0,0,0,0), "", now())
   Gtk.gobject_move_ref(pw, mainBox)
 
   @idle_add_guarded begin
@@ -63,14 +66,22 @@ function ProtocolWidget(scanner=nothing)
     nb = Notebook()
 
     push!(nb, pw.rawDataWidget, "RawData")
+    push!(nb, pw.spectrogramWidget, "Spectrogram")
     push!(nb, pw.dataViewerWidget, "OnlineReco")
     
     push!(pw["boxProtocolTabVisu",BoxLeaf], nb)
 
+    push!(pw["boxAllParameters",BoxLeaf], pw.onlineRecoWidget)
+    showall(pw.onlineRecoWidget)
+    showall(pw["boxAllParameters",BoxLeaf])
+
+
     set_gtk_property!(pw["boxProtocolTabVisu",BoxLeaf], :expand, nb, true)  
-    
+
     updateData(pw.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
+    updateData(pw.spectrogramWidget, ones(Float32,10,1,1,1), 1.0)
     showall(pw.rawDataWidget)
+    showall(pw.spectrogramWidget)
     showall(nb)
   end
 
@@ -88,9 +99,17 @@ function displayProgress(pw::ProtocolWidget)
     progress = "FINISHED"
     fraction = 1.0
   end
-  @idle_add_guarded begin
-    set_gtk_property!(pw["pbProtocol", ProgressBar], :text, progress)
-    set_gtk_property!(pw["pbProtocol", ProgressBar], :fraction, fraction)
+  if pw.progress.total == 0 || isnan(fraction) || isinf(fraction)
+    @idle_add_guarded begin
+      set_gtk_property!(pw["pbProtocol", ProgressBar], :text, progress)
+      set_gtk_property!(pw["pbProtocol", ProgressBar], "pulse_step", 0.3)
+      pulse(pw["pbProtocol", ProgressBar])
+    end
+  else
+    @idle_add_guarded begin
+      set_gtk_property!(pw["pbProtocol", ProgressBar], :text, progress)
+      set_gtk_property!(pw["pbProtocol", ProgressBar], :fraction, fraction)
+    end
   end
 end
 

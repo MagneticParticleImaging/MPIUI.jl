@@ -358,7 +358,7 @@
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <child>
-              <object class="GtkBox">
+              <object class="GtkBox" id="boxAllParameters">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="margin-left">4</property>
