@@ -1,3 +1,6 @@
+include("Parameters/Parameters.jl")
+include("DataHandler/DataHandler.jl")
+
 mutable struct ProtocolWidget{T} <: Gtk.GtkBox
   # Gtk 
   handle::Ptr{Gtk.GObject}
@@ -12,17 +15,8 @@ mutable struct ProtocolWidget{T} <: Gtk.GtkBox
   protocolState::MPIMeasurements.ProtocolState
   # Display
   progress::Union{ProgressEvent, Nothing}
-  rawDataWidget::RawDataWidget
-  dataViewerWidget::DataViewerWidget
-  # Storage
-  mdfstore::MDFDatasetStore
-  dataBGStore::Array{Float32,4}
-  currStudyName::String
-  currStudyDate::DateTime
+  dataHandler::Union{Nothing, Vector{AbstractDataHandler}}
 end
-
-include("Parameters/Parameters.jl")
-include("")
 
 getindex(m::ProtocolWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
@@ -44,7 +38,7 @@ function ProtocolWidget(scanner=nothing)
   paramBuilder = Dict(:sequence => "expSequence", :positions => "expPositions")
 
   pw = ProtocolWidget(mainBox.handle, b, paramBuilder, false, scanner, protocol, nothing, nothing, PS_UNDEFINED,
-        nothing, RawDataWidget(), DataViewerWidget(), mdfstore, zeros(Float32,0,0,0,0), "", now())
+        nothing, nothing)
   Gtk.gobject_move_ref(pw, mainBox)
 
   @idle_add_guarded begin
@@ -91,23 +85,6 @@ function displayProgress(pw::ProtocolWidget)
   end
 end
 
-function getStorageMDF(pw::ProtocolWidget)
-  @info "Creating storage MDF"
-  mdf = defaultMDFv2InMemory()
-  studyName(mdf, pw.currStudyName) # TODO These are never updates, is the result correct?
-  studyTime(mdf, pw.currStudyDate )
-  studyDescription(mdf, "")
-  experimentDescription(mdf, get_gtk_property(pw["entExpDescr",EntryLeaf], :text, String))
-  experimentName(mdf, get_gtk_property(pw["entExpName",EntryLeaf], :text, String))
-  scannerOperator(mdf, get_gtk_property(pw["entOperator",EntryLeaf], :text, String))
-  tracerName(mdf, [get_gtk_property(pw["entTracerName",EntryLeaf], :text, String)])
-  tracerBatch(mdf, [get_gtk_property(pw["entTracerBatch",EntryLeaf], :text, String)])
-  tracerVendor(mdf, [get_gtk_property(pw["entTracerVendor",EntryLeaf], :text, String)])
-  tracerVolume(mdf, [1e-3*get_gtk_property(pw["adjTracerVolume",AdjustmentLeaf], :value, Float64)])
-  tracerConcentration(mdf, [1e-3*get_gtk_property(pw["adjTracerConcentration",AdjustmentLeaf], :value, Float64)])
-  tracerSolute(mdf, [get_gtk_property(pw["entTracerSolute",EntryLeaf], :text, String)])
-  return mdf
-end
 
 include("EventHandler.jl")
 include("SequenceBrowser.jl")
@@ -229,40 +206,70 @@ function updateProtocol(pw::ProtocolWidget, protocol::AbstractString)
 end
 
 function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
-  params = protocol.params
   @info "Updating protocol"
   @idle_add_guarded begin
     pw.updating = true
     pw.protocol = protocol
-    set_gtk_property!(pw["lblScannerName", GtkLabelLeaf], :label, name(pw.scanner))
-    set_gtk_property!(pw["lblProtocolType", GtkLabelLeaf], :label, string(typeof(protocol)))
-    set_gtk_property!(pw["txtBuffProtocolDescription", GtkTextBufferLeaf], :text, MPIMeasurements.description(protocol))
-    set_gtk_property!(pw["lblProtocolName", GtkLabelLeaf], :label, name(protocol))
-    # Clear old parameters
-    empty!(pw["boxProtocolParameter", BoxLeaf])
-
-    regular = [field for field in fieldnames(typeof(params)) if parameterType(field, nothing) isa RegularParameterType]
-    special = setdiff(fieldnames(typeof(params)), regular)
-    addRegularProtocolParameter(pw, params, regular)
-
-    for field in special
-      try 
-        value = getfield(params, field)
-        tooltip = string(fielddoc(typeof(params), field))
-        if contains(tooltip, "has field") #fielddoc for fields with no docstring returns "Type x has fields ..." listing all fields with docstring
-          tooltip = nothing
-        end
-        addProtocolParameter(pw, parameterType(field, value), field, value, tooltip)
-        @info "Added $field"
-      catch ex
-        @error ex
-      end
-    end
-
-    set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, false)
+    updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
+    updateProtocolParameter(pw, protocol)
     pw.updating = false
-    showall(pw["boxProtocolParameter", BoxLeaf])
   end
+end
+
+function updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
+  nb = pw["nbDataWidgets", Notebook]
+  paramBox = pw["boxGUIParams", GtkBox]
+  empty!(nb)
+  empty!(paramBox)
+  handlers = AbstractDataHandler[]
+  for (i, handlerType) in enumerate(defaultDataHandler(protocol))
+    # TODO what common constructor do we need
+    handler = handlerType(pw.scanner)
+    push!(handlers, handler)
+    display = getDisplayWidget(handler)
+    params = getParameterWidget(handler)
+    push!(nb, display, getDisplayTitle(handler))
+    expander = GtkExpander(getParameterTitle(handler))
+    # TODO make bold font
+    push!(expander, params)
+    set_gtk_property!(expander, :expand, i == 1)
+    # TODO Add enable button with sensitivity
+    push!(paramBox, expander)
+    showall(expander)
+    showall(display)
+  end
+  pw.dataHandler = handlers
+  showall(nb)
+end
+
+function updateProtocolParameter(pw::ProtocolWidget, protocol::Protocol)
+  params = protocol.params
+  set_gtk_property!(pw["lblScannerName", GtkLabelLeaf], :label, name(pw.scanner))
+  set_gtk_property!(pw["lblProtocolType", GtkLabelLeaf], :label, string(typeof(protocol)))
+  set_gtk_property!(pw["txtBuffProtocolDescription", GtkTextBufferLeaf], :text, MPIMeasurements.description(protocol))
+  set_gtk_property!(pw["lblProtocolName", GtkLabelLeaf], :label, name(protocol))
+  # Clear old parameters
+  empty!(pw["boxProtocolParameter", BoxLeaf])
+
+  regular = [field for field in fieldnames(typeof(params)) if parameterType(field, nothing) isa RegularParameterType]
+  special = setdiff(fieldnames(typeof(params)), regular)
+  addRegularProtocolParameter(pw, params, regular)
+
+  for field in special
+    try 
+      value = getfield(params, field)
+      tooltip = string(fielddoc(typeof(params), field))
+      if contains(tooltip, "has field") #fielddoc for fields with no docstring returns "Type x has fields ..." listing all fields with docstring
+        tooltip = nothing
+      end
+      addProtocolParameter(pw, parameterType(field, value), field, value, tooltip)
+      @info "Added $field"
+    catch ex
+      @error ex
+    end
+  end
+  set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, false)
+  showall(pw["boxProtocolParameter", BoxLeaf])
 end
 
 function addRegularProtocolParameter(pw::ProtocolWidget, params::ProtocolParams, fields::Vector{Symbol})

@@ -303,6 +303,9 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
   end
 end
 
+### Protocols ###
+defaultDataHandler(protocol::Protocol) = [RawDataHandler]
+
 ### RobotBasedSystemMatrixProtocol ###
 function handleNewProgress(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtocol, event::ProgressEvent)
   dataQuery = DataQueryEvent("SIGNAL")
