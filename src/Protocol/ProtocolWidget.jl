@@ -69,10 +69,18 @@ function displayProgress(pw::ProtocolWidget)
     progress = "FINISHED"
     fraction = 1.0
   end
-  @idle_add_guarded begin
-    set_gtk_property!(pw["pbProtocol", ProgressBar], :text, progress)
-    set_gtk_property!(pw["pbProtocol", ProgressBar], :fraction, fraction)
-  end
+  if pw.progress.total == 0 || isnan(fraction) || isinf(fraction)
+    @idle_add_guarded begin
+      set_gtk_property!(pw["pbProtocol", ProgressBar], :text, progress)
+      set_gtk_property!(pw["pbProtocol", ProgressBar], "pulse_step", 0.3)
+      pulse(pw["pbProtocol", ProgressBar])
+    end
+  else
+    @idle_add_guarded begin
+      set_gtk_property!(pw["pbProtocol", ProgressBar], :text, progress)
+      set_gtk_property!(pw["pbProtocol", ProgressBar], :fraction, fraction)
+    end
+  end  
 end
 
 
