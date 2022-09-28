@@ -31,17 +31,17 @@ end
 function getStorageMDF(sp::StorageParameter)
   @info "Creating storage MDF"
   mdf = defaultMDFv2InMemory()
-  studyName(mdf, ps.currStudyName) # TODO These are never updates, is the result correct?
-  studyTime(mdf, ps.currStudyDate)
+  studyName(mdf, sp.currStudyName)
+  studyTime(mdf, sp.currStudyDate)
   studyDescription(mdf, "")
-  experimentDescription(mdf, get_gtk_property(ps["entExpDescr",EntryLeaf], :text, String))
-  experimentName(mdf, get_gtk_property(ps["entExpName",EntryLeaf], :text, String))
-  scannerOperator(mdf, get_gtk_property(ps["entOperator",EntryLeaf], :text, String))
-  tracerName(mdf, [get_gtk_property(ps["entTracerName",EntryLeaf], :text, String)])
-  tracerBatch(mdf, [get_gtk_property(ps["entTracerBatch",EntryLeaf], :text, String)])
-  tracerVendor(mdf, [get_gtk_property(ps["entTracerVendor",EntryLeaf], :text, String)])
-  tracerVolume(mdf, [1e-3*get_gtk_property(ps["adjTracerVolume",AdjustmentLeaf], :value, Float64)])
-  tracerConcentration(mdf, [1e-3*get_gtk_property(ps["adjTracerConcentration",AdjustmentLeaf], :value, Float64)])
-  tracerSolute(mdf, [get_gtk_property(ps["entTracerSolute",EntryLeaf], :text, String)])
+  experimentDescription(mdf, get_gtk_property(sp["entExpDescr",EntryLeaf], :text, String))
+  experimentName(mdf, get_gtk_property(sp["entExpName",EntryLeaf], :text, String))
+  scannerOperator(mdf, get_gtk_property(sp["entOperator",EntryLeaf], :text, String))
+  tracerName(mdf, [get_gtk_property(sp["entTracerName",EntryLeaf], :text, String)])
+  tracerBatch(mdf, [get_gtk_property(sp["entTracerBatch",EntryLeaf], :text, String)])
+  tracerVendor(mdf, [get_gtk_property(sp["entTracerVendor",EntryLeaf], :text, String)])
+  tracerVolume(mdf, [1e-3*get_gtk_property(sp["adjTracerVolume",AdjustmentLeaf], :value, Float64)])
+  tracerConcentration(mdf, [1e-3*get_gtk_property(sp["adjTracerConcentration",AdjustmentLeaf], :value, Float64)])
+  tracerSolute(mdf, [get_gtk_property(sp["entTracerSolute",EntryLeaf], :text, String)])
   return mdf
 end

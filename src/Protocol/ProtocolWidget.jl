@@ -16,6 +16,7 @@ mutable struct ProtocolWidget{T} <: Gtk.GtkBox
   # Display
   progress::Union{ProgressEvent, Nothing}
   dataHandler::Union{Nothing, Vector{AbstractDataHandler}}
+  eventQueue::Vector{AbstractDataHandler}
 end
 
 getindex(m::ProtocolWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
@@ -38,7 +39,7 @@ function ProtocolWidget(scanner=nothing)
   paramBuilder = Dict(:sequence => "expSequence", :positions => "expPositions")
 
   pw = ProtocolWidget(mainBox.handle, b, paramBuilder, false, scanner, protocol, nothing, nothing, PS_UNDEFINED,
-        nothing, nothing)
+        nothing, nothing, AbstractDataHandler[])
   Gtk.gobject_move_ref(pw, mainBox)
 
   @idle_add_guarded begin
@@ -54,17 +55,6 @@ function ProtocolWidget(scanner=nothing)
   end
 
   # Dummy plotting for warmstart during protocol execution
-  @idle_add_guarded begin
-    nb = pw["nbDataWidgets", Notebook]
-
-    push!(nb, pw.rawDataWidget, "RawData")
-    push!(nb, pw.dataViewerWidget, "OnlineReco")
-    
-    updateData(pw.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
-    showall(pw.rawDataWidget)
-    showall(nb)
-  end
-
   @info "Finished starting ProtocolWidget"
   return pw
 end
@@ -393,11 +383,22 @@ function saveProtocol(pw::ProtocolWidget, fileName::AbstractString)
   # TODO Pick new protocol
 end
 
+function updateStudy(m::ProtocolWidget, name, date)
+  for handler in m.dataHandler
+    updateStudy(handler, name, date)
+  end
+end
+
+
 function isMeasurementStore(m::ProtocolWidget, d::DatasetStore)
-  if isnothing(m.mdfstore)
+  if isempty(m.dataHandler)
     return false
   else
-    return d.path == m.mdfstore.path
+    isStore = true
+    for handler in m.dataHandler
+      isStore &= isMeasurementStore(handler, d)
+    end
+    return isStore
   end
 end
 
