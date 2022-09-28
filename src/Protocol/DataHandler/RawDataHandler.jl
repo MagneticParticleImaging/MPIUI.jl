@@ -21,7 +21,7 @@ function isready(widget::RawDataHandler)
   return ready && enabled
 end
 enable!(widget::RawDataHandler, val::Bool) = @atomic widget.enabled = val
-getParameterTitle(widget::RawDataHandler) = "Storage Parameters"
+getParameterTitle(widget::RawDataHandler) = "Raw Data"
 getParameterWidget(widget::RawDataHandler) = widget.params
 getDisplayTitle(widget::RawDataHandler) = "Raw Data"
 getDisplayWidget(widget::RawDataHandler) = widget.dataWidget

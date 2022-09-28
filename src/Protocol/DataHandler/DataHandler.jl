@@ -12,4 +12,5 @@ function updateData(widget::AbstractDataHandler, data)
   # NOP
 end
 
+include("ParamExpander.jl")
 include("RawDataHandler.jl")

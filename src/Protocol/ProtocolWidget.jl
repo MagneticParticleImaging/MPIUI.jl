@@ -227,16 +227,13 @@ function updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
     handler = handlerType(pw.scanner)
     push!(handlers, handler)
     display = getDisplayWidget(handler)
-    params = getParameterWidget(handler)
     push!(nb, display, getDisplayTitle(handler))
-    expander = GtkExpander(getParameterTitle(handler))
-    # TODO make bold font
-    push!(expander, params)
-    set_gtk_property!(expander, :expand, i == 1)
-    # TODO Add enable button with sensitivity
+    expander = ParamExpander(handler)
     push!(paramBox, expander)
     showall(expander)
     showall(display)
+    set_gtk_property!(expander, :expand, i == 1)
+    enable!(expander, i == 1)
   end
   pw.dataHandler = handlers
   showall(nb)
