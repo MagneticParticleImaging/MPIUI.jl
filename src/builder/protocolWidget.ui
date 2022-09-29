@@ -4,203 +4,181 @@
   <requires lib="gtk+" version="3.20"/>
   <object class="GtkAdjustment" id="adjDFStrength">
     <property name="upper">30</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjExpNum">
     <property name="upper">100</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjFirstFrameBG">
     <property name="lower">1</property>
     <property name="upper">100</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjFrame">
     <property name="lower">1</property>
     <property name="upper">1000000</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjMaxFre">
     <property name="lower">1</property>
     <property name="upper">100</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjMaxFreq">
     <property name="upper">1250</property>
-    <property name="step-increment">10</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">10</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjMaxTP">
     <property name="lower">1</property>
     <property name="upper">100</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjMinFre">
     <property name="lower">1</property>
     <property name="upper">100</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjMinFreq">
     <property name="upper">1250</property>
-    <property name="step-increment">10</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">10</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjMinTP">
     <property name="lower">1</property>
     <property name="upper">100</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjNumAverages">
     <property name="upper">100000000000</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjNumBGFrames">
     <property name="upper">100000000000000</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjNumBGMeasurements">
     <property name="upper">10000000</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjNumFrameAverages">
     <property name="lower">1</property>
     <property name="upper">1000000</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjNumFrames">
     <property name="upper">1000000000</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjNumPatches">
     <property name="upper">100000000</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjNumPeriods">
     <property name="lower">1</property>
     <property name="upper">1000000000000</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjNumSubperiods">
     <property name="lower">1</property>
     <property name="upper">10000000000</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjPatch">
     <property name="lower">1</property>
     <property name="upper">10000</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjPause">
     <property name="upper">300</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjRxChan">
     <property name="lower">1</property>
     <property name="upper">100</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjTracerConcentration">
     <property name="upper">2000</property>
-    <property name="page-increment">10</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjTracerVolume">
     <property name="upper">100</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">10</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkImage" id="pickProtocolImage">
     <property name="visible">True</property>
-    <property name="can-focus">False</property>
+    <property name="can_focus">False</property>
     <property name="stock">gtk-index</property>
   </object>
   <object class="GtkTextBuffer" id="textBuffSeFo"/>
   <object class="GtkTextBuffer" id="txtBuffProtocolDescription"/>
   <object class="GtkBox" id="boxProtocol">
     <property name="visible">True</property>
-    <property name="can-focus">False</property>
-    <property name="margin-top">4</property>
-    <property name="margin-bottom">4</property>
+    <property name="can_focus">False</property>
+    <property name="margin_top">4</property>
+    <property name="margin_bottom">4</property>
     <property name="spacing">4</property>
     <child>
       <object class="GtkBox" id="boxProtocolTabVisu">
         <property name="visible">True</property>
-        <property name="can-focus">False</property>
+        <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkBox" id="box15">
             <property name="visible">True</property>
-            <property name="can-focus">False</property>
+            <property name="can_focus">False</property>
             <child>
-              <!-- n-columns=3 n-rows=3 -->
               <object class="GtkGrid">
-                <property name="width-request">180</property>
+                <property name="width_request">180</property>
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
+                <property name="can_focus">False</property>
                 <property name="valign">center</property>
-                <property name="column-spacing">4</property>
+                <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkLabel" id="lblProtocolName">
                     <property name="visible">True</property>
-                    <property name="can-focus">False</property>
+                    <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Default Protocol</property>
                   </object>
                   <packing>
-                    <property name="left-attach">1</property>
-                    <property name="top-attach">0</property>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">0</property>
                   </packing>
                 </child>
                 <child>
                   <object class="GtkButton" id="btnPickProtocol">
                     <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
                     <property name="image">pickProtocolImage</property>
-                    <property name="always-show-image">True</property>
+                    <property name="always_show_image">True</property>
                   </object>
                   <packing>
-                    <property name="left-attach">0</property>
-                    <property name="top-attach">0</property>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">0</property>
                   </packing>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
               </object>
               <packing>
@@ -212,16 +190,16 @@
             <child>
               <object class="GtkToolbar" id="tbRec">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
+                <property name="can_focus">False</property>
                 <child>
                   <object class="GtkToolButton" id="tbInit">
                     <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="tooltip-text" translatable="yes">Initializes the current protocol with the current paramters</property>
-                    <property name="is-important">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Initializes the current protocol with the current paramters</property>
+                    <property name="is_important">True</property>
                     <property name="label" translatable="yes">Init</property>
-                    <property name="use-underline">True</property>
-                    <property name="stock-id">gtk-jump-to</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-jump-to</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -232,12 +210,12 @@
                   <object class="GtkToggleToolButton" id="tbRun">
                     <property name="visible">True</property>
                     <property name="sensitive">False</property>
-                    <property name="can-focus">False</property>
-                    <property name="tooltip-text" translatable="yes">Starts the current protocol</property>
-                    <property name="is-important">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Starts the current protocol</property>
+                    <property name="is_important">True</property>
                     <property name="label" translatable="yes">Execute</property>
-                    <property name="use-underline">True</property>
-                    <property name="stock-id">gtk-media-play</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-media-play</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -248,12 +226,12 @@
                   <object class="GtkToggleToolButton" id="tbPause">
                     <property name="visible">True</property>
                     <property name="sensitive">False</property>
-                    <property name="can-focus">False</property>
-                    <property name="tooltip-text" translatable="yes">Attempts to pause the protocol</property>
-                    <property name="is-important">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Attempts to pause the protocol</property>
+                    <property name="is_important">True</property>
                     <property name="label" translatable="yes">Pause</property>
-                    <property name="use-underline">True</property>
-                    <property name="stock-id">gtk-media-pause</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-media-pause</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -264,12 +242,12 @@
                   <object class="GtkToolButton" id="tbCancel">
                     <property name="visible">True</property>
                     <property name="sensitive">False</property>
-                    <property name="can-focus">False</property>
-                    <property name="tooltip-text" translatable="yes">Attempts to cancel the protocol</property>
-                    <property name="is-important">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Attempts to cancel the protocol</property>
+                    <property name="is_important">True</property>
                     <property name="label" translatable="yes">Cancel</property>
-                    <property name="use-underline">True</property>
-                    <property name="stock-id">gtk-cancel</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-cancel</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -286,12 +264,12 @@
             <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
+                <property name="can_focus">False</property>
                 <property name="orientation">vertical</property>
                 <child>
                   <object class="GtkLabel" id="lbInfo">
                     <property name="visible">True</property>
-                    <property name="can-focus">False</property>
+                    <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Est. Runtime</property>
                   </object>
                   <packing>
@@ -303,7 +281,7 @@
                 <child>
                   <object class="GtkLabel" id="lblRuntime">
                     <property name="visible">True</property>
-                    <property name="can-focus">False</property>
+                    <property name="can_focus">False</property>
                     <property name="label" translatable="yes">N/A</property>
                   </object>
                   <packing>
@@ -322,9 +300,9 @@
             <child>
               <object class="GtkProgressBar" id="pbProtocol">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
+                <property name="can_focus">False</property>
                 <property name="text" translatable="yes">x / y Steps</property>
-                <property name="show-text">True</property>
+                <property name="show_text">True</property>
                 <property name="ellipsize">end</property>
               </object>
               <packing>
@@ -378,26 +356,26 @@
     </child>
     <child>
       <object class="GtkScrolledWindow" id="wndProtoclParams">
-        <property name="width-request">250</property>
+        <property name="width_request">250</property>
         <property name="visible">True</property>
-        <property name="can-focus">True</property>
-        <property name="shadow-type">in</property>
+        <property name="can_focus">True</property>
+        <property name="shadow_type">in</property>
         <child>
           <object class="GtkViewport">
             <property name="visible">True</property>
-            <property name="can-focus">False</property>
+            <property name="can_focus">False</property>
             <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="margin-left">4</property>
-                <property name="margin-right">4</property>
+                <property name="can_focus">False</property>
+                <property name="margin_left">4</property>
+                <property name="margin_right">4</property>
                 <property name="orientation">vertical</property>
                 <child>
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Data Processing</property>
+                    <property name="label" translatable="yes">Data Storage</property>
                     <attributes>
                       <attribute name="weight" value="bold"/>
                       <attribute name="size" value="13000"/>
@@ -410,9 +388,9 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkBox" id="boxGUIParams">
+                  <object class="GtkBox" id="boxStorageParams">
                     <property name="visible">True</property>
-                    <property name="can-focus">False</property>
+                    <property name="can_focus">False</property>
                     <property name="orientation">vertical</property>
                     <property name="spacing">2</property>
                     <child>
@@ -435,15 +413,56 @@
                   </packing>
                 </child>
                 <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Data Display</property>
+                    <attributes>
+                      <attribute name="weight" value="bold"/>
+                      <attribute name="size" value="13000"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox" id="boxGUIParams">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">2</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child>
                   <object class="GtkBox" id="boxProtocolParams">
                     <property name="visible">True</property>
-                    <property name="can-focus">False</property>
+                    <property name="can_focus">False</property>
                     <property name="orientation">vertical</property>
                     <property name="spacing">4</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="visible">True</property>
-                        <property name="can-focus">False</property>
+                        <property name="can_focus">False</property>
                         <property name="label" translatable="yes">Protocol</property>
                         <attributes>
                           <attribute name="weight" value="heavy"/>
@@ -459,83 +478,73 @@
                     <child>
                       <object class="GtkExpander">
                         <property name="visible">True</property>
-                        <property name="can-focus">True</property>
+                        <property name="can_focus">True</property>
                         <child>
-                          <!-- n-columns=3 n-rows=3 -->
                           <object class="GtkGrid">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="can_focus">False</property>
                             <child>
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
-                                <property name="can-focus">False</property>
+                                <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">Type</property>
                               </object>
                               <packing>
-                                <property name="left-attach">0</property>
-                                <property name="top-attach">1</property>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">1</property>
                               </packing>
                             </child>
                             <child>
                               <object class="GtkLabel" id="lblProtocolType">
                                 <property name="visible">True</property>
-                                <property name="can-focus">False</property>
+                                <property name="can_focus">False</property>
                               </object>
                               <packing>
-                                <property name="left-attach">1</property>
-                                <property name="top-attach">1</property>
+                                <property name="left_attach">1</property>
+                                <property name="top_attach">1</property>
                               </packing>
                             </child>
                             <child>
                               <object class="GtkTextView" id="txtProtocolDescription">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
+                                <property name="can_focus">True</property>
                                 <property name="hexpand">True</property>
-                                <property name="wrap-mode">word</property>
+                                <property name="wrap_mode">word</property>
                                 <property name="buffer">txtBuffProtocolDescription</property>
                               </object>
                               <packing>
-                                <property name="left-attach">0</property>
-                                <property name="top-attach">2</property>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">2</property>
                                 <property name="width">2</property>
                               </packing>
                             </child>
                             <child>
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
-                                <property name="can-focus">False</property>
+                                <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">Scanner</property>
                               </object>
                               <packing>
-                                <property name="left-attach">0</property>
-                                <property name="top-attach">0</property>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">0</property>
                               </packing>
                             </child>
                             <child>
                               <object class="GtkLabel" id="lblScannerName">
                                 <property name="visible">True</property>
-                                <property name="can-focus">False</property>
+                                <property name="can_focus">False</property>
                               </object>
                               <packing>
-                                <property name="left-attach">1</property>
-                                <property name="top-attach">0</property>
+                                <property name="left_attach">1</property>
+                                <property name="top_attach">0</property>
                               </packing>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
                             </child>
                           </object>
                         </child>
                         <child type="label">
                           <object class="GtkLabel">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="can_focus">False</property>
                             <property name="label" translatable="yes">Description</property>
                             <attributes>
                               <attribute name="weight" value="bold"/>
@@ -552,14 +561,14 @@
                     <child>
                       <object class="GtkExpander">
                         <property name="visible">True</property>
-                        <property name="can-focus">True</property>
+                        <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
                         <property name="vexpand">False</property>
                         <property name="expanded">True</property>
                         <child>
                           <object class="GtkBox" id="boxProtocolParameter">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="can_focus">False</property>
                             <property name="hexpand">True</property>
                             <property name="vexpand">True</property>
                             <property name="orientation">vertical</property>
@@ -628,7 +637,7 @@
                         <child type="label">
                           <object class="GtkLabel">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="can_focus">False</property>
                             <property name="label" translatable="yes">Parameter</property>
                             <attributes>
                               <attribute name="weight" value="bold"/>
@@ -646,8 +655,8 @@
                       <object class="GtkButton" id="btnSaveProtocol">
                         <property name="label" translatable="yes">Save Protocol</property>
                         <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="receives-default">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -659,7 +668,7 @@
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
-                    <property name="position">2</property>
+                    <property name="position">4</property>
                   </packing>
                 </child>
               </object>
