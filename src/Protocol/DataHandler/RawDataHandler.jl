@@ -83,7 +83,7 @@ function handleFinished(handler::RawDataHandler, protocol::Protocol)
   return request
 end
 
-# Atm we check initatior based on type, if multiple same-type widgets are supposed to be supported we'd need equality checks
+# Atm we check initiator based on type, if multiple same-type widgets are supposed to be supported we'd need equality checks
 function handleStorage(handler::RawDataHandler, protocol::Protocol, event::StorageSuccessEvent, initiator::RawDataHandler)
   @info "Received storage success event"
   updateData(handler.dataWidget, event.filename)
@@ -99,7 +99,7 @@ function handleData(handler::RawDataHandler, protocol::Protocol, event::DataAnsw
   end
   if event.query.message == "BG"
     handler.bgMeas = event.data
-    # TODO further process bgMeas
+    setBG(handler.dataWidget, handler.bgMeas)
   else 
     @atomic handler.ready = false
     @idle_add_guarded begin

@@ -6,6 +6,8 @@ mutable struct OnlineRecoHandler <: AbstractDataHandler
   @atomic ready::Bool
   # Protocol
   deltaT::Float64
+  bgMeas::Array{Float32, 4}
+  oldUnit::String
 end
 
 function OnlineRecoHandler(scanner=nothing)
@@ -17,12 +19,14 @@ function OnlineRecoHandler(scanner=nothing)
   c = makeAxisArray(c, [0.1,0.1,0.1], zeros(3), 1.0) 
   updateData!(dataWidget, ImageMeta(c))
 
-  return OnlineRecoHandler(dataWidget, onlineRecoWidget, true, true, 0)
+  return OnlineRecoHandler(dataWidget, onlineRecoWidget, true, true, 0, zeros(Float32,0,0,0,0), "")
 end
 
 function init(handler::OnlineRecoHandler, protocol::Protocol)
   seq = protocol.params.sequence
+  handler.oldUnit = ""
   handler.deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
+  handler.bgMeas = zeros(Float32,0,0,0,0)
 end 
 
 function isready(handler::OnlineRecoHandler)
@@ -38,31 +42,52 @@ getParameterWidget(handler::OnlineRecoHandler) = handler.onlineRecoWidget
 getDisplayTitle(handler::OnlineRecoHandler) = "Online Reco"
 getDisplayWidget(handler::OnlineRecoHandler) = handler.dataWidget
 
-function handleProgress(handler::OnlineRecoHandler, protocol::RobotMPIMeasurementProtocol, event::ProgressEvent)
-  @debug "Asking for new frame $(event.done)"
-  return DataQueryEvent("FRAME:$(event.done)")
-end
-function handleProgress(handler::OnlineRecoHandler, protocol::MPIMeasurementProtocol, event::ProgressEvent)
-  @debug "Asking for new frame $(event.done)"
-  return DataQueryEvent("FRAME:$(event.done)")
+function handleProgress(handler::OnlineRecoHandler, protocol::Union{MPIMeasurementProtocol, RobotMPIMeasurementProtocol}, event::ProgressEvent)
+  query = nothing
+  if handler.oldUnit == "BG Frames" && event.unit == "Frames"
+    @debug "Asking for background measurement"
+    # TODO technically we lose the "first" proper frame now, until we implement returning multiple queries
+    # If there is only one fg we get that in the next plot from the mdf anyway
+    query = DataQueryEvent("BG")
+  else
+    @debug "Asking for new frame $(event.done)"
+    query = DataQueryEvent("FRAME:$(event.done)")
+  end
+  handler.oldUnit = event.unit
+  return query
 end
 function handleProgress(handler::OnlineRecoHandler, protocol::ContinousMeasurementProtocol, event::ProgressEvent)
-  @debug "Asking for new measurement $(event.done)"
-  return DataQueryEvent("FG")
+  query = nothing
+  if handler.oldUnit == "BG Measurement" && event.unit == "Measurements"
+    @debug "Asking for background measurement"
+    # TODO technically we lose the "first" proper frame now, until we implement returning multiple queries
+    # If there is only one fg we get that in the next plot from the mdf anyway
+    query = DataQueryEvent("BG")
+  else
+    @debug "Asking for new measurement $(event.done)"
+    query = DataQueryEvent("FG")
+  end
+  handler.oldUnit = event.unit
+  return query
 end
+
 
 function handleData(handler::OnlineRecoHandler, protocol::Protocol, event::DataAnswerEvent)
   data = event.data
   if isnothing(data)
     return nothing
   end
-  @atomic handler.ready = false
-  @idle_add_guarded begin
-    try
-      #updateData(handler.dataWidget, data, handler.deltaT)
-      execute_(handler.onlineRecoWidget, data, handler.dataWidget)
-    finally
-      @atomic handler.ready = true
+  if event.query.message == "BG"
+    handler.bgMeas = event.data
+    ## TODO something  setBG(handler.dataWidget, handler.bgMeas)
+  else 
+    @atomic handler.ready = false
+    @idle_add_guarded begin
+      try
+        execute_(handler.onlineRecoWidget, data, handler.dataWidget)
+      finally
+        @atomic handler.ready = true
+      end
     end
   end
 end

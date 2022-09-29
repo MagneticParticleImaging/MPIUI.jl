@@ -529,6 +529,13 @@ end
   return nothing
 end
 
+function setBG(m::RawDataWidget, dataBG)
+  if ndims(dataBG) == 5
+    m.dataBG = dataBG
+  else
+    m.dataBG = reshape(dataBG, size(dataBG)..., 1)
+  end
+end
 
 @guarded function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   maxValTPOld = get_gtk_property(m["adjMinTP"],:upper, Int64)
