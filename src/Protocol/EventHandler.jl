@@ -299,7 +299,10 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
 end
 
 ### Protocols and Data Handlers ###
-defaultDataHandler(protocol::Protocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
+defaultDataHandler(protocol::Protocol) = [RawDataHandler, SpectrogramHandler]
+defaultDataHandler(protocol::MPIMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
+defaultDataHandler(protocol::ContinousMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
+defaultDataHandler(protocol::RobotMPIMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 
 function handleNewProgress(pw::ProtocolWidget, protocol::Protocol, event::ProgressEvent)
   if !informNewProgress(pw, protocol, event)
