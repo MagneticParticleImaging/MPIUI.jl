@@ -12,9 +12,6 @@ getParameterTitle(handler::AbstractDataHandler) = "N/A"
 getParameterWidget(handler::AbstractDataHandler) = Gtk.Grid()
 getDisplayTitle(handler::AbstractDataHandler) = "N/A"
 getDisplayWidget(handler::AbstractDataHandler) = Gtk.Box()
-function updateData(handler::AbstractDataHandler, data::Nothing)
-  # NOP
-end
 
 # Ask for data, which is given in updateData (alternative directly get data event)
 handleProgress(handler::AbstractDataHandler, protocol::Protocol, event::ProgressEvent) = nothing
@@ -22,6 +19,8 @@ handleProgress(handler::AbstractDataHandler, protocol::Protocol, event::Progress
 handleFinished(handler::AbstractDataHandler, protocol::Protocol) = nothing
 # Ask for something in response to a successful storage request
 handleStorage(handler::AbstractDataHandler, protocol::Protocol, event::StorageSuccessEvent) = nothing
+# Receive Data requests
+handleData(handler::AbstractDataHandler, protocol::Protocol, event::DataAnswerEvent) = nothing
 
 include("ParamExpander.jl")
 include("RawDataHandler.jl")

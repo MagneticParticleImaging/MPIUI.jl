@@ -16,18 +16,14 @@ function RawDataHandler(scanner=nothing)
   return RawDataHandler(data, StorageParameter(scanner), true, true, 0)
 end
 
-#for prot in [:RobotMPIMeasurementProtocol, :MPIMeasurementProtocol, :ContinousMeasurementProtocol, :RobotBasedSystemMatrixProtocol]
-#  @eval begin 
-    function init(handler::RawDataHandler, protocol::Protocol)
-      seq = protocol.params.sequence
-      handler.deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
-    end 
-#  end
-#end
+function init(handler::RawDataHandler, protocol::Protocol)
+  seq = protocol.params.sequence
+  handler.deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
+end 
 
 isMeasurementStore(handler::RawDataHandler, d::DatasetStore) = handler.params.mdfstore.path == d.path
 
-function updateStudy(handler::AbstractDataHandler, name::String, date::DateTime)
+function updateStudy(handler::RawDataHandler, name::String, date::DateTime)
   handler.params.currStudyName = name
   handler.params.currStudyDate = date
 end
@@ -73,8 +69,13 @@ end
 
 updateData(handler::RawDataHandler, data::Nothing) = nothing
 
-function updateData(handler::RawDataHandler, data)
+function handleData(handler::RawDataHandler, protocol::Protocol, event::DataAnswerEvent)
+  data = event.data
+  if isnothing(data)
+    return nothing
+  end
   @atomic handler.ready = false
+  # TODO with event.query check if bg or not
   @idle_add_guarded begin
     try
       updateData(handler.dataWidget, data, handler.deltaT)

@@ -51,9 +51,11 @@ function handleProgress(handler::OnlineRecoHandler, protocol::RobotBasedSystemMa
   return DataQueryEvent("SIGNAL")
 end
 
-updateData(handler::OnlineRecoHandler, data::Nothing) = nothing
-
-function updateData(handler::OnlineRecoHandler, data)
+function handleData(handler::OnlineRecoHandler, protocol::Protocol, event::DataAnswerEvent)
+  data = event.data
+  if isnothing(data)
+    return nothing
+  end
   @atomic handler.ready = false
   @idle_add_guarded begin
     try

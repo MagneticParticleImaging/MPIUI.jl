@@ -49,9 +49,11 @@ function handleProgress(handler::SpectrogramHandler, protocol::RobotBasedSystemM
   return DataQueryEvent("SIGNAL")
 end
 
-updateData(handler::SpectrogramHandler, data::Nothing) = nothing
-
-function updateData(handler::SpectrogramHandler, data)
+function handleData(handler::SpectrogramHandler, protocol::Protocol, event::DataAnswerEvent)
+  data = event.data
+  if isnothing(data)
+    return nothing
+  end
   @atomic handler.ready = false
   @idle_add_guarded begin
     try
