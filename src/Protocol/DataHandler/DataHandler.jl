@@ -24,6 +24,9 @@ handleStorage(handler::AbstractDataHandler, protocol::Protocol, event::StorageSu
 # Receive Data requests
 handleData(handler::AbstractDataHandler, protocol::Protocol, event::DataAnswerEvent) = nothing
 
+measureBackground(handler::AbstractDataHandler, protocol::Protocol) = protocol.params.measureBackground
+measureBackground(handler::AbstractDataHandler, protocol::RobotBasedSystemMatrixProtocol) = false # TODO Check bgMeas
+
 include("ParamExpander.jl")
 include("RawDataHandler.jl")
 include("SpectrogramHandler.jl")

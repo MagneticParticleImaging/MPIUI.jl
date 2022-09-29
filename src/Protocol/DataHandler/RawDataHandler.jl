@@ -7,18 +7,22 @@ mutable struct RawDataHandler <: AbstractDataHandler
   @atomic ready::Bool
   # Protocol
   deltaT::Float64
+  bgMeas::Array{Float32, 4}
+  oldUnit::String
 end
 
 function RawDataHandler(scanner=nothing)
   data = RawDataWidget()
   # Init Display Widget
   updateData(data, ones(Float32,10,1,1,1), 1.0)
-  return RawDataHandler(data, StorageParameter(scanner), true, true, 0)
+  return RawDataHandler(data, StorageParameter(scanner), true, true, 0, zeros(Float32,0,0,0,0), "")
 end
 
 function init(handler::RawDataHandler, protocol::Protocol)
   seq = protocol.params.sequence
+  handler.oldUnit = ""
   handler.deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
+  handler.bgMeas = zeros(Float32,0,0,0,0)
 end 
 
 isMeasurementStore(handler::RawDataHandler, d::DatasetStore) = handler.params.mdfstore.path == d.path
@@ -41,13 +45,19 @@ getParameterWidget(handler::RawDataHandler) = nothing
 getDisplayTitle(handler::RawDataHandler) = "Raw Data"
 getDisplayWidget(handler::RawDataHandler) = handler.dataWidget
 
-function handleProgress(handler::RawDataHandler, protocol::RobotMPIMeasurementProtocol, event::ProgressEvent)
-  @debug "Asking for new frame $(event.done)"
-  return DataQueryEvent("FRAME:$(event.done)")
-end
-function handleProgress(handler::RawDataHandler, protocol::MPIMeasurementProtocol, event::ProgressEvent)
-  @debug "Asking for new frame $(event.done)"
-  return DataQueryEvent("FRAME:$(event.done)")
+function handleProgress(handler::RawDataHandler, protocol::Union{MPIMeasurementProtocol, RobotMPIMeasurementProtocol}, event::ProgressEvent)
+  query = nothing
+  if handler.oldUnit == "BG Frames" && event.unit == "Frames"
+    @debug "Asking for background measurement"
+    # TODO technically we lose the "first" proper frame now, until we implement returning multiple queries
+    # If there is only one fg we get that in the next plot from the mdf anyway
+    query = DataQueryEvent("BG")
+  else
+    @debug "Asking for new frame $(event.done)"
+    query = DataQueryEvent("FRAME:$(event.done)")
+  end
+  handler.oldUnit = event.unit
+  return query
 end
 function handleProgress(handler::RawDataHandler, protocol::ContinousMeasurementProtocol, event::ProgressEvent)
   @debug "Asking for new measurement $(event.done)"
@@ -77,13 +87,17 @@ function handleData(handler::RawDataHandler, protocol::Protocol, event::DataAnsw
   if isnothing(data)
     return nothing
   end
-  @atomic handler.ready = false
-  # TODO with event.query check if bg or not
-  @idle_add_guarded begin
-    try
-      updateData(handler.dataWidget, data, handler.deltaT)
-    finally
-      @atomic handler.ready = true
+  if event.query.message == "BG"
+    handler.bgMeas = event.data
+    # TODO further process bgMeas
+  else 
+    @atomic handler.ready = false
+    @idle_add_guarded begin
+      try
+        updateData(handler.dataWidget, data, handler.deltaT)
+      finally
+        @atomic handler.ready = true
+      end
     end
   end
 end
