@@ -11,8 +11,12 @@ end
 function OnlineRecoHandler(scanner=nothing)
   dataWidget = DataViewerWidget()
   onlineRecoWidget = OnlineRecoWidget(:test)
-  # Init Display Widget
-  #updateData(data, ones(Float32,10,1,1,1), 1.0)
+
+  # Init Display Widget (warmstart)
+  c = ones(Float32,1,3,3,3,1)
+  c = makeAxisArray(c, [0.1,0.1,0.1], zeros(3), 1.0) 
+  updateData!(dataWidget, ImageMeta(c))
+
   return OnlineRecoHandler(dataWidget, onlineRecoWidget, true, true, 0)
 end
 
