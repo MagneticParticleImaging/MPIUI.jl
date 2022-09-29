@@ -218,7 +218,11 @@ function updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
   nb = pw["nbDataWidgets", Notebook]
   paramBox = pw["boxGUIParams", GtkBox]
   storageBox = pw["boxStorageParams", GtkBox]
-  empty!(nb)
+  #empty!(nb) # segfaults sometimes
+  numPages = G_.n_pages(nb)
+  for i = 1:numPages
+    splice!(nb, numPages-i+1)
+  end
   empty!(paramBox)
   empty!(storageBox)
   handlers = AbstractDataHandler[]
