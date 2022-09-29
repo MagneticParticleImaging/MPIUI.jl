@@ -48,7 +48,7 @@ function handleProgress(handler::OnlineRecoHandler, protocol::MPIMeasurementProt
 end
 function handleProgress(handler::OnlineRecoHandler, protocol::ContinousMeasurementProtocol, event::ProgressEvent)
   @debug "Asking for new measurement $(event.done)"
-  return DataQueryEvent("")
+  return DataQueryEvent("FG")
 end
 
 function handleData(handler::OnlineRecoHandler, protocol::Protocol, event::DataAnswerEvent)

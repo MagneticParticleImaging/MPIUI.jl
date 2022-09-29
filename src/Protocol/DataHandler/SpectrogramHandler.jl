@@ -41,7 +41,7 @@ function handleProgress(handler::SpectrogramHandler, protocol::MPIMeasurementPro
 end
 function handleProgress(handler::SpectrogramHandler, protocol::ContinousMeasurementProtocol, event::ProgressEvent)
   @debug "Asking for new measurement $(event.done)"
-  return DataQueryEvent("")
+  return DataQueryEvent("FG")
 end
 function handleProgress(handler::SpectrogramHandler, protocol::RobotBasedSystemMatrixProtocol, event::ProgressEvent)
   @debug "Asking for latest position"

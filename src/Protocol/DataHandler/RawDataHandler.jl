@@ -60,8 +60,18 @@ function handleProgress(handler::RawDataHandler, protocol::Union{MPIMeasurementP
   return query
 end
 function handleProgress(handler::RawDataHandler, protocol::ContinousMeasurementProtocol, event::ProgressEvent)
-  @debug "Asking for new measurement $(event.done)"
-  return DataQueryEvent("")
+  query = nothing
+  if handler.oldUnit == "BG Measurement" && event.unit == "Measurements"
+    @debug "Asking for background measurement"
+    # TODO technically we lose the "first" proper frame now, until we implement returning multiple queries
+    # If there is only one fg we get that in the next plot from the mdf anyway
+    query = DataQueryEvent("BG")
+  else
+    @debug "Asking for new measurement $(event.done)"
+    query = DataQueryEvent("FG")
+  end
+  handler.oldUnit = event.unit
+  return query
 end
 function handleProgress(handler::RawDataHandler, protocol::RobotBasedSystemMatrixProtocol, event::ProgressEvent)
   @debug "Asking for latest position"
