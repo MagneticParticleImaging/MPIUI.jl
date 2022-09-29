@@ -63,7 +63,8 @@ function handleFinished(handler::RawDataHandler, protocol::Protocol)
   return request
 end
 
-function handleStorage(handler::RawDataHandler, protocol::Protocol, event::StorageSuccessEvent)
+# Atm we check initatior based on type, if multiple same-type widgets are supposed to be supported we'd need equality checks
+function handleStorage(handler::RawDataHandler, protocol::Protocol, event::StorageSuccessEvent, initiator::RawDataHandler)
   @info "Received storage success event"
   updateData(handler.dataWidget, event.filename)
   updateExperimentStore(mpilab[], mpilab[].currentStudy)

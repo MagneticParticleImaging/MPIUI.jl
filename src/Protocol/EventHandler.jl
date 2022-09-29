@@ -365,7 +365,9 @@ end
 
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::StorageSuccessEvent)
   handler = popfirst!(pw.eventQueue)
-  handleStorage(handler, protocol, event)
+  for temp in pw.dataHandler
+    handleStorage(temp, protocol, event, handler)
+  end
   channel = pw.biChannel
   if isempty(pw.eventQueue) && isopen(channel)
     if pw.protocolState == PS_RUNNING 

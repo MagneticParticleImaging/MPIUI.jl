@@ -20,7 +20,7 @@ handleProgress(handler::AbstractDataHandler, protocol::Protocol, event::Progress
 # Ask for something before protocol finishes, such a storage request
 handleFinished(handler::AbstractDataHandler, protocol::Protocol) = nothing
 # Ask for something in response to a successful storage request
-handleStorage(handler::AbstractDataHandler, protocol::Protocol, event::StorageSuccessEvent) = nothing
+handleStorage(handler::AbstractDataHandler, protocol::Protocol, event::StorageSuccessEvent, initiator::AbstractDataHandler) = nothing
 # Receive Data requests
 handleData(handler::AbstractDataHandler, protocol::Protocol, event::DataAnswerEvent) = nothing
 

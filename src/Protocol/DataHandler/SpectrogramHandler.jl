@@ -48,6 +48,11 @@ function handleProgress(handler::SpectrogramHandler, protocol::RobotBasedSystemM
   return DataQueryEvent("SIGNAL")
 end
 
+function handleStorage(handler::SpectrogramHandler, protocol::Protocol, event::StorageSuccessEvent, initiator::RawDataHandler)
+  updateData(handler.dataWidget, event.filename)
+end
+
+
 function handleData(handler::SpectrogramHandler, protocol::Protocol, event::DataAnswerEvent)
   data = event.data
   if isnothing(data)
