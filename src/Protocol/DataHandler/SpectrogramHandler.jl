@@ -28,7 +28,6 @@ function enable!(handler::SpectrogramHandler, val::Bool)
   @atomic handler.enabled = val
 end
 getParameterTitle(handler::SpectrogramHandler) = "Spectrogram"
-getParameterWidget(handler::SpectrogramHandler) = Box(:v)
 getDisplayTitle(handler::SpectrogramHandler) = "Spectrogram"
 getDisplayWidget(handler::SpectrogramHandler) = handler.dataWidget
 

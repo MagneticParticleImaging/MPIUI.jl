@@ -217,23 +217,37 @@ end
 function updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
   nb = pw["nbDataWidgets", Notebook]
   paramBox = pw["boxGUIParams", GtkBox]
+  storageBox = pw["boxStorageParams", GtkBox]
   empty!(nb)
   empty!(paramBox)
+  empty!(storageBox)
   handlers = AbstractDataHandler[]
   for (i, handlerType) in enumerate(defaultDataHandler(protocol))
     # TODO what common constructor do we need
     handler = handlerType(pw.scanner)
     push!(handlers, handler)
     display = getDisplayWidget(handler)
+    if isnothing(display)
+      display = Box(:v)
+    end
     push!(nb, display, getDisplayTitle(handler))
-    expander = ParamExpander(handler)
-    push!(paramBox, expander)
-    showall(expander)
+    storage = getStorageWidget(handler)
+    if !isnothing(storage)
+      storageExpander = Gtk.GtkExpander(getStorageTitle(handler))
+      set_gtk_property!(storageExpander, :expand, true)
+      push!(storageExpander, storage)
+      push!(storageBox, storageExpander)
+    end
+    paramExpander = ParamExpander(handler)
+    push!(paramBox, paramExpander)
+    showall(paramExpander)
     showall(display)
-    set_gtk_property!(expander, :expand, i == 1) # This does not expand
-    enable!(expander, i == 1)
+    set_gtk_property!(paramExpander, :expand, i == 1) # This does not expand
+    enable!(paramExpander, i == 1)
   end
   pw.dataHandler = handlers
+  showall(paramBox)
+  showall(storageBox)
   showall(nb)
 end
 

@@ -8,10 +8,12 @@ updateStudy(handler::AbstractDataHandler, name, date) = nothing
 function enable!(handler::AbstractDataHandler, val::Bool)
   # NOP
 end
+getStorageTitle(handler::AbstractDataHandler) = "N/A"
+getStorageWidget(handler::AbstractDataHandler) = nothing
 getParameterTitle(handler::AbstractDataHandler) = "N/A"
-getParameterWidget(handler::AbstractDataHandler) = Gtk.Grid()
+getParameterWidget(handler::AbstractDataHandler) = nothing
 getDisplayTitle(handler::AbstractDataHandler) = "N/A"
-getDisplayWidget(handler::AbstractDataHandler) = Gtk.Box()
+getDisplayWidget(handler::AbstractDataHandler) = nothing
 
 # Ask for data, which is given in updateData (alternative directly get data event)
 handleProgress(handler::AbstractDataHandler, protocol::Protocol, event::ProgressEvent) = nothing

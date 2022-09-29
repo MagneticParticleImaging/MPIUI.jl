@@ -10,6 +10,9 @@ getindex(m::ParamExpander, w::AbstractString, T::Type) = object_(m.builder, w, T
 function ParamExpander(handler::AbstractDataHandler)
   title = getParameterTitle(handler)
   widget = getParameterWidget(handler)
+  if isnothing(widget)
+    widget = Box(:v)
+  end
   uifile = joinpath(@__DIR__,"..","..","builder","dataHandlerParams.ui")
   b = Builder(filename=uifile)
   expander = object_(b, "expander", Expander)

@@ -34,8 +34,10 @@ function isready(handler::RawDataHandler)
   return ready && enabled
 end
 enable!(handler::RawDataHandler, val::Bool) = @atomic handler.enabled = val
+getStorageTitle(handler::RawDataHandler) = "Raw Data"
+getStorageWidget(handler::RawDataHandler) = handler.params
 getParameterTitle(handler::RawDataHandler) = "Raw Data"
-getParameterWidget(handler::RawDataHandler) = handler.params
+getParameterWidget(handler::RawDataHandler) = nothing
 getDisplayTitle(handler::RawDataHandler) = "Raw Data"
 getDisplayWidget(handler::RawDataHandler) = handler.dataWidget
 
