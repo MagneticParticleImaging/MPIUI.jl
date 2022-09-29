@@ -46,10 +46,6 @@ function handleProgress(handler::OnlineRecoHandler, protocol::ContinousMeasureme
   @debug "Asking for new measurement $(event.done)"
   return DataQueryEvent("")
 end
-function handleProgress(handler::OnlineRecoHandler, protocol::RobotBasedSystemMatrixProtocol, event::ProgressEvent)
-  @debug "Asking for latest position"
-  return DataQueryEvent("SIGNAL")
-end
 
 function handleData(handler::OnlineRecoHandler, protocol::Protocol, event::DataAnswerEvent)
   data = event.data
