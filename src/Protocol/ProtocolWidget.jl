@@ -122,8 +122,10 @@ function initCallbacks(pw::ProtocolWidget)
             pw.updating = false
           end
         else
-          # Something went wrong during start, we dont count button press
-          set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :active, false)
+          @idle_add_guarded begin
+            # Something went wrong during start, we dont count button press
+            set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :active, false)
+          end
         end
       else
         endProtocol(pw)  
