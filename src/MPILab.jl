@@ -434,8 +434,7 @@ function initStudyStore(m::MPILab)
       updateAnatomRefStore(m)
 
       if !isnothing(m.protocolWidget)
-        m.protocolWidget.currStudyName = m.currentStudy.name
-        m.protocolWidget.currStudyDate = m.currentStudy.date
+        updateStudy(m.protocolWidget, m.currentStudy.name, m.currentStudy.date)
       end
       m.updating = false
     end
