@@ -208,7 +208,7 @@ function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
   @idle_add_guarded begin
     pw.updating = true
     pw.protocol = protocol
-    updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
+    updateProtocolDataHandler(pw, protocol)
     updateProtocolParameter(pw, protocol)
     pw.updating = false
   end
