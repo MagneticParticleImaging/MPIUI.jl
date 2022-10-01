@@ -24,7 +24,7 @@ getindex(m::SimpleDataViewerWidget, w::AbstractString) = G_.object(m.builder, w)
 
 
 function SimpleDataViewerWidget()
-  uifile = joinpath(@__DIR__,"builder","simpleDataViewer.ui")
+  uifile = joinpath(@__DIR__,"..","builder","simpleDataViewer.ui")
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxSimpleDataViewer")
   m = SimpleDataViewerWidget( mainBox.handle, b, nothing, nothing)

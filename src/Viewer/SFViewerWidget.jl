@@ -40,7 +40,7 @@ function SFViewer(filename::AbstractString)
 end
 
 function SFViewerWidget()
-  uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
+  uifile = joinpath(@__DIR__,"..","builder","mpiLab.ui")
 
   b = Builder(filename=uifile)
   mainBox = Box(:h) #G_.object(b, "boxSFViewer")

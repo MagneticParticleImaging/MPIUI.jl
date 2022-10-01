@@ -37,7 +37,7 @@ end
 
 function SpectrogramWidget(filenameConfig=nothing)
   @info "Starting SpectrogramWidget"
-  uifile = joinpath(@__DIR__,"builder","spectrogramViewer.ui")
+  uifile = joinpath(@__DIR__,"..","builder","spectrogramViewer.ui")
 
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxSpectrogramViewer")

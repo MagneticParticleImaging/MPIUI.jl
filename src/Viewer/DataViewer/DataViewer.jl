@@ -64,7 +64,7 @@ include("Drawing.jl")
 
 function DataViewerWidget()
 
-  uifile = joinpath(@__DIR__,"..","builder","dataviewer.ui")
+  uifile = joinpath(@__DIR__,"..","..","builder","dataviewer.ui")
 
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxDataViewer")

@@ -25,7 +25,7 @@ getindex(m::RawDataWidget, w::AbstractString) = G_.object(m.builder, w)
 
 function RawDataWidget(filenameConfig=nothing)
   @info "Starting RawDataWidget"
-  uifile = joinpath(@__DIR__,"builder","rawDataViewer.ui")
+  uifile = joinpath(@__DIR__,"..","builder","rawDataViewer.ui")
 
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxRawViewer")
