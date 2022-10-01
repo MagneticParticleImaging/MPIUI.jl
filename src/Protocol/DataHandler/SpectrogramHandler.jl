@@ -8,13 +8,27 @@ mutable struct SpectrogramHandler <: AbstractDataHandler
   bgMeas::Array{Float32, 4}
   fgMeas::Array{Float32, 4}
   oldUnit::String
+  paramsBox::BoxLeaf
+  cbRolling::CheckButtonLeaf
 end
 
 function SpectrogramHandler(scanner=nothing)
   data = SpectrogramWidget()
   # Init Display Widget
   updateData(data, ones(Float32,10,1,1,1), 1.0)
-  return SpectrogramHandler(data, true, true, 0, zeros(Float32,0,0,0,0), zeros(Float32,0,0,0,0), "")
+
+  paramsBox = Box(:v)
+  cbRolling = CheckButton("Rolling")
+  push!(paramsBox, cbRolling)
+  set_gtk_property!(cbRolling, :active, false)
+
+  #signal_connect(cbRolling, :state_set) do w, state
+  #  
+  #  return false
+  #end
+
+  return SpectrogramHandler(data, true, true, 0, zeros(Float32,0,0,0,0), 
+      zeros(Float32,0,0,0,0), "", paramsBox, cbRolling)
 end
 
 function init(handler::SpectrogramHandler, protocol::Protocol)
@@ -36,6 +50,7 @@ end
 getParameterTitle(handler::SpectrogramHandler) = "Spectrogram"
 getDisplayTitle(handler::SpectrogramHandler) = "Spectrogram"
 getDisplayWidget(handler::SpectrogramHandler) = handler.dataWidget
+getParameterWidget(handler::SpectrogramHandler) = handler.paramsBox
 
 function handleProgress(handler::SpectrogramHandler, protocol::Union{MPIMeasurementProtocol, RobotMPIMeasurementProtocol}, event::ProgressEvent)
   query = nothing
@@ -83,7 +98,7 @@ function handleData(handler::SpectrogramHandler, protocol::Protocol, event::Data
     @atomic handler.ready = false
     @idle_add_guarded begin
       try
-        if isempty(handler.fgMeas)
+        if isempty(handler.fgMeas) || !get_gtk_property(handler.cbRolling, :active, Bool)
           handler.fgMeas = data
         else
           handler.fgMeas = cat(handler.fgMeas, data, dims=4)
