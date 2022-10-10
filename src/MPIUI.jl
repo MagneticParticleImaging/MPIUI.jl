@@ -16,6 +16,7 @@ using Logging, LoggingExtras
 using ThreadPools
 using Dates
 using REPL: fielddoc
+using SphericalHarmonicExpansions # for MagneticFieldViewer
 
 ENV["MPILIB_UI"] = "Nothing"
 
