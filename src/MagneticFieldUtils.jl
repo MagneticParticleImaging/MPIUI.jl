@@ -25,7 +25,12 @@ mutable struct MagneticFieldCoefficients
       # file contains all relevant information
       radius = read(file, "/radius")
       center = read(file, "/center")
-      ffp = read(file, "/ffp")
+      if haskey(HDF5.root(file), "/ffp")
+        ffp = read(file, "/ffp")
+      else
+	# field has not FFP
+        ffp = nothing
+      end
     else
       # convert file of SphericalHarmonicCoefficients into MagneticFieldCoefficients
       radius = 0.042
