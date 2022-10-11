@@ -130,6 +130,13 @@ function MagneticFieldViewerWidget()
     @idle_add_guarded goToFFP(m,true)
   end
 
+  # change slice
+  for slice in ["adjSliceX", "adjSliceY", "adjSliceZ"]
+    signal_connect(m[slice], "value_changed") do w
+      @idle_add_guarded newSlice(m)
+    end
+  end
+
   initCallbacks(m)
 
   return m
@@ -204,6 +211,13 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
   set_gtk_property!(m["entRadius"], :text, "$(R*1000)") # show radius of measurement 
   set_gtk_property!(m["entFOV"], :text, "$(R*2000) x $(R*2000) x $(R*2000)") # initial FOV
   set_gtk_property!(m["entInters"], :text, "0.0 x 0.0 x 0.0") # initial FOV
+  d = get_gtk_property(m["adjDiscretization"],:value, Int64) # get discretization as min/max for slices
+  for w in ["adjSliceX", "adjSliceY", "adjSliceZ"]
+    set_gtk_property!(m[w], :lower, -d)
+    set_gtk_property!(m[w], :value, 0)
+    set_gtk_property!(m[w], :upper, d)
+  end
+
 
   m.updating = true
 
@@ -222,12 +236,62 @@ function updateColoring(m::MagneticFieldViewerWidget)
   m.fv.coloring = ColoringParams(cmin,cmax,cmap)
 end
 
+# choose new slice
+function newSlice(m::MagneticFieldViewerWidget)
+  # get chosen slices
+  sl = [get_gtk_property(m[w],:value, Int64) for w in ["adjSliceX", "adjSliceY", "adjSliceZ"]]
+
+  # get current FOV
+  fovString = get_gtk_property(m["entFOV"], :text, String) # FOV
+  fov = tryparse.(Float64,split(fovString,"x")) ./ 1000
+
+  # calculate voxel size
+  discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel 
+  voxel = fov ./ discretization
+
+  # calculate new intersection
+  intersection = voxel .* sl
+
+  # set intersection
+  interString = round.(intersection .* 1000, digits=1)
+  set_gtk_property!(m["entInters"], :text, 
+		"$(interString[1]) x $(interString[2]) x $(interString[3])") 
+
+  # update coefficients with new intersection and plot everything
+  updateIntersection(m)
+  updateCoeffsPlot(m)
+  updateField(m)
+end
+
+# update slices
+function updateSlices(m::MagneticFieldViewerWidget)
+  # get current intersection
+  intersString = get_gtk_property(m["entInters"], :text, String) # intersection
+  intersection = tryparse.(Float64,split(intersString,"x")) ./ 1000 # conversion from mm to m
+
+  # get voxel size
+  fovString = get_gtk_property(m["entFOV"], :text, String) # FOV
+  fov = tryparse.(Float64,split(fovString,"x")) ./ 1000
+  discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel 
+  voxel = fov ./ discretization
+
+  # get slice numbers (rounded)
+  sl = round.(Int,intersection ./ voxel)
+
+  # set slice
+  for (i,w) in enumerate(["adjSliceX", "adjSliceY", "adjSliceZ"])
+    set_gtk_property!(m[w], :value, sl[i])
+  end
+  
+end
+
 # update intersection
 function updateIntersection(m::MagneticFieldViewerWidget)
   # get intersection (= new expansion point of coefficients)
   intersString = get_gtk_property(m["entInters"], :text, String) # intersection
   intersection = tryparse.(Float64,split(intersString,"x")) ./ 1000 # conversion from mm to m
-
+  
+  updateSlices(m) # update slice numbers
   calcCenterCoeffs(m) # recalculate coefficients regarding to the center
   updateCoeffs(m, -intersection) # shift to intersection
 end
@@ -244,6 +308,7 @@ function goToFFP(m::MagneticFieldViewerWidget, goToZero=false)
   set_gtk_property!(m["entInters"], :text, 
 		"$(interString[1]) x $(interString[2]) x $(interString[3])") 
 
+  updateSlices(m) # update slice numbers
   calcCenterCoeffs(m) # recalculate coefficients regarding to the center
   updateCoeffs(m, intersection)
   updateCoeffsPlot(m)
@@ -295,7 +360,7 @@ end
 
 # plotting the magnetic field
 function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
-  discretization = get_gtk_property(m["adjDiscretization"],:value, Int64) 
+  discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel
   R = m.coeffs.radius # radius of measurement data
   center = m.coeffs.center # center of measurement data
   m.patch = get_gtk_property(m["adjPatches"],:value, Int64) # patch
@@ -370,8 +435,8 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   ## direction (angle to x-axis with atan2(y,x))
   # vectors (arrows) (adapted to chosen coordinate orientations)
   arYZ = [[fieldxyz[2,i,j,1],fieldxyz[3,i,j,1]] for i=1:discr:discretization, j=1:discr:discretization]
-  arXZ = [[-fieldxyz[1,i,j,2],fieldxyz[3,i,j,2]] for i=1:discr:discretization, j=1:discr:discretization]
-  arXY = [[fieldxyz[2,i,j,3],-fieldxyz[1,i,j,3]] for i=1:discr:discretization, j=1:discr:discretization]
+  arXZ = [[fieldxyz[1,i,j,2],fieldxyz[3,i,j,2]] for i=discretization:-discr:1, j=1:discr:discretization]
+  arXY = [[fieldxyz[2,i,j,3],fieldxyz[1,i,j,3]] for i=discretization:-discr:1, j=1:discr:discretization]
   #arXY = [[fieldxyz[1,i,j,3],-fieldxyz[2,i,j,3]] for i=1:discr:discretization, j=1:discr:discretization]
   # angle
   dirYZ = [atan(ar[2],ar[1]) for ar in arYZ]  
