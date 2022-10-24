@@ -96,46 +96,61 @@ function MagneticFieldViewerWidget()
 
   # update plot (clicked button)
   signal_connect(m["btnUpdate"], "clicked") do w
-    @idle_add_guarded updateIntersection(m)
-    @idle_add_guarded updateCoeffsPlot(m)
-    @idle_add_guarded updateField(m)
+    @idle_add_guarded begin
+      updateIntersection(m)
+      updateCoeffsPlot(m)
+      updateField(m)
+    end
   end
 
   # update magnetic field plot: 
   # center = center of sphere
   signal_connect(m["btnCenterSphere"], "clicked") do w
     if m.fv.centerFFP
-      m.fv.centerFFP = false
-      @idle_add_guarded calcCenterCoeffs(m,true)
-      @idle_add_guarded updateCoeffsPlot(m)
-      @idle_add_guarded updateField(m)
+      @idle_add_guarded begin
+        m.fv.centerFFP = false
+        calcCenterCoeffs(m,true)
+        updateCoeffsPlot(m)
+        updateField(m)
+      end
     end
   end
   # center = FFP
   signal_connect(m["btnCenterFFP"], "clicked") do w
     if !(m.fv.centerFFP)
-      m.fv.centerFFP = true
-      @idle_add_guarded calcCenterCoeffs(m,true)
-      @idle_add_guarded updateCoeffsPlot(m)
-      @idle_add_guarded updateField(m)
+      @idle_add_guarded begin
+        m.fv.centerFFP = true
+        calcCenterCoeffs(m,true)
+        updateCoeffsPlot(m)
+        updateField(m)
+      end
     end
   end
 
   # go to FFP
   signal_connect(m["btnGoToFFP"], "clicked") do w
-    @idle_add_guarded goToFFP(m)
+    @idle_add_guarded begin
+      m.updating = true 
+      goToFFP(m)
+      m.updating = false
+    end
   end
   # go to zero
   signal_connect(m["btnGoToZero"], "clicked") do w
-    @idle_add_guarded goToFFP(m,true)
-  end
-
-  # change slice
-  for slice in ["adjSliceX", "adjSliceY", "adjSliceZ"]
-    signal_connect(m[slice], "value_changed") do w
-      @idle_add_guarded newSlice(m)
+    @idle_add_guarded begin
+      m.updating = true 
+      goToFFP(m,true)
+      m.updating = false
     end
   end
+
+  # checkbuttons changed
+  for cb in ["cbShowSphere", "cbShowSlices"]
+    signal_connect(m[cb], "toggled") do w
+      updateField(m)
+    end
+  end
+  
 
   initCallbacks(m)
 
@@ -173,6 +188,39 @@ function initCallbacks(m_::MagneticFieldViewerWidget)
     updateField(m,true)
   end
 
+  # choose new slice
+  function newSlice( widget )
+    if !m.updating # don't update slices if they are set by other functions
+      m.updating = true
+     
+      # get chosen slices
+      sl = [get_gtk_property(m[w],:value, Int64) for w in ["adjSliceX", "adjSliceY", "adjSliceZ"]]
+
+      # get current FOV
+      fovString = get_gtk_property(m["entFOV"], :text, String) # FOV
+      fov = tryparse.(Float64,split(fovString,"x")) ./ 1000
+
+      # calculate voxel size
+      discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel 
+      voxel = fov ./ discretization
+
+      # calculate new intersection
+      intersection = voxel .* sl
+
+      # set intersection
+      interString = round.(intersection .* 1000, digits=1)
+      set_gtk_property!(m["entInters"], :text, 
+		"$(interString[1]) x $(interString[2]) x $(interString[3])") 
+
+      # update coefficients with new intersection and plot everything
+      updateIntersection(m)
+      updateCoeffsPlot(m)
+      updateField(m)
+
+      m.updating = false
+    end
+  end
+
   # cmin/cmax
   widgets = ["adjCMin", "adjCMax"]
   for w in widgets
@@ -189,12 +237,19 @@ function initCallbacks(m_::MagneticFieldViewerWidget)
     updateField(m)
   end
   signal_connect(resetFOV, m["btnResetFOV"], "clicked")
+  
+  # change slice
+  widgets = ["adjSliceX", "adjSliceY", "adjSliceZ"]
+  for w in widgets
+    signal_connect(newSlice, m[w], "value_changed")
+  end
 
   end
 end
 
 # load all necessary data and set up the values in the GUI
 function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
+
   # load magnetic fields
   m.coeffs = MagneticFieldCoefficients(filenameCoeffs) # load coefficients
   m.coeffsPlot = SphericalHarmonicCoefficients(filenameCoeffs) # load coefficients
@@ -204,6 +259,8 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
   R = m.coeffs.radius # radius
   m.fv.centerFFP = (m.coeffs.ffp != nothing) ?  true : false # if FFP is given, it is the plotting center
  
+  m.updating = true
+
   # set some values
   set_gtk_property!(m["adjPatches"], :upper, size(m.coeffs.coeffs,2) )
   set_gtk_property!(m["adjL"], :upper, m.coeffs.coeffs[1,1].L )
@@ -218,9 +275,7 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
     set_gtk_property!(m[w], :upper, d)
   end
 
-
-  m.updating = true
-
+  # plotting
   updateField(m)
   updateCoeffsPlot(m)
   showall(m)
@@ -236,32 +291,6 @@ function updateColoring(m::MagneticFieldViewerWidget)
   m.fv.coloring = ColoringParams(cmin,cmax,cmap)
 end
 
-# choose new slice
-function newSlice(m::MagneticFieldViewerWidget)
-  # get chosen slices
-  sl = [get_gtk_property(m[w],:value, Int64) for w in ["adjSliceX", "adjSliceY", "adjSliceZ"]]
-
-  # get current FOV
-  fovString = get_gtk_property(m["entFOV"], :text, String) # FOV
-  fov = tryparse.(Float64,split(fovString,"x")) ./ 1000
-
-  # calculate voxel size
-  discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel 
-  voxel = fov ./ discretization
-
-  # calculate new intersection
-  intersection = voxel .* sl
-
-  # set intersection
-  interString = round.(intersection .* 1000, digits=1)
-  set_gtk_property!(m["entInters"], :text, 
-		"$(interString[1]) x $(interString[2]) x $(interString[3])") 
-
-  # update coefficients with new intersection and plot everything
-  updateIntersection(m)
-  updateCoeffsPlot(m)
-  updateField(m)
-end
 
 # update slices
 function updateSlices(m::MagneticFieldViewerWidget)
@@ -302,6 +331,8 @@ function goToFFP(m::MagneticFieldViewerWidget, goToZero=false)
     return nothing
   end
 
+  m.updating = true
+
   # set new intersection
   intersection = (goToZero || m.fv.centerFFP) ? [0.0,0.0,0.0] : m.coeffs.ffp[:,m.patch]
   interString = round.(intersection .* 1000, digits=1)
@@ -310,19 +341,21 @@ function goToFFP(m::MagneticFieldViewerWidget, goToZero=false)
 
   updateSlices(m) # update slice numbers
   calcCenterCoeffs(m) # recalculate coefficients regarding to the center
-  updateCoeffs(m, intersection)
+  updateCoeffs(m, intersection) # shift coefficients into new intersection 
   updateCoeffsPlot(m)
   updateField(m)
+
+  m.updating = false
 end
 
 # update coefficients
 function updateCoeffs(m::MagneticFieldViewerWidget, shift)
 
   # translate coefficients
-  if size(shift) != size(m.coeffs.coeffs)
-    m.coeffsPlot = SphericalHarmonicExpansions.translation.(m.coeffsPlot,[shift])
-  else
-    for p = 1:size(m.coeffs.coeffs,2)
+  for p = 1:size(m.coeffs.coeffs,2)
+    if size(shift) != size(m.coeffs.coeffs) # same shift for all coefficients
+      m.coeffsPlot[:,p] = SphericalHarmonicExpansions.translation.(m.coeffsPlot[:,p],[shift])
+    else
       m.coeffsPlot[:,p] = SphericalHarmonicExpansions.translation.(m.coeffsPlot[:,p],[shift[:,p]])
     end
   end
@@ -428,15 +461,15 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   discr = floor(Int,0.1*discretization) # reduce number of arrows
   ## positioning
   NN = [N[i][1:discr:end] for i=1:3]
-  x = repeat(NN[1],1,length(NN[1])) #repeat(range(1,15,length=15),1,15);
+  x = repeat(reverse(NN[1]),1,length(NN[1])) #repeat(range(1,15,length=15),1,15);
   y1 = repeat(transpose(NN[2]),length(NN[2]),1) #repeat(transpose(range(1,15,length=15)),15,1);
   y2 = repeat(NN[2],1,length(NN[2])) #repeat(transpose(range(1,15,length=15)),15,1);
   z = repeat(transpose(NN[3]),length(NN[3]),1) #repeat(transpose(range(1,15,length=15)),15,1);
   ## direction (angle to x-axis with atan2(y,x))
   # vectors (arrows) (adapted to chosen coordinate orientations)
   arYZ = [[fieldxyz[2,i,j,1],fieldxyz[3,i,j,1]] for i=1:discr:discretization, j=1:discr:discretization]
-  arXZ = [[fieldxyz[1,i,j,2],fieldxyz[3,i,j,2]] for i=discretization:-discr:1, j=1:discr:discretization]
-  arXY = [[fieldxyz[2,i,j,3],fieldxyz[1,i,j,3]] for i=discretization:-discr:1, j=1:discr:discretization]
+  arXZ = [[-fieldxyz[1,i,j,2],fieldxyz[3,i,j,2]] for i=discretization:-discr:1, j=1:discr:discretization]
+  arXY = [[fieldxyz[2,i,j,3],-fieldxyz[1,i,j,3]] for i=discretization:-discr:1, j=1:discr:discretization]
   #arXY = [[fieldxyz[1,i,j,3],-fieldxyz[2,i,j,3]] for i=1:discr:discretization, j=1:discr:discretization]
   # angle
   dirYZ = [atan(ar[2],ar[1]) for ar in arYZ]  
@@ -458,7 +491,7 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
               linewidth=3.0, color="white") )
   Winston.add( plXZ, Winston.Arrows(x, z, dirXZ, lenXZ*al, 
               linewidth=3.0, color="white") )
-  Winston.add( plXY, Winston.Arrows(x, y1, dirXY, lenXY*al, 
+  Winston.add( plXY, Winston.Arrows(y1, x, dirXY, lenXY*al, 
               linewidth=3.0, color="white") )
 
   # remove label and ticks
