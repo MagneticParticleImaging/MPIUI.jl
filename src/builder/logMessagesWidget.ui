@@ -182,6 +182,11 @@
     <property name="can_focus">False</property>
     <property name="stock">gtk-directory</property>
   </object>
+  <object class="GtkImage" id="imgLoad">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-file</property>
+  </object>
   <object class="GtkPopover" id="popGrp">
     <property name="can_focus">False</property>
     <child>
@@ -464,6 +469,30 @@
             <property name="left_attach">10</property>
             <property name="top_attach">0</property>
             <property name="height">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Load</property>
+          </object>
+          <packing>
+            <property name="left_attach">12</property>
+            <property name="top_attach">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="btnLoad">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">imgLoad</property>
+            <property name="always_show_image">True</property>
+          </object>
+          <packing>
+            <property name="left_attach">12</property>
+            <property name="top_attach">1</property>
           </packing>
         </child>
       </object>
