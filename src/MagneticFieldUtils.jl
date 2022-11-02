@@ -59,7 +59,7 @@ function write(path::String, coeffs::MagneticFieldCoefficients)
 
   R = Array{Float64}(undef,size(coeffs.coeffs))
   solid = Array{Int}(undef,size(coeffs.coeffs))
-  for (n,co) in enumerate(coeffs)
+  for (n,co) in enumerate(coeffs.coeffs)
       R[n] = co.R
       solid[n] = co.solid ? 1 : 0
   end

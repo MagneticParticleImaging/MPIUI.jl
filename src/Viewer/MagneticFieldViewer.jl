@@ -77,8 +77,10 @@ function MagneticFieldViewerWidget()
   
   # change patch
   signal_connect(m["adjPatches"], "value_changed") do w
-    @idle_add_guarded updateField(m)
-    @idle_add_guarded updateCoeffsPlot(m)
+    @idle_add_guarded begin
+      m.patch = get_gtk_property(m["adjPatches"],:value, Int64) # update patch
+      stayInFFP(m)
+    end
   end
  
   # change length of arrows
@@ -110,8 +112,7 @@ function MagneticFieldViewerWidget()
       @idle_add_guarded begin
         m.fv.centerFFP = false
         calcCenterCoeffs(m,true)
-        updateCoeffsPlot(m)
-        updateField(m)
+        stayInFFP(m)
       end
     end
   end
@@ -147,10 +148,17 @@ function MagneticFieldViewerWidget()
   # checkbuttons changed
   for cb in ["cbShowSphere", "cbShowSlices"]
     signal_connect(m[cb], "toggled") do w
+      @info "Test"
       updateField(m)
     end
   end
-  
+  signal_connect(m["cbStayFFP"], "toggled") do w
+    if get_gtk_property(m["cbStayFFP"], :active, Bool) # go to FFP only if active
+      @idle_add_guarded begin
+        goToFFP(m)
+      end  
+    end
+  end 
 
   initCallbacks(m)
 
@@ -348,6 +356,18 @@ function goToFFP(m::MagneticFieldViewerWidget, goToZero=false)
   m.updating = false
 end
 
+# if button "Stay in FFP" true, everything is shifted into FFP, else the plots are updated
+function stayInFFP(m::MagneticFieldViewerWidget)
+  if get_gtk_property(m["cbStayFFP"], :active, Bool) && m.coeffs.ffp != nothing
+    # stay in (resp. got to) the FFP with the plot
+    goToFFP(m)
+  else 
+    # use intersection and just update both plots 
+    updateField(m)
+    updateCoeffsPlot(m)
+  end
+end
+
 # update coefficients
 function updateCoeffs(m::MagneticFieldViewerWidget, shift)
 
@@ -396,7 +416,7 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel
   R = m.coeffs.radius # radius of measurement data
   center = m.coeffs.center # center of measurement data
-  m.patch = get_gtk_property(m["adjPatches"],:value, Int64) # patch
+  # m.patch = get_gtk_property(m["adjPatches"],:value, Int64) # patch
   # ffp = (m.coeffs.ffp == nothing) ? [0.0,0.0,0.0] : m.coeffs.ffp[:,m.patch] # not necessary
   # get current intersection
   intersString = get_gtk_property(m["entInters"], :text, String) # intersection
@@ -405,8 +425,6 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   # get FOV
   fovString = get_gtk_property(m["entFOV"], :text, String) # FOV
   fov = tryparse.(Float64,split(fovString,"x")) ./ 1000
-  intersString = get_gtk_property(m["entInters"], :text, String) # intersection
-  intersection = tryparse.(Float64,split(intersString,"x")) ./ 1000
 
   # Grid
   N = [range(-fov[i]/2-center[i],stop=fov[i]/2-center[i],length=discretization) for i=1:3];
