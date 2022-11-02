@@ -64,6 +64,10 @@ function MPILab(offlineMode=false)::MPILab
    
   @info "Starting MPILab"
 
+  if Threads.nthreads() < 4 && !offlineMode
+    error("Too few threads to run MPIUI with an active scanner")
+  end
+
   uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
   m_ = MPILab( Builder(filename=uifile), nothing, 1, DatasetStore[],
