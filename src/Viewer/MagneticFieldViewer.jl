@@ -148,7 +148,6 @@ function MagneticFieldViewerWidget()
   # checkbuttons changed
   for cb in ["cbShowSphere", "cbShowSlices"]
     signal_connect(m[cb], "toggled") do w
-      @info "Test"
       updateField(m)
     end
   end
@@ -265,15 +264,17 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
   expansion = sphericalHarmonicsExpansion.(m.coeffs.coeffs,[x],[y],[z])
   m.field = fastfunc.(expansion)
   R = m.coeffs.radius # radius
+  center = m.coeffs.center # center of the measurement
   m.fv.centerFFP = (m.coeffs.ffp != nothing) ?  true : false # if FFP is given, it is the plotting center
  
   m.updating = true
 
   # set some values
   set_gtk_property!(m["adjPatches"], :upper, size(m.coeffs.coeffs,2) )
-  set_gtk_property!(m["adjL"], :upper, m.coeffs.coeffs[1,1].L )
-  set_gtk_property!(m["adjL"], :value, m.coeffs.coeffs[1,1].L )
+  set_gtk_property!(m["adjL"], :upper, m.coeffs.coeffs[1].L )
+  set_gtk_property!(m["adjL"], :value, m.coeffs.coeffs[1].L )
   set_gtk_property!(m["entRadius"], :text, "$(R*1000)") # show radius of measurement 
+  set_gtk_property!(m["entCenterMeas"], :text, "$(center[1]*1000) x $(center[2]*1000) x $(center[3]*1000)") # show center of measurement 
   set_gtk_property!(m["entFOV"], :text, "$(R*2000) x $(R*2000) x $(R*2000)") # initial FOV
   set_gtk_property!(m["entInters"], :text, "0.0 x 0.0 x 0.0") # initial FOV
   d = get_gtk_property(m["adjDiscretization"],:value, Int64) # get discretization as min/max for slices
@@ -415,7 +416,7 @@ end
 function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel
   R = m.coeffs.radius # radius of measurement data
-  center = m.coeffs.center # center of measurement data
+  # center = m.coeffs.center # center of measurement data (TODO: adapt axis with measurement center)
   # m.patch = get_gtk_property(m["adjPatches"],:value, Int64) # patch
   # ffp = (m.coeffs.ffp == nothing) ? [0.0,0.0,0.0] : m.coeffs.ffp[:,m.patch] # not necessary
   # get current intersection
@@ -427,7 +428,7 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   fov = tryparse.(Float64,split(fovString,"x")) ./ 1000
 
   # Grid
-  N = [range(-fov[i]/2-center[i],stop=fov[i]/2-center[i],length=discretization) for i=1:3];
+  N = [range(-fov[i]/2,stop=fov[i]/2,length=discretization) for i=1:3];
 
   # calculate field for plot 
   fieldNorm = zeros(discretization,discretization,3);
