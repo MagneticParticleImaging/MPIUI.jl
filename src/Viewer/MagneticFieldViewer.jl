@@ -70,6 +70,12 @@ function MagneticFieldViewerWidget()
   end
   set_gtk_property!(m["cbCMaps"],:active,5) # default: viridis
 
+  # Allow to change between gradient and offset output
+  for c in ["Gradient:","Offset:"]
+    push!(m["cbGradientOffset"], c)
+  end
+  set_gtk_property!(m["cbGradientOffset"],:active,0) # default: Gradient
+
   # change discretization
   signal_connect(m["adjDiscretization"], "value_changed") do w
     @idle_add_guarded updateField(m)
@@ -161,7 +167,38 @@ function MagneticFieldViewerWidget()
         goToFFP(m)
       end  
     end
+  end
+  # checkbutton cmin = 0
+  signal_connect(m["cbCMin"], "toggled") do w
+    @idle_add_guarded begin
+      if get_gtk_property(m["cbCMin"], :active, Bool) # cmin = 0 
+        set_gtk_property!(m["adjCMin"], :lower, 0)
+        set_gtk_property!(m["adjCMin"], :value, 0)
+        set_gtk_property!(m["vbCMin"], :sensitive, false) # disable changing cmin
+      else
+        set_gtk_property!(m["vbCMin"], :sensitive, true) # enable changing cmin
+        updateField(m)
+      end
+      # updateCol done automatically since value changed for adjCMin
+    end
+  end
+  # checkbutton keeping cmin/cmax
+  signal_connect(m["cbKeepC"], "toggled") do w
+    @idle_add_guarded begin
+      if get_gtk_property(m["cbKeepC"], :active, Bool) # keep the values
+        set_gtk_property!(m["vbCMin"], :sensitive, false) # disable changing cmin
+        set_gtk_property!(m["vbCMax"], :sensitive, false) # disable changing cmax
+      else
+        set_gtk_property!(m["vbCMin"], :sensitive, true) # enable changing cmin
+        set_gtk_property!(m["vbCMax"], :sensitive, true) # enable changing cmax
+      end
+    end
   end 
+
+  # update measurement infos
+  signal_connect(m["cbGradientOffset"], "changed") do w
+    @idle_add_guarded updateInfos(m) 
+  end
 
   initCallbacks(m)
 
@@ -309,6 +346,13 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
   set_gtk_property!(m["btnExport"],:sensitive,false) # disable button with unused popover
   set_gtk_property!(m["cbShowAxes"],:sensitive,false) # axes are always shown
 
+  # update measurement infos
+  if m.coeffs.ffp == nothing
+    # default: show the offset field values if no FFP is given
+    set_gtk_property!(m["cbGradientOffset"],:active,1) 
+  end
+  updateInfos(m)
+
   # plotting
   updateField(m)
   updateCoeffsPlot(m)
@@ -384,12 +428,6 @@ end
 
 # if button "Stay in FFP" true, everything is shifted into FFP, else the plots are updated
 function stayInFFP(m::MagneticFieldViewerWidget)
-  # return new FFP
-  if m.coeffs.ffp != nothing
-    ffpText = round.((m.coeffs.center + m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
-    set_gtk_property!(m["entFFP"], :text, "$(ffpText[1]) x $(ffpText[2]) x $(ffpText[3])") # show FFP of current patch
-  end
-
   # update plots
   if get_gtk_property(m["cbStayFFP"], :active, Bool) && m.coeffs.ffp != nothing
     # stay in (resp. got to) the FFP with the plot
@@ -412,6 +450,9 @@ function updateCoeffs(m::MagneticFieldViewerWidget, shift)
       m.coeffsPlot[:,p] = SphericalHarmonicExpansions.translation.(m.coeffsPlot[:,p],[shift[:,p]])
     end
   end
+
+  # update measurement infos
+  updateInfos(m)
 
 end
 
@@ -442,6 +483,38 @@ function calcCenterCoeffs(m::MagneticFieldViewerWidget,resetIntersection=false)
   @polyvar x y z
   expansion = sphericalHarmonicsExpansion.(m.coeffsPlot,[x],[y],[z])
   m.field = fastfunc.(expansion)
+
+  # update measurement infos
+  updateInfos(m)
+end
+
+# updating the measurement informations
+function updateInfos(m::MagneticFieldViewerWidget)
+  # return new FFP
+  if m.coeffs.ffp != nothing
+    ffpText = round.((m.coeffs.center + m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
+    set_gtk_property!(m["entFFP"], :text, "$(ffpText[1]) x $(ffpText[2]) x $(ffpText[3])") # show FFP of current patch
+  end
+
+  # update gradient/offset information
+  if get_gtk_property(m["cbGradientOffset"],:active, Int) == 0 # show gradient
+    # gradient
+    set_gtk_property!(m["entGradientX"], :text, "$(round(m.coeffsPlot[1,m.patch][1,1],digits=3))") # show gradient in x
+    set_gtk_property!(m["entGradientY"], :text, "$(round(m.coeffsPlot[2,m.patch][1,-1],digits=3))") # show gradient in y
+    set_gtk_property!(m["entGradientZ"], :text, "$(round(m.coeffsPlot[3,m.patch][1,0],digits=3))") # show gradient in z
+    # label
+    for i=1:3
+      set_gtk_property!(m["labelTpm$i"], :label, "T/m")
+    end
+  else # show offset field
+    for (i,x) in enumerate(["X","Y","Z"])
+      # offset
+      set_gtk_property!(m["entGradient"*x], :text, "$(round(m.coeffsPlot[i,m.patch][0,0]*1000,digits=1))") # show gradient in x
+      # label
+      set_gtk_property!(m["labelTpm$i"], :label, "mT")
+    end
+  end
+
 end
 
 # plotting the magnetic field
@@ -485,9 +558,15 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
     # set new min/max values
       set_gtk_property!(m["adjCMin"], :upper, 0.99*cmax) # prevent cmin=cmax
       set_gtk_property!(m["adjCMax"], :lower, 1.01*cmin) # prevent cmin=cmax
+  elseif get_gtk_property(m["cbKeepC"], :active, Bool) 
+    # don't change min/max if the checkbutton is active
+    cmin = m.fv.coloring.cmin
+    cmax = m.fv.coloring.cmax
+    cmap = m.fv.coloring.cmap
   else
     # set new coloring params
     cmin, cmax = minimum(fieldNorm), maximum(fieldNorm)
+    cmin = (get_gtk_property(m["cbCMin"], :active, Bool)) ? 0.0 : cmin # set cmin to 0 if checkbutton is active
     cmap = important_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
     m.fv.coloring = ColoringParams(cmin, cmax, cmap) # set coloring
     # set cmin and cmax
@@ -499,6 +578,9 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
       @idle_add_guarded set_gtk_property!(m["adjCMax"], :value, cmax)
   end
   Winston.colormap(RGB.(ImageUtils.cmap(cmap))) # set colormap
+  # update coloring infos
+  set_gtk_property!(m["entCMin"], :text, "$(round(m.fv.coloring.cmin * 1000, digits=1))")
+  set_gtk_property!(m["entCMax"], :text, "$(round(m.fv.coloring.cmax * 1000, digits=1))")
  
   # plots
   plYZ = Winston.imagesc((N[2][1],N[2][end]),(N[3][end],N[3][1]),fieldNorm[:,:,1]',(cmin,cmax))
@@ -614,11 +696,6 @@ function updateCoeffsPlot(m::MagneticFieldViewerWidget)
   L² = (L+1)^2 # number of coeffs
   R = m.coeffs.radius
 
-  # return gradient
-  set_gtk_property!(m["entGradientX"], :text, "$(round(m.coeffsPlot[1,p][1,1],digits=3))") # show gradient in x
-  set_gtk_property!(m["entGradientY"], :text, "$(round(m.coeffsPlot[2,p][1,-1],digits=3))") # show gradient in y
-  set_gtk_property!(m["entGradientZ"], :text, "$(round(m.coeffsPlot[3,p][1,0],digits=3))") # show gradient in z
-
   # normalize coefficients
   c = normalize.(m.coeffsPlot[:,p], 1/R)
 
@@ -638,6 +715,10 @@ function updateCoeffsPlot(m::MagneticFieldViewerWidget)
 
   # add bars to plot
   Winston.add(pl,xx, yy, zz)
+
+  # draw line to mark 0
+  s = Winston.Slope(0, [1,0], kind="solid", color="black")
+  Winston.add(pl,s)
 
   # xtick labels
   xticklabel = ["[$l,$m]" for l=0:L for m=-l:l]
