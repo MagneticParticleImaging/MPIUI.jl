@@ -30,7 +30,6 @@ end
 
 # some other constructors
 MagneticFieldCoefficients(coeffs::Array{SphericalHarmonicCoefficients,2}) = MagneticFieldCoefficients(coeffs, 0.0)
-MagneticFieldCoefficients(coeffs::Array{SphericalHarmonicCoefficients,2}) = MagneticFieldCoefficients(coeffs, 0.0)
 MagneticFieldCoefficients(coeffs::Array{SphericalHarmonicCoefficients,2}, radius::Float64) = MagneticFieldCoefficients(coeffs,radius,[0.0,0.0,0.0])
 MagneticFieldCoefficients(coeffs::Array{SphericalHarmonicCoefficients,2}, radius::Float64, center::Vector{Float64}) = MagneticFieldCoefficients(coeffs,radius,center,nothing)
 MagneticFieldCoefficients(coeffs::Array{SphericalHarmonicCoefficients,2}, radius::Float64, ffp::Array{Float64,2}) = MagneticFieldCoefficients(coeffs,radius,[0.0,0.0,0.0],ffp)
@@ -63,7 +62,8 @@ function MagneticFieldCoefficients(path::String)
   else
     # convert file of SphericalHarmonicCoefficients into MagneticFieldCoefficients
     # -> set all additional informations to 0 or nothing
-    return MagneticFieldCoefficients(shcoeffs)
+    # use radius = 0.042 as default value
+    return MagneticFieldCoefficients(shcoeffs, 0.042)
   end
 end
 
