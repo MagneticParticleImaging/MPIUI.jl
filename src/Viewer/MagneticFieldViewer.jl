@@ -110,6 +110,8 @@ function MagneticFieldViewerWidget()
   signal_connect(m["btnCenterSphere"], "clicked") do w
     if m.fv.centerFFP
       @idle_add_guarded begin
+	set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # disable button
+	set_gtk_property!(m["btnCenterFFP"],:sensitive,true) # enable button
         m.fv.centerFFP = false
         calcCenterCoeffs(m,true)
         stayInFFP(m)
@@ -120,6 +122,8 @@ function MagneticFieldViewerWidget()
   signal_connect(m["btnCenterFFP"], "clicked") do w
     if !(m.fv.centerFFP)
       @idle_add_guarded begin
+	set_gtk_property!(m["btnCenterFFP"],:sensitive,false) # disable button
+	set_gtk_property!(m["btnCenterSphere"],:sensitive,true) # enable button
         m.fv.centerFFP = true
         calcCenterCoeffs(m,true)
         updateCoeffsPlot(m)
@@ -263,9 +267,11 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
   @polyvar x y z
   expansion = sphericalHarmonicsExpansion.(m.coeffs.coeffs,[x],[y],[z])
   m.field = fastfunc.(expansion)
+  m.patch = 1
   R = m.coeffs.radius # radius
   center = m.coeffs.center # center of the measurement
   m.fv.centerFFP = (m.coeffs.ffp != nothing) ?  true : false # if FFP is given, it is the plotting center
+  set_gtk_property!(m["btnCenterFFP"],:sensitive,false) # disable button
  
   m.updating = true
 
@@ -273,8 +279,15 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
   set_gtk_property!(m["adjPatches"], :upper, size(m.coeffs.coeffs,2) )
   set_gtk_property!(m["adjL"], :upper, m.coeffs.coeffs[1].L )
   set_gtk_property!(m["adjL"], :value, m.coeffs.coeffs[1].L )
-  set_gtk_property!(m["entRadius"], :text, "$(R*1000)") # show radius of measurement 
-  set_gtk_property!(m["entCenterMeas"], :text, "$(center[1]*1000) x $(center[2]*1000) x $(center[3]*1000)") # show center of measurement 
+  set_gtk_property!(m["entRadius"], :text, "$(round(R*1000,digits=1))") # show radius of measurement 
+  centerText = round.(center .* 1000, digits=1)
+  set_gtk_property!(m["entCenterMeas"], :text, "$(centerText[1]) x $(centerText[2]) x $(centerText[3])") # show center of measurement
+  if m.coeffs.ffp != nothing
+    ffpText = round.((center + m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
+    set_gtk_property!(m["entFFP"], :text, "$(ffpText[1]) x $(ffpText[2]) x $(ffpText[3])") # show FFP of current patch
+  else
+    set_gtk_property!(m["entFFP"], :text, "no FFP")
+  end
   set_gtk_property!(m["entFOV"], :text, "$(R*2000) x $(R*2000) x $(R*2000)") # initial FOV
   set_gtk_property!(m["entInters"], :text, "0.0 x 0.0 x 0.0") # initial FOV
   d = get_gtk_property(m["adjDiscretization"],:value, Int64) # get discretization as min/max for slices
@@ -283,6 +296,18 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
     set_gtk_property!(m[w], :value, 0)
     set_gtk_property!(m[w], :upper, d)
   end
+
+  # if no FFPs are given, don't show the buttons
+  if m.coeffs.ffp == nothing
+    set_gtk_property!(m["btnGoToFFP"],:visible,false) # FFP as intersection not available
+    set_gtk_property!(m["btnCenterFFP"],:visible,false) # FFP as center not available
+    set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # Center of sphere automatically plotting center
+  end
+
+  # disable buttons that have no functions at the moment
+  set_gtk_property!(m["btnFrames"],:sensitive,false) # disable button with unused popover
+  set_gtk_property!(m["btnExport"],:sensitive,false) # disable button with unused popover
+  set_gtk_property!(m["cbShowAxes"],:sensitive,false) # axes are always shown
 
   # plotting
   updateField(m)
@@ -359,6 +384,13 @@ end
 
 # if button "Stay in FFP" true, everything is shifted into FFP, else the plots are updated
 function stayInFFP(m::MagneticFieldViewerWidget)
+  # return new FFP
+  if m.coeffs.ffp != nothing
+    ffpText = round.((m.coeffs.center + m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
+    set_gtk_property!(m["entFFP"], :text, "$(ffpText[1]) x $(ffpText[2]) x $(ffpText[3])") # show FFP of current patch
+  end
+
+  # update plots
   if get_gtk_property(m["cbStayFFP"], :active, Bool) && m.coeffs.ffp != nothing
     # stay in (resp. got to) the FFP with the plot
     goToFFP(m)
@@ -577,11 +609,17 @@ function updateCoeffsPlot(m::MagneticFieldViewerWidget)
 
   # TODO: x-axis labels/ticks
 
-  # normalize coefficients
   p = get_gtk_property(m["adjPatches"],:value, Int64) # patch
   L = get_gtk_property(m["adjL"],:value, Int64) # L
   L² = (L+1)^2 # number of coeffs
   R = m.coeffs.radius
+
+  # return gradient
+  set_gtk_property!(m["entGradientX"], :text, "$(round(m.coeffsPlot[1,p][1,1],digits=3))") # show gradient in x
+  set_gtk_property!(m["entGradientY"], :text, "$(round(m.coeffsPlot[2,p][1,-1],digits=3))") # show gradient in y
+  set_gtk_property!(m["entGradientZ"], :text, "$(round(m.coeffsPlot[3,p][1,0],digits=3))") # show gradient in z
+
+  # normalize coefficients
   c = normalize.(m.coeffsPlot[:,p], 1/R)
 
   # create plot
