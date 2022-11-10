@@ -303,6 +303,7 @@ defaultDataHandler(protocol::Protocol) = [RawDataHandler, SpectrogramHandler]
 defaultDataHandler(protocol::MPIMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 defaultDataHandler(protocol::ContinousMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 defaultDataHandler(protocol::RobotMPIMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
+defaultDataHandler(protocol::RobotBasedMagneticFieldStaticProtocol) = [MagneticFieldHandler]
 
 function handleNewProgress(pw::ProtocolWidget, protocol::Protocol, event::ProgressEvent)
   if !informNewProgress(pw, protocol, event)

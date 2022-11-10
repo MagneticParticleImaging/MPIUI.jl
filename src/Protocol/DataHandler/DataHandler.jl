@@ -27,7 +27,9 @@ handleData(handler::AbstractDataHandler, protocol::Protocol, event::DataAnswerEv
 measureBackground(handler::AbstractDataHandler, protocol::Protocol) = protocol.params.measureBackground
 measureBackground(handler::AbstractDataHandler, protocol::RobotBasedSystemMatrixProtocol) = false # TODO Check bgMeas
 
+include("FileStorageParameter.jl")
 include("ParamExpander.jl")
 include("RawDataHandler.jl")
 include("SpectrogramHandler.jl")
 include("OnlineRecoHandler.jl")
+include("MagneticFieldHandler.jl")
