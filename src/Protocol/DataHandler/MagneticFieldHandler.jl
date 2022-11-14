@@ -7,12 +7,12 @@ end
 
 function MagneticFieldHandler(scanner=nothing)
   data = MagneticFieldViewerWidget()
-  return MagneticFieldHandler(data, FileStorageParameter("*.hd5"), true, true)
+  return MagneticFieldHandler(data, FileStorageParameter("", "*.hd5"), true, true)
 end
 
 getStorageTitle(handler::MagneticFieldHandler) = "Magnetic Field"
 getStorageWidget(handler::MagneticFieldHandler) = handler.storageParams
-getParameterTitle(handler::MagneticFieldHandler) = "N/A"
+getParameterTitle(handler::MagneticFieldHandler) = "Magnetic Field"
 getParameterWidget(handler::MagneticFieldHandler) = nothing
 getDisplayTitle(handler::MagneticFieldHandler) = "Magnetic Field"
 getDisplayWidget(handler::MagneticFieldHandler) = handler.dataWidget
