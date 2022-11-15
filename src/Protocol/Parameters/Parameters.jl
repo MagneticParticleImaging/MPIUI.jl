@@ -45,6 +45,10 @@ function value(entry::GenericEntry{T}) where {T}
   return tryparse(T, valueString)
 end
 
+function value(entry::GenericEntry{T}) where {T<:AbstractString}
+  return get_gtk_property(entry, :text, String)
+end
+
 mutable struct GenericParameter{T} <: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
   field::Symbol
