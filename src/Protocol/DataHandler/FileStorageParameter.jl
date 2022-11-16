@@ -27,4 +27,4 @@ function FileStorageParameter(filename::String, fileFilter::Union{String, Nothin
   return storage
 end
 
-filename(params::FileStorageParameter) = get_gtk_property(params["entFilename", EntryLeaf], :text)
+filename(params::FileStorageParameter) = get_gtk_property(params["entFilename", EntryLeaf], :text, String)
