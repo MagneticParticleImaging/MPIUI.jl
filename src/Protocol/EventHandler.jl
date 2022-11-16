@@ -78,7 +78,7 @@ function eventHandler(pw::ProtocolWidget, timer::Timer)
     confirmFinishedProtocol(pw)
     pw.protocolState = PS_FAILED
     close(timer)
-    @error ex
+    @error ex exception=(ex, catch_backtrace())
     showError(ex)
   end
 end
@@ -304,6 +304,7 @@ defaultDataHandler(protocol::MPIMeasurementProtocol) = [RawDataHandler, Spectrog
 defaultDataHandler(protocol::ContinousMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 defaultDataHandler(protocol::RobotMPIMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 defaultDataHandler(protocol::RobotBasedMagneticFieldStaticProtocol) = [MagneticFieldHandler]
+defaultDataHandler(protocol::RobotBasedTDesignFieldProtocol) = [MagneticFieldHandler]
 
 function handleNewProgress(pw::ProtocolWidget, protocol::Protocol, event::ProgressEvent)
   if !informNewProgress(pw, protocol, event)

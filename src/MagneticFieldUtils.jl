@@ -48,12 +48,12 @@ function MagneticFieldCoefficients(path::String)
   # load spherical harmonic coefficients
   shcoeffs = SphericalHarmonicCoefficients(path)
 
-  if haskey(HDF5.root(file), "/coeffs/radius") 
+  if haskey(HDF5.root(file), "/radius") 
     # file contains all relevant information
-    radius = read(file, "/coeffs/radius")
-    center = read(file, "/coeffs/center")
-    if haskey(HDF5.root(file), "/coeffs/ffp")
-      ffp = read(file, "/coeffs/ffp")
+    radius = read(file, "/radius")
+    center = read(file, "/center")
+    if haskey(HDF5.root(file), "/ffp")
+      ffp = read(file, "/ffp")
       return MagneticFieldCoefficients(shcoeffs, radius, center, ffp)
     else
       # field has not FFP -> ffp = nothing
@@ -92,12 +92,12 @@ function write(path::String, coeffs::MagneticFieldCoefficients)
   ffp = coeffs.ffp
 
   h5open(path,"cw") do file
-      write(file, "/coeffs/coeffs", coeffsArray)
-      write(file, "/coeffs/normalization", R)
-      write(file, "/coeffs/solid", solid)
-      write(file, "/coeffs/radius", radius)
-      write(file, "/coeffs/center", center)
-      write(file, "/coeffs/ffp", ffp)
+      write(file, "/coeffs", coeffsArray)
+      write(file, "/normalization", R)
+      write(file, "/solid", solid)
+      write(file, "/radius", radius)
+      write(file, "/center", center)
+      # write(file, "/coeffs/ffp", ffp)
   end
 end
 
@@ -126,7 +126,7 @@ end
 """
 function magneticField(tDesign::SphericalTDesign, field::Union{AbstractArray{T,2},AbstractArray{T,3}}, 
 		       x::Variable, y::Variable, z::Variable;
-		       L::Int=Int(tDesign.T/2),
+		       L::Int=Int(floor(tDesign.T/2)),
 		       calcSolid::Bool=true) where T <: Real
 
   # get tDesign positions [m] and removing the unit

@@ -12,7 +12,7 @@ function parameterType(field::Symbol, value)
     return SequenceParameterType()
   elseif field == :positions
     return PositionParameterType()
-  elseif field == :fgPos
+  elseif field == :fgPos || field == :center
     return CoordinateParameterType()
   elseif field == :reconstruction
     return ReconstructionParameterType()
