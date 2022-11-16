@@ -48,12 +48,12 @@ function MagneticFieldCoefficients(path::String)
   # load spherical harmonic coefficients
   shcoeffs = SphericalHarmonicCoefficients(path)
 
-  if haskey(HDF5.root(file), "/radius") 
+  if haskey(HDF5.root(file), "/coeffs/radius") 
     # file contains all relevant information
-    radius = read(file, "/radius")
-    center = read(file, "/center")
-    if haskey(HDF5.root(file), "/ffp")
-      ffp = read(file, "/ffp")
+    radius = read(file, "/coeffs/radius")
+    center = read(file, "/coeffs/center")
+    if haskey(HDF5.root(file), "/coeffs/ffp")
+      ffp = read(file, "/coeffs/ffp")
       return MagneticFieldCoefficients(shcoeffs, radius, center, ffp)
     else
       # field has not FFP -> ffp = nothing
@@ -91,14 +91,107 @@ function write(path::String, coeffs::MagneticFieldCoefficients)
   center = coeffs.center
   ffp = coeffs.ffp
 
-  h5open(path,"w") do file
-      write(file, "/coeffs", coeffsArray)
-      write(file, "/normalization", R)
-      write(file, "/solid", solid)
-      write(file, "/radius", radius)
-      write(file, "/center", center)
-      write(file, "/ffp", ffp)
+  h5open(path,"cw") do file
+      write(file, "/coeffs/coeffs", coeffsArray)
+      write(file, "/coeffs/normalization", R)
+      write(file, "/coeffs/solid", solid)
+      write(file, "/coeffs/radius", radius)
+      write(file, "/coeffs/center", center)
+      write(file, "/coeffs/ffp", ffp)
   end
+end
+
+
+"""
+   magneticField(tDesign::SphericalTDesign, field::Union{AbstractArray{T,2},AbstractArray{T,3}}, 
+		       x::Variable, y::Variable, z::Variable;
+		       L::Int=Int(tDesign.T/2),
+		       calcSolid::Bool=true) where T <: Real
+*Description:*  Calculation of the spherical harmonic coefficients and expansion based on the measured t-design\\
+ \\
+*Input:*
+- `tDesign`	- Measured t-design (type: SphericalTDesign)
+- `field`       - Measured field (size = (J,N,C)) with J <= 3
+- `x, y, z`     - Cartesian coordinates
+**kwargs:**
+- `L`           - Order up to which the coeffs be calculated (default: t/2)
+- `calcSolid`   - Boolean (default: true)\\
+    false -> spherical coefficients\\
+    true -> solid coefficients
+
+*Output:*
+- `coeffs`    - spherical/solid coefficients, type: Array{SphericalHarmonicCoefficients}(3,C)
+- `expansion` - related expansion (Cartesian polynomial), type: Array{AbstractPolynomialLike}(3,C)
+- `func`      - expansion converted to a function, type: Array{Function}(3,C)
+"""
+function magneticField(tDesign::SphericalTDesign, field::Union{AbstractArray{T,2},AbstractArray{T,3}}, 
+		       x::Variable, y::Variable, z::Variable;
+		       L::Int=Int(tDesign.T/2),
+		       calcSolid::Bool=true) where T <: Real
+
+  # get tDesign positions [m] and removing the unit
+  # coordinates
+  coords = Float64.(ustrip.(Unitful.m.(hcat([p for p in tDesign]...))))
+
+  # radius
+  R = Float64(ustrip(Unitful.m(tDesign.radius)))
+
+  # center
+  center = Float64.(ustrip.(Unitful.m.(tDesign.center)))
+  
+  return magneticField(coords, field, 
+		       R, center, L,
+		       x, y, z,
+		       calcSolid)
+end
+  
+
+
+function magneticField(coords::AbstractArray{T,2}, field::Union{AbstractArray{T,2},AbstractArray{T,3}}, 
+		       R::T, center::Vector{T}, L::Int,
+		       x::Variable, y::Variable, z::Variable, 
+		       calcSolid::Bool=true) where T <: Real
+
+  # transpose coords if its dimensions do not fit
+  if size(coords,1) != 3
+    coords = coords'
+  end
+
+  # test dimensions of field array
+  if size(field,1) > 3
+    throw(DimensionMismatch("The measured field has more than 3 entries in the first dimension: $(size(field,1))"))
+  elseif size(field,2) != size(coords,2)
+    throw(DimensionMismatch("The field vector does not match the size of the tdesign: $(size(field,2)) != $(size(coords,2))"))
+  end
+
+  func= Array{Function}(undef,size(field,1),size(field,3))
+  expansion = Array{Polynomial}(undef,size(field,1),size(field,3))
+  coeffs = Array{SphericalHarmonicCoefficients}(undef,size(field,1),size(field,3))
+
+  # rescale coordinates to t-design on unit sphere
+  coords = coords .- center
+  coords *= 1/R
+  for c = 1:size(field,3)
+    # calculation of the coefficients
+    for j = 1:size(field,1)
+
+        coeffs[j,c] = SphericalHarmonicExpansions.sphericalQuadrature(field[j,:,c],coords',L);
+        coeffs[j,c].R = R
+
+        normalize!(coeffs[j,c],R)
+
+	# convert spherical into solid coefficients
+        if calcSolid
+            solid!(coeffs[j,c])
+        end
+
+        # calculation of the expansion
+        expansion[j,c] = sphericalHarmonicsExpansion(coeffs[j,c],x,y,z) + 0*x;
+        func[j,c] = @fastfunc expansion[j,c]+0*x+0*y+0*z
+    end
+  end
+
+  return coeffs, expansion, func
 end
 
 winstonColormaps = ["Blues","Greens","Grays","Oranges","Purples","Reds","RdBu","jet"];
