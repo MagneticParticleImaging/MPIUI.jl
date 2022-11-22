@@ -154,6 +154,11 @@ function MagneticFieldViewerWidget()
       m.updating = false
     end
   end
+  
+  # calculate FFP
+  signal_connect(m["btnCalcFFP"], "clicked") do w
+    @idle_add_guarded calcFFP(m)
+  end
 
   # checkbuttons changed
   for cb in ["cbShowSphere", "cbShowSlices"]
@@ -339,6 +344,9 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
     set_gtk_property!(m["btnGoToFFP"],:visible,false) # FFP as intersection not available
     set_gtk_property!(m["btnCenterFFP"],:visible,false) # FFP as center not available
     set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # Center of sphere automatically plotting center
+  else
+    # disable the calcFFP button
+    set_gtk_property!(m["btnCalcFFP"],:sensitive,false) # FFP already calculated
   end
 
   # disable buttons that have no functions at the moment
@@ -400,7 +408,7 @@ function updateIntersection(m::MagneticFieldViewerWidget)
   
   updateSlices(m) # update slice numbers
   calcCenterCoeffs(m) # recalculate coefficients regarding to the center
-  updateCoeffs(m, -intersection) # shift to intersection
+  updateCoeffs(m, intersection) # shift to intersection
 end
 
 function goToFFP(m::MagneticFieldViewerWidget, goToZero=false)
@@ -424,6 +432,32 @@ function goToFFP(m::MagneticFieldViewerWidget, goToZero=false)
   updateField(m)
 
   m.updating = false
+end
+
+# calculate the FFP of the given coefficients
+function calcFFP(m::MagneticFieldViewerWidget)
+  
+  # calculate the FFP 
+  @polyvar x y z
+  expansion = sphericalHarmonicsExpansion.(m.coeffs.coeffs,[x],[y],[z])
+  m.coeffs.ffp = findFFP(expansion,x,y,z)
+  
+  # show FFP
+  ffpText = round.((m.coeffs.center + m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
+  set_gtk_property!(m["entFFP"], :text, "$(ffpText[1]) x $(ffpText[2]) x $(ffpText[3])") # show FFP of current patch
+    
+  # translate coefficients center of measured sphere into the FFP
+  for p = 1:size(m.coeffs.coeffs,2)
+    m.coeffs.coeffs[:,p] = SphericalHarmonicExpansions.translation.(m.coeffs.coeffs[:,p],[m.coeffs.ffp[:,p]])
+  end
+
+  # show FFP regarding buttons
+  set_gtk_property!(m["btnGoToFFP"],:visible,true) # FFP as intersection
+  set_gtk_property!(m["btnCenterFFP"],:visible,true) # FFP as center
+  set_gtk_property!(m["btnCenterFFP"],:sensitive,true) # FFP as center
+  # disable calcFFP button
+  set_gtk_property!(m["btnCalcFFP"],:sensitive,false) # FFP already calculated
+#  set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # Center of sphere automatically plotting center
 end
 
 # if button "Stay in FFP" true, everything is shifted into FFP, else the plots are updated

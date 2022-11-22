@@ -17,6 +17,7 @@ using ThreadPools
 using Dates
 using REPL: fielddoc
 using SphericalHarmonicExpansions # for MagneticFieldViewer
+using NLsolve # for MagneticFieldViewer: findFFP()
 
 ENV["MPILIB_UI"] = "Nothing"
 
