@@ -18,6 +18,7 @@ mutable struct MagneticFieldViewerWidget <: Gtk.GtkBox
   builder::GtkBuilder
   fv::FieldViewerWidget
   updating::Bool
+  filename::String
   coeffs::MagneticFieldCoefficients 
   coeffsPlot::Array{SphericalHarmonicCoefficients}
   field # Array containing Functions of the field
@@ -49,7 +50,7 @@ function MagneticFieldViewerWidget()
   mainBox = G_.object(b, "boxMagneticFieldViewer")
 
   m = MagneticFieldViewerWidget(mainBox.handle, b, FieldViewerWidget(),
-                     false, MagneticFieldCoefficients(0), [SphericalHarmonicCoefficients(0)],
+                     false, "", MagneticFieldCoefficients(0), [SphericalHarmonicCoefficients(0)],
 		     nothing, 1,
                      Grid())
   Gtk.gobject_move_ref(m, mainBox)
@@ -158,6 +159,11 @@ function MagneticFieldViewerWidget()
   # calculate FFP
   signal_connect(m["btnCalcFFP"], "clicked") do w
     @idle_add_guarded calcFFP(m)
+  end
+
+  # reset everything -> reload Viewer
+  signal_connect(m["btnReset"], "clicked") do w
+    @idle_add_guarded updateData!(m,m.filename)
   end
 
   # checkbuttons changed
@@ -303,6 +309,9 @@ end
 # load all necessary data and set up the values in the GUI
 function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
 
+  # store filename for reloading
+  m.filename = filenameCoeffs 
+
   # load magnetic fields
   m.coeffs = MagneticFieldCoefficients(filenameCoeffs) # load coefficients
   m.coeffsPlot = SphericalHarmonicCoefficients(filenameCoeffs) # load coefficients
@@ -344,6 +353,7 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
     set_gtk_property!(m["btnGoToFFP"],:visible,false) # FFP as intersection not available
     set_gtk_property!(m["btnCenterFFP"],:visible,false) # FFP as center not available
     set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # Center of sphere automatically plotting center
+    set_gtk_property!(m["btnCalcFFP"],:sensitive,true) # FFP can be calculated
   else
     # disable the calcFFP button
     set_gtk_property!(m["btnCalcFFP"],:sensitive,false) # FFP already calculated
