@@ -60,6 +60,7 @@ function openFileBrowser(dir::String)
   return
 end
 
+
 function imToVecIm(image::ImageMeta)
    out = ImageMeta[]
    for i=1:size(image,1)
