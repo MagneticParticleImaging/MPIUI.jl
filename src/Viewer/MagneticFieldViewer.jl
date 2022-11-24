@@ -18,7 +18,7 @@ mutable struct MagneticFieldViewerWidget <: Gtk.GtkBox
   builder::GtkBuilder
   fv::FieldViewerWidget
   updating::Bool
-  filename::String
+  coeffsInit::MagneticFieldCoefficients
   coeffs::MagneticFieldCoefficients 
   coeffsPlot::Array{SphericalHarmonicCoefficients}
   field # Array containing Functions of the field
@@ -34,7 +34,8 @@ mutable struct MagneticFieldViewer
   mf::MagneticFieldViewerWidget
 end
 
-function MagneticFieldViewer(filename::AbstractString)
+# Viewer can be started with MagneticFieldCoefficients or with a path to a file with some coefficients
+function MagneticFieldViewer(filename::Union{AbstractString,MagneticFieldCoefficients})
   mfViewerWidget = MagneticFieldViewerWidget()
   w = Window("Magnetic Field Viewer: $(filename)",800,600)
   push!(w,mfViewerWidget)
@@ -50,7 +51,7 @@ function MagneticFieldViewerWidget()
   mainBox = G_.object(b, "boxMagneticFieldViewer")
 
   m = MagneticFieldViewerWidget(mainBox.handle, b, FieldViewerWidget(),
-                     false, "", MagneticFieldCoefficients(0), [SphericalHarmonicCoefficients(0)],
+                     false, MagneticFieldCoefficients(0), MagneticFieldCoefficients(0), [SphericalHarmonicCoefficients(0)],
 		     nothing, 1,
                      Grid())
   Gtk.gobject_move_ref(m, mainBox)
@@ -163,7 +164,7 @@ function MagneticFieldViewerWidget()
 
   # reset everything -> reload Viewer
   signal_connect(m["btnReset"], "clicked") do w
-    @idle_add_guarded updateData!(m,m.filename)
+    @idle_add_guarded updateData!(m, m.coeffsInit)
   end
 
   # checkbuttons changed
@@ -307,14 +308,16 @@ function initCallbacks(m_::MagneticFieldViewerWidget)
 end
 
 # load all necessary data and set up the values in the GUI
-function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
+updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String) = updateData!(m,MagneticFieldCoefficients(filenameCoeffs))
 
-  # store filename for reloading
-  m.filename = filenameCoeffs 
+function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoefficients)
+  
+  m.coeffsInit = deepcopy(coeffs) # save initial coefficients for reloading
 
   # load magnetic fields
-  m.coeffs = MagneticFieldCoefficients(filenameCoeffs) # load coefficients
-  m.coeffsPlot = SphericalHarmonicCoefficients(filenameCoeffs) # load coefficients
+  m.coeffs = coeffs # load coefficients
+  m.coeffsPlot = deepcopy(m.coeffs.coeffs) # load coefficients
+
   @polyvar x y z
   expansion = sphericalHarmonicsExpansion.(m.coeffs.coeffs,[x],[y],[z])
   m.field = fastfunc.(expansion)
@@ -328,6 +331,7 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
 
   # set some values
   set_gtk_property!(m["adjPatches"], :upper, size(m.coeffs.coeffs,2) )
+  set_gtk_property!(m["adjPatches"], :value, m.patch )
   set_gtk_property!(m["adjL"], :upper, m.coeffs.coeffs[1].L )
   set_gtk_property!(m["adjL"], :value, m.coeffs.coeffs[1].L )
   set_gtk_property!(m["entRadius"], :text, "$(round(R*1000,digits=1))") # show radius of measurement 
