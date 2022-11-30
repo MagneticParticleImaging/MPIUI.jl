@@ -1647,7 +1647,7 @@ Sphere</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="labelGradientX">
+                              <object class="GtkLabel" id="labelGradient1">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">x</property>
@@ -1658,7 +1658,7 @@ Sphere</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel">
+                              <object class="GtkLabel" id="labelGradient2">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">y</property>
@@ -1669,7 +1669,7 @@ Sphere</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="labelGradientZ">
+                              <object class="GtkLabel" id="labelGradient3">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">z</property>

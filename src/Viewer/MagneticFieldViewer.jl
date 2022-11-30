@@ -73,7 +73,7 @@ function MagneticFieldViewerWidget()
   set_gtk_property!(m["cbCMaps"],:active,5) # default: viridis
 
   # Allow to change between gradient and offset output
-  for c in ["Gradient:","Offset:"]
+  for c in ["Gradient:","Offset:", "Singular values:"]
     push!(m["cbGradientOffset"], c)
   end
   set_gtk_property!(m["cbGradientOffset"],:active,0) # default: Gradient
@@ -550,16 +550,32 @@ function updateInfos(m::MagneticFieldViewerWidget)
     set_gtk_property!(m["entGradientX"], :text, "$(round(m.coeffsPlot[1,m.patch][1,1],digits=3))") # show gradient in x
     set_gtk_property!(m["entGradientY"], :text, "$(round(m.coeffsPlot[2,m.patch][1,-1],digits=3))") # show gradient in y
     set_gtk_property!(m["entGradientZ"], :text, "$(round(m.coeffsPlot[3,m.patch][1,0],digits=3))") # show gradient in z
-    # label
+    # unit
     for i=1:3
       set_gtk_property!(m["labelTpm$i"], :label, "T/m")
+      set_gtk_property!(m["labelGradient$i"], :label, ["x","y","z"][i]) 
     end
-  else # show offset field
+  elseif get_gtk_property(m["cbGradientOffset"],:active, Int) == 1 # show offset field
     for (i,x) in enumerate(["X","Y","Z"])
       # offset
       set_gtk_property!(m["entGradient"*x], :text, "$(round(m.coeffsPlot[i,m.patch][0,0]*1000,digits=1))") # show gradient in x
-      # label
+      # unit
       set_gtk_property!(m["labelTpm$i"], :label, "mT")
+      set_gtk_property!(m["labelGradient$i"], :label, ["x","y","z"][i]) 
+    end
+  else # show singular values
+    # calculate jacobian matrix
+    @polyvar x y z
+    expansion = sphericalHarmonicsExpansion.(m.coeffsPlot,[x],[y],[z])
+    jexp = differentiate(expansion[:,m.patch],[x,y,z]);
+    J = [jexp[i,j]((x,y,z) => [0.0,0.0,0.0]) for i=1:3, j=1:3] # jacobian matrix
+    # get singular values
+    sv = svd(J).S 
+    # show values
+    for (i,x) in enumerate(["X","Y","Z"])
+      set_gtk_property!(m["entGradient"*x], :text, "$(round(sv[i],digits=3))") # singular values
+      set_gtk_property!(m["labelTpm$i"], :label, "T/m") # unit
+      set_gtk_property!(m["labelGradient$i"], :label, "$i") 
     end
   end
 
