@@ -24,6 +24,7 @@ mutable struct MagneticFieldViewerWidget <: Gtk.GtkBox
   field # Array containing Functions of the field
   patch::Int
   grid::GtkGridLeaf
+  cmapsTree::GtkTreeModelFilter
 end
 
 getindex(m::MagneticFieldViewerWidget, w::AbstractString) = G_.object(m.builder, w)
@@ -53,7 +54,7 @@ function MagneticFieldViewerWidget()
   m = MagneticFieldViewerWidget(mainBox.handle, b, FieldViewerWidget(),
                      false, MagneticFieldCoefficients(0), MagneticFieldCoefficients(0), [SphericalHarmonicCoefficients(0)],
 		     nothing, 1,
-                     Grid())
+                     Grid(), GtkTreeModelFilter(GtkListStore(Bool)))
   Gtk.gobject_move_ref(m, mainBox)
 
   # build up plots
@@ -62,15 +63,49 @@ function MagneticFieldViewerWidget()
   m.grid[1,3] = Canvas()
   # expand plot
   set_gtk_property!(m, :expand, m.grid, true)
-
+  
   showall(m)
 
-  # set colormaps
+  ## setup colormap search
+  # create list
+  ls = GtkListStore(String, Bool)
+  for c in existing_cmaps()
+    push!(ls,(c,true))
+  end
+  # create TreeViewColumn
+  rTxt = GtkCellRendererText()
+  c = GtkTreeViewColumn("Colormaps", rTxt, Dict([("text",0)]), sort_column_id=0) # column
+  # add column to TreeView
+  m.cmapsTree = GtkTreeModelFilter(ls)
+  GAccessor.visible_column(m.cmapsTree,1)
+  tv = GtkTreeView(GtkTreeModel(m.cmapsTree))
+  push!(tv, c)
+  # add to popover
+  push!(m["boxCMaps"],tv)
+  showall(m["boxCMaps"])
+
+  # set important colormaps
   choices = important_cmaps() 
   for c in choices
     push!(m["cbCMaps"], c)
   end
   set_gtk_property!(m["cbCMaps"],:active,5) # default: viridis
+  m.fv.coloring = ColoringParams(0,1,important_cmaps()[6]) # set default colormap
+
+  # searching for specific colormaps
+  signal_connect(m["entCMaps"], "changed") do w
+    @idle_add_guarded begin
+      searchText = get_gtk_property(m["entCMaps"], :text, String)
+      for l=1:length(ls)
+        showMe = true
+        if length(searchText) > 0
+          showMe = showMe && occursin(lowercase(searchText), lowercase(ls[l,1]))
+        end
+        ls[l,2] = showMe
+      end
+    end
+  end
+
 
   # Allow to change between gradient and offset output
   for c in ["Gradient:","Offset:", "Singular values:"]
@@ -243,10 +278,13 @@ function initCallbacks(m_::MagneticFieldViewerWidget)
   let m=m_
 
   ## update coloring
-  function updateCol( widget )
-    updateColoring(m)
-    updateField(m,true)
+  function updateCol( widget , importantCMaps::Bool=true)
+
+    # update plots
+    @idle_add_guarded updateColoring(m,importantCMaps)
+    @idle_add_guarded updateField(m,true)
   end
+  
 
   # choose new slice
   function newSlice( widget )
@@ -284,11 +322,17 @@ function initCallbacks(m_::MagneticFieldViewerWidget)
   # cmin/cmax
   widgets = ["adjCMin", "adjCMax"]
   for w in widgets
-    signal_connect(updateCol, m[w], "value_changed")
+    signal_connect(m[w], "value_changed") do widget
+      @idle_add_guarded updateColLims(m) # update color range
+      @idle_add_guarded updateField(m,true)
+    end
   end
 
   # colormap
   signal_connect(updateCol, m["cbCMaps"], "changed")
+  signal_connect(GAccessor.selection(m["boxCMaps"][2]), "changed") do widget
+    updateCol( widget, false )
+  end
 
   ## reset FOV
   function resetFOV( widget )
@@ -384,11 +428,36 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
 end
 
 # update the coloring params
-function updateColoring(m::MagneticFieldViewerWidget)
-  cmin = get_gtk_property(m["adjCMin"],:value, Float64)
-  cmax = get_gtk_property(m["adjCMax"],:value, Float64)
-  cmap = important_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
-  m.fv.coloring = ColoringParams(cmin,cmax,cmap)
+function updateColoring(m::MagneticFieldViewerWidget, importantCMaps::Bool=true)
+  if !m.fv.updating
+    m.fv.updating = true
+    cmin = get_gtk_property(m["adjCMin"],:value, Float64)
+    cmax = get_gtk_property(m["adjCMax"],:value, Float64)
+    if importantCMaps # choice happend within the important colormaps
+      cmap = important_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
+    else # choice happened within all colormaps
+      selection = GAccessor.selection(m["boxCMaps"][2])
+      if hasselection(selection)
+        chosenCMap = selected(selection)
+        cmap = GtkTreeModel(m.cmapsTree)[chosenCMap,1]
+      else # use last choice of important colormaps
+        cmap = important_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
+      end
+    end
+    m.fv.coloring = ColoringParams(cmin,cmax,cmap)
+    m.fv.updating = false
+  end
+end
+
+# Coloring: Update cmin/cmax only
+function updateColLims(m::MagneticFieldViewerWidget)
+  if !m.fv.updating
+    m.fv.updating = true
+    cmin = get_gtk_property(m["adjCMin"],:value, Float64)
+    cmax = get_gtk_property(m["adjCMax"],:value, Float64)
+    m.fv.coloring = ColoringParams(cmin,cmax,m.fv.coloring.cmap) # keep cmap
+    m.fv.updating = false
+  end
 end
 
 
@@ -631,7 +700,7 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
     # set new coloring params
     cmin, cmax = minimum(fieldNorm), maximum(fieldNorm)
     cmin = (get_gtk_property(m["cbCMin"], :active, Bool)) ? 0.0 : cmin # set cmin to 0 if checkbutton is active
-    cmap = important_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
+    cmap = m.fv.coloring.cmap
     m.fv.coloring = ColoringParams(cmin, cmax, cmap) # set coloring
     # set cmin and cmax
       set_gtk_property!(m["adjCMin"], :lower, cmin)
