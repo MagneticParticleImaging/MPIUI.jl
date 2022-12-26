@@ -113,13 +113,13 @@ function SFViewerWidget()
     @idle_add_guarded updateSF(m)
   end
   
-###  signal_connect(m["adjSNRMinFreq"], "value_changed") do w
-###    @idle_add_guarded updateSF(m)
-###  end
+  signal_connect(m["adjSNRMinFreq"], "value_changed") do w
+    @idle_add_guarded updateSF(m)
+  end
 
- ### signal_connect(m["adjSNRMaxFreq"], "value_changed") do w
- ###   @idle_add_guarded updateSF(m)
- ### end
+  signal_connect(m["adjSNRMaxFreq"], "value_changed") do w
+    @idle_add_guarded updateSF(m)
+  end
 
   signal_connect(m["adjSFRecChan"], "value_changed") do w
     if !m.updating
@@ -148,14 +148,14 @@ function SFViewerWidget()
     signal_connect(updateSFMixO, m[w], "value_changed")
   end
 
-  ### signal_connect(m["cbFixRecChan"], :toggled) do w
-  ###  @idle_add_guarded updateSigOrd(m)
-  ### end
+  signal_connect(m["cbFixRecChan"], :toggled) do w
+    @idle_add_guarded updateSigOrd(m)
+  end
   signal_connect(updateSFSignalOrdered, m["adjSFSignalOrdered"], "value_changed")
 
-  ### signal_connect(m["btnRecalcSNR"], :clicked) do w
-  ###  @idle_add_guarded recalcSNR(m)
-  ### end  
+  signal_connect(m["btnRecalcSNR"], :clicked) do w
+    @idle_add_guarded recalcSNR(m)
+  end  
 
   return m
 end

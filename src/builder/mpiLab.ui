@@ -318,7 +318,7 @@
                         <property name="label" translatable="yes">mz</property>
                         <layout>
                           <property name="column">0</property>
-                          <property name="row">3</property>
+                          <property name="row">7</property>
                         </layout>
                       </object>
                     </child>
@@ -500,6 +500,18 @@
                           <property name="column">1</property>
                           <property name="row">2</property>
                         </layout>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="btnRecalcSNR">
+                        <property name="label" translatable="yes">Recalc SNR</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <layout>
+                          <property name="column">0</property>
+                          <property name="row">3</property>
+                          <property name="column-span">2</property>
+                      </layout>
                       </object>
                     </child>
                   </object>
