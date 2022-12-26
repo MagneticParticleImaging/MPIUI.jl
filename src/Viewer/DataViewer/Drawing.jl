@@ -104,7 +104,7 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
    
   drawSlice(m,slices,isDrawSectionalLines,isDrawRectangle,isDrawAxes, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
 
-  m.grid3D[1,1].mouse.button3press = @guarded (widget, event) -> begin
+  #=m.grid3D[1,1].mouse.button3press = @guarded (widget, event) -> begin
     @guarded Gtk4.draw(widget) do widget
       if isDrawRectangle
         @debug "mouse event ZX"
@@ -167,6 +167,7 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
      end
     end
   end
+  =#
   return nothing
 end
 
@@ -219,7 +220,7 @@ function drawImageCairo(c, image, isDrawSectionalLines, isDrawAxes, xsec, ysec,
   end
  end
 
- c.mouse.button1press = @guarded (widget, event) -> begin
+ #=c.mouse.button1press = @guarded (widget, event) -> begin
   #if isDrawSectionalLines
    ctx = getgc(widget)
    reveal(widget)
@@ -232,7 +233,7 @@ function drawImageCairo(c, image, isDrawSectionalLines, isDrawAxes, xsec, ysec,
    @idle_add_guarded set_gtk_property!(adjX, :value, round(Int64,xx))
    @idle_add_guarded set_gtk_property!(adjY, :value, round(Int64,yy))
   #end
- end
+ end=#
 end
 
 ## Draw coordinate system

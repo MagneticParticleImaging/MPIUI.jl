@@ -12,12 +12,12 @@ mutable struct SFViewerWidget <: Gtk4.GtkBox
   maxFreq::Int
   maxChan::Int
   SNR::Array{Float64,3}
-  SNRSortedIndices::Array{Float64,1}
-  SNRSortedIndicesInverse::Array{Float64,1}
-  SNRSortedIndicesRecChan::Array{Array{Float64,1},1}
-  SNRSortedIndicesRecChanInverse::Array{Array{Float64,1},1}
-  mixFac::Array{Float64,2}
-  mxyz::Array{Float64,1}
+  SNRSortedIndices::Array{Int64,1}
+  SNRSortedIndicesInverse::Array{Int64,1}
+  SNRSortedIndicesRecChan::Array{Array{Int64,1},1}
+  SNRSortedIndicesRecChanInverse::Array{Array{Int64,1},1}
+  mixFac::Array{Int64,2}
+  mxyz::Array{Int64,1}
   frequencies::Array{Float64,1}
   frequencySelection::Array{Int,1}
   grid::Gtk4.GtkGridLeaf
@@ -32,7 +32,7 @@ end
 
 function SFViewer(filename::AbstractString)
   sfViewerWidget = SFViewerWidget()
-  w = Window("SF Viewer: $(filename)",800,600)
+  w = GtkWindow("SF Viewer: $(filename)",800,600)
   push!(w,sfViewerWidget)
   show(w)
   updateData!(sfViewerWidget, filename)

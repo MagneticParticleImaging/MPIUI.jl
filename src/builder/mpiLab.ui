@@ -196,6 +196,16 @@
     <property name="step-increment">1</property>
     <property name="upper">100</property>
   </object>
+  <object class="GtkAdjustment" id="adjSNRMaxFreq">
+    <property name="upper">99999999999999</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
+  </object>
+  <object class="GtkAdjustment" id="adjSNRMinFreq">
+    <property name="upper">99999999999999</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
+  </object>
   <object class="GtkScrolledWindow" id="swSFViewer">
     <property name="child">
       <object class="GtkViewport" id="viewport2">
@@ -308,7 +318,7 @@
                         <property name="label" translatable="yes">mz</property>
                         <layout>
                           <property name="column">0</property>
-                          <property name="row">6</property>
+                          <property name="row">3</property>
                         </layout>
                       </object>
                     </child>
@@ -318,7 +328,7 @@
                         <property name="label" translatable="yes">my</property>
                         <layout>
                           <property name="column">0</property>
-                          <property name="row">5</property>
+                          <property name="row">6</property>
                         </layout>
                       </object>
                     </child>
@@ -328,7 +338,7 @@
                         <property name="label" translatable="yes">mx</property>
                         <layout>
                           <property name="column">0</property>
-                          <property name="row">4</property>
+                          <property name="row">5</property>
                         </layout>
                       </object>
                     </child>
@@ -338,7 +348,7 @@
                         <property name="focusable">1</property>
                         <layout>
                           <property name="column">1</property>
-                          <property name="row">4</property>
+                          <property name="row">5</property>
                         </layout>
                       </object>
                     </child>
@@ -348,7 +358,7 @@
                         <property name="focusable">1</property>
                         <layout>
                           <property name="column">1</property>
-                          <property name="row">5</property>
+                          <property name="row">6</property>
                         </layout>
                       </object>
                     </child>
@@ -358,10 +368,70 @@
                         <property name="focusable">1</property>
                         <layout>
                           <property name="column">1</property>
-                          <property name="row">6</property>
+                          <property name="row">7</property>
                         </layout>
                       </object>
                     </child>
+                    <child>
+                      <object class="GtkCheckButton" id="cbFixRecChan">
+                        <property name="label" translatable="yes">Fix Rec Chan</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">False</property>
+                       <layout>
+                          <property name="column">1</property>
+                          <property name="row">4</property>
+                        </layout>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="label" translatable="yes">Min Freq</property>
+                       <layout>
+                          <property name="column">0</property>
+                          <property name="row">8</property>
+                        </layout>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="label" translatable="yes">Max Freq</property>
+                       <layout>
+                          <property name="column">0</property>
+                          <property name="row">9</property>
+                        </layout>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkSpinButton">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="text" translatable="yes">0</property>
+                        <property name="adjustment">adjSNRMinFreq</property>
+                       <layout>
+                          <property name="column">1</property>
+                          <property name="row">8</property>
+                        </layout>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkSpinButton">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="text" translatable="yes">0</property>
+                        <property name="adjustment">adjSNRMaxFreq</property>
+                       <layout>
+                          <property name="column">1</property>
+                          <property name="row">9</property>
+                        </layout>
+                      </object>
+                    </child>                    
                   </object>
                 </child>
                 <child type="label">
