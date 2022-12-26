@@ -49,10 +49,10 @@ function updateData!(m::SFBrowserWidget, sysFuncs)
       for (k,v) in uuids
         l = v[1]
         iter = push!(m.store, makeTupleSF(sysFuncs,l))
-        for q = 2:length(v)
-          l = v[q]
-          push!(m.store, makeTupleSF(sysFuncs,l), iter)
-        end
+      ###  for q = 2:length(v)
+      ###    l = v[q]
+      ###    push!(m.store, makeTupleSF(sysFuncs,l), iter)
+      ###  end
       end
       m.updating = false
   end

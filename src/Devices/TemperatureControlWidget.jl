@@ -1,26 +1,26 @@
-mutable struct TemperatureControllerWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct TemperatureControllerWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   updating::Bool
   cont::TemperatureController
   temperatureLog::TemperatureLog
-  canvases::Vector{GtkCanvasLeaf}
+  canvases::Vector{Gtk4.GtkCanvasLeaf}
   timer::Union{Timer,Nothing}
 end
 
-getindex(m::TemperatureControllerWidget, w::AbstractString) =  G_.object(m.builder, w)
+getindex(m::TemperatureControllerWidget, w::AbstractString) =  G_.get_object(m.builder, w)
 
 function TemperatureControllerWidget(tempCont::TemperatureController)
   uifile = joinpath(@__DIR__,"..","builder","temperatureControllerWidget.ui")
 
-  b = Builder(filename=uifile)
-  mainBox = G_.object(b, "mainBox")
+  b = GtkBuilder(filename=uifile)
+  mainBox = G_.get_object(b, "mainBox")
 
   numPlots = length(unique(getChannelGroups(tempCont)))
-  canvases = [Canvas() for i=1:numPlots]
+  canvases = [GtkCanvas() for i=1:numPlots]
 
   m = TemperatureControllerWidget(mainBox.handle, b, false, tempCont, TemperatureLog(), canvases, nothing)
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   for (i,c) in enumerate(m.canvases)
     push!(m, c)
@@ -97,7 +97,7 @@ end
 
   signal_connect(m["btnSaveTemp"], :clicked) do w
     m.updating = true
-    filter = Gtk.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
+    filter = Gtk4.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
     filename = save_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
     if filename != ""
         filenamebase, ext = splitext(filename)
@@ -108,7 +108,7 @@ end
 
   signal_connect(m["btnLoadTemp"], :clicked) do w
     m.updating = true
-    filter = Gtk.GtkFileFilter(pattern=String("*.toml, *.mdf"), mimetype=String("application/toml"))
+    filter = Gtk4.GtkFileFilter(pattern=String("*.toml, *.mdf"), mimetype=String("application/toml"))
     filename = open_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
     if filename != ""
       filenamebase, ext = splitext(filename)

@@ -2,8 +2,8 @@ function linearSolverList()
   Any["kaczmarz", "cgnr", "fusedlasso"]
 end
 
-mutable struct ReconstructionParameter <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct ReconstructionParameter <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   params::Dict{Symbol,Any}
   sfParamsChanged::Bool
@@ -14,14 +14,14 @@ mutable struct ReconstructionParameter <: Gtk.GtkBox
 
   function ReconstructionParameter(params=defaultRecoParams()) #, value::Sequence, scanner::MPIScanner)
     uifile = joinpath(@__DIR__, "..", "builder", "reconstructionParams.ui")
-    b = Builder(filename=uifile)
+    b = GtkBuilder(filename=uifile)
 
-    exp = G_.object(b, "boxRecoParams")
+    exp = G_.get_object(b, "boxRecoParams")
 
     #addTooltip(object_(pw.builder, "lblSequence", GtkLabel), tooltip)
     m = new(exp.handle, b, params, true, nothing, Dict{Int64,String}(),
             nothing, 1) #, value, scanner)
-    Gtk.gobject_move_ref(m, exp)
+    Gtk4.GLib.gobject_move_ref(m, exp)
     
     setParams(m, params)
 
@@ -46,7 +46,7 @@ mutable struct ReconstructionParameter <: Gtk.GtkBox
   
       cache = loadcache()
   
-      selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
+      selectedProfileName = Gtk4.bytestring( G_.active_text(m["cbRecoProfiles"]))
       @debug "" selectedProfileName
       if haskey(cache["recoParams"],selectedProfileName)
         @idle_add_guarded setParams(m, cache["recoParams"][selectedProfileName])
@@ -67,7 +67,7 @@ mutable struct ReconstructionParameter <: Gtk.GtkBox
     end
   
     function deleteRecoProfile( widget )
-      selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
+      selectedProfileName = Gtk4.bytestring( G_.active_text(m["cbRecoProfiles"]))
   
       @idle_add_guarded @info "delete reco profile $selectedProfileName"
   
@@ -104,7 +104,7 @@ mutable struct ReconstructionParameter <: Gtk.GtkBox
   
 end
 
-getindex(m::ReconstructionParameter, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::ReconstructionParameter, w::AbstractString) = G_.get_object(m.builder, w)
 
 
 function initCallbacks(m::ReconstructionParameter)
@@ -308,7 +308,7 @@ end
 function updateBGMeas(m::ReconstructionParameter)
   if get_gtk_property(m["cbBGMeasurements"],"active", Int) >= 0
 
-    bgstr =  Gtk.bytestring( G_.active_text(m["cbBGMeasurements"]))
+    bgstr =  Gtk4.bytestring( G_.active_text(m["cbBGMeasurements"]))
     if !isempty(bgstr)
       bgnum =  parse(Int64, bgstr)
       filenameBG = m.bgExperiments[bgnum]

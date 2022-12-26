@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.20.0 -->
 <interface>
-  <requires lib="gtk" version="4.0"/>
+  <requires lib="gtk+" version="3.12"/>
   <object class="GtkAdjustment" id="adjAverages">
     <property name="lower">1</property>
     <property name="upper">10000</property>
@@ -273,76 +274,132 @@
     <property name="page_increment">10</property>
   </object>
   <object class="GtkGrid" id="gridReco">
-    <property name="hexpand">1</property>
-    <property name="vexpand">1</property>
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="hexpand">True</property>
+    <property name="vexpand">True</property>
     <child>
       <object class="GtkBox" id="boxLR">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
         <property name="margin_top">4</property>
         <property name="margin_bottom">4</property>
-        <property name="hexpand">1</property>
-        <property name="vexpand">1</property>
+        <property name="hexpand">True</property>
+        <property name="vexpand">True</property>
         <property name="spacing">4</property>
         <child>
           <object class="GtkBox" id="boxDW">
-            <property name="hexpand">1</property>
-            <property name="vexpand">1</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
             <property name="orientation">vertical</property>
             <child>
               <object class="GtkBox" id="box15">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
                 <child>
-                  <object class="GtkBox" id="tbRec">
-                    <property name="css-classes">toolbar</property>
-                    <property name="can_focus">0</property>
+                  <object class="GtkToolbar" id="tbRec">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
                     <child>
-                      <object class="GtkButton" id="tbPerformReco">
-                        <property name="can_focus">0</property>
-                        <property name="label" translatable="1">Perform Reco</property>
-                        <property name="use_underline">1</property>
+                      <object class="GtkToolButton" id="tbPerformReco">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="is_important">True</property>
+                        <property name="label" translatable="yes">Perform Reco</property>
+                        <property name="use_underline">True</property>
+                        <property name="stock_id">gtk-yes</property>
                       </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="homogeneous">True</property>
+                      </packing>
                     </child>
                     <child>
-                      <object class="GtkButton" id="tbSaveReco">
-                        <property name="can_focus">0</property>
-                        <property name="label" translatable="1">Save</property>
-                        <property name="use_underline">1</property>
+                      <object class="GtkToolButton" id="tbSaveReco">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="is_important">True</property>
+                        <property name="label" translatable="yes">Save</property>
+                        <property name="use_underline">True</property>
+                        <property name="stock_id">gtk-apply</property>
                       </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="homogeneous">True</property>
+                      </packing>
                     </child>
                   </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
                 </child>
                 <child>
-                  <object class="GtkSpinner" id="spReco"/>
+                  <object class="GtkSpinner" id="spReco">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
                 </child>
               </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
             </child>
           </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
         </child>
         <child>
           <object class="GtkScrolledWindow" id="scrolledwindow2">
-            <property name="focusable">1</property>
-            <property name="hexpand">0</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="hexpand">False</property>
+            <property name="shadow_type">in</property>
             <property name="min_content_width">203</property>
-            <property name="propagate_natural_width">1</property>
-            <property name="child">
+            <property name="propagate_natural_width">True</property>
+            <child>
               <object class="GtkViewport" id="viewport3">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
                 <property name="margin_top">2</property>
                 <property name="margin_bottom">3</property>
-                <property name="child">
+                <child>
                   <object class="GtkBox" id="boxParams">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
                     <property name="orientation">vertical</property>
                     <child>
                       <placeholder/>
                     </child>
                   </object>
-                </property>
+                </child>
               </object>
-            </property>
+            </child>
           </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
         </child>
-        <layout>
-          <property name="column">0</property>
-          <property name="row">0</property>
-        </layout>
       </object>
+      <packing>
+        <property name="left_attach">0</property>
+        <property name="top_attach">0</property>
+      </packing>
     </child>
   </object>
 </interface>

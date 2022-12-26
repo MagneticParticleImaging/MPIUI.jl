@@ -2,8 +2,8 @@ export RecoWindow, OfflineRecoWidget
 
 include("ReconstructionParameter.jl")
 
-mutable struct OfflineRecoWidget <: Gtk.GtkGrid
-  handle::Ptr{Gtk.GObject}
+mutable struct OfflineRecoWidget <: Gtk4.GtkGrid
+  handle::Ptr{Gtk4.GObject}
   builder
   params::ReconstructionParameter
   dv
@@ -16,10 +16,10 @@ mutable struct OfflineRecoWidget <: Gtk.GtkGrid
   currentExperiment
 end
 
-getindex(m::OfflineRecoWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::OfflineRecoWidget, w::AbstractString) = G_.get_object(m.builder, w)
 
 mutable struct RecoWindow
-  w::Window
+  w::Gtk4.GtkWindowLeaf
   rw::OfflineRecoWidget
 end
 
@@ -32,7 +32,7 @@ function RecoWindow(filenameMeas=nothing; params = defaultRecoParams())
     G_.transient_for(w, mpilab[]["mainWindow"])
   end
   G_.modal(w,true)
-  showall(w)
+  show(w)
 
   return RecoWindow(w,dw)
 end
@@ -41,16 +41,16 @@ function OfflineRecoWidget(filenameMeas=nothing; params = defaultRecoParams())
 
   uifile = joinpath(@__DIR__, "..", "builder", "reconstructionWidget.ui")
 
-  b = Builder(filename=uifile)
-  mainGrid = G_.object(b, "gridReco")
-  boxParams = G_.object(b, "boxParams")
+  b = GtkBuilder(filename=uifile)
+  mainGrid = G_.get_object(b, "gridReco")
+  boxParams = G_.get_object(b, "boxParams")
 
   recoParams = ReconstructionParameter(params)
 
   push!(boxParams, recoParams)
-  set_gtk_property!(boxParams,:fill,recoParams, true) 
-  set_gtk_property!(boxParams,:expand,recoParams, true) 
-  showall(recoParams) 
+###  set_gtk_property!(boxParams,:fill,recoParams, true) 
+###  set_gtk_property!(boxParams,:expand,recoParams, true) 
+  show(recoParams) 
 
   @info "in OfflineRecoWidget"
 
@@ -60,12 +60,12 @@ function OfflineRecoWidget(filenameMeas=nothing; params = defaultRecoParams())
                   nothing,
                   nothing, nothing, nothing, nothing,
                   nothing, nothing)
-  Gtk.gobject_move_ref(m, mainGrid)
+  Gtk4.GLib.gobject_move_ref(m, mainGrid)
 
   m.dv = DataViewerWidget()
   push!(m["boxDW"], m.dv)
-  set_gtk_property!(m["boxDW"], :fill, m.dv, true)
-  set_gtk_property!(m["boxDW"], :expand, m.dv, true)
+  ###set_gtk_property!(m["boxDW"], :fill, m.dv, true)
+  ###set_gtk_property!(m["boxDW"], :expand, m.dv, true)
 
   updateData!(m, filenameMeas)
 

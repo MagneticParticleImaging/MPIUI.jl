@@ -1,5 +1,5 @@
-mutable struct StorageParameter <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct StorageParameter <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   # Storage
   mdfstore::MDFDatasetStore
@@ -7,7 +7,7 @@ mutable struct StorageParameter <: Gtk.GtkBox
   currStudyDate::DateTime
 end
 
-getindex(m::StorageParameter, w::AbstractString, T::Type) = object_(m.builder, w, T)
+getindex(m::StorageParameter, w::AbstractString) = G_.get_object(m.builder, w)
 
 function StorageParameter(scanner::Nothing)
   mdfstore = MDFDatasetStore(defaultdatastore)
@@ -21,10 +21,10 @@ end
 
 function StorageParameter(mdfstore::MDFDatasetStore)
   uifile = joinpath(@__DIR__,"..","..","builder","storageParams.ui")
-  b = Builder(filename=uifile)
-  mainBox = object_(b, "boxParams", BoxLeaf)
+  b = GtkBuilder(filename=uifile)
+  mainBox = G_.get_object(b, "boxParams")
   storage = StorageParameter(mainBox.handle, b, mdfstore, "", now())
-  Gtk.gobject_move_ref(storage, mainBox)
+  Gtk4.GLib.gobject_move_ref(storage, mainBox)
   return storage
 end
 
@@ -34,14 +34,14 @@ function getStorageMDF(sp::StorageParameter)
   studyName(mdf, sp.currStudyName)
   studyTime(mdf, sp.currStudyDate)
   studyDescription(mdf, "")
-  experimentDescription(mdf, get_gtk_property(sp["entExpDescr",EntryLeaf], :text, String))
-  experimentName(mdf, get_gtk_property(sp["entExpName",EntryLeaf], :text, String))
-  scannerOperator(mdf, get_gtk_property(sp["entOperator",EntryLeaf], :text, String))
-  tracerName(mdf, [get_gtk_property(sp["entTracerName",EntryLeaf], :text, String)])
-  tracerBatch(mdf, [get_gtk_property(sp["entTracerBatch",EntryLeaf], :text, String)])
-  tracerVendor(mdf, [get_gtk_property(sp["entTracerVendor",EntryLeaf], :text, String)])
-  tracerVolume(mdf, [1e-3*get_gtk_property(sp["adjTracerVolume",AdjustmentLeaf], :value, Float64)])
-  tracerConcentration(mdf, [1e-3*get_gtk_property(sp["adjTracerConcentration",AdjustmentLeaf], :value, Float64)])
-  tracerSolute(mdf, [get_gtk_property(sp["entTracerSolute",EntryLeaf], :text, String)])
+  experimentDescription(mdf, get_gtk_property(sp["entExpDescr"], :text, String))
+  experimentName(mdf, get_gtk_property(sp["entExpName"], :text, String))
+  scannerOperator(mdf, get_gtk_property(sp["entOperator"], :text, String))
+  tracerName(mdf, [get_gtk_property(sp["entTracerName"], :text, String)])
+  tracerBatch(mdf, [get_gtk_property(sp["entTracerBatch"], :text, String)])
+  tracerVendor(mdf, [get_gtk_property(sp["entTracerVendor"], :text, String)])
+  tracerVolume(mdf, [1e-3*get_gtk_property(sp["adjTracerVolume"], :value, Float64)])
+  tracerConcentration(mdf, [1e-3*get_gtk_property(sp["adjTracerConcentration"], :value, Float64)])
+  tracerSolute(mdf, [get_gtk_property(sp["entTracerSolute"], :text, String)])
   return mdf
 end

@@ -3,18 +3,18 @@ export MagneticFieldViewer
 # load new type MagneticFieldCoefficients with additional informations
 include("../MagneticFieldUtils.jl")
 
-mutable struct FieldViewerWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct FieldViewerWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   coloring::ColoringParams
   updating::Bool
   field # data to be plotted
   centerFFP::Bool # center of plot (FFP (true) or center of measured sphere (false))
-  grid::GtkGridLeaf
+  grid::Gtk4.GtkGridLeaf
 end
 
-mutable struct MagneticFieldViewerWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct MagneticFieldViewerWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   fv::FieldViewerWidget
   updating::Bool
@@ -22,20 +22,20 @@ mutable struct MagneticFieldViewerWidget <: Gtk.GtkBox
   coeffsPlot::Array{SphericalHarmonicCoefficients}
   field # Array containing Functions of the field
   patch::Int
-  grid::GtkGridLeaf
+  grid::Gtk4.GtkGridLeaf
 end
 
-getindex(m::MagneticFieldViewerWidget, w::AbstractString) = G_.object(m.builder, w)
-getindex(m::FieldViewerWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::MagneticFieldViewerWidget, w::AbstractString) = G_.get_object(m.builder, w)
+getindex(m::FieldViewerWidget, w::AbstractString) = G_.get_object(m.builder, w)
 
 mutable struct MagneticFieldViewer
-  w::Window
+  w::Gtk4.GtkWindowLeaf
   mf::MagneticFieldViewerWidget
 end
 
 function MagneticFieldViewer(filename::AbstractString)
   mfViewerWidget = MagneticFieldViewerWidget()
-  w = Window("Magnetic Field Viewer: $(filename)",800,600)
+  w = GtkWindow("Magnetic Field Viewer: $(filename)",800,600)
   push!(w,mfViewerWidget)
   showall(w)
   updateData!(mfViewerWidget, filename)
@@ -46,18 +46,18 @@ function MagneticFieldViewerWidget()
   uifile = joinpath(@__DIR__,"..","builder","magneticFieldViewer.ui")
 
   b = Builder(filename=uifile)
-  mainBox = G_.object(b, "boxMagneticFieldViewer")
+  mainBox = G_.get_object(b, "boxMagneticFieldViewer")
 
   m = MagneticFieldViewerWidget(mainBox.handle, b, FieldViewerWidget(),
                      false, MagneticFieldCoefficients(0), [SphericalHarmonicCoefficients(0)],
 		     nothing, 1,
                      Grid())
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   # build up plots
   m.grid = m["gridMagneticFieldViewer"]
   m.grid[1,1:2] = m.fv
-  m.grid[1,3] = Canvas()
+  m.grid[1,3] = GtkCanvas()
   # expand plot
   set_gtk_property!(m, :expand, m.grid, true)
 
@@ -219,13 +219,13 @@ function FieldViewerWidget()
   fv = FieldViewerWidget(mainBox.handle, b, ColoringParams(0,0,0),
                      false, nothing, true,
                       G_.object(b, "gridFieldViewer"),)
-  Gtk.gobject_move_ref(fv, mainBox)
+  Gtk4.gobject_move_ref(fv, mainBox)
 
   # initialize plots
-  fv.grid[1,1] = Canvas()
-  fv.grid[1,2] = Canvas()
-  fv.grid[2,1] = Canvas()
-  fv.grid[2,2] = Canvas()
+  fv.grid[1,1] = GtkCanvas()
+  fv.grid[1,2] = GtkCanvas()
+  fv.grid[2,1] = GtkCanvas()
+  fv.grid[2,2] = GtkCanvas()
   # expand plots
   set_gtk_property!(fv, :expand, fv.grid, true)
 
