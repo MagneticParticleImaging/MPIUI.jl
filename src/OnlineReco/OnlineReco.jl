@@ -6,7 +6,7 @@ export onlineRawViewer, onlineReco, currentFrame, finishReco, currentAcquisition
 const _acqSimStarted = Ref(false)
 const _acqSimStartTime = Ref(now())
 
-# Return the frame that is currently beeing written
+# Return the frame that is currently being written
 function currentFrame(b::BrukerFile, simulation = false)
   global _acqSimStarted
   global _acqSimStartTime

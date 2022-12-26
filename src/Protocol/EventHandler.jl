@@ -6,6 +6,9 @@ function initProtocol(pw::ProtocolWidget)
     end
     @info "Init protocol"
     MPIMeasurements.init(pw.protocol)
+    for handler in pw.dataHandler
+      init(handler, pw.protocol)
+    end
     return true
   catch e
     @error e
@@ -16,10 +19,11 @@ end
 
 function startProtocol(pw::ProtocolWidget)
   try 
-    @info "Execute protocol"
+    @info "Executing protocol"
     pw.biChannel = execute(pw.scanner, pw.protocol)
     pw.protocolState = PS_INIT
-    @info "Start event handler"
+    @info "Starting event handler"
+    pw.eventQueue = AbstractDataHandler[]
     pw.eventHandler = Timer(timer -> eventHandler(pw, timer), 0.0, interval=0.05)
     return true
   catch e
@@ -48,9 +52,11 @@ function eventHandler(pw::ProtocolWidget, timer::Timer)
       return
     end
 
-    if isready(channel)
+    if MPIMeasurements.isready(channel)
       event = take!(channel)
+      @debug "GUI event handler received event of type $(typeof(event)) and is now dispatching it."
       finished = handleEvent(pw, pw.protocol, event)
+      @debug "Handled event of type $(typeof(event))."
     elseif !isopen(channel)
       finished = true
     end
@@ -70,9 +76,16 @@ function eventHandler(pw::ProtocolWidget, timer::Timer)
 
   catch ex
     confirmFinishedProtocol(pw)
+    pw.protocolState = PS_FAILED
     close(timer)
+    @error ex exception=(ex, catch_backtrace())
     showError(ex)
   end
+end
+
+function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::UndefinedEvent)
+  @warn "Protocol $(typeof(protocol)) send undefined event in response to $(typeof(event.event))"
+  return false
 end
 
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::ProtocolEvent)
@@ -87,11 +100,13 @@ function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::IllegaleStat
 end
 
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::ExceptionEvent)
-  @error "Protocol exception"
-  stack = Base.catch_stack(protocol.executeTask)[1]
-  @error stack[1]
-  @error stacktrace(stack[2])
-  showError(stack[1])
+  currExceptions = current_exceptions(protocol.executeTask)
+  @error "Protocol exception" exception = (currExceptions[end][:exception], stacktrace(currExceptions[end][:backtrace]))
+  for i in 1:length(currExceptions) - 1
+    stack = currExceptions[i]
+    @error stack[:exception] trace = stacktrace(stack[:backtrace])
+  end
+  showError(currExceptions[end][:exception])
   pw.protocolState = PS_FAILED
   return true
 end
@@ -113,12 +128,6 @@ function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::ProgressEven
       #m.protocolStatus.waitingOnReply = progressQuery
     end
   end
-  return false
-end
-
-function handleNewProgress(pw::ProtocolWidget, protocol::Protocol, event::ProgressEvent)
-  progressQuery = ProgressQueryEvent()
-  put!(pw.biChannel, progressQuery)
   return false
 end
 
@@ -268,11 +277,6 @@ function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::FinishedNoti
   return handleFinished(pw, protocol)
 end
 
-function handleFinished(pw::ProtocolWidget, protocol::Protocol)
-  put!(pw.biChannel, FinishedAckEvent())
-  return true
-end
-
 function confirmFinishedProtocol(pw::ProtocolWidget)
   @idle_add_guarded begin
     pw.updating = true
@@ -294,151 +298,87 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
   end
 end
 
-### RobotBasedSystemMatrixProtocol ###
-function handleNewProgress(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtocol, event::ProgressEvent)
-  dataQuery = DataQueryEvent("SIGNAL")
-  put!(pw.biChannel, dataQuery)
-  return false
-end
+### Protocols and Data Handlers ###
+defaultDataHandler(protocol::Protocol) = [RawDataHandler, SpectrogramHandler]
+defaultDataHandler(protocol::MPIMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
+defaultDataHandler(protocol::ContinousMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
+defaultDataHandler(protocol::RobotMPIMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
+defaultDataHandler(protocol::RobotBasedMagneticFieldStaticProtocol) = [MagneticFieldHandler]
+defaultDataHandler(protocol::RobotBasedTDesignFieldProtocol) = [MagneticFieldHandler]
 
-function handleEvent(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtocol, event::DataAnswerEvent)
-  channel = pw.biChannel
-  if event.query.message == "SIGNAL"
-    @info "Received current signal"
-    frame = event.data
-    if !isnothing(frame)
-      #if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
-        seq = pw.protocol.params.sequence
-        deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
-        #updateData(pw.rawDataWidget, frame, deltaT)
-      #end
-    end
-    # Ask for next progress
+function handleNewProgress(pw::ProtocolWidget, protocol::Protocol, event::ProgressEvent)
+  if !informNewProgress(pw, protocol, event)
     progressQuery = ProgressQueryEvent()
-    isopen(channel) && pw.protocolState == PS_RUNNING && put!(channel, progressQuery)
+    put!(pw.biChannel, progressQuery)  
   end
   return false
 end
-
-function handleFinished(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtocol)
-  request = DatasetStoreStorageRequestEvent(pw.mdfstore, getStorageParams(pw))
-  put!(pw.biChannel, request)
-  return false
-end
-
-function handleEvent(pw::ProtocolWidget, protocol::RobotBasedSystemMatrixProtocol, event::StorageSuccessEvent)
-  @info "Received storage success event"
-  put!(pw.biChannel, FinishedAckEvent())
-  updateData!(mpilab[].sfBrowser, pw.mdfstore)
-  updateExperimentStore(mpilab[], mpilab[].currentStudy)
-  cleanup(protocol)
-  return true
-end
-
-
-### MPIMeasurementProtocol ###
-function handleNewProgress(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event::ProgressEvent)
-  @info "Asking for new frame $(event.done)"
-  dataQuery = DataQueryEvent("FRAME:$(event.done)")
-  put!(pw.biChannel, dataQuery)
-  return false
-end
-
-function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event::DataAnswerEvent)
-  channel = pw.biChannel
-  # We were waiting on the last buffer request
-  if startswith(event.query.message, "FRAME") && pw.protocolState == PS_RUNNING
-    frame = event.data
-    if !isnothing(frame)
-      @info "Received frame"
-      #infoMessage(m, "$(m.progress.unit) $(m.progress.done) / $(m.progress.total)", "green")
-      #if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
-      seq = pw.protocol.params.sequence
-      deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
-      updateData(pw.rawDataWidget, frame, deltaT)
-      #end
+function informNewProgress(pw::ProtocolWidget, protocol::Protocol, event::ProgressEvent)
+  querySent = false
+  for handler in pw.dataHandler
+    if isready(handler)
+      query = handleProgress(handler, protocol, event)
+      if !isnothing(query)
+        querySent = true
+        put!(pw.biChannel, query)
+        push!(pw.eventQueue, handler)
+      end
     end
-    # Ask for next progress
-    progressQuery = ProgressQueryEvent()
-    put!(channel, progressQuery)
+  end
+  return querySent
+end
+
+function handleFinished(pw::ProtocolWidget, protocol::Protocol)
+  if !informFinished(pw, protocol)
+    put!(pw.biChannel, FinishedAckEvent())
+    return true
   end
   return false
 end
 
-function handleFinished(pw::ProtocolWidget, protocol::MPIMeasurementProtocol)
-  request = DatasetStoreStorageRequestEvent(pw.mdfstore, getStorageParams(pw))
-  put!(pw.biChannel, request)
-  return false
-end
-
-function handleEvent(pw::ProtocolWidget, protocol::MPIMeasurementProtocol, event::StorageSuccessEvent)
-  @info "Received storage success event"
-  put!(pw.biChannel, FinishedAckEvent())
-  updateData(pw.rawDataWidget, event.filename)
-  updateExperimentStore(mpilab[], mpilab[].currentStudy)
-  return true
-end
-
-### ContinousMeasurementProtocol ###
-function handleNewProgress(pw::ProtocolWidget, protocol::ContinousMeasurementProtocol, event::ProgressEvent)
-  @info "Asking for new measurement $(event.done)"
-  dataQuery = DataQueryEvent("")
-  put!(pw.biChannel, dataQuery)
-  return false
-end
-
-function handleEvent(pw::ProtocolWidget, protocol::ContinousMeasurementProtocol, event::DataAnswerEvent)
-  channel = pw.biChannel
-  meas = event.data
-  if !isnothing(meas)
-    seq = pw.protocol.params.sequence
-    deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
-    updateData(pw.rawDataWidget, meas, deltaT)
-  end
-  progressQuery = ProgressQueryEvent()
-  put!(channel, progressQuery)
-  return false
-end
-
-### RobotMPIMeasurementProtocol ###
-function handleNewProgress(pw::ProtocolWidget, protocol::RobotMPIMeasurementProtocol, event::ProgressEvent)
-  @info "Asking for new frame $(event.done)"
-  dataQuery = DataQueryEvent("FRAME:$(event.done)")
-  put!(pw.biChannel, dataQuery)
-  return false
-end
-
-function handleEvent(pw::ProtocolWidget, protocol::RobotMPIMeasurementProtocol, event::DataAnswerEvent)
-  channel = pw.biChannel
-  # We were waiting on the last buffer request
-  if startswith(event.query.message, "FRAME") && pw.protocolState == PS_RUNNING
-    frame = event.data
-    if !isnothing(frame)
-      @info "Received frame"
-      #infoMessage(m, "$(m.progress.unit) $(m.progress.done) / $(m.progress.total)", "green")
-      #if get_gtk_property(m["cbOnlinePlotting",CheckButtonLeaf], :active, Bool)
-      seq = pw.protocol.params.sequence
-      deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
-      updateData(pw.rawDataWidget, frame, deltaT)
-      #end
+function informFinished(pw::ProtocolWidget, protocol::Protocol)
+  querySent = false
+  for handler in pw.dataHandler
+    query = handleFinished(handler, protocol)
+    if !isnothing(query)
+      querySent = true
+      put!(pw.biChannel, query)
+      push!(pw.eventQueue, handler)
     end
-    # Ask for next progress
-    progressQuery = ProgressQueryEvent()
-    put!(channel, progressQuery)
+  end
+  return querySent
+end
+
+function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::DataAnswerEvent)
+  handler = popfirst!(pw.eventQueue)
+  handleData(handler, protocol, event)
+  channel = pw.biChannel
+  if isempty(pw.eventQueue) && isopen(channel)
+    if pw.protocolState == PS_RUNNING 
+      put!(channel, ProgressQueryEvent())
+    elseif pw.protocolState == PS_FINISHED
+      put!(channel, FinishedAckEvent())
+      return true
+    end
   end
   return false
 end
 
-function handleFinished(pw::ProtocolWidget, protocol::RobotMPIMeasurementProtocol)
-  request = DatasetStoreStorageRequestEvent(pw.mdfstore, getStorageParams(pw))
-  put!(pw.biChannel, request)
-  return false
-end
 
-function handleEvent(pw::ProtocolWidget, protocol::RobotMPIMeasurementProtocol, event::StorageSuccessEvent)
-  @info "Received storage success event"
-  put!(pw.biChannel, FinishedAckEvent())
-  updateData(pw.rawDataWidget, event.filename)
-  updateExperimentStore(mpilab[], mpilab[].currentStudy)
-  return true
+function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::StorageSuccessEvent)
+  handler = popfirst!(pw.eventQueue)
+  for temp in pw.dataHandler
+    handleStorage(temp, protocol, event, handler)
+  end
+  channel = pw.biChannel
+  if isempty(pw.eventQueue) && isopen(channel)
+    if pw.protocolState == PS_RUNNING 
+      put!(channel, ProgressQueryEvent())
+    elseif pw.protocolState == PS_FINISHED
+      cleanup(protocol)
+      put!(channel, FinishedAckEvent())
+      return true
+    end
+  end
+  return false
 end

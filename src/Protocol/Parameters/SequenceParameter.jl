@@ -6,7 +6,7 @@ mutable struct SequenceParameter <: Gtk4.GtkExpander
   scanner::MPIScanner
 
   function SequenceParameter(field::Symbol, value::Sequence, scanner::MPIScanner)
-    uifile = joinpath(@__DIR__, "..", "builder", "sequenceWidget.ui")
+    uifile = joinpath(@__DIR__, "..", "..", "builder", "sequenceWidget.ui")
     b = GtkBuilder(filename=uifile)
     exp = Gtk4.G_.get_object(b, "expSequence")
     #addTooltip(object_(pw.builder, "lblSequence", GtkLabel), tooltip)
@@ -44,6 +44,9 @@ mutable struct PeriodicChannelParameter <: Gtk4.GtkExpander
   end
 end
 
+struct ArbitraryElectricalComponent
+end
+
 mutable struct ComponentParameter <: Gtk4.GtkGrid
   handle::Ptr{Gtk4.GObject}
   idLabel::GtkLabel
@@ -66,7 +69,7 @@ mutable struct ComponentParameter <: Gtk4.GtkGrid
     grid[1, 2] = GtkLabel("Divider", xalign = 0.0)
     grid[2, 2] = div
     # Amplitude
-    ampVal = MPIFiles.amplitude(comp)
+    ampVal = MPIMeasurements.amplitude(comp)
     if ampVal isa typeof(1.0u"T")
       ampVal = uconvert(u"mT", ampVal)
     end
@@ -74,7 +77,7 @@ mutable struct ComponentParameter <: Gtk4.GtkGrid
     grid[1, 3] = GtkLabel("Amplitude", xalign = 0.0)
     grid[2, 3] = amp
     # Phase
-    pha = UnitfulGtkEntry(MPIFiles.phase(comp))
+    pha = UnitfulEntry(MPIMeasurements.phase(comp))
     grid[1, 4] = GtkLabel("Phase", xalign = 0.0)
     grid[2, 4] = pha
 
@@ -92,6 +95,47 @@ mutable struct ComponentParameter <: Gtk4.GtkGrid
     gridResult = new(grid.handle, idLabel, div, amp, pha, wav, waveforms)
     return Gtk4.GLib.gobject_move_ref(gridResult, grid)
   end
+  function ComponentParameter(comp::ArbitraryElectricalComponent, waveforms::Vector{Waveform})
+    grid = GtkGrid()
+    set_gtk_property!(grid, :row_spacing, 5)
+    set_gtk_property!(grid, :column_spacing, 5)
+    # ID
+    idLabel = GtkLabel(id(comp), xalign = 0.0)
+    grid[1:2, 1] = idLabel
+    # Divider
+    div = GenericEntry{Int64}(string(divider(comp)))
+    set_gtk_property!(div, :sensitive, false)
+    grid[1, 2] = GtkLabel("Divider", xalign = 0.0)
+    grid[2, 2] = div
+    # Amplitude
+    ampVal = MPIMeasurements.amplitude(comp)
+    if ampVal isa typeof(1.0u"T")
+      ampVal = uconvert(u"mT", ampVal)
+    end
+    amp = UnitfulEntry(ampVal)
+    set_gtk_property!(amp, :sensitive, false)
+    grid[1, 3] = GtkLabel("Amplitude", xalign = 0.0)
+    grid[2, 3] = amp
+    # Phase
+    pha = UnitfulEntry(0.0u"rad") #UnitfulEntry(MPIMeasurements.phase(comp))
+    grid[1, 4] = GtkLabel("Phase", xalign = 0.0)
+    grid[2, 4] = pha
+
+    # Waveform
+    wav = ComboBoxTextLeaf()
+    waveformsStr = fromWaveform.(waveforms)
+    for w in waveformsStr
+      push!(wav, w)
+    end
+    activeIdx = findfirst(w->w == waveform(comp), waveforms)
+    set_gtk_property!(wav, :active, activeIdx-1) 
+    set_gtk_property!(wav, :sensitive, false) 
+    grid[1, 5] = GtkLabel("Waveform", xalign = 0.0)
+    grid[2, 5] = wav
+    gridResult = new(grid.handle, idLabel, div, amp, pha, wav, waveforms)
+    return Gtk.gobject_move_ref(gridResult, grid)
+  end
+
 end
 
 function initCallbacks(seqParam::SequenceParameter)
@@ -128,15 +172,15 @@ function updateSequence(seqParam::SequenceParameter, seq::Sequence)
       show(seqParam["boxPeriodicChannel", Gtk4.GtkBoxLeaf])
       @info "Finished adding channels"
 
-
-      set_gtk_property!(seqParam["entSequenceName",GtkEntryLeaf], :text, MPIFiles.name(seq)) 
-      set_gtk_property!(seqParam["entNumPeriods",GtkEntryLeaf], :text, "$(acqNumPeriodsPerFrame(seq))")
-      set_gtk_property!(seqParam["entNumPatches",GtkEntryLeaf], :text, "$(acqNumPatches(seq))")
-      set_gtk_property!(seqParam["adjNumFrames", Gtk4.GtkAdjustmentLeaf], :value, acqNumFrames(seq))
-      set_gtk_property!(seqParam["adjNumFrameAverages", Gtk4.GtkAdjustmentLeaf], :value, acqNumFrameAverages(seq))
-      set_gtk_property!(seqParam["adjNumAverages", Gtk4.GtkAdjustmentLeaf], :value, acqNumAverages(seq))
+      set_gtk_property!(seqParam["entSequenceName",GtkEntryLeaf], :text, MPIMeasurements.name(seq)) 
+      set_gtk_property!(seqParam["entNumPeriods",GtkEntryLeaf], :text, "$(MPIMeasurements.acqNumPeriodsPerFrame(seq))")
+      set_gtk_property!(seqParam["entNumPatches",GtkEntryLeaf], :text, "$(MPIMeasurements.acqNumPatches(seq))")
+      set_gtk_property!(seqParam["adjNumFrames", Gtk4.GtkAdjustmentLeaf], :value, MPIMeasurements.acqNumFrames(seq))
+      set_gtk_property!(seqParam["adjNumFrameAverages", Gtk4.GtkAdjustmentLeaf], :value, MPIMeasurements.acqNumFrameAverages(seq))
+      set_gtk_property!(seqParam["adjNumAverages", Gtk4.GtkAdjustmentLeaf], :value, MPIMeasurements.acqNumAverages(seq))
       seqParam.value = seq
-    catch e 
+    catch e
+      rethrow()
       @error e
     end
   end
@@ -146,9 +190,9 @@ function setProtocolParameter(seqParam::SequenceParameter, params::ProtocolParam
   @info "Trying to set sequence"
   seq = seqParam.value
 
-  acqNumFrames(seq, get_gtk_property(seqParam["adjNumFrames",Gtk4.GtkAdjustmentLeaf], :value, Int64))
-  acqNumFrameAverages(seq, get_gtk_property(seqParam["adjNumFrameAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64))
-  acqNumAverages(seq, get_gtk_property(seqParam["adjNumAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64))
+  MPIMeasurements.acqNumFrames(seq, get_gtk_property(seqParam["adjNumFrames",Gtk4.GtkAdjustmentLeaf], :value, Int64))
+  MPIMeasurements.acqNumFrameAverages(seq, get_gtk_property(seqParam["adjNumFrameAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64))
+  MPIMeasurements.acqNumAverages(seq, get_gtk_property(seqParam["adjNumAverages",Gtk4.GtkAdjustmentLeaf], :value, Int64))
   
   for channelParam in seqParam["boxPeriodicChannel", Gtk4.GtkBoxLeaf]
     setProtocolParameter(channelParam)
@@ -164,9 +208,12 @@ function setProtocolParameter(channelParam::PeriodicChannelParameter)
     component = channelParam.box[index]
     id = get_gtk_property(component.idLabel, :label, String)
     @info "Setting component $id"
-    amplitude!(channel, id, uconvert(u"T", value(component.amplitude)))
-    phase!(channel, id, value(component.phase))
-    wave = component.waveforms[get_gtk_property(component.waveform, :active, Int)+1]
-    waveform!(channel, id, wave)
+    # AWG is not sensitive atm, hacky distinction
+    if get_gtk_property(component.waveform, :sensitive, Bool)
+      amplitude!(channel, id, uconvert(u"T", value(component.amplitude)))
+      phase!(channel, id, value(component.phase))
+      wave = component.waveforms[get_gtk_property(component.waveform, :active, Int)+1]
+      waveform!(channel, id, wave)
+    end
   end
 end

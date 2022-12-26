@@ -25,7 +25,7 @@ getindex(m::RawDataWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 function RawDataWidget(filenameConfig=nothing)
   @info "Starting RawDataWidget"
-  uifile = joinpath(@__DIR__,"builder","rawDataViewer.ui")
+  uifile = joinpath(@__DIR__,"..","builder","rawDataViewer.ui")
 
   b = GtkBuilder(filename=uifile)
   mainBox = Gtk4.G_.get_object(b, "boxRawViewer")
@@ -540,6 +540,13 @@ end
   return nothing
 end
 
+function setBG(m::RawDataWidget, dataBG)
+  if ndims(dataBG) == 5
+    m.dataBG = dataBG
+  else
+    m.dataBG = reshape(dataBG, size(dataBG)..., 1)
+  end
+end
 
 @guarded function updateData(m::RawDataWidget, data::Array, deltaT=1.0, fileModus=false)
   maxValTPOld = get_gtk_property(m["adjMinTP"],:upper, Int64)

@@ -4,7 +4,7 @@ mutable struct PositionParameter <: Gtk4.GtkExpander
   field::Symbol
 
   function PositionParameter(field::Symbol, posValue::Union{Positions, Nothing})
-    uifile = joinpath(@__DIR__, "..", "builder", "positionsWidget.ui")
+    uifile = joinpath(@__DIR__, "..", "..", "builder", "positionsWidget.ui")
     b = GtkBuilder(filename=uifile)
     posObj = Gtk4.G_.get_object(b, "expPositions")
     #addTooltip(object_(pw.builder, "lblPositions", GtkLabel), tooltip)
@@ -53,6 +53,8 @@ function setProtocolParameter(posParam::PositionParameter, params::ProtocolParam
     fov_ = tryparse.(Float64,split(fovString,"x"))
     centerString = get_gtk_property(posParam["entCenter",GtkEntryLeaf], :text, String)
     center_ = tryparse.(Float64,split(centerString,"x"))
+    meandering = get_gtk_property(posParam["cbMeandering",CheckButtonLeaf], :active, Bool)
+
     if any(shp_ .== nothing) || any(fov_ .== nothing) || any(center_ .== nothing)  ||
      length(shp_) != 3 || length(fov_) != 3 || length(center_) != 3
       @warn "Mismatch dimension for positions"
@@ -63,6 +65,9 @@ function setProtocolParameter(posParam::PositionParameter, params::ProtocolParam
     fov = fov_ .*1Unitful.mm
     ctr = center_ .*1Unitful.mm
     cartGrid = RegularGridPositions(shp,fov,ctr)
+    if meandering
+      cartGrid = MeanderingGridPositions(cartGrid)
+    end
   
   else
     

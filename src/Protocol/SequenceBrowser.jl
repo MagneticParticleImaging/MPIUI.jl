@@ -94,7 +94,7 @@ function SequenceSelectionDialog(scanner::MPIScanner, params::Dict)
         channels = acyclicElectricalTxChannels(s)
         colors = ["blue","green","red", "magenta", "cyan", "black", "gray"]
         for i=1:length(channels)
-          Winston.add(p, Winston.Curve(t, ustrip.(MPIFiles.values(channels[i])), color=colors[i], linewidth=4))
+          Winston.add(p, Winston.Curve(t, ustrip.(MPIMeasurements.values(channels[i])), color=colors[i], linewidth=4))
         end
         display(canvas, p)
 

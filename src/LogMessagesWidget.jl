@@ -51,6 +51,7 @@ mutable struct LogMessageListWidget <: LogMessageWidget
   logFilter::LogMessageFilter
   scrollState::AutoScrollState
   updating::Bool
+  lock::ReentrantLock
 end
 
 const LOG_LEVEL_TO_PIX = Dict(
@@ -101,7 +102,7 @@ function LogMessageListWidget()
   selection = G_.get_selection(tv)
 
   logFilter = LogMessageFilter(nothing, 0, Dict{String, Bool}(), nothing, nothing)
-  m = LogMessageListWidget(mainBox.handle, b, store, tmSorted, tv, selection, logFilter, DETACHED, false)
+  m = LogMessageListWidget(mainBox.handle, b, store, tmSorted, tv, selection, logFilter, DETACHED, false, ReentrantLock())
   Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   G_.set_child(m["wndMessages"], tv)
@@ -204,6 +205,20 @@ function initCallbacks(m::LogMessageListWidget)
     end
   end
 
+  signal_connect(m["btnLoad"], :clicked) do w
+    @idle_add_guarded begin
+      m.updating = true
+      filter = Gtk.GtkFileFilter(pattern=String("*.log"))
+      filename = open_dialog("Select log file", GtkNullContainer(), (filter, ))
+      if filename != ""
+        unselectall!(m.selection)
+        empty!(m.store)
+        updateMessages!(m, filename)
+      end
+      m.updating = false
+    end
+  end
+
   signal_connect(m.selection, :changed) do w
     if hasselection(m.selection) && !m.updating
       @idle_add_guarded begin
@@ -297,6 +312,7 @@ function applyFilter!(widget::LogMessageListWidget)
 end
 
 function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, dateTime::Union{DateTime, Missing}, group, message, filepath, line; kwargs...)
+  lock(widget.lock)
   try 
     messageString = string(message)
     
@@ -330,6 +346,45 @@ function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, date
     with_logger(ConsoleLogger()) do 
       @warn "Could not buffer log message" ex
     end
+  finally
+    unlock(widget.lock)
+  end
+end
+
+function updateMessages!(widget::LogMessageListWidget, file::AbstractString)
+  logs = read(file, String)
+  # Regex:
+  # Match from lines ┌ to └
+  # Group 1: Match Log Level up to first:
+  # Group 2: Match Date (only hardcoded as digits with : and ., no additionaly check)
+  # Group 3: Match Log message as remainder of all lines until └
+  # Group 4: @ Charcter + following Module name
+  # Group 5: File Path
+  # Group 6: Line number
+  rex = r"┌\s*(.*?):\s*(\d{4}-\d{2}-\d{2}\s*\d{2}:\d{2}:\d{2}\.\d{3})\s*((?s).*?)\n└\s*(@\s*.+?\b)\s*(.*):(\d*)\n"
+  groupRex = r".*\/(.*)\.jl"
+  for m in eachmatch(rex, logs)
+    levelStr = m.captures[1]
+    level = Logging.Info
+    if levelStr == "Debug"
+      level = Logging.Debug
+    elseif levelStr == "Info"
+      level = Logging.Info
+    elseif levelStr == "Warning"
+      level = Logging.Warn
+    elseif levelStr == "Error"
+      level = Logging.Error
+    end
+    date = DateTime(m.captures[2], dateTimeFormatter)
+    msg = m.captures[3]
+    filepath = m.captures[5]
+    groupMatch = match(groupRex, filepath)
+    group = filepath
+    if !isnothing(groupMatch)
+      group = groupMatch.captures[1]
+    end
+    line = m.captures[6]
+    updateMessage!(widget, level, date, group, msg, filepath, line)
   end
 end
 

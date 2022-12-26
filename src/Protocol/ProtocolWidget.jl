@@ -1,3 +1,6 @@
+include("Parameters/Parameters.jl")
+include("DataHandler/DataHandler.jl")
+
 mutable struct ProtocolWidget{T} <: Gtk4.GtkBox
   # Gtk 
   handle::Ptr{Gtk4.GObject}
@@ -12,15 +15,9 @@ mutable struct ProtocolWidget{T} <: Gtk4.GtkBox
   protocolState::MPIMeasurements.ProtocolState
   # Display
   progress::Union{ProgressEvent, Nothing}
-  rawDataWidget::RawDataWidget
-  # Storage
-  mdfstore::MDFDatasetStore
-  dataBGStore::Array{Float32,4}
-  currStudyName::String
-  currStudyDate::DateTime
+  dataHandler::Union{Nothing, Vector{AbstractDataHandler}}
+  eventQueue::Vector{AbstractDataHandler}
 end
-
-include("Parameters.jl")
 
 getindex(m::ProtocolWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
 
@@ -41,8 +38,8 @@ function ProtocolWidget(scanner=nothing)
 
   paramGtkBuilder = Dict(:sequence => "expSequence", :positions => "expPositions")
 
-  pw = ProtocolWidget(mainBox.handle, b, paramGtkBuilder, false, scanner, protocol, nothing, nothing, PS_UNDEFINED,
-        nothing, RawDataWidget(), mdfstore, zeros(Float32,0,0,0,0), "", now())
+  pw = ProtocolWidget(mainBox.handle, b, paramBuilder, false, scanner, protocol, nothing, nothing, PS_UNDEFINED,
+        nothing, nothing, AbstractDataHandler[])
   Gtk4.GLib.gobject_move_ref(pw, mainBox)
 
   @idle_add_guarded begin
@@ -58,13 +55,6 @@ function ProtocolWidget(scanner=nothing)
   end
 
   # Dummy plotting for warmstart during protocol execution
-  @idle_add_guarded begin 
-    push!(pw["boxProtocolTabVisu",BoxLeaf], pw.rawDataWidget)
-    set_gtk_property!(pw["boxProtocolTabVisu",BoxLeaf],:expand, pw.rawDataWidget, true)  
-    updateData(pw.rawDataWidget, ones(Float32,10,1,1,1), 1.0)
-    show(pw.rawDataWidget)
-  end
-
   @info "Finished starting ProtocolWidget"
   return pw
 end
@@ -79,28 +69,20 @@ function displayProgress(pw::ProtocolWidget)
     progress = "FINISHED"
     fraction = 1.0
   end
-  @idle_add_guarded begin
-    set_gtk_property!(pw["pbProtocol", ProgressBar], :text, progress)
-    set_gtk_property!(pw["pbProtocol", ProgressBar], :fraction, fraction)
-  end
+  if pw.progress.total == 0 || isnan(fraction) || isinf(fraction)
+    @idle_add_guarded begin
+      set_gtk_property!(pw["pbProtocol", ProgressBar], :text, progress)
+      set_gtk_property!(pw["pbProtocol", ProgressBar], "pulse_step", 0.3)
+      pulse(pw["pbProtocol", ProgressBar])
+    end
+  else
+    @idle_add_guarded begin
+      set_gtk_property!(pw["pbProtocol", ProgressBar], :text, progress)
+      set_gtk_property!(pw["pbProtocol", ProgressBar], :fraction, fraction)
+    end
+  end  
 end
 
-function getStorageParams(pw::ProtocolWidget)
-  params = Dict{String,Any}()
-  params["studyName"] = pw.currStudyName # TODO These are never updates, is the result correct?
-  params["studyDate"] = pw.currStudyDate 
-  params["studyDescription"] = ""
-  params["experimentDescription"] = get_gtk_property(pw["entExpDescr",GtkEntryLeaf], :text, String)
-  params["experimentName"] = get_gtk_property(pw["entExpName",GtkEntryLeaf], :text, String)
-  params["scannerOperator"] = get_gtk_property(pw["entOperator",GtkEntryLeaf], :text, String)
-  params["tracerName"] = [get_gtk_property(pw["entTracerName",GtkEntryLeaf], :text, String)]
-  params["tracerBatch"] = [get_gtk_property(pw["entTracerBatch",GtkEntryLeaf], :text, String)]
-  params["tracerVendor"] = [get_gtk_property(pw["entTracerVendor",GtkEntryLeaf], :text, String)]
-  params["tracerVolume"] = [1e-3*get_gtk_property(pw["adjTracerVolume",Gtk4.GtkAdjustmentLeaf], :value, Float64)]
-  params["tracerConcentration"] = [1e-3*get_gtk_property(pw["adjTracerConcentration",Gtk4.GtkAdjustmentLeaf], :value, Float64)]
-  params["tracerSolute"] = [get_gtk_property(pw["entTracerSolute",GtkEntryLeaf], :text, String)]
-  return params
-end
 
 include("EventHandler.jl")
 include("SequenceBrowser.jl")
@@ -140,8 +122,10 @@ function initCallbacks(pw::ProtocolWidget)
             pw.updating = false
           end
         else
-          # Something went wrong during start, we dont count button press
-          set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :active, false)
+          @idle_add_guarded begin
+            # Something went wrong during start, we dont count button press
+            set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :active, false)
+          end
         end
       else
         endProtocol(pw)  
@@ -222,40 +206,85 @@ function updateProtocol(pw::ProtocolWidget, protocol::AbstractString)
 end
 
 function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
-  params = protocol.params
   @info "Updating protocol"
   @idle_add_guarded begin
     pw.updating = true
     pw.protocol = protocol
-    set_gtk_property!(pw["lblScannerName", GtkLabelLeaf], :label, name(pw.scanner))
-    set_gtk_property!(pw["lblProtocolType", GtkLabelLeaf], :label, string(typeof(protocol)))
-    set_gtk_property!(pw["txtBuffProtocolDescription", GtkTextBufferLeaf], :text, MPIMeasurements.description(protocol))
-    set_gtk_property!(pw["lblProtocolName", GtkLabelLeaf], :label, name(protocol))
-    # Clear old parameters
-    empty!(pw["boxProtocolParameter", Gtk4.GtkBoxLeaf])
-
-    regular = [field for field in fieldnames(typeof(params)) if parameterType(field, nothing) isa RegularParameterType]
-    special = setdiff(fieldnames(typeof(params)), regular)
-    addRegularProtocolParameter(pw, params, regular)
-
-    for field in special
-      try 
-        value = getfield(params, field)
-        tooltip = string(fielddoc(typeof(params), field))
-        if contains(tooltip, "has field") #fielddoc for fields with no docstring returns "Type x has fields ..." listing all fields with docstring
-          tooltip = nothing
-        end
-        addProtocolParameter(pw, parameterType(field, value), field, value, tooltip)
-        @info "Added $field"
-      catch ex
-        @error ex
-      end
-    end
-
-    set_gtk_property!(pw["btnSaveProtocol", GtkButton], :sensitive, false)
+    updateProtocolDataHandler(pw, protocol)
+    updateProtocolParameter(pw, protocol)
     pw.updating = false
-    show(pw["boxProtocolParameter", Gtk4.GtkBoxLeaf])
   end
+end
+
+function updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
+  nb = pw["nbDataWidgets", Notebook]
+  paramBox = pw["boxGUIParams", GtkBox]
+  storageBox = pw["boxStorageParams", GtkBox]
+  #empty!(nb) # segfaults sometimes
+  numPages = G_.n_pages(nb)
+  for i = 1:numPages
+    splice!(nb, numPages-i+1)
+  end
+  empty!(paramBox)
+  empty!(storageBox)
+  handlers = AbstractDataHandler[]
+  for (i, handlerType) in enumerate(defaultDataHandler(protocol))
+    # TODO what common constructor do we need
+    handler = handlerType(pw.scanner)
+    push!(handlers, handler)
+    display = getDisplayWidget(handler)
+    if isnothing(display)
+      display = Box(:v)
+    end
+    push!(nb, display, getDisplayTitle(handler))
+    storage = getStorageWidget(handler)
+    if !isnothing(storage)
+      storageExpander = Gtk.GtkExpander(getStorageTitle(handler))
+      set_gtk_property!(storageExpander, :expand, true)
+      push!(storageExpander, storage)
+      push!(storageBox, storageExpander)
+    end
+    paramExpander = ParamExpander(handler)
+    push!(paramBox, paramExpander)
+    showall(paramExpander)
+    showall(display)
+    set_gtk_property!(paramExpander, :expand, i == 1) # This does not expand
+    enable!(paramExpander, i == 1)
+  end
+  pw.dataHandler = handlers
+  showall(paramBox)
+  showall(storageBox)
+  showall(nb)
+end
+
+function updateProtocolParameter(pw::ProtocolWidget, protocol::Protocol)
+  params = protocol.params
+  set_gtk_property!(pw["lblScannerName", GtkLabelLeaf], :label, name(pw.scanner))
+  set_gtk_property!(pw["lblProtocolType", GtkLabelLeaf], :label, string(typeof(protocol)))
+  set_gtk_property!(pw["txtBuffProtocolDescription", GtkTextBufferLeaf], :text, MPIMeasurements.description(protocol))
+  set_gtk_property!(pw["lblProtocolName", GtkLabelLeaf], :label, name(protocol))
+  # Clear old parameters
+  empty!(pw["boxProtocolParameter", BoxLeaf])
+
+  regular = [field for field in fieldnames(typeof(params)) if parameterType(field, nothing) isa RegularParameterType]
+  special = setdiff(fieldnames(typeof(params)), regular)
+  addRegularProtocolParameter(pw, params, regular)
+
+  for field in special
+    try 
+      value = getfield(params, field)
+      tooltip = string(fielddoc(typeof(params), field))
+      if contains(tooltip, "has field") #fielddoc for fields with no docstring returns "Type x has fields ..." listing all fields with docstring
+        tooltip = nothing
+      end
+      addProtocolParameter(pw, parameterType(field, value), field, value, tooltip)
+      @info "Added $field"
+    catch ex
+      @error ex
+    end
+  end
+  set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, false)
+  showall(pw["boxProtocolParameter", BoxLeaf])
 end
 
 function addRegularProtocolParameter(pw::ProtocolWidget, params::ProtocolParams, fields::Vector{Symbol})
@@ -333,6 +362,11 @@ function addProtocolParameter(pw::ProtocolWidget, ::SequenceParameterType, field
   push!(pw["boxProtocolParameter", Gtk4.GtkBoxLeaf], seq)
 end
 
+function addProtocolParameter(pw::ProtocolWidget, ::ReconstructionParameterType, field, value, tooltip)
+  reco = OnlineRecoWidget(field)
+  push!(pw["boxProtocolParameter", BoxLeaf], reco)
+end
+
 function addProtocolParameter(pw::ProtocolWidget, ::CoordinateParameterType, field, value, tooltip)
   coord = CoordinateParameter(field, value, tooltip)
   updateCoordinate(coord, value)
@@ -377,11 +411,22 @@ function saveProtocol(pw::ProtocolWidget, fileName::AbstractString)
   # TODO Pick new protocol
 end
 
+function updateStudy(m::ProtocolWidget, name, date)
+  for handler in m.dataHandler
+    updateStudy(handler, name, date)
+  end
+end
+
+
 function isMeasurementStore(m::ProtocolWidget, d::DatasetStore)
-  if isnothing(m.mdfstore)
+  if isempty(m.dataHandler)
     return false
   else
-    return d.path == m.mdfstore.path
+    isStore = true
+    for handler in m.dataHandler
+      isStore &= isMeasurementStore(handler, d)
+    end
+    return isStore
   end
 end
 

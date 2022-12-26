@@ -1,0 +1,7 @@
+include("BaseViewer.jl")
+include("SimpleDataViewer.jl")
+include("DataViewer/DataViewer.jl")
+include("RawDataViewer.jl")
+include("SpectrogramViewer.jl")
+include("SFViewerWidget.jl")
+include("MagneticFieldViewer.jl")

@@ -6,13 +6,16 @@ struct SequenceParameterType <: SpecialParameterType end
 struct PositionParameterType <: SpecialParameterType end
 struct BoolParameterType <: RegularParameterType end
 struct CoordinateParameterType <: SpecialParameterType end
+struct ReconstructionParameterType <: SpecialParameterType end
 function parameterType(field::Symbol, value)
   if field == :sequence
     return SequenceParameterType()
   elseif field == :positions
     return PositionParameterType()
-  elseif field == :fgPos
+  elseif field == :fgPos || field == :center
     return CoordinateParameterType()
+  elseif field == :reconstruction
+    return ReconstructionParameterType()
   else
     return GenericParameterType()
   end
@@ -40,6 +43,10 @@ end
 function value(entry::GenericEntry{T}) where {T}
   valueString = get_gtk_property(entry, :text, String)
   return tryparse(T, valueString)
+end
+
+function value(entry::GenericEntry{T}) where {T<:AbstractString}
+  return Gtk4.get_gtk_property(entry, :text, String)
 end
 
 mutable struct GenericParameter{T} <: Gtk4.GtkGrid

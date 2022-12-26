@@ -30,15 +30,29 @@ function updateData!(m::SFBrowserWidget, sysFuncs)
       unselectall!(m.selection)
       empty!(m.store)
 
+      uuids = Dict{String,Any}()
       for l = 2:size(sysFuncs,1)
+        f = MPIFile(string(sysFuncs[l,14]),fastMode=true)
+        uuid = string(experimentUuid(f))
+        if !haskey(uuids, uuid)
+          uuids[uuid] = Int[]
+        end
+        push!(uuids[uuid], l)
+      end
 
-        num = size(sysFuncs,2) == 16 ? 0 : sysFuncs[l,17]
+      makeTupleSF(sysFuncs,l) = (sysFuncs[l,17], split(sysFuncs[l,15],"T")[1],
+                       sysFuncs[l,1],round(sysFuncs[l,2], digits=2),
+                       "$(round((sysFuncs[l,3]), digits=2)) x $(round((sysFuncs[l,4]), digits=2)) x $(round((sysFuncs[l,5]), digits=2))",
+                        "$(sysFuncs[l,6]) x $(sysFuncs[l,7]) x $(sysFuncs[l,8])",
+                        sysFuncs[l,10],sysFuncs[l,11],sysFuncs[l,12],sysFuncs[l,14], true)
 
-        push!(m.store,( num, split(sysFuncs[l,15],"T")[1],
-                sysFuncs[l,1],round(sysFuncs[l,2], digits=2),
-               "$(round((sysFuncs[l,3]), digits=2)) x $(round((sysFuncs[l,4]), digits=2)) x $(round((sysFuncs[l,5]), digits=2))",
-                                  "$(sysFuncs[l,6]) x $(sysFuncs[l,7]) x $(sysFuncs[l,8])",
-                                  sysFuncs[l,10],sysFuncs[l,11],sysFuncs[l,12],sysFuncs[l,14], true))
+      for (k,v) in uuids
+        l = v[1]
+        iter = push!(m.store, makeTupleSF(sysFuncs,l))
+        for q = 2:length(v)
+          l = v[q]
+          push!(m.store, makeTupleSF(sysFuncs,l), iter)
+        end
       end
       m.updating = false
   end
@@ -48,7 +62,6 @@ end
 function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = nothing)
 
  #Name,Gradient,DFx,DFy,DFz,Size x,Size y,Size z,Bandwidth,Tracer,TracerBatch,DeltaSampleConcentration,DeltaSampleVolume,Path
-
 
   store = GtkListStore(Int,String,String,Float64,String,String,
                      String,String,String,String, Bool)
@@ -234,50 +247,57 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
     end
   end
 
+  function n_children(store)
+    ccall((:gtk_tree_model_iter_n_children, Gtk.libgtk), Cint, (Ptr{GObject}, Ptr{GtkTreeIter}), store, C_NULL)
+  end
 
-
-
+  function n_children(store, iter)
+    return ccall((:gtk_tree_model_iter_n_children, Gtk.libgtk), Cint, (Ptr{GObject}, Ref{GtkTreeIter}), store, iter)
+  end
 
   function updateShownSF( widget )
-    G = tryparse(Float64,get_gtk_property(entGradient,:text,String))
-    s = split(get_gtk_property(entSize,:text,String),"x")
-    s_ = Any[]
-    if length(s) == 3
-      s1 = tryparse(Int64,s[1])
-      s2 = tryparse(Int64,s[2])
-      s3 = tryparse(Int64,s[3])
-      if s1 != nothing && s2 != nothing && s3 != nothing
-        s_ = Int64[s1,s2,s3]
+    @idle_add_guarded begin
+      G = tryparse(Float64,get_gtk_property(entGradient,:text,String))
+      s = split(get_gtk_property(entSize,:text,String),"x")
+      s_ = Any[]
+      if length(s) == 3
+        s1 = tryparse(Int64,s[1])
+        s2 = tryparse(Int64,s[2])
+        s3 = tryparse(Int64,s[3])
+        if s1 != nothing && s2 != nothing && s3 != nothing
+          s_ = Int64[s1,s2,s3]
+        end
       end
-    end
-    df = split(get_gtk_property(entDF,:text,String),"x")
-    df_ = Any[]
-    if length(df) == 3
-      dfx = tryparse(Float64,df[1])
-      dfy = tryparse(Float64,df[2])
-      dfz = tryparse(Float64,df[3])
-      if dfx != nothing && dfy != nothing && dfz != nothing
-        df_ = Float64[dfx,dfy,dfz]
+      df = split(get_gtk_property(entDF,:text,String),"x")
+      df_ = Any[]
+      if length(df) == 3
+        dfx = tryparse(Float64,df[1])
+        dfy = tryparse(Float64,df[2])
+        dfz = tryparse(Float64,df[3])
+        if dfx != nothing && dfy != nothing && dfz != nothing
+          df_ = Float64[dfx,dfy,dfz]
+        end
       end
-    end
-    tracer = get_gtk_property(entTracer,:text,String)
+      tracer = get_gtk_property(entTracer,:text,String)
 
-    for l=1:length(store)
-      showMe = true
-      if G != nothing
-        showMe = showMe && (G == store[l,4])
-      end
-      if length(df_) == 3
-        showMe = showMe && ([parse(Float64,dv) for dv in split(store[l,5],"x")] == df_ )
-      end
-      if length(s_) == 3
-        showMe = showMe && ([parse(Int64,sv) for sv in split(store[l,6],"x")] == s_ )
-      end
-      if length(tracer) > 0
-        showMe = showMe && occursin(lowercase(tracer),lowercase(store[l,7]))
-      end
+      for q=1:n_children(store) #(size(m.sysFuncs,1)-1) #  length(store)
+        l = [q]
+        showMe = true
+        if G != nothing
+          showMe = showMe && (G == store[l,4])
+        end
+        if length(df_) == 3
+          showMe = showMe && ([parse(Float64,dv) for dv in split(store[l,5],"x")] == df_ )
+        end
+        if length(s_) == 3
+          showMe = showMe && ([parse(Int64,sv) for sv in split(store[l,6],"x")] == s_ )
+        end
+        if length(tracer) > 0
+          showMe = showMe && occursin(lowercase(tracer),lowercase(store[l,7]))
+        end
 
-      store[l,11] = showMe
+        store[l,11] = showMe
+      end   
     end
   end
 
@@ -313,6 +333,8 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
         numPeriods = acqNumPeriodsPerFrame(f)
         numAverages = acqNumAverages(f)
         sizeSF =  GtkTreeModel(m.tmSorted)[currentIt,6]
+        isCalibProcessed = measIsCalibProcessed(f)
+        dfStr = GtkTreeModel(m.tmSorted)[currentIt,5]
         str =   """Num: $(num)\n
                 Name: $(name)\n
                 Tracer: $(tname)\n
@@ -321,7 +343,9 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
                 Time: $(time)\n
                 Averages: $(numAverages)\n
                 Periods: $(numPeriods)\n
-                Size: $(sizeSF)"""
+                Size: $(sizeSF)\n
+                DF Strength: $(dfStr)\n
+                IsProcessed: $(isCalibProcessed)"""
         set_gtk_property!(m.tv, :tooltip_text, str)
       end
     end
@@ -400,6 +424,12 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
     grid[2,2] = SpinButton(1:acqNumPeriodsPerFrame(f))
     adjNumPeriodGrouping = GtkAdjustment(grid[2,2])
 
+    grid[1,3] = Label("Apply Calib Postprocessing")
+    grid[2,3] = CheckButton(active=true)
+
+    grid[1,4] = Label("Fix Distortions")
+    grid[2,4] = CheckButton(active=false)
+
     show(box)
     ret = run(dialog)
 
@@ -407,6 +437,8 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
     if ret == GtkResponseType.ACCEPT
       numPeriodAverages = get_gtk_property(adjNumPeriodAverages,:value,Int64)
       numPeriodGrouping = get_gtk_property(adjNumPeriodGrouping,:value,Int64)
+      applyCalibPostprocessing = get_gtk_property(grid[2,3],:active,Bool)
+      fixDistortions = get_gtk_property(grid[2,4],:active,Bool)
 
       @info numPeriodAverages  numPeriodGrouping
 
@@ -414,8 +446,11 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
 
       filenameNew = joinpath(calibdir(m.datasetStore),string(calibNum)*".mdf")
       @info "Start converting System Matrix"
-      saveasMDF(filenameNew, f, applyCalibPostprocessing=true, experimentNumber=calibNum,
+      saveasMDF(filenameNew, f, applyCalibPostprocessing=applyCalibPostprocessing, 
+                experimentNumber = calibNum, fixDistortions=fixDistortions,
                 numPeriodAverages = numPeriodAverages, numPeriodGrouping = numPeriodGrouping)
+
+                
 
       updateData!(m, m.datasetStore)
     end

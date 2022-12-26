@@ -64,6 +64,10 @@ function MPILab(offlineMode=false)::MPILab
    
   @info "Starting MPILab"
 
+  if Threads.nthreads() < 4 && !offlineMode
+    error("Too few threads to run MPIUI with an active scanner")
+  end
+
   uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
   m_ = MPILab( GtkBuilder(filename=uifile), nothing, 1, DatasetStore[],
@@ -121,6 +125,9 @@ function MPILab(offlineMode=false)::MPILab
   @debug "## Init Protocol Tab ..."
   initProtocolTab(m, offlineMode)
 
+  if !offlineMode && !(scannerDatasetStore(m.scanner) in m.settings["datasetStores"])
+    @warn "The scanner's dataset store `$(scannerDatasetStore(m.scanner))` does not match one of the stores in the Settings.toml."
+  end
 
   @idle_add_guarded set_gtk_property!(m["lbInfo"],:use_markup,true)
   @idle_add_guarded set_gtk_property!(m["cbDatasetStores"],:active,0)
@@ -372,11 +379,12 @@ function initStudyStore(m::MPILab)
   #G_.headers_visible(tv,false)
   r1 = GtkCellRendererText()
 
-  cols = ["Date", "Study", "Subject"]
+  cols = ["Date", "Study", "Subject", "Time"]
+  colMap = [0,1,2,4]
 
   for (i,col) in enumerate(cols)
-    c = GtkTreeViewColumn(col, r1, Dict("text" => i-1))
-    G_.set_sort_column_id(c,i-1)
+    c = GtkTreeViewColumn(col, r1, Dict("text" => colMap[i]))
+    G_.set_sort_column_id(c,colMap[i])
     G_.set_resizable(c,true)
     G_.set_max_width(c,300)
     push!(tv,c)
@@ -430,8 +438,7 @@ function initStudyStore(m::MPILab)
       updateAnatomRefStore(m)
 
       if !isnothing(m.protocolWidget)
-        m.protocolWidget.currStudyName = m.currentStudy.name
-        m.protocolWidget.currStudyDate = m.currentStudy.date
+        updateStudy(m.protocolWidget, m.currentStudy.name, m.currentStudy.date)
       end
       m.updating = false
     end
@@ -920,6 +927,11 @@ function initReconstructionStore(m::MPILab)
     if hasselection(m.selectionReco)
       params = m.currentReco.params
 
+      # get absolute path of system matrices
+      if haskey(params, :SFPath)
+        params[:SFPath] =  MPIFiles.extendPath.([activeRecoStore(m)],params[:SFPath])
+      end
+
       @idle_add_guarded begin
         updateData!(m.recoWidget, path(m.currentExperiment), params, m.currentStudy, m.currentExperiment)
         Gtk4.G_.set_current_page(m["nbView"], 2)
@@ -967,8 +979,9 @@ function openFusion(m::MPILab)
            Gtk4.G_.set_current_page(m["nbView"], 1)
         end
       catch ex
-        @show  string("Something went wrong!\n", ex, "\n\n", stacktrace(bt))
+        @show string("Something went wrong!\n", ex, "\n\n", stacktrace(bt))
         #showError(ex)
+        showerror(stdout, ex, catch_backtrace())
       end
     end
 end
@@ -1104,7 +1117,7 @@ function updateVisuStore(m::MPILab)
       push!(m.visuStore, ( visu.num ,get(params,:description,""),
                              string(get(params,:spatialMIP,"")),
                              string(get(params,:frameProj,"")),
-                             existing_cmaps()[params[:coloring][1].cmap+1], anatomicRef))
+                             important_cmaps()[params[:coloring][1].cmap+1], anatomicRef))
     end
   end
   return
@@ -1183,7 +1196,7 @@ end
 
 function initRecoTab(m::MPILab)
 
-  m.recoWidget = RecoWidget()
+  m.recoWidget = OfflineRecoWidget()
 
   boxRecoTab = m["boxRecoTab"]
   push!(boxRecoTab,m.recoWidget)

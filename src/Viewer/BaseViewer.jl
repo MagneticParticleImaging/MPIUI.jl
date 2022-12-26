@@ -23,7 +23,7 @@ end
 getindex(m::BaseViewerWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 function baseViewer()
-  uifile = joinpath(@__DIR__,"builder","baseViewer.ui")
+  uifile = joinpath(@__DIR__,"..","builder","baseViewer.ui")
   b = GtkBuilder(filename=uifile)
   m = BaseViewerWidget(b, nothing,nothing,nothing)
   w = m["parentGrid"]

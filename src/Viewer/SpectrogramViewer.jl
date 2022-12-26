@@ -37,7 +37,7 @@ end
 
 function SpectrogramWidget(filenameConfig=nothing)
   @info "Starting SpectrogramWidget"
-  uifile = joinpath(@__DIR__,"builder","spectrogramViewer.ui")
+  uifile = joinpath(@__DIR__,"..","builder","spectrogramViewer.ui")
 
   b = GtkBuilder(filename=uifile)
   mainBox = Gtk4.G_.get_object(b, "boxSpectrogramViewer")
@@ -358,6 +358,14 @@ end
 
 ################
 
+function setBG(m::SpectrogramWidget, dataBG)
+  if ndims(dataBG) == 5
+    m.dataBG = dataBG
+  else
+    m.dataBG = reshape(dataBG, size(dataBG)..., 1)
+  end
+end
+
 @guarded function updateData(m::SpectrogramWidget, data::Array, deltaT=1.0, fileModus=false)
   maxValTPOld = get_gtk_property(m["adjMinTP"],:upper, Int64)
   maxValFreOld = get_gtk_property(m["adjMinFre"],:upper, Int64)
@@ -393,13 +401,13 @@ end
       set_gtk_property!(m["adjGrouping"],:value, 1)
     end
     if !fileModus
-      set_gtk_property!(m["adjFrame"],:upper,size(data,4))
-      if !(1 <= get_gtk_property(m["adjFrame"],:value,Int64) <= size(data,4))
+      set_gtk_property!(m["adjFrame"],:upper,size(m.data,4))
+      if !(1 <= get_gtk_property(m["adjFrame"],:value,Int64) <= size(m.data,4))
         set_gtk_property!(m["adjFrame"],:value,1)
       end
     end
-    set_gtk_property!(m["adjRxChan"],:upper,size(data,2))
-    if !(1 <= get_gtk_property(m["adjRxChan"],:value,Int64) <= size(data,2))
+    set_gtk_property!(m["adjRxChan"],:upper,size(m.data,2))
+    if !(1 <= get_gtk_property(m["adjRxChan"],:value,Int64) <= size(m.data,2))
       set_gtk_property!(m["adjRxChan"],:value,1)
     end
     set_gtk_property!(m["adjPatch"],:upper,numPatches)

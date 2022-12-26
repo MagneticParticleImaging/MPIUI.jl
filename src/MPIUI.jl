@@ -16,6 +16,8 @@ using Logging, LoggingExtras
 using ThreadPools
 using Dates
 using REPL: fielddoc
+using SphericalHarmonicExpansions # for MagneticFieldViewer
+using NLsolve # for MagneticFieldViewer: findFFP()
 
 ENV["MPILIB_UI"] = "Nothing"
 
@@ -58,6 +60,7 @@ function openFileBrowser(dir::String)
   return
 end
 
+
 function imToVecIm(image::ImageMeta)
    out = ImageMeta[]
    for i=1:size(image,1)
@@ -67,9 +70,12 @@ function imToVecIm(image::ImageMeta)
    return out
  end
 
-function showError(ex, bt=catch_backtrace())
-  str = string("Something went wrong!\n", ex, "\n\n", stacktrace(bt))
-  @show str
+function showError(ex)
+  exTrunc = first(string(ex), 500)
+  if length(string(ex)) > 500
+    exTrunc *="..."
+  end
+  str = string("Something went wrong!\n", exTrunc)
   if isassigned(mpilab)
     info_dialog(str, mpilab[]["mainWindow"])
   else
@@ -108,17 +114,10 @@ const colors = [(0/255,73/255,146/255), # UKE blau
 
 include("LogMessagesWidget.jl")
 include("GtkUtils.jl")
-include("RawDataViewer.jl")
-include("SpectrogramViewer.jl")
-#include("Measurement/MeasurementWidget.jl")
+include("Viewer/Viewer.jl")
+include("Reconstruction/OfflineRecoWidget.jl")
 include("Protocol/ProtocolWidget.jl")
-include("SpectrumViewer.jl")
-include("BaseViewer.jl")
-include("DataViewer/DataViewer.jl")
-include("SimpleDataViewer.jl")
-include("SFViewerWidget.jl")
 include("SFBrowser.jl")
-include("RecoWidget.jl")
 include("Settings.jl")
 include("Devices/ScannerBrowser.jl")
 include("MPILab.jl")
@@ -128,7 +127,7 @@ include("OnlineReco/OnlineReco.jl")
 
 function __init__()
   if Threads.nthreads() < 4
-    error("MPIUI needs Julia to be started with at least two threads. To do so start Julia with `julia -t 4`.")
+    @warn "MPIUI was started with less than four Julia threads. For use with MPIMeasurements please start Julia with 'julia -t 4' or more"
   end
 end
 

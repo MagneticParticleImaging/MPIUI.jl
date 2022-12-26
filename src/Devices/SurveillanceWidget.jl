@@ -10,8 +10,17 @@ function TemperatureLog(numChan::Int=1)
 end
 
 function TemperatureLog(filename::String)
+  filenamebase, ext = splitext(filename)
+  if ext == ".toml"
     p = TOML.parsefile(filename)
     return TemperatureLog(p["temperatures"], p["times"], p["numChan"])
+  elseif ext == ".mdf"
+    temps = h5read(filename, "/measurement/_temperatures")
+    times = [DateTime(0)+Dates.Second(1)*j for j=1:size(temps,2)]
+    return TemperatureLog(vec(temps), times, size(temps,1))
+  else
+    error("File extension $(ext) not supported!")
+  end
 end
 
 function clear(log::TemperatureLog, numChan=log.numChan)
@@ -95,14 +104,26 @@ function initCallbacks(m::SurveillanceWidget)
     
     signal_connect(m["btnSaveTemp"], :clicked) do w
         m.updating = true
-        filter = Gtk4.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
+        filter = Gtk4.GtkFileFilter(pattern=String("*.toml, *.mdf"), mimetype=String("application/toml"))
         filename = save_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
         if filename != ""
             filenamebase, ext = splitext(filename)
             saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
         end
         m.updating = false
-    end  
+    end
+
+    signal_connect(m["btnEnableAC"], :clicked) do w
+      if ask_dialog("Confirm that you want to enable AC power", "Cancel", "Confirm", mpilab[]["mainWindow"])
+        enableACPower(m.su)
+      end
+    end
+
+    signal_connect(m["btnDisableAC"], :clicked) do w
+      if ask_dialog("Confirm that you want to disable AC power", "Cancel", "Confirm", mpilab[]["mainWindow"])
+        disableACPower(m.su)
+      end
+    end
 end
 
   
