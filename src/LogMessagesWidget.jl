@@ -174,7 +174,7 @@ function initCallbacks(m::LogMessageListWidget)
 
   signal_connect(m["cbLogLevel"], :changed) do w
     @idle_add_guarded begin
-      str = Gtk4.bytestring(Gtk4.G_.get_active_text(m["cbLogLevel"]))
+      str = Gtk4.bytestring(Gtk4.active_text(m["cbLogLevel"]))
       level = 0
       if str == "Debug"
         level = -1000

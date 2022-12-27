@@ -72,9 +72,9 @@ function FileBrowser()
 
   signal_connect(btnChooser, "clicked") do widget
     dlg = FileChooserDialog("Select folder", Null(), GtkFileChooserAction.SELECT_FOLDER,
-                             "gtk-cancel", GtkResponseType.CANCEL,
-                             "gtk-open", GtkResponseType.ACCEPT)
-    if ret == GtkResponseType.ACCEPT
+                             "gtk-cancel", Gtk4.ResponseType_CANCEL,
+                             "gtk-open", Gtk4.ResponseType_ACCEPT)
+    if ret == Gtk4.ResponseType_ACCEPT
       path = Gtk4.bytestring(Gtk4._.filename(dlg),true)
       changedir!(browser,path)
     end

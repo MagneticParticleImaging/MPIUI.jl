@@ -46,7 +46,7 @@ mutable struct ReconstructionParameter <: Gtk4.GtkBox
   
       cache = loadcache()
   
-      selectedProfileName = Gtk4.bytestring( G_.active_text(m["cbRecoProfiles"]))
+      selectedProfileName = Gtk4.bytestring(Gtk4.active_text(m["cbRecoProfiles"]))
       @debug "" selectedProfileName
       if haskey(cache["recoParams"],selectedProfileName)
         @idle_add_guarded setParams(m, cache["recoParams"][selectedProfileName])
@@ -67,7 +67,7 @@ mutable struct ReconstructionParameter <: Gtk4.GtkBox
     end
   
     function deleteRecoProfile( widget )
-      selectedProfileName = Gtk4.bytestring( G_.active_text(m["cbRecoProfiles"]))
+      selectedProfileName = Gtk4.bytestring(Gtk4.active_text(m["cbRecoProfiles"]))
   
       @idle_add_guarded @info "delete reco profile $selectedProfileName"
   
@@ -109,7 +109,9 @@ getindex(m::ReconstructionParameter, w::AbstractString) = G_.get_object(m.builde
 
 function initCallbacks(m::ReconstructionParameter)
 
-  signal_connect((w)->selectSF(m), m["btBrowseSF"], "clicked")
+  signal_connect(m["btBrowseSF"], "clicked") do w
+    @idle_add selectSF(m)
+  end
   signal_connect(m["adjSelectedSF"], "value_changed") do widget
     @debug "" m.bSF
 
@@ -308,7 +310,7 @@ end
 function updateBGMeas(m::ReconstructionParameter)
   if get_gtk_property(m["cbBGMeasurements"],"active", Int) >= 0
 
-    bgstr =  Gtk4.bytestring( G_.active_text(m["cbBGMeasurements"]))
+    bgstr = Gtk4.bytestring(Gtk4.active_text(m["cbBGMeasurements"]))
     if !isempty(bgstr)
       bgnum =  parse(Int64, bgstr)
       filenameBG = m.bgExperiments[bgnum]
@@ -344,17 +346,21 @@ end
   #dlg = SFSelectionDialog( gradient=maximum(acqGradient(m.bMeas)), driveField=dfStrength(m.bMeas)  )
   dlg = SFSelectionDialog()
 
-  ret = run(dlg)
-  if ret == GtkResponseType.ACCEPT
+  function on_response(dlg, response_id)
+      if response_id == Integer(Gtk4.ResponseType_ACCEPT)
 
-    if hasselection(dlg.selection)
-      sffilename =  getSelectedSF(dlg)
-
-      @debug "" sffilename
-      setSF(m, sffilename )
-    end
+        if hasselection(dlg.selection)
+          sffilename =  getSelectedSF(dlg)
+    
+          @info "" sffilename
+          setSF(m, sffilename )
+        end
+      end
+      destroy(dlg)
   end
-  destroy(dlg)
+
+  signal_connect(on_response, dlg, "response")
+  show(dlg)
 end
 
 function initBGSubtractionWidgets(m::ReconstructionParameter, study=nothing, experiment=nothing)

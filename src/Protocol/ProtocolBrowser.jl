@@ -15,9 +15,9 @@ end
 
 function ProtocolSelectionDialog(scanner::MPIScanner, params::Dict)
 
-  dialog = Dialog("Select Protocol", mpilab[]["mainWindow"], GtkDialogFlags.MODAL,
-                        Dict("gtk-cancel" => GtkResponseType.CANCEL,
-                             "gtk-ok"=> GtkResponseType.ACCEPT) )
+  dialog = Dialog("Select Protocol", mpilab[]["mainWindow"], Gtk4.DialogFlags_MODAL,
+                        Dict("gtk-cancel" => Gtk4.ResponseType_CANCEL,
+                             "gtk-ok"=> Gtk4.ResponseType_ACCEPT) )
 
   resize!(dialog, 1024, 600)
   box = G_.content_area(dialog)

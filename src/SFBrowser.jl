@@ -364,19 +364,20 @@ end
 
 function SFSelectionDialog(;gradient = nothing, driveField = nothing)
 
-  dialog = Dialog("Select System Function", mpilab[]["mainWindow"], GtkDialogFlags.MODAL,
-                        Dict("gtk-cancel" => GtkResponseType.CANCEL,
-                             "gtk-ok"=> GtkResponseType.ACCEPT) )
+  dialog = GtkDialog("Select System Function",
+                        Dict("_Cancel" => Gtk4.ResponseType_CANCEL,
+                             "_OK"=> Gtk4.ResponseType_ACCEPT),
+                             Gtk4.DialogFlags_MODAL, mpilab[]["mainWindow"] )
 
-  resize!(dialog, 1024, 1024)
+  Gtk4.default_size(dialog, 1024, 1024)
 
-  box = G_.content_area(dialog)
+  box = G_.get_content_area(dialog)
 
   sfBrowser = SFBrowserWidget(gradient = gradient, driveField = driveField)
   updateData!(sfBrowser, activeDatasetStore(mpilab[]))
 
   push!(box, sfBrowser.box)
-  set_gtk_property!(box, :expand, sfBrowser.box, true)
+  ### set_gtk_property!(box, :expand, sfBrowser.box, true)
 
   selection = G_.get_selection(sfBrowser.tv)
 
@@ -402,9 +403,9 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
   try
     f = MPIFile(filename)
 
-    dialog = Dialog("Convert System Function", mpilab[]["mainWindow"], GtkDialogFlags.MODAL,
-                    Dict("gtk-cancel" => GtkResponseType.CANCEL,
-                    "gtk-ok"=> GtkResponseType.ACCEPT) )
+    dialog = Dialog("Convert System Function", mpilab[]["mainWindow"], Gtk4.DialogFlags_MODAL,
+                    Dict("gtk-cancel" => Gtk4.ResponseType_CANCEL,
+                    "gtk-ok"=> Gtk4.ResponseType_ACCEPT) )
 
     #resize!(dialog, 1024, 1024)
 
@@ -434,7 +435,7 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
     ret = run(dialog)
 
 
-    if ret == GtkResponseType.ACCEPT
+    if ret == Gtk4.ResponseType_ACCEPT
       numPeriodAverages = get_gtk_property(adjNumPeriodAverages,:value,Int64)
       numPeriodGrouping = get_gtk_property(adjNumPeriodGrouping,:value,Int64)
       applyCalibPostprocessing = get_gtk_property(grid[2,3],:active,Bool)

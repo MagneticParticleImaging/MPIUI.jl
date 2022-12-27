@@ -152,7 +152,7 @@ function initCallbacks(pw::ProtocolWidget)
     @info "clicked picked protocol button"
     dlg = ProtocolSelectionDialog(pw.scanner, Dict())
     ret = run(dlg)
-    if ret == GtkResponseType.ACCEPT
+    if ret == Gtk4.ResponseType_ACCEPT
       if hasselection(dlg.selection)
         protocol = getSelectedProtocol(dlg)
         updateProtocol(pw, protocol)

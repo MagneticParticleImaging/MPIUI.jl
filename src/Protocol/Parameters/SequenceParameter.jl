@@ -142,7 +142,7 @@ function initCallbacks(seqParam::SequenceParameter)
   signal_connect(seqParam["btnSelectSequence",ButtonLeaf], :clicked) do w
     dlg = SequenceSelectionDialog(seqParam.scanner, Dict())
     ret = run(dlg)
-    if ret == GtkResponseType.ACCEPT
+    if ret == Gtk4.ResponseType_ACCEPT
       if hasselection(dlg.selection)
         seq = getSelectedSequence(dlg)
         updateSequence(seqParam, seq)
