@@ -165,9 +165,8 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   if smallWidth
     grid = GtkGrid()
     push!(vbox, grid)
-    #set_gtk_property!(vbox, :expand, grid, true)
-    set_gtk_property!(grid, :row_spacing, 5)
-    set_gtk_property!(grid, :column_spacing, 5)
+    grid.row_spacing = 5
+    grid.column_spacing = 5
 
     grid[1,1] = GtkLabel("Grad.")
     grid[2,1] = entGradient
@@ -207,7 +206,8 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
   sw = GtkScrolledWindow()
   G_.set_child(sw, tv)
   push!(vbox, sw)
-###  set_gtk_property!(vbox, :expand, sw, true)
+  sw.vexpand = true
+
   show(tv)
   show(vbox)
 
