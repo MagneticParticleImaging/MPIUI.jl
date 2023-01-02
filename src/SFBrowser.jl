@@ -49,10 +49,10 @@ function updateData!(m::SFBrowserWidget, sysFuncs)
       for (k,v) in uuids
         l = v[1]
         iter = push!(m.store, makeTupleSF(sysFuncs,l))
-      ###  for q = 2:length(v)
-      ###    l = v[q]
-      ###    push!(m.store, makeTupleSF(sysFuncs,l), iter)
-      ###  end
+        for q = 2:length(v)
+          l = v[q]
+          push!(m.store, makeTupleSF(sysFuncs,l), iter)
+        end
       end
       m.updating = false
   end
@@ -63,7 +63,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 
  #Name,Gradient,DFx,DFy,DFz,Size x,Size y,Size z,Bandwidth,Tracer,TracerBatch,DeltaSampleConcentration,DeltaSampleVolume,Path
 
-  store = GtkListStore(Int,String,String,Float64,String,String,
+  store = GtkTreeStore(Int,String,String,Float64,String,String,
                      String,String,String,String, Bool)
 
   tv = GtkTreeView(GtkTreeModel(store))
@@ -134,7 +134,8 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
               end
             else
               @show sffilename
-              info_dialog("The calibration file $(sffilename) is not yet processed!", mpilab[]["mainWindow"])
+              d = info_dialog(()-> nothing, "The calibration file $(sffilename) is not yet processed!", mpilab[]["mainWindow"])
+              d.modal = true
             end
           else
             updateData(mpilab[].rawDataWidget, sffilename)
