@@ -59,18 +59,19 @@ mutable struct SurveillanceWidget <: Gtk4.GtkBox
     timer::Union{Timer,Nothing}
 end
   
-getindex(m::SurveillanceWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
+getindex(m::SurveillanceWidget, w::AbstractString) = G_.get_object(m.builder, w)
 
 function SurveillanceWidget(su::SurveillanceUnit)
     uifile = joinpath(@__DIR__,"..","builder","surveillanceWidget.ui")
 
     b = GtkBuilder(filename=uifile)
-    mainBox = Gtk4.G_.get_object(b, "mainBox")
+    mainBox = G_.get_object(b, "mainBox")
 
     m = SurveillanceWidget(mainBox.handle, b, false, su, TemperatureLog(), GtkCanvas(), nothing)
     Gtk4.GLib.gobject_move_ref(m, mainBox)
   
     push!(m, m.canvas)
+    m.canvas.hexpand = true
     ### set_gtk_property!(m,:expand, m.canvas, true)
   
     show(m)

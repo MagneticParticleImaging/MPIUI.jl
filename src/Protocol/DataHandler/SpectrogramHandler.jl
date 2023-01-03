@@ -15,7 +15,7 @@ end
 function SpectrogramHandler(scanner=nothing)
   data = SpectrogramWidget()
   # Init Display Widget
-  updateData(data, ones(Float32,10,1,1,1), 1.0)
+  updateData(data, randn(Float32,10,1,1,1), 1.0)
 
   paramsBox = GtkBox(:v)
   cbRolling = GtkCheckButton("Rolling")

@@ -348,7 +348,7 @@
                       <object class="GtkButton" id="btnTDClear">
                         <property name="focusable">1</property>
                         <property name="receives_default">1</property>
-                        <property name="icon-name">list-add</property>
+                        <property name="icon-name">edit-clear</property>
                       </object>
                     </child>
                   </object>
@@ -405,7 +405,7 @@
                       <object class="GtkButton" id="btnFDClear">
                         <property name="focusable">1</property>
                         <property name="receives_default">1</property>
-                        <property name="icon-name">list-add</property>
+                        <property name="icon-name">edit-clear</property>
                       </object>
                     </child>
                   </object>

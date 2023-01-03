@@ -36,7 +36,7 @@ function ScannerBrowser(scanner, deviceBox)
   r1 = GtkCellRendererText()
   r2 = GtkCellRendererToggle()
 
-  c0 = GtkTreeViewColumn("Status", r0, Dict("text" => 0))  #Dict("stock-id" => 0))
+  c0 = GtkTreeViewColumn("Status", r0, Dict("icon-name" => 0))
   c1 = GtkTreeViewColumn("DeviceID", r1, Dict("text" => 1))
   c2 = GtkTreeViewColumn("Type", r1, Dict("text" => 2))
 
@@ -62,7 +62,6 @@ function ScannerBrowser(scanner, deviceBox)
   sw = GtkScrolledWindow()
   G_.set_child(sw, tv)
   push!(mainBox, sw)
-  # set_gtk_property!(mainBox, :expand, sw, true)
   sw.vexpand = true
 
   # TODO Add widget that shows properties of selected Device
@@ -154,7 +153,7 @@ function updateData!(m::ScannerBrowser, scanner=nothing)
       empty!(m.store)
       for (deviceID, device) in scanner.devices
         present = MPIMeasurements.isPresent(device)
-        icon = present ? "gtk-ok" : "gtk-dialog-error"
+        icon = present ? "emblem-default" : "dialog-error"
         push!(m.store, (icon, deviceID, string(typeof(device)), present, true))
       end
 

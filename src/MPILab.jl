@@ -1189,7 +1189,6 @@ function initRawDataTab(m::MPILab)
   m.rawDataWidget = RawDataWidget()
   boxRawViewer = m["boxRawViewer"]
   push!(boxRawViewer,m.rawDataWidget)  
-###  set_gtk_property!(boxRawViewer, :expand, m.rawDataWidget, true)
   show(boxRawViewer)
 end
 

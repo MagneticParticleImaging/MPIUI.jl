@@ -52,7 +52,6 @@ function SpectrogramWidget(filenameConfig=nothing)
   @debug "Type constructed"
 
   push!(m["boxTD"],m.cTD)
-###  set_gtk_property!(m["boxTD"],:expand,m.cTD,true)
   m.cTD.hexpand = true
   m.cTD.vexpand = true
 
@@ -60,12 +59,10 @@ function SpectrogramWidget(filenameConfig=nothing)
   set_gtk_property!(pane, :position, 300)
 
   push!(m["boxSpectro"], m.cSpect)
-###  set_gtk_property!(m["boxSpectro"],:expand, m.cSpect, true)
   m.cSpect.hexpand = true
   m.cSpect.vexpand = true
 
   push!(m["boxFD"],m.cFD)
-###  set_gtk_property!(m["boxFD"],:expand,m.cFD,true)
   m.cFD.hexpand = true
   m.cFD.vexpand = true
 
@@ -513,53 +510,70 @@ end
     else
       sliceTime = Colon()
     end
-
-    Winston.colormap(convert.(RGB{N0f8},cmap("viridis")))
-    psp = Winston.imagesc( (0.0, maxT), 
-                           ((minFr-1)/size(sp.power,1) / m.deltaT / 2.0, 
-                               (maxFr-1)/size(sp.power,1) / m.deltaT / 2.0 ), 
-                          log.(10.0^(-(2+10*logVal)) .+ spdata[sliceFr, sliceTime] ) )
-
     patch_ = patch/size(sp.power,2) *  maxT
-    Winston.add(psp, Winston.Curve([patch_,patch_], [0,(maxFr-1)/size(sp.power,1) / m.deltaT / 2.0], 
-                                   kind="solid", color="white", lw=10) )
 
-    Winston.ylabel("freq / kHz")
-    Winston.xlabel("t / s")
+    fSp, axSp, pSp = CairoMakie.heatmap( range(0.0, step=maxT/size(spdata[sliceFr, sliceTime],2), 
+                                               length=size(spdata[sliceFr, sliceTime],2)),
+                                 range( (minFr-1)/size(sp.power,1) / m.deltaT / 2.0, 
+                                    step = (maxFr-1)/size(sp.power,1) / m.deltaT / 2.0 / size(spdata[sliceFr, sliceTime],1),
+                                    length = size(spdata[sliceFr, sliceTime],1)), 
+                          log.(10.0^(-(2+10*logVal)) .+ transpose(spdata[sliceFr, sliceTime]) ) )
+    
+    CairoMakie.lines!(axSp, [patch_,patch_], [0,(maxFr-1)/size(sp.power,1) / m.deltaT / 2.0], 
+                                             color=:white, linewidth=2 )
 
-    @idle_add_guarded display(m.cSpect, psp)
+    axSp.ylabel = "freq / kHz"
+    axSp.xlabel = "t / s"
+    axSp.yreversed = true 
+
+    @idle_add_guarded drawonto(m.cSpect, fSp)
 
     timePoints = (0:(length(data_)-1)).*m.deltaT
    
     maxPoints = 5000
     sp_ = length(minTP:maxTP) > maxPoints ? round(Int,length(minTP:maxTP) / maxPoints)  : 1
     steps = minTP:sp_:maxTP
-   
-    p1 = Winston.plot(timePoints[steps], data_[steps], color=colors[1],linewidth=3)
 
-    Winston.ylabel("u / V")
-    Winston.xlabel("t / ms")
-    if !autoRangingTD
-      Winston.ylim(minValTD, maxValTD)
+    fTD, axTD, lTD1 = CairoMakie.lines(timePoints[steps], data_[steps], 
+                            figure = (; resolution = (1000, 800), fontsize = 12),
+                            axis = (; title = "Time Domain"),
+                            color = CairoMakie.RGBf(colors[1]...))
+   
+    CairoMakie.autolimits!(axTD)
+    if timePoints[steps[end]] > timePoints[steps[1]]
+      CairoMakie.xlims!(axTD, timePoints[steps[1]], timePoints[steps[end]])
     end
+    if !autoRangingTD && maxValTD > minValTD 
+      CairoMakie.ylims!(axTD, minValTD, maxValTD)
+    end
+    axTD.xlabel = "t / ms"
+    axTD.ylabel = "u / V"
 
 
     if showFD
       numFreq = size(sp.power,1)
       freq = collect(0:(numFreq-1))./(numFreq-1)./m.deltaT./2.0
       freqdata = sp.power[:,:]
-      m.rangeFD = extrema(freqdata)
+      m.rangeFD = extrema(freqdata[:,patch])
       spFr = length(minFr:maxFr) > maxPoints ? round(Int,length(minFr:maxFr) / maxPoints)  : 1
 
       stepsFr = minFr:spFr:maxFr
 
-      p2 = Winston.semilogy(freq[stepsFr],freqdata[stepsFr,patch],color=colors[1],linewidth=3)
-
-      #Winston.ylabel("u / V")
-      Winston.xlabel("f / kHz")
-      if !autoRangingFD
-          Winston.ylim(minValFD, maxValFD)
+      fFD, axFD, lFD1 = CairoMakie.lines(freq[stepsFr],freqdata[stepsFr,patch], 
+                              figure = (; resolution = (1000, 800), fontsize = 12),
+                              axis = (; title = "Frequency Domain", yscale=log10),
+                              color = CairoMakie.RGBf(colors[1]...))
+ 
+      CairoMakie.autolimits!(axFD)
+      if freq[stepsFr[end]] > freq[stepsFr[1]]
+        CairoMakie.xlims!(axFD, freq[stepsFr[1]], freq[stepsFr[end]])
       end
+      if !autoRangingFD && maxValFD > minValFD 
+        CairoMakie.ylims!(axFD, minValFD, maxValFD)
+      end
+      axFD.xlabel = "f / kHz"
+      axFD.ylabel = "u / V"
+
     else
       @guarded Gtk4.draw(m.cFD) do widget
         
@@ -574,9 +588,9 @@ end
     end
 
 
-    @idle_add_guarded display(m.cTD, p1)
+    @idle_add_guarded drawonto(m.cTD, fTD)
     if showFD
-      @idle_add_guarded display(m.cFD, p2)
+      @idle_add_guarded drawonto(m.cFD, fFD)
     end
 
   end

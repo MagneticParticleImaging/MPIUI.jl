@@ -77,7 +77,7 @@ function LogMessageListWidget()
   r0 = GtkCellRendererPixbuf()
   r1 = GtkCellRendererText()
 
-  c0 = GtkTreeViewColumn("Level", r0, Dict("icon-name" => 0))  #Dict("stock-id" => 0))
+  c0 = GtkTreeViewColumn("Level", r0, Dict("icon-name" => 0))
   c1 = GtkTreeViewColumn("Time", r1, Dict("text" => 1))
   c2 = GtkTreeViewColumn("Group", r1, Dict("text" => 2))
   c3 = GtkTreeViewColumn("Message", r1, Dict("text" => 3))
