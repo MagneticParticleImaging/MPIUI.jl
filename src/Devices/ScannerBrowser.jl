@@ -54,19 +54,20 @@ function ScannerBrowser(scanner, deviceBox)
   tmFiltered = GtkTreeModelFilter(store)
   G_.set_visible_column(tmFiltered,4)
   tmSorted = GtkTreeModelSort(tmFiltered)
-  G_.set_model(tv, tmSorted)
+  G_.set_model(tv, GtkTreeModel(tmSorted))
 
-  G_.set_sort_column_id(GtkTreeSortable(tmSorted),0,GtkSortType.DESCENDING)
+  G_.set_sort_column_id(GtkTreeSortable(tmSorted),0,Gtk4.SortType_DESCENDING)
   selection = G_.get_selection(tv)
 
   sw = GtkScrolledWindow()
-  push!(sw, tv)
+  G_.set_child(sw, tv)
   push!(mainBox, sw)
-  set_gtk_property!(mainBox, :expand, sw, true)
+  # set_gtk_property!(mainBox, :expand, sw, true)
+  sw.vexpand = true
 
   # TODO Add widget that shows properties of selected Device
 
-  m = ScannerBrowser(mainBox.handle, b, store, tmSorted, tv, selection, false, deviceBox, scanner, Dict{Device, Gtk4.GtkContainer}())
+  m = ScannerBrowser(mainBox.handle, b, store, tmSorted, tv, selection, false, deviceBox, scanner, Dict{Device, DeviceWidgetContainer}())
   Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   set_gtk_property!(m["lblScannerName"], :label, name(scanner))
@@ -96,7 +97,7 @@ function initCallbacks(m::ScannerBrowser)
       if MPIMeasurements.isPresent(dev)
         displayDeviceWidget(m, dev)
       else
-        d = info_dialog(()-> nothing, "Device $name is not availalbe.", mpilab[]["mainWindow"])
+        d = info_dialog(()-> nothing, "Device $name is not available.", mpilab[]["mainWindow"])
         d.modal = true
       end
 

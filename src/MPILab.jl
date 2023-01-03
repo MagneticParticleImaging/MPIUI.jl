@@ -1150,8 +1150,8 @@ function initScannerTab(m::MPILab, offlineMode=false)
     m.scannerBrowser = ScannerBrowser(m.scanner, m["boxScannerTab"])
 
     boxScannerTab = m["boxScanner"]
-    push!(boxScannerTab,m.scannerBrowser)
-    set_gtk_property!(boxScannerTab, :expand, m.scannerBrowser, true)
+    push!(boxScannerTab, m.scannerBrowser)
+    ### set_gtk_property!(boxScannerTab, :expand, m.scannerBrowser, true)
     show(boxScannerTab)
   end
 end
@@ -1164,7 +1164,7 @@ function initProtocolTab(m::MPILab, offlineMode=false)
 
     boxProtoTab = m["boxProtocolTab"]
     push!(boxProtoTab, m.protocolWidget)
-    set_gtk_property!(boxProtoTab, :expand, m.protocolWidget, true)
+###    set_gtk_property!(boxProtoTab, :expand, m.protocolWidget, true)
     show(boxProtoTab)
   end
 end
