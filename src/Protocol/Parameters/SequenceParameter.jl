@@ -209,8 +209,9 @@ end
 function setProtocolParameter(channelParam::PeriodicChannelParameter)
   # TODO offset
   channel = channelParam.channel
-  for index = 2:length(channelParam.box) # Index 1 is grid describing channel, then come the components
-    component = channelParam.box[index]
+  component = G_.get_first_child(channelParam.box)
+  component = G_.get_next_sibling(component) # Index 1 is grid describing channel, then come the components
+  while component != nothing
     id = get_gtk_property(component.idLabel, :label, String)
     @info "Setting component $id"
     # AWG is not sensitive atm, hacky distinction
@@ -220,5 +221,6 @@ function setProtocolParameter(channelParam::PeriodicChannelParameter)
       wave = component.waveforms[get_gtk_property(component.waveform, :active, Int)+1]
       waveform!(channel, id, wave)
     end
+    component = G_.get_next_sibling(component)
   end
 end

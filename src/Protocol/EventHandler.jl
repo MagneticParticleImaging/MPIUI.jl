@@ -1,9 +1,12 @@
 function initProtocol(pw::ProtocolWidget)
   try 
     @info "Setting protocol parameters"
-    for parameterObj in pw["boxProtocolParameter", Gtk4.GtkBoxLeaf]
-      setProtocolParameter(parameterObj, pw.protocol.params)
+    iter = G_.get_first_child(pw["boxProtocolParameter"])
+    while iter != nothing
+      setProtocolParameter(iter, pw.protocol.params)
+      iter = G_.get_next_sibling(iter)
     end
+
     @info "Init protocol"
     MPIMeasurements.init(pw.protocol)
     for handler in pw.dataHandler
@@ -142,14 +145,27 @@ end
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::MultipleChoiceEvent)
   buttons = [(choice, i) for (i, choice) in enumerate(event.choices)]
   parent = mpilab[]["mainWindow"]
-  widget = GtkMessageDialog(event.message, buttons, GtkDialogFlags.DESTROY_WITH_PARENT, GtkMessageType.INFO, parent)
-  show(widget)
-  reply = run(widget)
-  destroy(widget)
-  @show reply
-  put!(pw.biChannel, ChoiceAnswerEvent(reply, event))
+  dlg = GtkMessageDialog(event.message, buttons, Gtk4.DialogFlags_DESTROY_WITH_PARENT, Gtk4.MessageType_QUESTION, parent)
+
+  res = Ref{Int32}()
+  c = Condition()
+
+  function on_response(dlg, response_id)
+    res[] = response_id
+    notify(c)
+    destroy(dlg)
+  end
+
+  signal_connect(on_response, dlg, "response")
+  show(dlg)  
+
+  wait(c)
+  
+  @show res[]
+  put!(pw.biChannel, ChoiceAnswerEvent(res[], event))
   return false
 end
+
 
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::OperationSuccessfulEvent)
   return handleSuccessfulOperation(pw, protocol, event.operation)
@@ -190,9 +206,9 @@ end
 function confirmPauseProtocol(pw::ProtocolWidget)
   @idle_add_guarded begin
     pw.updating = true
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, true)
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :label, "Unpause")
+    set_gtk_property!(pw["tbPause"], :active, true)
+    set_gtk_property!(pw["tbPause"], :sensitive, true)
+    set_gtk_property!(pw["tbPause"], :label, "Unpause")
     pw.updating = false
   end
 end
@@ -200,8 +216,8 @@ end
 function denyPauseProtocol(pw::ProtocolWidget)
   @idle_add_guarded begin
     pw.updating = true
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, false)
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
+    set_gtk_property!(pw["tbPause"], :active, false)
+    set_gtk_property!(pw["tbPause"], :sensitive, true)
     pw.updating = false
   end
 end
@@ -234,9 +250,9 @@ end
 function confirmResumeProtocol(pw::ProtocolWidget)
   @idle_add_guarded begin
     pw.updating = true
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, false)
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :label, "Pause")
+    set_gtk_property!(pw["tbPause"], :active, false)
+    set_gtk_property!(pw["tbPause"], :sensitive, true)
+    set_gtk_property!(pw["tbPause"], :label, "Pause")
     pw.updating = false
   end
 end
@@ -244,8 +260,8 @@ end
 function denyResumeProtocol(pw::ProtocolWidget)
   @idle_add_guarded begin
     pw.updating = true
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, true)
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
+    set_gtk_property!(pw["tbPause"], :active, true)
+    set_gtk_property!(pw["tbPause"], :sensitive, true)
     pw.updating = false
   end
 end
@@ -282,19 +298,19 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
   @idle_add_guarded begin
     pw.updating = true
     # Sensitive
-    set_gtk_property!(pw["tbInit",ToolButtonLeaf], :sensitive, true)
+    set_gtk_property!(pw["tbInit"], :sensitive, true)
     if pw.protocolState != PS_FAILED
-      set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
+      set_gtk_property!(pw["tbRun"], :sensitive, true)
     end
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
-    set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, false)
-    set_gtk_property!(pw["btnPickProtocol", GtkButtonLeaf], :sensitive, true)
+    set_gtk_property!(pw["tbPause"], :sensitive, false)
+    set_gtk_property!(pw["tbCancel"], :sensitive, false)
+    set_gtk_property!(pw["btnPickProtocol"], :sensitive, true)
     # Active
-    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :active, false)
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :active, false)
+    set_gtk_property!(pw["tbRun"], :active, false)
+    set_gtk_property!(pw["tbPause"], :active, false)
     # Text
-    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :label, "Execute")
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :label, "Pause")
+    set_gtk_property!(pw["tbRun"], :label, "Execute")
+    set_gtk_property!(pw["tbPause"], :label, "Pause")
     pw.updating = false
   end
 end
