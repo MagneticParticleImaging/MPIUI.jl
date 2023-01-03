@@ -96,7 +96,8 @@ function initCallbacks(m::ScannerBrowser)
       if MPIMeasurements.isPresent(dev)
         displayDeviceWidget(m, dev)
       else
-        info_dialog("Device $name is not availalbe.", mpilab[]["mainWindow"])
+        d = info_dialog(()-> nothing, "Device $name is not availalbe.", mpilab[]["mainWindow"])
+        d.modal = true
       end
 
       show(m.deviceBox)
@@ -107,7 +108,8 @@ function initCallbacks(m::ScannerBrowser)
   signal_connect(m["btnReloadScanner"], :clicked) do w
     try
       refreshScanner(m)
-      info_dialog("Scanner has been reloaded successfully!", mpilab[]["mainWindow"])
+      d = info_dialog(()-> nothing, "Scanner has been reloaded successfully!", mpilab[]["mainWindow"])
+      d.modal = true
     catch ex
       showError(ex)
     end
@@ -131,7 +133,8 @@ function getDeviceWidget(m::ScannerBrowser, dev::Device, widgetType) #::Type{<:G
   end
 end
 function displayDeviceWidget(m::ScannerBrowser, dev::Device)
-  info_dialog("Device $(typeof(dev)) not yet implemented.", mpilab[]["mainWindow"])
+  d = info_dialog(()-> nothing, "Device $(typeof(dev)) not yet implemented.", mpilab[]["mainWindow"])
+  d.modal = true
 end
 displayDeviceWidget(m::ScannerBrowser, dev::Robot) = showDeviceWidget(m, getDeviceWidget(m, dev, RobotWidget))
 displayDeviceWidget(m::ScannerBrowser, dev::AbstractDAQ) = showDeviceWidget(m, getDeviceWidget(m, dev, DAQWidget))

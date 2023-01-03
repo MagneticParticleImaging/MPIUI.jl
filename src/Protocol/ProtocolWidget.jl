@@ -94,7 +94,8 @@ function initCallbacks(pw::ProtocolWidget)
       if !isnothing(pw.eventHandler) && isopen(pw.eventHandler)
         message = "Event handler is still running. Cannot initialize new protocol"
         @warn message
-        info_dialog(message, mpilab[]["mainWindow"])
+        d = info_dialog(()-> nothing, message, mpilab[]["mainWindow"])
+        d.modal = true
       else
         if initProtocol(pw)
           @idle_add_guarded begin

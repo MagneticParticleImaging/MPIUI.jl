@@ -78,10 +78,11 @@ function showError(ex)
   end
   str = string("Something went wrong!\n", exTrunc)
   if isassigned(mpilab)
-    info_dialog(str, mpilab[]["mainWindow"])
+    d = info_dialog(()-> nothing, str, mpilab[]["mainWindow"])
   else
-    info_dialog(str)
+    d = info_dialog(()-> nothing, str)
   end
+  d.modal = true
 end
 
 macro guard(ex)

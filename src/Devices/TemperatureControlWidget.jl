@@ -134,7 +134,8 @@ function setTarget(m::TemperatureControllerWidget)
     result = tryparse.(Int64,split(entry,","))
     ack = setTargetTemps(m.cont, result)
     if !ack
-      info_dialog("Could not set new target temps")
+      d = info_dialog(()-> nothing, "Could not set new target temps")
+      d.modal = true
     end
   end
 end
@@ -152,7 +153,8 @@ function setMaximum(m::TemperatureControllerWidget)
     result = tryparse.(Int64,split(entry,","))
     ack = setMaximumTemps(m.cont, result)
     if !ack
-      info_dialog("Could not set new target temps")
+      d = info_dialog(()-> nothing, "Could not set new target temps")
+      d.modal = true
     end
   end
 end

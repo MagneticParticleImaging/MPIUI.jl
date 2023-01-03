@@ -261,7 +261,8 @@ end
 
 function moveNamedPosition(m::RobotWidget, posName::String)
   if !isReferenced(m.robot)
-    info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
+    d = info_dialog(()-> nothing, "Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
+    d.modal = true
     return
   end
   @info "enabeling robot"
@@ -275,7 +276,8 @@ end
 
 function moveScannerOrigin(m::RobotWidget)
   if !isReferenced(m.robot)
-    info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
+    d = info_dialog(()-> nothing, "Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
+    d.modal = true
     return
   end
   @info "enabeling robot"

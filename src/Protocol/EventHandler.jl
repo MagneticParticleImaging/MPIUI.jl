@@ -94,7 +94,8 @@ function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::ProtocolEven
 end
 
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::IllegaleStateEvent)
-  @idle_add_guarded info_dialog(event.message, mpilab[]["mainWindow"])
+  d = info_dialog(()-> nothing, event.message, mpilab[]["mainWindow"])
+  d.modal = true
   pw.protocolState = PS_FAILED
   return true
 end
