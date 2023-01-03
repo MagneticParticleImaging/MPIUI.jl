@@ -174,7 +174,7 @@ function displayNamedPosition(m::RobotWidget, pos)
   end
 end
 function displayNamedPosition(m::RobotWidget)
-  m.namedPos = Gtk4.bytestring(Gtk4.active_text(m["cmbNamedPos"]))
+  m.namedPos = Gtk4.bytestring(G_.get_active_text(m["cmbNamedPos"]))
   pos = m.coordTransferfunction(m.robot, MPIMeasurements.namedPosition(m.robot, m.namedPos))
   @show pos
   if length(pos) == 3

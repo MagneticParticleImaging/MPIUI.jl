@@ -24,7 +24,6 @@ function DeviceWidgetContainer(deviceName::String, deviceWidget)
   
   set_gtk_property!(m["lblDeviceName"], :label, deviceName)
   push!(m["boxDeviceWidget"], deviceWidget)
-  ### set_gtk_property!(m["boxDeviceWidget"], :expand, deviceWidget, true)
   show(m)
 
   initCallbacks(m)
@@ -48,20 +47,20 @@ function initCallbacks(m::DeviceWidgetContainer)
     end
   end
 
-  signal_connect(m.deviceWindow, "delete-event") do w, event
+  signal_connect(m.deviceWindow, "close-request") do w, event
     @idle_add_guarded begin
       set_gtk_property!(m["btnPopout"], :active, false)
     end
-    return true
+    return
   end
 
 end
 
 function popout!(m::DeviceWidgetContainer, popout::Bool)
-  empty!(m.deviceWindow)
+  G_.set_child(m.deviceWindow, nothing)
   empty!(m["boxDeviceWidget"])
   if popout
-    push!(m.deviceWindow, m.deviceWidget)
+    G_.set_child(m.deviceWindow, m.deviceWidget)
     push!(m["boxDeviceWidget"], GtkLabel("Device Widget is opened in Pop-out Window"))
     visible(m.deviceWindow, true)
     show(m.deviceWindow)

@@ -1,30 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="4.0"/>
-  <object class="GtkImage" id="imgPopout">
-    <property name="stock">gtk-fullscreen</property>
-  </object>
   <object class="GtkBox" id="boxContainer">
+    <property name="visible">True</property>
     <property name="orientation">vertical</property>
     <child>
       <object class="GtkBox" id="boxDeviceMeta">
+        <property name="visible">True</property>
         <child>
           <object class="GtkLabel" id="lblDeviceName">
+            <property name="visible">True</property>
             <property name="hexpand">1</property>
             <property name="label" translatable="1">Device Name</property>
           </object>
         </child>
         <child>
           <object class="GtkToggleButton" id="btnPopout">
+            <property name="visible">True</property>
             <property name="focusable">1</property>
             <property name="receives_default">1</property>
-            <property name="image">imgPopout</property>
+            <property name="icon-name">view-fullscreen</property>
           </object>
         </child>
       </object>
     </child>
     <child>
       <object class="GtkBox" id="boxDeviceWidget">
+        <property name="visible">True</property>
         <property name="vexpand">1</property>
         <property name="orientation">vertical</property>
         <child>
