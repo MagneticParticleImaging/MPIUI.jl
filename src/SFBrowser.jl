@@ -399,18 +399,20 @@ end
 
 
 
-
+### FIXME !!!!!!!!!!!!!!!!!!!!!!!! ###
 function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
   try
     f = MPIFile(filename)
 
-    dialog = Dialog("Convert System Function", mpilab[]["mainWindow"], Gtk4.DialogFlags_MODAL,
-                    Dict("gtk-cancel" => Gtk4.ResponseType_CANCEL,
-                    "gtk-ok"=> Gtk4.ResponseType_ACCEPT) )
+    dialog = GtkDialog("Convert System Function",  
+                      Dict("_Cancel" => Gtk4.ResponseType_CANCEL,
+                      "_Ok"=> Gtk4.ResponseType_ACCEPT),
+                      Gtk4.DialogFlags_MODAL,
+                      mpilab[]["mainWindow"], )
 
-    #resize!(dialog, 1024, 1024)
+    Gtk4.default_size(dialog, 1024, 1024)
 
-    box = G_.content_area(dialog)
+    box = G_.get_content_area(dialog)
 
     grid = GtkGrid()
     push!(box, grid)

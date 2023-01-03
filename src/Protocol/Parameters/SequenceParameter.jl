@@ -142,14 +142,18 @@ end
 function initCallbacks(seqParam::SequenceParameter)
   signal_connect(seqParam["btnSelectSequence"], :clicked) do w
     dlg = SequenceSelectionDialog(seqParam.scanner, Dict())
-    ret = run(dlg)
-    if ret == Gtk4.ResponseType_ACCEPT
-      if hasselection(dlg.selection)
-        seq = getSelectedSequence(dlg)
-        updateSequence(seqParam, seq)
+
+    function on_response(dlg, response_id)
+      if response_id == Integer(Gtk4.ResponseType_ACCEPT)    
+        if hasselection(dlg.selection)
+          seq = getSelectedSequence(dlg)
+          updateSequence(seqParam, seq)
         end
+      end
+      destroy(dlg)
     end
-    destroy(dlg)
+    signal_connect(on_response, dlg, "response")
+    @idle_add_guarded show(dlg)    
   end
 end
 
