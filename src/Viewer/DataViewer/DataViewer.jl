@@ -476,9 +476,19 @@ function showData(m::DataViewerWidget)
         m.currentlyShownImages = [cdata_xy, cdata_zx, cdata_zy]
       else
         dat = vec(data_)
-        p = Winston.FramedPlot(xlabel="x", ylabel="y")
-        Winston.add(p, Winston.Curve(1:length(dat), dat, color="blue", linewidth=4))
-        display(m.grid2D[1,1],p)
+
+        fig, ax, l_ = CairoMakie.lines(1:length(dat), dat, 
+              figure = (; resolution = (1000, 800), fontsize = 12),
+              color = CairoMakie.RGBf(colors[1]...))
+  
+        CairoMakie.autolimits!(ax)
+        if length(dat) > 1
+          CairoMakie.xlims!(ax, 1, length(dat))
+        end
+        ax.xlabel = "x"
+        ax.ylabel = "y"
+        drawonto(m.grid2D[1,1], fig)
+
         Gtk4.G_.set_current_page(m["nb2D3D"], 1)
 
         #m.currentlyShownImages = cdata

@@ -309,22 +309,31 @@ function showProfile(m::DataViewerWidget, params, slicesInRawData)
   prof = get_gtk_property(m["cbProfile"],:active, Int64) + 1
   if prof == 1
     m.currentProfile = vec(m.data[chan,:,slicesInRawData[2],slicesInRawData[3],params[:frame]])
-    showWinstonPlot(m, m.currentProfile, "x", "c")
+    showProfile(m, m.currentProfile, "x", "c")
   elseif prof == 2
     m.currentProfile = vec(m.data[chan,slicesInRawData[1],:,slicesInRawData[3],params[:frame]])
-    showWinstonPlot(m, m.currentProfile, "y", "c")
+    showProfile(m, m.currentProfile, "y", "c")
   elseif prof == 3
     m.currentProfile = vec(m.data[chan,slicesInRawData[1],slicesInRawData[2],:,params[:frame]])
-    showWinstonPlot(m, m.currentProfile, "z", "c")
+    showProfile(m, m.currentProfile, "z", "c")
   else
     m.currentProfile = vec(m.data[chan,slicesInRawData[1],slicesInRawData[2],slicesInRawData[3],:])
-    showWinstonPlot(m, m.currentProfile, "t", "c")
+    showProfile(m, m.currentProfile, "t", "c")
   end
 end
 
-function showWinstonPlot(m::DataViewerWidget, data, xLabel::String, yLabel::String)
-  p = Winston.FramedPlot(xlabel=xLabel, ylabel=yLabel)
-  Winston.add(p, Winston.Curve(1:length(data), data, color="blue", linewidth=4))
-  display(m.grid3D[1,2], p)
+function showProfile(m::DataViewerWidget, data, xLabel::String, yLabel::String)
+  f, ax, l = CairoMakie.lines(1:length(data), data, 
+        figure = (; resolution = (1000, 800), fontsize = 12),
+        axis = (; title = "Profile"),
+        color = CairoMakie.RGBf(colors[1]...))
+  
+  CairoMakie.autolimits!(ax)
+  if length(data) > 1
+    CairoMakie.xlims!(ax, 1, length(data))
+  end
+  ax.xlabel = xLabel
+  ax.ylabel = yLabel
+  drawonto(m.grid3D[1,2], f)
 end
 

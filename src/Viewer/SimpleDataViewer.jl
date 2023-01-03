@@ -51,14 +51,6 @@ function showData(m::SimpleDataViewerWidget, cdata_zy, cdata_zx, cdata_xy, drawS
     simpleDrawImageCairo(m.grid3D[2,2], cdata_xy, drawSectionalLines,
                    slices[2], slices[1], false, false)
 
-    # p = Winston.FramedPlot(
-    #                #title="title!",
-    #                xlabel="c",
-    #                ylabel="xyzt")
-    #
-    # Winston.add(p, Winston.Curve(1:length(m.currentProfile), m.currentProfile, color="blue", linewidth=4))
-    #
-    # display(m.grid3D[1,2], p)
     Gtk4.G_.set_current_page(m["nb2D3D"], 0)
   catch ex
     @warn "Exception" ex stacktrace(catch_backtrace())

@@ -237,11 +237,21 @@ function updateSF(m::SFViewerWidget)
     snrCompressed = vec(m.SNR[stepsFr,recChan,period])
   end
 
-  p = Winston.semilogy(m.frequencies[stepsFr], snrCompressed,"b-",linewidth=5)
-  Winston.plot(p,[m.frequencies[freq]],[m.SNR[freq,recChan,period]],"rx",linewidth=5,ylog=true)
-  Winston.xlabel("f / kHz")
-  Winston.title("SNR")
-  display(m.grid[1,3] ,p)
+  fFD, axFD, lFD1 = CairoMakie.lines(m.frequencies[stepsFr], snrCompressed, 
+                          figure = (; resolution = (1000, 800), fontsize = 12),
+                          axis = (; title = "SNR", yscale=log10),
+                          color = CairoMakie.RGBf(colors[1]...))
+  CairoMakie.scatter!(axFD, [m.frequencies[freq]], [m.SNR[freq,recChan,period]],
+                      markersize=9, color=:red, marker=:xcross)
+
+  CairoMakie.autolimits!(axFD)
+  if m.frequencies[stepsFr[end]] > m.frequencies[stepsFr[1]]
+    CairoMakie.xlims!(axFD, m.frequencies[stepsFr[1]], m.frequencies[stepsFr[end]])
+  end
+  axFD.xlabel = "f / kHz"
+
+  drawonto(m.grid[1,3], fFD)
+
   show(m)
 
   c = reshape(sfData, 1, size(sfData,1), size(sfData,2), size(sfData,3), 1)
