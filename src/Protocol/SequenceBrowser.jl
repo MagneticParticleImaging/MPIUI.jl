@@ -89,16 +89,21 @@ function SequenceSelectionDialog(scanner::MPIScanner, params::Dict)
       @idle_add_guarded begin
         s = Sequence(scanner, seq)
 
-        p = Winston.FramedPlot(xlabel="time / s", ylabel="field / ???")
+        f = CairoMakie.Figure()
+        ax = CairoMakie.Axis(f[1, 1],
+            xlabel = "time / s",
+            ylabel = "field / a.u."
+        )
         
         t = (1:acqNumPatches(s)) .* (acqNumPeriodsPerFrame(s) * ustrip(dfCycle(s)) / acqNumPatches(s)) 
 
         channels = acyclicElectricalTxChannels(s)
-        colors = ["blue","green","red", "magenta", "cyan", "black", "gray"]
         for i=1:length(channels)
-          Winston.add(p, Winston.Curve(t, ustrip.(MPIMeasurements.values(channels[i])), color=colors[i], linewidth=4))
+          CairoMakie.lines!(ax, t, ustrip.(MPIMeasurements.values(channels[i])), 
+                        color = CairoMakie.RGBf(colors[i]...)) 
         end
-        display(canvas, p)
+        CairoMakie.autolimits!(ax)
+        @idle_add_guarded drawonto(canvas, f)
 
       end
 
