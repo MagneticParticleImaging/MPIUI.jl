@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="4.0"/>
-  <requires lib="gtk" version="4.0"/>
   <object class="GtkAdjustment" id="adjDFStrength">
     <property name="upper">30</property>
     <property name="step_increment">1</property>
@@ -130,27 +129,27 @@
   <object class="GtkTextBuffer" id="textBuffSeFo"/>
   <object class="GtkTextBuffer" id="txtBuffProtocolDescription"/>
   <object class="GtkBox" id="boxProtocol">
-    <property name="visible">0</property>
+    <property name="visible">True</property>
     <property name="margin_top">4</property>
     <property name="margin_bottom">4</property>
     <property name="spacing">4</property>
     <child>
       <object class="GtkBox" id="boxProtocolTabVisu">
-        <property name="visible">0</property>
+        <property name="visible">True</property>
         <property name="hexpand">1</property>
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkBox" id="box15">
-            <property name="visible">0</property>
+            <property name="visible">True</property>
             <child>
               <object class="GtkGrid">
-                <property name="visible">0</property>
+                <property name="visible">True</property>
                 <property name="width_request">180</property>
                 <property name="valign">center</property>
                 <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkLabel" id="lblProtocolName">
-                    <property name="visible">0</property>
+                    <property name="visible">True</property>
                     <property name="label" translatable="1">Default Protocol</property>
                     <layout>
                       <property name="column">1</property>
@@ -160,7 +159,7 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="btnPickProtocol">
-                    <property name="visible">0</property>
+                    <property name="visible">True</property>
                     <property name="focusable">1</property>
                     <property name="receives_default">1</property>
                     <layout>
@@ -173,11 +172,11 @@
             </child>
             <child>
               <object class="GtkBox" id="tbRec">
-                <property name="visible">0</property>
+                <property name="visible">True</property>
                 <property name="css-classes">toolbar</property>
                 <child>
                   <object class="GtkButton" id="tbInit">
-                    <property name="visible">0</property>
+                    <property name="visible">True</property>
                     <property name="tooltip_text" translatable="1">Initializes the current protocol with the current paramters</property>
                     <property name="label" translatable="1">Init</property>
                     <property name="use_underline">1</property>
@@ -185,7 +184,7 @@
                 </child>
                 <child>
                   <object class="GtkToggleButton" id="tbRun">
-                    <property name="visible">0</property>
+                    <property name="visible">True</property>
                     <property name="sensitive">0</property>
                     <property name="tooltip_text" translatable="1">Starts the current protocol</property>
                     <property name="label" translatable="1">Execute</property>
@@ -194,7 +193,7 @@
                 </child>
                 <child>
                   <object class="GtkToggleButton" id="tbPause">
-                    <property name="visible">0</property>
+                    <property name="visible">True</property>
                     <property name="sensitive">0</property>
                     <property name="tooltip_text" translatable="1">Attempts to pause the protocol</property>
                     <property name="label" translatable="1">Pause</property>
@@ -203,7 +202,7 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="tbCancel">
-                    <property name="visible">0</property>
+                    <property name="visible">True</property>
                     <property name="sensitive">0</property>
                     <property name="tooltip_text" translatable="1">Attempts to cancel the protocol</property>
                     <property name="label" translatable="1">Cancel</property>
@@ -214,18 +213,18 @@
             </child>
             <child>
               <object class="GtkBox">
-                <property name="visible">0</property>
+                <property name="visible">True</property>
                 <property name="hexpand">1</property>
                 <property name="orientation">vertical</property>
                 <child>
                   <object class="GtkLabel" id="lbInfo">
-                    <property name="visible">0</property>
+                    <property name="visible">True</property>
                     <property name="label" translatable="1">Est. Runtime</property>
                   </object>
                 </child>
                 <child>
                   <object class="GtkLabel" id="lblRuntime">
-                    <property name="visible">0</property>
+                    <property name="visible">True</property>
                     <property name="label" translatable="1">N/A</property>
                   </object>
                 </child>
@@ -233,7 +232,7 @@
             </child>
             <child>
               <object class="GtkProgressBar" id="pbProtocol">
-                <property name="visible">0</property>
+                <property name="visible">True</property>
                 <property name="text" translatable="1">x / y Steps</property>
                 <property name="show_text">1</property>
                 <property name="ellipsize">end</property>
@@ -260,17 +259,17 @@
     </child>
     <child>
       <object class="GtkScrolledWindow" id="wndProtoclParams">
-        <property name="visible">0</property>
+        <property name="visible">True</property>
         <property name="hexpand">1</property>
         <property name="width_request">250</property>
         <property name="focusable">1</property>
         <!-- <property name="shadow_type">in</property> -->
         <property name="child">
           <object class="GtkViewport">
-            <property name="visible">0</property>
+            <property name="visible">True</property>
             <property name="child">
               <object class="GtkBox">
-                <property name="visible">0</property>
+                <property name="visible">True</property>
                 <property name="margin-start">4</property>
                 <property name="margin-end">4</property>
                 <property name="orientation">vertical</property>
@@ -334,7 +333,7 @@
                     <property name="spacing">4</property>
                     <child>
                       <object class="GtkLabel">
-                        <property name="visible">0</property>
+                        <property name="visible">True</property>
                         <property name="label" translatable="1">Protocol</property>
                         <attributes>
                           <attribute name="weight" value="heavy"></attribute>
@@ -344,14 +343,14 @@
                     </child>
                     <child>
                       <object class="GtkExpander">
-                        <property name="visible">0</property>
+                        <property name="visible">True</property>
                         <property name="focusable">1</property>
                         <child>
                           <object class="GtkGrid">
-                            <property name="visible">0</property>
+                            <property name="visible">True</property>
                             <child>
                               <object class="GtkLabel">
-                                <property name="visible">0</property>
+                                <property name="visible">True</property>
                                 <property name="label" translatable="1">Type</property>
                                 <layout>
                                   <property name="column">0</property>
@@ -361,7 +360,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel" id="lblProtocolType">
-                                <property name="visible">0</property>
+                                <property name="visible">True</property>
                                 <layout>
                                   <property name="column">1</property>
                                   <property name="row">1</property>
@@ -370,7 +369,7 @@
                             </child>
                             <child>
                               <object class="GtkTextView" id="txtProtocolDescription">
-                                <property name="visible">0</property>
+                                <property name="visible">True</property>
                                 <property name="focusable">1</property>
                                 <property name="hexpand">1</property>
                                 <property name="wrap_mode">word</property>
@@ -384,7 +383,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel">
-                                <property name="visible">0</property>
+                                <property name="visible">True</property>
                                 <property name="label" translatable="1">Scanner</property>
                                 <layout>
                                   <property name="column">0</property>
@@ -394,7 +393,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel" id="lblScannerName">
-                                <property name="visible">0</property>
+                                <property name="visible">True</property>
                                 <layout>
                                   <property name="column">1</property>
                                   <property name="row">0</property>
@@ -405,7 +404,7 @@
                         </child>
                         <child type="label">
                           <object class="GtkLabel">
-                            <property name="visible">0</property>
+                            <property name="visible">True</property>
                             <property name="label" translatable="1">Description</property>
                             <attributes>
                               <attribute name="weight" value="bold"></attribute>
@@ -416,14 +415,14 @@
                     </child>
                     <child>
                       <object class="GtkExpander">
-                        <property name="visible">0</property>
+                        <property name="visible">True</property>
                         <property name="focusable">1</property>
                         <property name="hexpand">1</property>
                         <property name="vexpand">0</property>
                         <property name="expanded">1</property>
                         <child>
                           <object class="GtkBox" id="boxProtocolParameter">
-                            <property name="visible">0</property>
+                            <property name="visible">True</property>
                             <property name="hexpand">1</property>
                             <property name="vexpand">1</property>
                             <property name="orientation">vertical</property>
@@ -491,7 +490,7 @@
                         </child>
                         <child type="label">
                           <object class="GtkLabel">
-                            <property name="visible">0</property>
+                            <property name="visible">True</property>
                             <property name="label" translatable="1">Parameter</property>
                             <attributes>
                               <attribute name="weight" value="bold"></attribute>
@@ -502,7 +501,7 @@
                     </child>
                     <child>
                       <object class="GtkButton" id="btnSaveProtocol">
-                        <property name="visible">0</property>
+                        <property name="visible">True</property>
                         <property name="label" translatable="1">Save Protocol</property>
                         <property name="focusable">1</property>
                         <property name="receives_default">1</property>

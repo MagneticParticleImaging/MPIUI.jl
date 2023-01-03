@@ -254,9 +254,9 @@ function updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
     enable!(paramExpander, i == 1)
   end
   pw.dataHandler = handlers
-  showall(paramBox)
-  showall(storageBox)
-  showall(nb)
+  show(paramBox)
+  show(storageBox)
+  show(nb)
 end
 
 function updateProtocolParameter(pw::ProtocolWidget, protocol::Protocol)
@@ -266,7 +266,7 @@ function updateProtocolParameter(pw::ProtocolWidget, protocol::Protocol)
   set_gtk_property!(pw["txtBuffProtocolDescription"], :text, MPIMeasurements.description(protocol))
   set_gtk_property!(pw["lblProtocolName"], :label, name(protocol))
   # Clear old parameters
-  empty!(pw["boxProtocolParameter", BoxLeaf])
+  empty!(pw["boxProtocolParameter"])
 
   regular = [field for field in fieldnames(typeof(params)) if parameterType(field, nothing) isa RegularParameterType]
   special = setdiff(fieldnames(typeof(params)), regular)
@@ -286,7 +286,7 @@ function updateProtocolParameter(pw::ProtocolWidget, protocol::Protocol)
     end
   end
   set_gtk_property!(pw["btnSaveProtocol"], :sensitive, false)
-  showall(pw["boxProtocolParameter"])
+  show(pw["boxProtocolParameter"])
 end
 
 function addRegularProtocolParameter(pw::ProtocolWidget, params::ProtocolParams, fields::Vector{Symbol})

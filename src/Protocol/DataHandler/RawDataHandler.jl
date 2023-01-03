@@ -14,7 +14,7 @@ end
 function RawDataHandler(scanner=nothing)
   data = RawDataWidget()
   # Init Display Widget
-  updateData(data, ones(Float32,10,1,1,1), 1.0)
+  updateData(data, randn(Float32,10,1,1,1), 1.0)
   return RawDataHandler(data, StorageParameter(scanner), true, true, 0, zeros(Float32,0,0,0,0), "")
 end
 

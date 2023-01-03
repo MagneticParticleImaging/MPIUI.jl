@@ -1164,6 +1164,7 @@ function initProtocolTab(m::MPILab, offlineMode=false)
 
     boxProtoTab = m["boxProtocolTab"]
     push!(boxProtoTab, m.protocolWidget)
+    boxProtoTab.vexpand = boxProtoTab.hexpand = true
 ###    set_gtk_property!(boxProtoTab, :expand, m.protocolWidget, true)
     show(boxProtoTab)
   end
