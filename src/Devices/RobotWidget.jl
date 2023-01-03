@@ -174,11 +174,15 @@ function displayNamedPosition(m::RobotWidget, pos)
   end
 end
 function displayNamedPosition(m::RobotWidget)
-  m.namedPos = Gtk4.bytestring(G_.get_active_text(m["cmbNamedPos"]))
-  pos = m.coordTransferfunction(m.robot, MPIMeasurements.namedPosition(m.robot, m.namedPos))
-  @show pos
-  if length(pos) == 3
-    displayNamedPosition(m, pos)
+  #m.namedPos = Gtk4.bytestring(Gtk4.active_text(m["cmbNamedPos"]))
+  m.namedPos = Gtk4.active_text(m["cmbNamedPos"])
+
+  if m.namedPos != nothing
+    pos = m.coordTransferfunction(m.robot, MPIMeasurements.namedPosition(m.robot, m.namedPos))
+    @show pos
+    if length(pos) == 3
+      displayNamedPosition(m, pos)
+    end
   end
 end
 
@@ -243,8 +247,9 @@ end
   
 function robotMove(m::RobotWidget)
   if !isReferenced(m.robot)
-      info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
-  return
+    d = info_dialog(()->nothing, "Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
+    d.modal = true
+    return
   end
 
   pos = movePosition(m)
@@ -299,16 +304,19 @@ function referenceDrive(m::RobotWidget)
             freely without damaging anything? Press \"Ok\" if you want to continue"""
       ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"]) do answer2
         if answer2
+          @info "Enable Robot"
           enable(robot)
+          @info "Do reference drive"
           doReferenceDrive(robot)
           if in("park", keys(namedPositions(m.robot)))
             moveNamedPosition(m, "park")
           end
+          @info "Disable Robot"
           disable(robot)
-          displayCurrentPosition(m)
           message = """The robot is now referenced.
               You can mount your sample. Press \"Close\" to proceed. """
           info_dialog(message, mpilab[]["mainWindow"]) do 
+            displayCurrentPosition(m)
             enableRobotMoveButtons(m, true)            
           end
         end
