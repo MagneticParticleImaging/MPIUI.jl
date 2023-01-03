@@ -15,12 +15,14 @@ end
 
 function ProtocolSelectionDialog(scanner::MPIScanner, params::Dict)
 
-  dialog = Dialog("Select Protocol", mpilab[]["mainWindow"], Gtk4.DialogFlags_MODAL,
-                        Dict("gtk-cancel" => Gtk4.ResponseType_CANCEL,
-                             "gtk-ok"=> Gtk4.ResponseType_ACCEPT) )
+  dialog = GtkDialog("Select Protocol", 
+                        Dict("_Cancel" => Gtk4.ResponseType_CANCEL,
+                             "_Ok"=> Gtk4.ResponseType_ACCEPT),
+                             Gtk4.DialogFlags_MODAL, mpilab[]["mainWindow"] )
 
-  resize!(dialog, 1024, 600)
-  box = G_.content_area(dialog)
+
+  Gtk4.default_size(dialog, 1024, 600)
+  box = G_.get_content_area(dialog)
 
   store = GtkListStore(String, String, String, Bool)
 
@@ -47,16 +49,15 @@ function ProtocolSelectionDialog(scanner::MPIScanner, params::Dict)
   tmFiltered = GtkTreeModelFilter(store)
   G_.set_visible_column(tmFiltered,3)
   tmSorted = GtkTreeModelSort(tmFiltered)
-  G_.set_model(tv, tmSorted)
+  G_.set_model(tv, GtkTreeModel(tmSorted))
 
-  G_.set_sort_column_id(GtkTreeSortable(tmSorted),0,GtkSortType.DESCENDING)
+  G_.set_sort_column_id(GtkTreeSortable(tmSorted),0,Gtk4.SortType_DESCENDING)
   selection = G_.get_selection(tv)
 
   sw = GtkScrolledWindow()
-  push!(sw, tv)
+  G_.set_child(sw, tv)
   push!(box, sw)
-  ### set_gtk_property!(box, :expand, sw, true)
-  @info "Set to box"
+  sw.vexpand = true
 
   protocols = getProtocolList(scanner)
   @info "Got $(length(protocols)) protocols"

@@ -152,14 +152,17 @@ function initCallbacks(pw::ProtocolWidget)
   signal_connect(pw["btnPickProtocol"], "clicked") do w
     @info "clicked picked protocol button"
     dlg = ProtocolSelectionDialog(pw.scanner, Dict())
-    ### ret = run(dlg)
-    if ret == Gtk4.ResponseType_ACCEPT
-      if hasselection(dlg.selection)
-        protocol = getSelectedProtocol(dlg)
-        updateProtocol(pw, protocol)
-        end
+    function on_response(dlg, response_id)
+      if response_id == Integer(Gtk4.ResponseType_ACCEPT)   
+        if hasselection(dlg.selection)
+          protocol = getSelectedProtocol(dlg)
+          updateProtocol(pw, protocol)
+          end
+      end
+      destroy(dlg)
     end
-    destroy(dlg)
+    signal_connect(on_response, dlg, "response")
+    @idle_add_guarded show(dlg) 
   end
 
   signal_connect(pw["btnSaveProtocol"], "clicked") do w
