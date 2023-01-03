@@ -71,7 +71,7 @@ function SurveillanceWidget(su::SurveillanceUnit)
     Gtk4.GLib.gobject_move_ref(m, mainBox)
   
     push!(m, m.canvas)
-    set_gtk_property!(m,:expand, m.canvas, true)
+    ### set_gtk_property!(m,:expand, m.canvas, true)
   
     show(m)
   

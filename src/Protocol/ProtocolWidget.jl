@@ -241,7 +241,7 @@ function updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
     storage = getStorageWidget(handler)
     if !isnothing(storage)
       storageExpander = GtkExpander(getStorageTitle(handler))
-      set_gtk_property!(storageExpander, :expand, true)
+      set_gtk_property!(storageExpander, :expanded, true)
 ###      push!(storageExpander, storage)
       G_.set_child(storageExpander, storage)
       push!(storageBox, storageExpander)
@@ -250,7 +250,7 @@ function updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
     push!(paramBox, paramExpander)
     show(paramExpander)
     show(display)
-    set_gtk_property!(paramExpander, :expand, i == 1) # This does not expand
+    set_gtk_property!(paramExpander, :expanded, i == 1) # This does not expand
     enable!(paramExpander, i == 1)
   end
   pw.dataHandler = handlers

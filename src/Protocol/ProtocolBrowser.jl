@@ -55,7 +55,7 @@ function ProtocolSelectionDialog(scanner::MPIScanner, params::Dict)
   sw = GtkScrolledWindow()
   push!(sw, tv)
   push!(box, sw)
-  set_gtk_property!(box, :expand, sw, true)
+  ### set_gtk_property!(box, :expand, sw, true)
   @info "Set to box"
 
   protocols = getProtocolList(scanner)

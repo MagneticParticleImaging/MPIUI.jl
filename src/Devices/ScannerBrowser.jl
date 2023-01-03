@@ -120,7 +120,7 @@ end
 
 function showDeviceWidget(m::ScannerBrowser, widget)
   push!(m.deviceBox, widget)
-  set_gtk_property!(m.deviceBox, :expand, widget, true)
+  ### set_gtk_property!(m.deviceBox, :expand, widget, true)
   show(widget)
 end
 function getDeviceWidget(m::ScannerBrowser, dev::Device, widgetType) #::Type{<:Gtk4.GtkObject})

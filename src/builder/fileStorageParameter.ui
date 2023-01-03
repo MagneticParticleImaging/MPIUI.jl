@@ -1,52 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.22.2 -->
 <interface>
-  <requires lib="gtk+" version="3.20"/>
+  <requires lib="gtk" version="4.0"/>
   <object class="GtkImage" id="image1">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
     <property name="stock">gtk-save-as</property>
   </object>
   <object class="GtkBox" id="boxParams">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
     <property name="spacing">5</property>
     <child>
       <object class="GtkLabel">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Filename</property>
+        <property name="label" translatable="1">Filename</property>
       </object>
-      <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">0</property>
-      </packing>
     </child>
     <child>
       <object class="GtkEntry" id="entFilename">
-        <property name="visible">True</property>
-        <property name="can_focus">True</property>
+        <property name="hexpand">1</property>
+        <property name="focusable">1</property>
       </object>
-      <packing>
-        <property name="expand">True</property>
-        <property name="fill">True</property>
-        <property name="position">1</property>
-      </packing>
     </child>
     <child>
       <object class="GtkButton" id="btnSaveAs">
-        <property name="visible">True</property>
-        <property name="can_focus">True</property>
-        <property name="receives_default">True</property>
+        <property name="focusable">1</property>
+        <property name="receives_default">1</property>
         <property name="image">image1</property>
         <property name="always_show_image">True</property>
       </object>
-      <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">2</property>
-      </packing>
     </child>
   </object>
 </interface>

@@ -414,7 +414,7 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
 
     grid = GtkGrid()
     push!(box, grid)
-    set_gtk_property!(box, :expand, grid, true)
+    ### set_gtk_property!(box, :expand, grid, true)
     set_gtk_property!(grid, :row_spacing, 5)
     set_gtk_property!(grid, :column_spacing, 5)
   

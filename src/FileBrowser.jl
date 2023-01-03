@@ -46,7 +46,7 @@ function FileBrowser()
   push!(box,combo)
   push!(box,toolbar)
   push!(box,sw)
-  set_gtk_property!(box,:expand,sw,true)
+  ### set_gtk_property!(box,:expand,sw,true)
 
   recentFolder = String[]
 

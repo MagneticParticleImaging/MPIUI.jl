@@ -59,7 +59,7 @@ mutable struct GenericParameter{T} <: Gtk4.GtkGrid
     grid = GtkGrid()
     entry = GenericEntry{T}(value)
     label = GtkLabel(label)
-    set_gtk_property!(label, :xalign, 0.0)
+    ### set_gtk_property!(label, :xalign, 0.0)
     addTooltip(label, tooltip)
     grid[1, 1] = label
     grid[2, 1] = entry
@@ -104,7 +104,7 @@ mutable struct UnitfulParameter <: Gtk4.GtkGrid
       
     unitfulGtkEntry = UnitfulGtkEntry(value)
     label = GtkLabel(label)
-    set_gtk_property!(label, :xalign, 0.0)
+    ### set_gtk_property!(label, :xalign, 0.0)
     addTooltip(label, tooltip)
     grid[1, 1] = label
     grid[2, 1] = unitfulGtkEntry
@@ -146,7 +146,7 @@ mutable struct BoolParameter <: Gtk4.GtkCheckButton
     check = GtkCheckButton()
     set_gtk_property!(check, :label, label)
     set_gtk_property!(check, :active, value)
-    set_gtk_property!(check, :xalign, 0.5)
+    ### set_gtk_property!(check, :xalign, 0.5)
     addTooltip(check, tooltip)
     cb = new(check.handle, field)
     return Gtk4.GLib.gobject_move_ref(cb, check)

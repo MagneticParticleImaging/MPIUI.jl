@@ -25,12 +25,12 @@ mutable struct PeriodicChannelParameter <: Gtk4.GtkExpander
   channel::PeriodicElectricalChannel
   box::GtkBox
   function PeriodicChannelParameter(idx::Int64, ch::PeriodicElectricalChannel, waveforms::Vector{Waveform})
-    expander = GtkExpander(id(ch), expand=true)
+    expander = GtkExpander(id(ch), expanded=true)
     # TODO offset
     box = GtkBox(:v)
 ###    push!(expander, box)
     G_.set_child(expander, box)
-    grid = GtkGrid(expand=true)
+    grid = GtkGrid()
     grid[1:2, 1] = GtkLabel("Tx Channel Index", xalign = 0.0)
     grid[2, 1] = GtkLabel(string(idx))
     grid[1:2, 3] = GtkLabel("Components", xalign = 0.5, hexpand=true)

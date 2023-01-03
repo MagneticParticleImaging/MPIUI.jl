@@ -24,7 +24,7 @@ function TemperatureControllerWidget(tempCont::TemperatureController)
 
   for (i,c) in enumerate(m.canvases)
     push!(m, c)
-    set_gtk_property!(m, :expand, c, true)
+    ### set_gtk_property!(m, :expand, c, true)
   end
 
 

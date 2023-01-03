@@ -60,11 +60,11 @@ function SequenceSelectionDialog(scanner::MPIScanner, params::Dict)
   sw = GtkScrolledWindow()
   push!(sw, tv)
   push!(box, sw)
-  set_gtk_property!(box, :expand, sw, true)
+  ### set_gtk_property!(box, :expand, sw, true)
 
   canvas = GtkCanvas()
   push!(box,canvas)
-  set_gtk_property!(box,:expand, canvas, true)
+  ### set_gtk_property!(box,:expand, canvas, true)
 
   sequences = getSequenceList(scanner)
 
