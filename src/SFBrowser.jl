@@ -397,48 +397,39 @@ function getSelectedSF(dlg::SFSelectionDialog)
 end
 
 
-
-
-### FIXME !!!!!!!!!!!!!!!!!!!!!!!! ###
-function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
-  try
-    f = MPIFile(filename)
-
-    dialog = GtkDialog("Convert System Function",  
-                      Dict("_Cancel" => Gtk4.ResponseType_CANCEL,
-                      "_Ok"=> Gtk4.ResponseType_ACCEPT),
-                      Gtk4.DialogFlags_MODAL,
-                      mpilab[]["mainWindow"], )
-
-    Gtk4.default_size(dialog, 1024, 1024)
-
-    box = G_.get_content_area(dialog)
-
-    grid = GtkGrid()
-    push!(box, grid)
-    ### set_gtk_property!(box, :expand, grid, true)
-    set_gtk_property!(grid, :row_spacing, 5)
-    set_gtk_property!(grid, :column_spacing, 5)
+@guarded function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
   
-    grid[1,1] = GtkLabel("Num Period Averages")
-    grid[2,1] = SpinButton(1:acqNumPeriodsPerFrame(f))
-    adjNumPeriodAverages = GtkAdjustment(grid[2,1])
+  f = MPIFile(filename)
 
-    grid[1,2] = GtkLabel("Num Period Grouping")
-    grid[2,2] = SpinButton(1:acqNumPeriodsPerFrame(f))
-    adjNumPeriodGrouping = GtkAdjustment(grid[2,2])
+  dialog = GtkDialog("Convert System Function",  
+                    Dict("_Cancel" => Gtk4.ResponseType_CANCEL,
+                    "_Ok"=> Gtk4.ResponseType_ACCEPT),
+                    Gtk4.DialogFlags_MODAL,
+                    mpilab[]["mainWindow"], )
 
-    grid[1,3] = Label("Apply Calib Postprocessing")
-    grid[2,3] = CheckButton(active=true)
+  box = G_.get_content_area(dialog)
 
-    grid[1,4] = Label("Fix Distortions")
-    grid[2,4] = CheckButton(active=false)
+  grid = GtkGrid()
+  push!(box, grid)
+  set_gtk_property!(grid, :row_spacing, 5)
+  set_gtk_property!(grid, :column_spacing, 5)
 
-    show(box)
-    ret = run(dialog)
+  grid[1,1] = GtkLabel("Num Period Averages")
+  grid[2,1] = GtkSpinButton(1:acqNumPeriodsPerFrame(f))
+  adjNumPeriodAverages = GtkAdjustment(grid[2,1])
 
+  grid[1,2] = GtkLabel("Num Period Grouping")
+  grid[2,2] = GtkSpinButton(1:acqNumPeriodsPerFrame(f))
+  adjNumPeriodGrouping = GtkAdjustment(grid[2,2])
 
-    if ret == Gtk4.ResponseType_ACCEPT
+  grid[1,3] = GtkLabel("Apply Calib Postprocessing")
+  grid[2,3] = GtkCheckButton(active=true)
+
+  grid[1,4] = GtkLabel("Fix Distortions")
+  grid[2,4] = GtkCheckButton(active=false)
+
+  function on_response(dialog, response_id)
+    if response_id == Integer(Gtk4.ResponseType_ACCEPT)   
       numPeriodAverages = get_gtk_property(adjNumPeriodAverages,:value,Int64)
       numPeriodGrouping = get_gtk_property(adjNumPeriodGrouping,:value,Int64)
       applyCalibPostprocessing = get_gtk_property(grid[2,3],:active,Bool)
@@ -454,14 +445,14 @@ function conversionDialog(m::SFBrowserWidget, filename::AbstractString)
                 experimentNumber = calibNum, fixDistortions=fixDistortions,
                 numPeriodAverages = numPeriodAverages, numPeriodGrouping = numPeriodGrouping)
 
-                
-
       updateData!(m, m.datasetStore)
     end
     destroy(dialog)
-  catch ex
-    showError(ex)
   end
+
+  signal_connect(on_response, dialog, "response")
+  @idle_add_guarded show(dialog) 
+  return
 end
 
 
