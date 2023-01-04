@@ -3,67 +3,63 @@
 # link buttons to corresponding functions
 function initExportCallbacks(m::MagneticFieldViewerWidget)
   # export shown plots as png
-  signal_connect(m["btnExportImages"], "clicked") do widget
-    try
-      exportCanvas(m)
-    catch e
-      @error e
-      showError(e)
-    end
+  @guarded signal_connect(m["btnExportImages"], "clicked") do widget
+    exportCanvas(m)
   end
   # CSV: Export Coeffs
-  signal_connect(m["btnExportCoeffsCSV"], "clicked") do widget
-    try
-      saveCoeffsAsCSV(m)
-    catch e
-      @error e
-      showError(e)
-    end
+  @guarded signal_connect(m["btnExportCoeffsCSV"], "clicked") do widget
+    saveCoeffsAsCSV(m)
   end
   # CSV: Export Field
-  signal_connect(m["btnExportFieldCSV"], "clicked") do widget
-    try
-      saveFieldAsCSV(m)
-    catch e
-      @error e
-      showError(e)
-    end
+  @guarded signal_connect(m["btnExportFieldCSV"], "clicked") do widget
+    saveFieldAsCSV(m)
   end
-end
-
-# choose destination of files
-function getFilename(m::MagneticFieldViewerWidget,filetype::String="png") 
-  filter = Gtk.GtkFileFilter(pattern=String("*."*filetype), mimetype=String("image/"*filetype))
-  filenameImageData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
-  if filenameImageData != ""
-    @info "Export Image as" filenameImageData
-    return filenameImageData
-  end 
 end
 
 # Export plots as pngs
 function exportCanvas(m::MagneticFieldViewerWidget)
   # choose destination
-  filename = getFilename(m)
-  # get only filename
-  file, ext = splitext(filename)
-  # Field plots
-  write_to_png(getgc(m.fv.grid[1,1]).surface,file*"_xz.png")
-  write_to_png(getgc(m.fv.grid[2,1]).surface,file*"_yz.png")
-  write_to_png(getgc(m.fv.grid[2,2]).surface,file*"_xy.png")
-  # Coefficients
-  write_to_png(getgc(m.grid[1,3]).surface,file*"_coeffs.png")
+  filter = Gtk4.GtkFileFilter(pattern=String("*.png"), mimetype=String("image/png"))
+  diag = save_dialog("Select Export File", nothing, (filter, )) do filename
+    if filename != ""
+      @info "Export Image as" filename
+
+      # get only filename
+      file, ext = splitext(filename)
+      # Field plots
+      write_to_png(getgc(m.fv.grid[1,1]).surface,file*"_xz.png")
+      write_to_png(getgc(m.fv.grid[2,1]).surface,file*"_yz.png")
+      write_to_png(getgc(m.fv.grid[2,2]).surface,file*"_xy.png")
+      # Coefficients
+      write_to_png(getgc(m.grid[1,3]).surface,file*"_coeffs.png")
+
+      return filename
+    end 
+  end
+  diag.modal = true
 end
 
 #################
 # Export as csv #
 #################
 # export coefficients
-function saveCoeffsAsCSV(m::MagneticFieldViewerWidget, filename=nothing)
-  if filename == nothing
-    # choose destination
-    filename = getFilename(m,"csv")
+
+function saveCoeffsAsCSV(m::MagneticFieldViewerWidget)
+  # choose destination
+  filter = Gtk4.GtkFileFilter(pattern=String("*.csv"), mimetype=String("image/csv"))
+  diag = save_dialog("Select Export File", nothing, (filter, )) do filename
+    if filename != ""
+      @info "Export Image as" filename
+
+      saveCoeffsAsCSV(m, filename)
+
+      return filename
+    end 
   end
+  diag.modal = true
+end
+
+function saveCoeffsAsCSV(m::MagneticFieldViewerWidget, filename)
   # get only filename
   file, ext = splitext(filename)
 
@@ -86,11 +82,22 @@ function saveCoeffsAsCSV(m::MagneticFieldViewerWidget, filename=nothing)
 end
 
 # export magnetic field
-function saveFieldAsCSV(m::MagneticFieldViewerWidget, filename=nothing)
-  if filename == nothing
-    # choose destination
-    filename = getFilename(m,"csv")
+function saveFieldAsCSV(m::MagneticFieldViewerWidget)
+  # choose destination
+  filter = Gtk4.GtkFileFilter(pattern=String("*.csv"), mimetype=String("image/csv"))
+  diag = save_dialog("Select Export File", nothing, (filter, )) do filename
+    if filename != ""
+      @info "Export Image as" filename
+
+      saveFieldAsCSV(m, filename)
+
+      return filename
+    end 
   end
+  diag.modal = true
+end
+
+function saveFieldAsCSV(m::MagneticFieldViewerWidget, filename)
   # get only filename
   file, ext = splitext(filename)
  

@@ -3,18 +3,18 @@ export MagneticFieldViewer
 # load new type MagneticFieldCoefficients with additional informations
 include("MagneticFieldUtils.jl")
 
-mutable struct FieldViewerWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct FieldViewerWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   coloring::ColoringParams
   updating::Bool
   field # data to be plotted
   centerFFP::Bool # center of plot (FFP (true) or center of measured sphere (false))
-  grid::GtkGridLeaf
+  grid::Gtk4.GtkGridLeaf
 end
 
-mutable struct MagneticFieldViewerWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct MagneticFieldViewerWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   fv::FieldViewerWidget
   updating::Bool
@@ -23,15 +23,15 @@ mutable struct MagneticFieldViewerWidget <: Gtk.GtkBox
   coeffsPlot::Array{SphericalHarmonicCoefficients}
   field # Array containing Functions of the field
   patch::Int
-  grid::GtkGridLeaf
-  cmapsTree::GtkTreeModelFilter
+  grid::Gtk4.GtkGridLeaf
+  cmapsTree::Gtk4.GtkTreeModelFilter
 end
 
-getindex(m::MagneticFieldViewerWidget, w::AbstractString) = G_.object(m.builder, w)
-getindex(m::FieldViewerWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::MagneticFieldViewerWidget, w::AbstractString) = G_.get_object(m.builder, w)
+getindex(m::FieldViewerWidget, w::AbstractString) = G_.get_object(m.builder, w)
 
 mutable struct MagneticFieldViewer
-  w::Window
+  w::Gtk4.GtkWindowLeaf
   mf::MagneticFieldViewerWidget
 end
 
@@ -41,9 +41,9 @@ include("Export.jl")
 # Viewer can be started with MagneticFieldCoefficients or with a path to a file with some coefficients
 function MagneticFieldViewer(filename::Union{AbstractString,MagneticFieldCoefficients})
   mfViewerWidget = MagneticFieldViewerWidget()
-  w = Window("Magnetic Field Viewer: $(filename)",800,600)
+  w = GtkWindow("Magnetic Field Viewer: $(filename)",800,600)
   push!(w,mfViewerWidget)
-  showall(w)
+  show(w)
   updateData!(mfViewerWidget, filename)
   return MagneticFieldViewer(w, mfViewerWidget)
 end
@@ -51,23 +51,23 @@ end
 function MagneticFieldViewerWidget()
   uifile = joinpath(@__DIR__,"..","..","builder","magneticFieldViewer.ui")
 
-  b = Builder(filename=uifile)
-  mainBox = G_.object(b, "boxMagneticFieldViewer")
+  b = GtkBuilder(filename=uifile)
+  mainBox = G_.get_object(b, "boxMagneticFieldViewer")
 
   m = MagneticFieldViewerWidget(mainBox.handle, b, FieldViewerWidget(),
-                     false, MagneticFieldCoefficients(0), MagneticFieldCoefficients(0), [SphericalHarmonicCoefficients(0)],
-		     nothing, 1,
-                     Grid(), GtkTreeModelFilter(GtkListStore(Bool)))
-  Gtk.gobject_move_ref(m, mainBox)
+                     false, MagneticFieldCoefficients(0), MagneticFieldCoefficients(0), 
+                     [SphericalHarmonicCoefficients(0)], nothing, 1,
+                     GtkGrid(), GtkTreeModelFilter(GtkListStore(Bool)))
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   # build up plots
   m.grid = m["gridMagneticFieldViewer"]
   m.grid[1,1:2] = m.fv
-  m.grid[1,3] = Canvas()
+  m.grid[1,3] = GtkCanvas()
   # expand plot
-  set_gtk_property!(m, :expand, m.grid, true)
+  ### set_gtk_property!(m, :expand, m.grid, true)
   
-  showall(m)
+  show(m)
 
   ## setup colormap search
   # create list
@@ -80,12 +80,12 @@ function MagneticFieldViewerWidget()
   c = GtkTreeViewColumn("Colormaps", rTxt, Dict([("text",0)]), sort_column_id=0) # column
   # add column to TreeView
   m.cmapsTree = GtkTreeModelFilter(ls)
-  GAccessor.visible_column(m.cmapsTree,1)
+  G_.set_visible_column(m.cmapsTree,1)
   tv = GtkTreeView(GtkTreeModel(m.cmapsTree))
   push!(tv, c)
   # add to popover
   push!(m["boxCMaps"],tv)
-  showall(m["boxCMaps"])
+  show(m["boxCMaps"])
 
   # set important colormaps
   choices = important_cmaps() 
@@ -159,8 +159,8 @@ function MagneticFieldViewerWidget()
   signal_connect(m["btnCenterSphere"], "clicked") do w
     if m.fv.centerFFP
       @idle_add_guarded begin
-	set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # disable button
-	set_gtk_property!(m["btnCenterFFP"],:sensitive,true) # enable button
+        set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # disable button
+        set_gtk_property!(m["btnCenterFFP"],:sensitive,true) # enable button
         m.fv.centerFFP = false
         calcCenterCoeffs(m,true)
         stayInFFP(m)
@@ -171,8 +171,8 @@ function MagneticFieldViewerWidget()
   signal_connect(m["btnCenterFFP"], "clicked") do w
     if !(m.fv.centerFFP)
       @idle_add_guarded begin
-	set_gtk_property!(m["btnCenterFFP"],:sensitive,false) # disable button
-	set_gtk_property!(m["btnCenterSphere"],:sensitive,true) # enable button
+        set_gtk_property!(m["btnCenterFFP"],:sensitive,false) # disable button
+        set_gtk_property!(m["btnCenterSphere"],:sensitive,true) # enable button
         m.fv.centerFFP = true
         calcCenterCoeffs(m,true)
         updateCoeffsPlot(m)
@@ -261,30 +261,31 @@ end
 function FieldViewerWidget()
   uifile = joinpath(@__DIR__,"..","..","builder","magneticFieldViewer.ui")
 
-  b = Builder(filename=uifile)
-  mainBox = G_.object(b, "boxFieldViewer")
+  b = GtkBuilder(filename=uifile)
+  mainBox = G_.get_object(b, "boxFieldViewer")
 
   fv = FieldViewerWidget(mainBox.handle, b, ColoringParams(0,0,0),
                      false, nothing, true,
-                      G_.object(b, "gridFieldViewer"),)
-  Gtk.gobject_move_ref(fv, mainBox)
+                      G_.get_object(b, "gridFieldViewer"),)
+  Gtk4.GLib.gobject_move_ref(fv, mainBox)
 
   # initialize plots
-  fv.grid[1,1] = Canvas()
-  fv.grid[1,2] = Canvas()
-  fv.grid[2,1] = Canvas()
-  fv.grid[2,2] = Canvas()
+  fv.grid[1,1] = GtkCanvas()
+  fv.grid[1,2] = GtkCanvas()
+  fv.grid[2,1] = GtkCanvas()
+  fv.grid[2,2] = GtkCanvas()
+
+  fv.grid.hexpand = fv.grid.vexpand = true
   # expand plots
-  set_gtk_property!(fv, :expand, fv.grid, true)
+  ### set_gtk_property!(fv, :expand, fv.grid, true)
 
   return fv
 end
 
-function initCallbacks(m_::MagneticFieldViewerWidget)
-  let m=m_
+function initCallbacks(m::MagneticFieldViewerWidget)
 
   ## update coloring
-  function updateCol( widget , importantCMaps::Bool=true)
+  function updateCol(widget , importantCMaps::Bool=true)
 
     # update plots
     @idle_add_guarded updateColoring(m,importantCMaps)
@@ -293,7 +294,7 @@ function initCallbacks(m_::MagneticFieldViewerWidget)
   
 
   # choose new slice
-  function newSlice( widget )
+  function newSlice(widget)
     if !m.updating # don't update slices if they are set by other functions
       m.updating = true
      
@@ -314,7 +315,7 @@ function initCallbacks(m_::MagneticFieldViewerWidget)
       # set intersection
       interString = round.(intersection .* 1000, digits=1)
       set_gtk_property!(m["entInters"], :text, 
-		"$(interString[1]) x $(interString[2]) x $(interString[3])") 
+		           "$(interString[1]) x $(interString[2]) x $(interString[3])") 
 
       # update coefficients with new intersection and plot everything
       updateIntersection(m)
@@ -336,7 +337,7 @@ function initCallbacks(m_::MagneticFieldViewerWidget)
 
   # colormap
   signal_connect(updateCol, m["cbCMaps"], "changed")
-  signal_connect(GAccessor.selection(m["boxCMaps"][2]), "changed") do widget
+  signal_connect(G_.get_selection( Gtk4.next_sibling(Gtk4.first_child(m["boxCMaps"]))), "changed") do widget
     updateCol( widget, false )
   end
 
@@ -356,11 +357,10 @@ function initCallbacks(m_::MagneticFieldViewerWidget)
 
   # export images/data
   initExportCallbacks(m)
-  end
 end
 
 # load all necessary data and set up the values in the GUI
-updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String) = updateData!(m,MagneticFieldCoefficients(filenameCoeffs))
+updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String) = updateData!(m, MagneticFieldCoefficients(filenameCoeffs))
 
 function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoefficients)
   
@@ -430,7 +430,7 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
   # plotting
   updateField(m)
   updateCoeffsPlot(m)
-  showall(m)
+  show(m)
   
   m.updating = false
 end
@@ -444,7 +444,7 @@ function updateColoring(m::MagneticFieldViewerWidget, importantCMaps::Bool=true)
     if importantCMaps # choice happend within the important colormaps
       cmap = important_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
     else # choice happened within all colormaps
-      selection = GAccessor.selection(m["boxCMaps"][2])
+      selection = G_.get_selection( Gtk4.next_sibling(Gtk4.first_child(m["boxCMaps"])) ) ### G_.get_selection(m["boxCMaps"][2])
       if hasselection(selection)
         chosenCMap = selected(selection)
         cmap = GtkTreeModel(m.cmapsTree)[chosenCMap,1]
@@ -477,8 +477,8 @@ function updateSlices(m::MagneticFieldViewerWidget)
 
   # get voxel size
   fovString = get_gtk_property(m["entFOV"], :text, String) # FOV
-  fov = tryparse.(Float64,split(fovString,"x")) ./ 1000
-  discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel 
+  fov = tryparse.(Float64, split(fovString,"x")) ./ 1000
+  discretization = Int(get_gtk_property(m["adjDiscretization"], :value, Int64)*2+1) # odd number of voxel 
   voxel = fov ./ discretization
 
   # get slice numbers (rounded)
