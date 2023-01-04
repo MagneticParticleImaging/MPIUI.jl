@@ -287,10 +287,7 @@
             <property name="focusable">1</property>
             <property name="receives_default">1</property>
             <property name="popover">popOptions</property>
-            <child>
-              <object class="GtkImage">
-              </object>
-            </child>
+            <property name="icon-name">preferences-desktop</property>
             <layout>
               <property name="column">3</property>
               <property name="row">1</property>

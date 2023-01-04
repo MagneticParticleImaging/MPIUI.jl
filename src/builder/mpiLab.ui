@@ -1203,7 +1203,7 @@
         <child>
           <object class="GtkToggleButton" id="tbProtocolTab">
             <property name="focusable">1</property>
-            <property name="icon-name">face-devilish</property>
+            <property name="icon-name">system-run</property>
             <property name="receives-default">1</property>
           </object>
         </child>
