@@ -565,18 +565,19 @@ function initAnatomRefStore(m::MPILab)
   m.selectionAnatomicRefs = selection
 
   signal_connect(m["tbAddAnatomicalData"], "clicked") do widget
-    filename = open_dialog("Select Anatomic Reference", mpilab[]["mainWindow"], action=GtkFileChooserAction.OPEN)
-    if !isfile(filename)
-      @warn "$filename * is not a file"
-    else
-      targetPath = joinpath(activeRecoStore(m).path, "reconstructions", getMDFStudyFolderName(m.currentStudy),
-						     "anatomicReferences", last(splitdir(filename)) )
-      mkpath(targetPath)
-      try_chmod(targetPath, 0o777, recursive=true)
-      cp(filename, targetPath, force=true)
-      @idle_add_guarded updateAnatomRefStore(m)
+    diag = open_dialog("Select Anatomic Reference", mpilab[]["mainWindow"], action=Gtk4.FileChooserAction_OPEN) do filename
+      if !isfile(filename)
+        @warn "$filename * is not a file"
+      else
+        targetPath = joinpath(activeRecoStore(m).path, "reconstructions", getMDFStudyFolderName(m.currentStudy),
+                  "anatomicReferences", last(splitdir(filename)) )
+        mkpath(targetPath)
+        try_chmod(targetPath, 0o777, recursive=true)
+        cp(filename, targetPath, force=true)
+        @idle_add_guarded updateAnatomRefStore(m)
+      end
     end
-
+    diag.modal = true
   end
 
   signal_connect(tv, "row-activated") do treeview, path_, col, other...
