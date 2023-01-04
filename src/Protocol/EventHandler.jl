@@ -1,10 +1,8 @@
 function initProtocol(pw::ProtocolWidget)
   try 
     @info "Setting protocol parameters"
-    iter = G_.get_first_child(pw["boxProtocolParameter"])
-    while iter != nothing
-      setProtocolParameter(iter, pw.protocol.params)
-      iter = G_.get_next_sibling(iter)
+    for parameterObj in pw["boxProtocolParameter"]
+      setProtocolParameter(parameterObj, pw.protocol.params)
     end
 
     @info "Init protocol"

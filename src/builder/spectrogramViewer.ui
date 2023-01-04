@@ -304,11 +304,11 @@
                 <property name="orientation">vertical</property>
                 <child>
                   <object class="GtkBox">
-                    <property name="spacing">3</property>
+                    <property name="spacing">1</property>
                     <child>
                       <object class="GtkScale" id="scMinTP">
                         <property name="hexpand">1</property>
-                        <property name="draw-value">1</property>
+                        <property name="draw-value">0</property>
                         <property name="focusable">1</property>
                         <property name="adjustment">adjMinTP</property>
                         <property name="round_digits">0</property>
@@ -318,7 +318,7 @@
                     <child>
                       <object class="GtkScale" id="scMaxTP">
                         <property name="hexpand">1</property>
-                        <property name="draw-value">1</property>
+                        <property name="draw-value">0</property>
                         <property name="focusable">1</property>
                         <property name="adjustment">adjMaxTP</property>
                         <property name="round_digits">0</property>
@@ -328,13 +328,13 @@
                     <child>
                       <object class="GtkEntry" id="entTDMinVal">
                         <property name="focusable">1</property>
-                        <property name="width_chars">5</property>
+                        <property name="max_width_chars">6</property>
                       </object>
                     </child>
                     <child>
                       <object class="GtkEntry" id="entTDMaxVal">
                         <property name="focusable">1</property>
-                        <property name="width_chars">5</property>
+                        <property name="max_width_chars">6</property>
                       </object>
                     </child>
                     <child>
@@ -361,11 +361,11 @@
                 <property name="orientation">vertical</property>
                 <child>
                   <object class="GtkBox">
-                    <property name="spacing">3</property>
+                    <property name="spacing">1</property>
                     <child>
                       <object class="GtkScale" id="scMinFre">
                         <property name="hexpand">1</property>
-                        <property name="draw-value">1</property>
+                        <property name="draw-value">0</property>
                         <property name="focusable">1</property>
                         <property name="adjustment">adjMinFre</property>
                         <property name="round_digits">0</property>
@@ -375,7 +375,7 @@
                     <child>
                       <object class="GtkScale" id="scMaxFre">
                         <property name="hexpand">1</property>
-                        <property name="draw-value">1</property>
+                        <property name="draw-value">0</property>
                         <property name="focusable">1</property>
                         <property name="adjustment">adjMaxFre</property>
                         <property name="round_digits">0</property>
@@ -385,13 +385,13 @@
                     <child>
                       <object class="GtkEntry" id="entFDMinVal">
                         <property name="focusable">1</property>
-                        <property name="width_chars">5</property>
+                        <property name="max_width_chars">6</property>
                       </object>
                     </child>
                     <child>
                       <object class="GtkEntry" id="entFDMaxVal">
                         <property name="focusable">1</property>
-                        <property name="width_chars">5</property>
+                        <property name="max_width_chars">6</property>
                       </object>
                     </child>
                     <child>

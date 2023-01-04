@@ -3,7 +3,7 @@ export SFViewer
 import Base: getindex
 
 
-mutable struct SFViewerWidget <: Gtk4.GtkBox
+mutable struct SFViewerWidget <: Gtk4.GtkPaned
   handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   dv::DataViewerWidget
@@ -43,7 +43,7 @@ function SFViewerWidget()
   uifile = joinpath(@__DIR__,"..","builder","mpiLab.ui")
 
   b = GtkBuilder(filename=uifile)
-  mainBox = GtkBox(:h) #Gtk4.G_.get_object(b, "boxSFViewer")
+  mainBox = GtkPaned(:h) 
 
   m = SFViewerWidget(mainBox.handle, b, DataViewerWidget(),
                   BrukerFile(), false, 0, 0, zeros(0,0,0),
@@ -54,11 +54,16 @@ function SFViewerWidget()
   m.grid[1,3] = GtkCanvas()
   set_gtk_property!(m.grid, :row_homogeneous, true)
   set_gtk_property!(m.grid[1,2], :height_request, 200)
-  #set_gtk_property!(m.grid, :column_homogeneous, true)
-  push!(m, m.grid)
-###  set_gtk_property!(m, :fill, m.grid, true)
-###  set_gtk_property!(m, :expand, m.grid, true)
-  push!(m, m["swSFViewer"])
+
+  m[1] = m.grid
+  m[2] = m["swSFViewer"]
+
+  Gtk4.resize_start_child(m, true)
+  Gtk4.shrink_start_child(m, true)
+  Gtk4.resize_end_child(m, false)
+  Gtk4.shrink_end_child(m, false)
+
+  G_.set_size_request(m["swSFViewer"], 250, -1)
 
   function updateSFMixO( widget )
     if !m.updating

@@ -44,13 +44,11 @@ function RawDataWidget(filenameConfig=nothing)
 
   m.cTD.hexpand = true
   m.cTD.vexpand = true
-###  set_gtk_property!(m["boxTD"],:expand,m.cTD,true)
 
   push!(m["boxFD"],m.cFD)
 
   m.cFD.hexpand = true
   m.cFD.vexpand = true
-###  set_gtk_property!(m["boxFD"],:expand,m.cFD,true)
 
   @debug "InitCallbacks"
 
