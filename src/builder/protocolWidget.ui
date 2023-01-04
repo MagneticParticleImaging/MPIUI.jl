@@ -162,7 +162,7 @@
                     <property name="visible">True</property>
                     <property name="focusable">1</property>
                     <property name="receives_default">1</property>
-                    <property name="icon-name">applications-accessories</property>
+                    <property name="icon-name">document-properties</property>
                     <layout>
                       <property name="column">0</property>
                       <property name="row">0</property>
@@ -181,6 +181,7 @@
                     <property name="tooltip_text" translatable="1">Initializes the current protocol with the current paramters</property>
                     <property name="label" translatable="1">Init</property>
                     <property name="use_underline">1</property>
+                    <property name="icon-name">go-jump</property>
                   </object>
                 </child>
                 <child>
@@ -190,6 +191,7 @@
                     <property name="tooltip_text" translatable="1">Starts the current protocol</property>
                     <property name="label" translatable="1">Execute</property>
                     <property name="use_underline">1</property>
+                    <property name="icon-name">media-playback-start</property>
                   </object>
                 </child>
                 <child>
@@ -199,6 +201,7 @@
                     <property name="tooltip_text" translatable="1">Attempts to pause the protocol</property>
                     <property name="label" translatable="1">Pause</property>
                     <property name="use_underline">1</property>
+                    <property name="icon-name">media-playback-pause</property>
                   </object>
                 </child>
                 <child>
@@ -208,6 +211,7 @@
                     <property name="tooltip_text" translatable="1">Attempts to cancel the protocol</property>
                     <property name="label" translatable="1">Cancel</property>
                     <property name="use_underline">1</property>
+                    <property name="icon-name">media-playback-stop</property>
                   </object>
                 </child>
               </object>
