@@ -1,7 +1,7 @@
 export MagneticFieldViewer
 
 # load new type MagneticFieldCoefficients with additional informations
-include("../MagneticFieldUtils.jl")
+include("MagneticFieldUtils.jl")
 
 mutable struct FieldViewerWidget <: Gtk.GtkBox
   handle::Ptr{Gtk.GObject}
@@ -35,6 +35,9 @@ mutable struct MagneticFieldViewer
   mf::MagneticFieldViewerWidget
 end
 
+# export functions
+include("Export.jl")
+
 # Viewer can be started with MagneticFieldCoefficients or with a path to a file with some coefficients
 function MagneticFieldViewer(filename::Union{AbstractString,MagneticFieldCoefficients})
   mfViewerWidget = MagneticFieldViewerWidget()
@@ -46,7 +49,7 @@ function MagneticFieldViewer(filename::Union{AbstractString,MagneticFieldCoeffic
 end
 
 function MagneticFieldViewerWidget()
-  uifile = joinpath(@__DIR__,"..","builder","magneticFieldViewer.ui")
+  uifile = joinpath(@__DIR__,"..","..","builder","magneticFieldViewer.ui")
 
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxMagneticFieldViewer")
@@ -96,6 +99,9 @@ function MagneticFieldViewerWidget()
   signal_connect(m["entCMaps"], "changed") do w
     @idle_add_guarded begin
       searchText = get_gtk_property(m["entCMaps"], :text, String)
+      if searchText == "Martin"
+        searchText = "jet1"
+      end
       for l=1:length(ls)
         showMe = true
         if length(searchText) > 0
@@ -253,7 +259,7 @@ function MagneticFieldViewerWidget()
 end
 
 function FieldViewerWidget()
-  uifile = joinpath(@__DIR__,"..","builder","magneticFieldViewer.ui")
+  uifile = joinpath(@__DIR__,"..","..","builder","magneticFieldViewer.ui")
 
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxFieldViewer")
@@ -348,6 +354,8 @@ function initCallbacks(m_::MagneticFieldViewerWidget)
     signal_connect(newSlice, m[w], "value_changed")
   end
 
+  # export images/data
+  initExportCallbacks(m)
   end
 end
 
@@ -409,7 +417,7 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
 
   # disable buttons that have no functions at the moment
   set_gtk_property!(m["btnFrames"],:sensitive,false) # disable button with unused popover
-  set_gtk_property!(m["btnExport"],:sensitive,false) # disable button with unused popover
+  #set_gtk_property!(m["btnExport"],:sensitive,false) # disable button with unused popover
   set_gtk_property!(m["cbShowAxes"],:sensitive,false) # axes are always shown
 
   # update measurement infos
@@ -650,6 +658,9 @@ function updateInfos(m::MagneticFieldViewerWidget)
 
 end
 
+##############
+## Plotting ##
+##############
 # plotting the magnetic field
 function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel
