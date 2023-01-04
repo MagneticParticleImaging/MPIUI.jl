@@ -17,13 +17,13 @@
   <object class="GtkAdjustment" id="adjCMax">
     <property name="upper">1</property>
     <property name="value">1</property>
-    <property name="step_increment">0.050000000000000003</property>
-    <property name="page_increment">0.050000000000000003</property>
+    <property name="step_increment">0.005000000000000003</property>
+    <property name="page_increment">0.005000000000000003</property>
   </object>
   <object class="GtkAdjustment" id="adjCMin">
     <property name="upper">1</property>
-    <property name="step_increment">0.050000000000000003</property>
-    <property name="page_increment">0.050000000000000003</property>
+    <property name="step_increment">0.005000000000000003</property>
+    <property name="page_increment">0.005000000000000003</property>
   </object>
   <object class="GtkAdjustment" id="adjDiscretization">
     <property name="lower">5</property>
@@ -609,11 +609,7 @@
                     <property name="focusable">1</property>
                     <property name="receives_default">1</property>
                     <property name="popover">popSlices</property>
-                    <!-- <child>
-                      <object class="GtkImage">
-                        <property name="stock">gtk-copy</property>
-                      </object>
-                    </child> -->
+                    <property name="icon-name">edit-copy</property>
                     <layout>
                       <property name="column">3</property>
                       <property name="row">1</property>
@@ -668,7 +664,7 @@ audio-volume-low-symbolic
 audio-volume-medium-symbolic</property>
                     <child internal-child="plus_button">
                       <object class="GtkButton">
-                        <property name="visible">0</property>
+                        <property name="visible">1</property>
                         <property name="focusable">1</property>
                         <property name="receives_default">1</property>
                         <property name="halign">center</property>
@@ -677,7 +673,7 @@ audio-volume-medium-symbolic</property>
                     </child>
                     <child internal-child="minus_button">
                       <object class="GtkButton">
-                        <property name="visible">0</property>
+                        <property name="visible">1</property>
                         <property name="focusable">1</property>
                         <property name="receives_default">1</property>
                         <property name="halign">center</property>
@@ -702,7 +698,7 @@ audio-volume-low-symbolic
 audio-volume-medium-symbolic</property>
                     <child internal-child="plus_button">
                       <object class="GtkButton">
-                        <property name="visible">0</property>
+                        <property name="visible">1</property>
                         <property name="focusable">1</property>
                         <property name="receives_default">1</property>
                         <property name="halign">center</property>
@@ -711,7 +707,7 @@ audio-volume-medium-symbolic</property>
                     </child>
                     <child internal-child="minus_button">
                       <object class="GtkButton">
-                        <property name="visible">0</property>
+                        <property name="visible">1</property>
                         <property name="focusable">1</property>
                         <property name="receives_default">1</property>
                         <property name="halign">center</property>
@@ -756,11 +752,7 @@ audio-volume-medium-symbolic</property>
                     <property name="focusable">1</property>
                     <property name="receives_default">1</property>
                     <property name="popover">popExport</property>
-                    <!-- <child>
-                      <object class="GtkImage">
-                        <property name="stock">gtk-save-as</property>
-                      </object>
-                    </child> -->
+                    <property name="icon-name">document-save</property>
                     <layout>
                       <property name="column">11</property>
                       <property name="row">1</property>
@@ -790,11 +782,7 @@ audio-volume-medium-symbolic</property>
                     <property name="focusable">1</property>
                     <property name="receives_default">1</property>
                     <property name="popover">popOptions</property>
-                    <!-- <child>
-                      <object class="GtkImage">
-                        <property name="stock">gtk-preferences</property>
-                      </object>
-                    </child> -->
+                    <property name="icon-name">preferences-desktop</property>
                     <layout>
                       <property name="column">14</property>
                       <property name="row">1</property>
@@ -816,6 +804,7 @@ audio-volume-medium-symbolic</property>
                         <property name="focusable">1</property>
                         <property name="receives_default">1</property>
                         <property name="popover">popCMaps</property>
+                        <property name="icon-name">applications-graphics</property>
                         <!-- <child>
                           <object class="GtkImage">
                             <property name="stock">gtk-select-color</property>

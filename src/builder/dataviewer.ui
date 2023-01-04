@@ -1058,7 +1058,7 @@ audio-volume-low-symbolic
 audio-volume-medium-symbolic</property>
                 <child internal-child="plus_button">
                   <object class="GtkButton">
-                    <property name="visible">0</property>
+                    <property name="visible">1</property>
                     <property name="focusable">1</property>
                     <property name="receives_default">1</property>
                     <property name="halign">center</property>
@@ -1067,7 +1067,7 @@ audio-volume-medium-symbolic</property>
                 </child>
                 <child internal-child="minus_button">
                   <object class="GtkButton">
-                    <property name="visible">0</property>
+                    <property name="visible">1</property>
                     <property name="focusable">1</property>
                     <property name="receives_default">1</property>
                     <property name="halign">center</property>
@@ -1092,7 +1092,7 @@ audio-volume-low-symbolic
 audio-volume-medium-symbolic</property>
                 <child internal-child="plus_button">
                   <object class="GtkButton">
-                    <property name="visible">0</property>
+                    <property name="visible">1</property>
                     <property name="focusable">1</property>
                     <property name="receives_default">1</property>
                     <property name="halign">center</property>
@@ -1101,7 +1101,7 @@ audio-volume-medium-symbolic</property>
                 </child>
                 <child internal-child="minus_button">
                   <object class="GtkButton">
-                    <property name="visible">0</property>
+                    <property name="visible">1</property>
                     <property name="focusable">1</property>
                     <property name="receives_default">1</property>
                     <property name="halign">center</property>
