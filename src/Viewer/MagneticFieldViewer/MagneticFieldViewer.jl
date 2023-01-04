@@ -1,41 +1,47 @@
 export MagneticFieldViewer
 
 # load new type MagneticFieldCoefficients with additional informations
-include("../MagneticFieldUtils.jl")
+include("MagneticFieldUtils.jl")
 
-mutable struct FieldViewerWidget <: Gtk4.GtkBox
-  handle::Ptr{Gtk4.GObject}
+mutable struct FieldViewerWidget <: Gtk.GtkBox
+  handle::Ptr{Gtk.GObject}
   builder::GtkBuilder
   coloring::ColoringParams
   updating::Bool
   field # data to be plotted
   centerFFP::Bool # center of plot (FFP (true) or center of measured sphere (false))
-  grid::Gtk4.GtkGridLeaf
+  grid::GtkGridLeaf
 end
 
-mutable struct MagneticFieldViewerWidget <: Gtk4.GtkBox
-  handle::Ptr{Gtk4.GObject}
+mutable struct MagneticFieldViewerWidget <: Gtk.GtkBox
+  handle::Ptr{Gtk.GObject}
   builder::GtkBuilder
   fv::FieldViewerWidget
   updating::Bool
+  coeffsInit::MagneticFieldCoefficients
   coeffs::MagneticFieldCoefficients 
   coeffsPlot::Array{SphericalHarmonicCoefficients}
   field # Array containing Functions of the field
   patch::Int
-  grid::Gtk4.GtkGridLeaf
+  grid::GtkGridLeaf
+  cmapsTree::GtkTreeModelFilter
 end
 
-getindex(m::MagneticFieldViewerWidget, w::AbstractString) = G_.get_object(m.builder, w)
-getindex(m::FieldViewerWidget, w::AbstractString) = G_.get_object(m.builder, w)
+getindex(m::MagneticFieldViewerWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::FieldViewerWidget, w::AbstractString) = G_.object(m.builder, w)
 
 mutable struct MagneticFieldViewer
-  w::Gtk4.GtkWindowLeaf
+  w::Window
   mf::MagneticFieldViewerWidget
 end
 
-function MagneticFieldViewer(filename::AbstractString)
+# export functions
+include("Export.jl")
+
+# Viewer can be started with MagneticFieldCoefficients or with a path to a file with some coefficients
+function MagneticFieldViewer(filename::Union{AbstractString,MagneticFieldCoefficients})
   mfViewerWidget = MagneticFieldViewerWidget()
-  w = GtkWindow("Magnetic Field Viewer: $(filename)",800,600)
+  w = Window("Magnetic Field Viewer: $(filename)",800,600)
   push!(w,mfViewerWidget)
   showall(w)
   updateData!(mfViewerWidget, filename)
@@ -43,35 +49,72 @@ function MagneticFieldViewer(filename::AbstractString)
 end
 
 function MagneticFieldViewerWidget()
-  uifile = joinpath(@__DIR__,"..","builder","magneticFieldViewer.ui")
+  uifile = joinpath(@__DIR__,"..","..","builder","magneticFieldViewer.ui")
 
   b = Builder(filename=uifile)
-  mainBox = G_.get_object(b, "boxMagneticFieldViewer")
+  mainBox = G_.object(b, "boxMagneticFieldViewer")
 
   m = MagneticFieldViewerWidget(mainBox.handle, b, FieldViewerWidget(),
-                     false, MagneticFieldCoefficients(0), [SphericalHarmonicCoefficients(0)],
+                     false, MagneticFieldCoefficients(0), MagneticFieldCoefficients(0), [SphericalHarmonicCoefficients(0)],
 		     nothing, 1,
-                     Grid())
-  Gtk4.GLib.gobject_move_ref(m, mainBox)
+                     Grid(), GtkTreeModelFilter(GtkListStore(Bool)))
+  Gtk.gobject_move_ref(m, mainBox)
 
   # build up plots
   m.grid = m["gridMagneticFieldViewer"]
   m.grid[1,1:2] = m.fv
-  m.grid[1,3] = GtkCanvas()
+  m.grid[1,3] = Canvas()
   # expand plot
   set_gtk_property!(m, :expand, m.grid, true)
-
+  
   showall(m)
 
-  # set colormaps
+  ## setup colormap search
+  # create list
+  ls = GtkListStore(String, Bool)
+  for c in existing_cmaps()
+    push!(ls,(c,true))
+  end
+  # create TreeViewColumn
+  rTxt = GtkCellRendererText()
+  c = GtkTreeViewColumn("Colormaps", rTxt, Dict([("text",0)]), sort_column_id=0) # column
+  # add column to TreeView
+  m.cmapsTree = GtkTreeModelFilter(ls)
+  GAccessor.visible_column(m.cmapsTree,1)
+  tv = GtkTreeView(GtkTreeModel(m.cmapsTree))
+  push!(tv, c)
+  # add to popover
+  push!(m["boxCMaps"],tv)
+  showall(m["boxCMaps"])
+
+  # set important colormaps
   choices = important_cmaps() 
   for c in choices
     push!(m["cbCMaps"], c)
   end
   set_gtk_property!(m["cbCMaps"],:active,5) # default: viridis
+  m.fv.coloring = ColoringParams(0,1,important_cmaps()[6]) # set default colormap
+
+  # searching for specific colormaps
+  signal_connect(m["entCMaps"], "changed") do w
+    @idle_add_guarded begin
+      searchText = get_gtk_property(m["entCMaps"], :text, String)
+      if searchText == "Martin"
+        searchText = "jet1"
+      end
+      for l=1:length(ls)
+        showMe = true
+        if length(searchText) > 0
+          showMe = showMe && occursin(lowercase(searchText), lowercase(ls[l,1]))
+        end
+        ls[l,2] = showMe
+      end
+    end
+  end
+
 
   # Allow to change between gradient and offset output
-  for c in ["Gradient:","Offset:"]
+  for c in ["Gradient:","Offset:", "Singular values:"]
     push!(m["cbGradientOffset"], c)
   end
   set_gtk_property!(m["cbGradientOffset"],:active,0) # default: Gradient
@@ -160,6 +203,11 @@ function MagneticFieldViewerWidget()
     @idle_add_guarded calcFFP(m)
   end
 
+  # reset everything -> reload Viewer
+  signal_connect(m["btnReset"], "clicked") do w
+    @idle_add_guarded updateData!(m, m.coeffsInit)
+  end
+
   # checkbuttons changed
   for cb in ["cbShowSphere", "cbShowSlices"]
     signal_connect(m[cb], "toggled") do w
@@ -211,7 +259,7 @@ function MagneticFieldViewerWidget()
 end
 
 function FieldViewerWidget()
-  uifile = joinpath(@__DIR__,"..","builder","magneticFieldViewer.ui")
+  uifile = joinpath(@__DIR__,"..","..","builder","magneticFieldViewer.ui")
 
   b = Builder(filename=uifile)
   mainBox = G_.object(b, "boxFieldViewer")
@@ -219,13 +267,13 @@ function FieldViewerWidget()
   fv = FieldViewerWidget(mainBox.handle, b, ColoringParams(0,0,0),
                      false, nothing, true,
                       G_.object(b, "gridFieldViewer"),)
-  Gtk4.gobject_move_ref(fv, mainBox)
+  Gtk.gobject_move_ref(fv, mainBox)
 
   # initialize plots
-  fv.grid[1,1] = GtkCanvas()
-  fv.grid[1,2] = GtkCanvas()
-  fv.grid[2,1] = GtkCanvas()
-  fv.grid[2,2] = GtkCanvas()
+  fv.grid[1,1] = Canvas()
+  fv.grid[1,2] = Canvas()
+  fv.grid[2,1] = Canvas()
+  fv.grid[2,2] = Canvas()
   # expand plots
   set_gtk_property!(fv, :expand, fv.grid, true)
 
@@ -236,10 +284,13 @@ function initCallbacks(m_::MagneticFieldViewerWidget)
   let m=m_
 
   ## update coloring
-  function updateCol( widget )
-    updateColoring(m)
-    updateField(m,true)
+  function updateCol( widget , importantCMaps::Bool=true)
+
+    # update plots
+    @idle_add_guarded updateColoring(m,importantCMaps)
+    @idle_add_guarded updateField(m,true)
   end
+  
 
   # choose new slice
   function newSlice( widget )
@@ -277,11 +328,17 @@ function initCallbacks(m_::MagneticFieldViewerWidget)
   # cmin/cmax
   widgets = ["adjCMin", "adjCMax"]
   for w in widgets
-    signal_connect(updateCol, m[w], "value_changed")
+    signal_connect(m[w], "value_changed") do widget
+      @idle_add_guarded updateColLims(m) # update color range
+      @idle_add_guarded updateField(m,true)
+    end
   end
 
   # colormap
   signal_connect(updateCol, m["cbCMaps"], "changed")
+  signal_connect(GAccessor.selection(m["boxCMaps"][2]), "changed") do widget
+    updateCol( widget, false )
+  end
 
   ## reset FOV
   function resetFOV( widget )
@@ -297,15 +354,22 @@ function initCallbacks(m_::MagneticFieldViewerWidget)
     signal_connect(newSlice, m[w], "value_changed")
   end
 
+  # export images/data
+  initExportCallbacks(m)
   end
 end
 
 # load all necessary data and set up the values in the GUI
-function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
+updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String) = updateData!(m,MagneticFieldCoefficients(filenameCoeffs))
+
+function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoefficients)
+  
+  m.coeffsInit = deepcopy(coeffs) # save initial coefficients for reloading
 
   # load magnetic fields
-  m.coeffs = MagneticFieldCoefficients(filenameCoeffs) # load coefficients
-  m.coeffsPlot = SphericalHarmonicCoefficients(filenameCoeffs) # load coefficients
+  m.coeffs = coeffs # load coefficients
+  m.coeffsPlot = deepcopy(m.coeffs.coeffs) # load coefficients
+
   @polyvar x y z
   expansion = sphericalHarmonicsExpansion.(m.coeffs.coeffs,[x],[y],[z])
   m.field = fastfunc.(expansion)
@@ -319,6 +383,7 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
 
   # set some values
   set_gtk_property!(m["adjPatches"], :upper, size(m.coeffs.coeffs,2) )
+  set_gtk_property!(m["adjPatches"], :value, m.patch )
   set_gtk_property!(m["adjL"], :upper, m.coeffs.coeffs[1].L )
   set_gtk_property!(m["adjL"], :value, m.coeffs.coeffs[1].L )
   set_gtk_property!(m["entRadius"], :text, "$(round(R*1000,digits=1))") # show radius of measurement 
@@ -344,6 +409,7 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
     set_gtk_property!(m["btnGoToFFP"],:visible,false) # FFP as intersection not available
     set_gtk_property!(m["btnCenterFFP"],:visible,false) # FFP as center not available
     set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # Center of sphere automatically plotting center
+    set_gtk_property!(m["btnCalcFFP"],:sensitive,true) # FFP can be calculated
   else
     # disable the calcFFP button
     set_gtk_property!(m["btnCalcFFP"],:sensitive,false) # FFP already calculated
@@ -351,7 +417,7 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
 
   # disable buttons that have no functions at the moment
   set_gtk_property!(m["btnFrames"],:sensitive,false) # disable button with unused popover
-  set_gtk_property!(m["btnExport"],:sensitive,false) # disable button with unused popover
+  #set_gtk_property!(m["btnExport"],:sensitive,false) # disable button with unused popover
   set_gtk_property!(m["cbShowAxes"],:sensitive,false) # axes are always shown
 
   # update measurement infos
@@ -370,11 +436,36 @@ function updateData!(m::MagneticFieldViewerWidget, filenameCoeffs::String)
 end
 
 # update the coloring params
-function updateColoring(m::MagneticFieldViewerWidget)
-  cmin = get_gtk_property(m["adjCMin"],:value, Float64)
-  cmax = get_gtk_property(m["adjCMax"],:value, Float64)
-  cmap = important_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
-  m.fv.coloring = ColoringParams(cmin,cmax,cmap)
+function updateColoring(m::MagneticFieldViewerWidget, importantCMaps::Bool=true)
+  if !m.fv.updating
+    m.fv.updating = true
+    cmin = get_gtk_property(m["adjCMin"],:value, Float64)
+    cmax = get_gtk_property(m["adjCMax"],:value, Float64)
+    if importantCMaps # choice happend within the important colormaps
+      cmap = important_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
+    else # choice happened within all colormaps
+      selection = GAccessor.selection(m["boxCMaps"][2])
+      if hasselection(selection)
+        chosenCMap = selected(selection)
+        cmap = GtkTreeModel(m.cmapsTree)[chosenCMap,1]
+      else # use last choice of important colormaps
+        cmap = important_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
+      end
+    end
+    m.fv.coloring = ColoringParams(cmin,cmax,cmap)
+    m.fv.updating = false
+  end
+end
+
+# Coloring: Update cmin/cmax only
+function updateColLims(m::MagneticFieldViewerWidget)
+  if !m.fv.updating
+    m.fv.updating = true
+    cmin = get_gtk_property(m["adjCMin"],:value, Float64)
+    cmax = get_gtk_property(m["adjCMax"],:value, Float64)
+    m.fv.coloring = ColoringParams(cmin,cmax,m.fv.coloring.cmap) # keep cmap
+    m.fv.updating = false
+  end
 end
 
 
@@ -536,21 +627,40 @@ function updateInfos(m::MagneticFieldViewerWidget)
     set_gtk_property!(m["entGradientX"], :text, "$(round(m.coeffsPlot[1,m.patch][1,1],digits=3))") # show gradient in x
     set_gtk_property!(m["entGradientY"], :text, "$(round(m.coeffsPlot[2,m.patch][1,-1],digits=3))") # show gradient in y
     set_gtk_property!(m["entGradientZ"], :text, "$(round(m.coeffsPlot[3,m.patch][1,0],digits=3))") # show gradient in z
-    # label
+    # unit
     for i=1:3
       set_gtk_property!(m["labelTpm$i"], :label, "T/m")
+      set_gtk_property!(m["labelGradient$i"], :label, ["x","y","z"][i]) 
     end
-  else # show offset field
+  elseif get_gtk_property(m["cbGradientOffset"],:active, Int) == 1 # show offset field
     for (i,x) in enumerate(["X","Y","Z"])
       # offset
       set_gtk_property!(m["entGradient"*x], :text, "$(round(m.coeffsPlot[i,m.patch][0,0]*1000,digits=1))") # show gradient in x
-      # label
+      # unit
       set_gtk_property!(m["labelTpm$i"], :label, "mT")
+      set_gtk_property!(m["labelGradient$i"], :label, ["x","y","z"][i]) 
+    end
+  else # show singular values
+    # calculate jacobian matrix
+    @polyvar x y z
+    expansion = sphericalHarmonicsExpansion.(m.coeffsPlot,[x],[y],[z])
+    jexp = differentiate(expansion[:,m.patch],[x,y,z]);
+    J = [jexp[i,j]((x,y,z) => [0.0,0.0,0.0]) for i=1:3, j=1:3] # jacobian matrix
+    # get singular values
+    sv = svd(J).S 
+    # show values
+    for (i,x) in enumerate(["X","Y","Z"])
+      set_gtk_property!(m["entGradient"*x], :text, "$(round(sv[i],digits=3))") # singular values
+      set_gtk_property!(m["labelTpm$i"], :label, "T/m") # unit
+      set_gtk_property!(m["labelGradient$i"], :label, "$i") 
     end
   end
 
 end
 
+##############
+## Plotting ##
+##############
 # plotting the magnetic field
 function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel
@@ -601,7 +711,7 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
     # set new coloring params
     cmin, cmax = minimum(fieldNorm), maximum(fieldNorm)
     cmin = (get_gtk_property(m["cbCMin"], :active, Bool)) ? 0.0 : cmin # set cmin to 0 if checkbutton is active
-    cmap = important_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
+    cmap = m.fv.coloring.cmap
     m.fv.coloring = ColoringParams(cmin, cmax, cmap) # set coloring
     # set cmin and cmax
       set_gtk_property!(m["adjCMin"], :lower, cmin)
