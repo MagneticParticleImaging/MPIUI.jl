@@ -104,14 +104,16 @@ function initCallbacks(m::SurveillanceWidget)
       end
     
     signal_connect(m["btnSaveTemp"], :clicked) do w
-        m.updating = true
         filter = Gtk4.GtkFileFilter(pattern=String("*.toml, *.mdf"), mimetype=String("application/toml"))
-        filename = save_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
-        if filename != ""
-            filenamebase, ext = splitext(filename)
-            saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
+        diag = save_dialog("Select Temperature File", mpilab[]["mainWindow"], (filter, )) do filename
+          m.updating = true
+          if filename != ""
+              filenamebase, ext = splitext(filename)
+              saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
+          end
+          m.updating = false
         end
-        m.updating = false
+        diag.modal = true
     end
 
     signal_connect(m["btnEnableAC"], :clicked) do w

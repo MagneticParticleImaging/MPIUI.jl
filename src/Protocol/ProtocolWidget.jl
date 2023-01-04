@@ -169,10 +169,12 @@ function initCallbacks(pw::ProtocolWidget)
     try 
       # TODO try to pick protocol folder of current scanner?
       filter = Gtk4.GtkFileFilter(pattern=String("*.toml"))
-      fileName = save_dialog("Save Protocol", GtkNullContainer(), (filter, ))
-      if fileName != ""
-        saveProtocol(pw::ProtocolWidget, fileName)
+      diag = save_dialog("Save Protocol", mpilab[]["mainWindow"], (filter, )) do fileName
+        if fileName != ""
+          saveProtocol(pw::ProtocolWidget, fileName)
+        end
       end
+      diag.modal = true
     catch e
       @info e
       showError(e)

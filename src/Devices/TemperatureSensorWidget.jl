@@ -57,26 +57,30 @@ function initCallbacks(m::TemperatureSensorWidget)
     end
   
   signal_connect(m["btnSaveTemp"], :clicked) do w
-      m.updating = true
       filter = Gtk4.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
-      filename = save_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
-      if filename != ""
-          filenamebase, ext = splitext(filename)
-          saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
+      diag = save_dialog("Select Temperature File", mpilab[]["mainWindow"], (filter, )) do filename
+        m.updating = true
+        if filename != ""
+            filenamebase, ext = splitext(filename)
+            saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
+        end
+        m.updating = false
       end
-      m.updating = false
+      diag.modal = true
   end  
 
   signal_connect(m["btnLoadTemp"], :clicked) do w
-    m.updating = true
     filter = Gtk.GtkFileFilter(pattern=String("*.toml, *.mdf"), mimetype=String("application/toml"))
-    filename = open_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
-    if filename != ""
-        filenamebase, ext = splitext(filename)
-        m.temperatureLog = TemperatureLog(filename)
-        @idle_add showData(m)
+    diag = open_dialog("Select Temperature File", mpilab[]["mainWindow"], (filter, )) do filename
+      m.updating = true
+      if filename != ""
+          filenamebase, ext = splitext(filename)
+          m.temperatureLog = TemperatureLog(filename)
+          @idle_add showData(m)
+      end
+      m.updating = false
     end
-    m.updating = false  #
+    diag.modal = true
   end  
   
 end

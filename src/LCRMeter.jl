@@ -72,11 +72,13 @@ function LCRMeterUI(;minFre=20000,maxFre=30000,samples=50,average=1,volt=2.0,ip=
 
   signal_connect(m["btnSave"], :clicked) do w
     filter = Gtk4.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
-    filename = save_dialog("Select Data File", GtkNullContainer(), (filter, ))
-    if filename != ""
-      filenamebase, ext = splitext(filename)
-      save(filenamebase*".toml", m)
+    diag = save_dialog("Select Data File", mpilab[]["mainWindow"], (filter, )) do filename
+      if filename != ""
+        filenamebase, ext = splitext(filename)
+        save(filenamebase*".toml", m)
+      end
     end
+    diag.modal = true
   end
 
   #@time signal_connect(m["btnSave"], :clicked) do w

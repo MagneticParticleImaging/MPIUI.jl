@@ -87,12 +87,15 @@ end
 
 function loadFilePos(posParam::PositionParameter)
   filter = Gtk4.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
-  filename = open_dialog("Select Position File", GtkNullContainer(), (filter, ))
-  @idle_add_guarded begin 
-    set_gtk_property!(posParam["entArbitraryPos",GtkEntryLeaf],:text,filename)
-    if filename != ""
-      set_gtk_property!(posParam["cbUseArbitraryPos", CheckButtonLeaf], :sensitive, true)
+  diag = open_dialog("Select Position File", mpilab[]["mainWindow"], (filter, )) do filename
+    @idle_add_guarded begin 
+      set_gtk_property!(posParam["entArbitraryPos",GtkEntryLeaf],:text,filename)
+      if filename != ""
+        set_gtk_property!(posParam["cbUseArbitraryPos", CheckButtonLeaf], :sensitive, true)
+      end
     end
   end
+  diag.modal = true
+  return 
 end
 

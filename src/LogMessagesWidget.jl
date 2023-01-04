@@ -207,15 +207,17 @@ function initCallbacks(m::LogMessageListWidget)
 
   signal_connect(m["btnLoad"], :clicked) do w
     @idle_add_guarded begin
-      m.updating = true
       filter = Gtk.GtkFileFilter(pattern=String("*.log"))
-      filename = open_dialog("Select log file", GtkNullContainer(), (filter, ))
-      if filename != ""
-        unselectall!(m.selection)
-        empty!(m.store)
-        updateMessages!(m, filename)
+      diag = open_dialog("Select log file", mpilab[]["mainWindow"], (filter, )) do filename
+        m.updating = true
+        if filename != ""
+          unselectall!(m.selection)
+          empty!(m.store)
+          updateMessages!(m, filename)
+        end
+        m.updating = false
       end
-      m.updating = false
+      diag.modal = true
     end
   end
 

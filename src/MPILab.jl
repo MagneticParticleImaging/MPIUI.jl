@@ -943,12 +943,14 @@ function initReconstructionStore(m::MPILab)
    try
     if hasselection(m.selectionReco)
       filter = Gtk4.GtkFileFilter(pattern=String("*.nii"), mimetype=String("application/x-nifti"))
-      filenameData = save_dialog("Select Export File", GtkNullContainer(), (filter, ))
-      if filenameData != ""
-        image = sliceColorDim( loaddata(m.currentReco.path), 1)
-        file, ext = splitext(filenameData)
-        savedata_analyze(string(file,".nii"), image)
+      diag = save_dialog("Select Export File", mpilab[]["mainWindow"], (filter, )) do filenameData
+        if filenameData != ""
+          image = sliceColorDim( loaddata(m.currentReco.path), 1)
+          file, ext = splitext(filenameData)
+          savedata_analyze(string(file,".nii"), image)
+        end
       end
+      diag.modal = true
     end
    catch e
     @info e
