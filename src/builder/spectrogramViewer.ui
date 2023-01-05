@@ -246,7 +246,7 @@
             <property name="focusable">1</property>
             <property name="receives_default">1</property>
             <property name="popover">popOptions</property>
-            <property name="icon-name">list-add</property>
+            <property name="icon-name">preferences-desktop</property>
             <layout>
               <property name="column">4</property>
               <property name="row">1</property>
