@@ -1143,7 +1143,6 @@ function initSFStore(m::MPILab)
 
   boxSFPane = m["boxSF"]
   push!(boxSFPane,m.sfBrowser.box)
-###  set_gtk_property!(boxSFPane, :expand, m.sfBrowser.box, true)
   show(boxSFPane)
 end
 
