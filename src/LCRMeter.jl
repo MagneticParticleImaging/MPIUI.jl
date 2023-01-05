@@ -23,9 +23,9 @@ function LCRMeterUI(;minFre=20000,maxFre=30000,samples=50,average=1,volt=2.0,ip=
   m.c2 = GtkCanvas() 
 
   push!(m["boxMain"],m.c1)
-  set_gtk_property!(m["boxMain"],:expand,m.c1,true)
+  m.c1.vexpand = m.c1.hexpand = true
   push!(m["boxMain"],m.c2)
-  set_gtk_property!(m["boxMain"],:expand,m.c2,true)
+  m.c2.vexpand = m.c2.hexpand = true
 
   choicesFunction = ["LsRs", "CsRs", "ZTD"]
   for c in choicesFunction
@@ -210,20 +210,36 @@ function sweepAndShow(m::LCRMeterUI)
   @info m.data
   @info m.datay
 
+  f1, ax1, l1 = CairoMakie.lines(freq, x_list, 
+                          figure = (; resolution = (1000, 800), fontsize = 12),
+                          axis = (; title = "What is this"),
+                          color = CairoMakie.RGBf(colors[1]...))
 
- p1 = Winston.plot(freq,x_list,"b-o", linewidth=2)
-  Winston.ylabel(ylabel1)
-  Winston.xlabel("f / kHz")
+  CairoMakie.autolimits!(ax1)
+  if freq[end] > freq[1]
+    CairoMakie.xlims!(ax1, freq[1], freq[end])
+  end
+  ax1.xlabel = "f / kHz"
+  ax1.xlabel = ylabel1
 
-  p2 = Winston.plot(freq,y_list,"r-o", linewidth=2)
-  Winston.ylabel(ylabel2)
-  Winston.xlabel("f / kHz")
+  f2, ax2, l2 = CairoMakie.lines(freq, y_list, 
+                          figure = (; resolution = (1000, 800), fontsize = 12),
+                          axis = (; title = "What is this"),
+                          color = CairoMakie.RGBf(colors[1]...))
 
-  #Winston.plot(p,freq,angle.(data),"k-x",
+  CairoMakie.autolimits!(ax2)
+  if freq[end] > freq[1]
+    CairoMakie.xlims!(ax2, freq[1], freq[end])
+  end
+  ax2.xlabel = "f / kHz"
+  ax2.xlabel = ylabel2
+
+
+  # plot(p,freq,angle.(data),"k-x",
   #               linewidth=2, ylog=true)
 
 
-  @idle_add_guarded display(m.c1 ,p1)
-  @idle_add_guarded display(m.c2 ,p2)
+  @idle_add_guarded drawonto(m.c1, f1)
+  @idle_add_guarded drawonto(m.c2, f2)
 
 end

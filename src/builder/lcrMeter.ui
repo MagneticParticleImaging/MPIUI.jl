@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="4.0"/>
+  <requires lib="gtk" version="4.0"/>
   <object class="GtkAdjustment" id="adjMaxFreq">
     <property name="upper">100000000</property>
     <property name="step_increment">1</property>
@@ -34,9 +35,11 @@
     </child>
     <property name="child">
       <object class="GtkBox" id="boxMain">
+        <property name="visible">0</property>
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkBox">
+            <property name="visible">0</property>
             <property name="margin-start">5</property>
             <property name="margin-end">5</property>
             <property name="margin_top">5</property>
@@ -44,6 +47,7 @@
             <property name="spacing">4</property>
             <child>
               <object class="GtkButton" id="btnSweep">
+                <property name="visible">0</property>
                 <property name="label" translatable="1">Sweep</property>
                 <property name="focusable">1</property>
                 <property name="receives_default">1</property>
@@ -51,6 +55,7 @@
             </child>
             <child>
               <object class="GtkToggleButton" id="tbContinuous">
+                <property name="visible">0</property>
                 <property name="label" translatable="1" context="Continuous">Cont.</property>
                 <property name="focusable">1</property>
                 <property name="receives_default">1</property>
@@ -59,6 +64,7 @@
             </child>
             <child>
               <object class="GtkButton" id="btnSave">
+                <property name="visible">0</property>
                 <property name="label" translatable="1">Save</property>
                 <property name="focusable">1</property>
                 <property name="receives_default">1</property>
@@ -66,71 +72,84 @@
             </child>
             <child>
               <object class="GtkLabel">
+                <property name="visible">0</property>
                 <property name="label" translatable="1">Min Freq</property>
               </object>
             </child>
             <child>
               <object class="GtkSpinButton">
+                <property name="visible">0</property>
                 <property name="focusable">1</property>
                 <property name="adjustment">adjMinFreq</property>
               </object>
             </child>
             <child>
               <object class="GtkLabel">
+                <property name="visible">0</property>
                 <property name="label" translatable="1">Max Freq</property>
               </object>
             </child>
             <child>
               <object class="GtkSpinButton">
+                <property name="visible">0</property>
                 <property name="focusable">1</property>
                 <property name="adjustment">adjMaxFreq</property>
               </object>
             </child>
             <child>
               <object class="GtkLabel">
+                <property name="visible">0</property>
                 <property name="label" translatable="1"># Samples</property>
               </object>
             </child>
             <child>
               <object class="GtkSpinButton">
+                <property name="visible">0</property>
                 <property name="focusable">1</property>
                 <property name="adjustment">adjNumSamples</property>
               </object>
             </child>
             <child>
               <object class="GtkLabel">
+                <property name="visible">0</property>
                 <property name="label" translatable="1"># Averages</property>
               </object>
             </child>
             <child>
               <object class="GtkSpinButton">
+                <property name="visible">0</property>
                 <property name="focusable">1</property>
                 <property name="adjustment">adjNumAverages</property>
               </object>
             </child>
             <child>
               <object class="GtkLabel">
+                <property name="visible">0</property>
                 <property name="label" translatable="1">Voltage</property>
               </object>
             </child>
             <child>
               <object class="GtkSpinButton">
+                <property name="visible">0</property>
                 <property name="focusable">1</property>
                 <property name="adjustment">adjVoltage</property>
               </object>
             </child>
             <child>
               <object class="GtkLabel">
+                <property name="visible">0</property>
                 <property name="label" translatable="1">IP</property>
               </object>
             </child>
             <child>
               <object class="GtkEntry" id="entIP">
+                <property name="visible">0</property>
                 <property name="focusable">1</property>
               </object>
             </child>
             <child>
               <object class="GtkComboBoxText" id="cbFunction">
+                <property name="visible">0</property>
                 <property name="hexpand">0</property>
               </object>
             </child>
