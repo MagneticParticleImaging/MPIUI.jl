@@ -206,7 +206,7 @@ function confirmPauseProtocol(pw::ProtocolWidget)
     pw.updating = true
     set_gtk_property!(pw["tbPause"], :active, true)
     set_gtk_property!(pw["tbPause"], :sensitive, true)
-    set_gtk_property!(pw["tbPause"], :label, "Unpause")
+    ### set_gtk_property!(pw["tbPause"], :label, "Unpause")
     pw.updating = false
   end
 end
@@ -250,7 +250,7 @@ function confirmResumeProtocol(pw::ProtocolWidget)
     pw.updating = true
     set_gtk_property!(pw["tbPause"], :active, false)
     set_gtk_property!(pw["tbPause"], :sensitive, true)
-    set_gtk_property!(pw["tbPause"], :label, "Pause")
+    ### set_gtk_property!(pw["tbPause"], :label, "Pause")
     pw.updating = false
   end
 end
@@ -307,8 +307,8 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
     set_gtk_property!(pw["tbRun"], :active, false)
     set_gtk_property!(pw["tbPause"], :active, false)
     # Text
-    set_gtk_property!(pw["tbRun"], :label, "Execute")
-    set_gtk_property!(pw["tbPause"], :label, "Pause")
+    ### set_gtk_property!(pw["tbRun"], :label, "Execute")
+    ### set_gtk_property!(pw["tbPause"], :label, "Pause")
     pw.updating = false
   end
 end
