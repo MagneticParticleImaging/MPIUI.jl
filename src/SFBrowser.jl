@@ -378,7 +378,6 @@ function SFSelectionDialog(;gradient = nothing, driveField = nothing)
   updateData!(sfBrowser, activeDatasetStore(mpilab[]))
 
   push!(box, sfBrowser.box)
-  ### set_gtk_property!(box, :expand, sfBrowser.box, true)
 
   selection = G_.get_selection(sfBrowser.tv)
 
