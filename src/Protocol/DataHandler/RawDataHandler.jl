@@ -92,6 +92,16 @@ function handleStorage(handler::RawDataHandler, protocol::Protocol, event::Stora
   end
 end
 
+function handleStorage(handler::RawDataHandler, protocol::RobotBasedSystemMatrixProtocol, event::StorageSuccessEvent, initiator::RawDataHandler)
+  @info "Received storage success event"
+  updateData(handler.dataWidget, event.filename)
+  if protocol.params.saveAsSystemMatrix
+    updateData!(mpilab[].sfBrowser, mpilab[].sfBrowser.datasetStore)
+  elseif mpilab[].currentStudy != nothing
+    updateExperimentStore(mpilab[], mpilab[].currentStudy)
+  end
+end
+
 updateData(handler::RawDataHandler, data::Nothing) = nothing
 
 function handleData(handler::RawDataHandler, protocol::Protocol, event::DataAnswerEvent)
