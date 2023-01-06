@@ -50,7 +50,7 @@ MPIFiles = "0.12.4"
 MPIMeasurements = "0.3"
 MPIReco = "0.3.8"
 Reexport = "0.2,1.0"
-Winston = "0.15.3"
+Winston = "1.0.0"
 CairoMakie = "0.10"
 julia = "1.7"
 
