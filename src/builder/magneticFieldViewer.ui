@@ -7,12 +7,12 @@
     <property name="step_increment">0.5</property>
     <property name="page_increment">10</property>
   </object>
-  <object class="GtkAdjustment" id="adjBarWidth">
+  <object class="GtkAdjustment" id="adjFontsize">
     <property name="lower">1</property>
-    <property name="upper">100</property>
-    <property name="value">20</property>
-    <property name="step_increment">10</property>
-    <property name="page_increment">10</property>
+    <property name="upper">30</property>
+    <property name="value">10</property>
+    <property name="step_increment">2</property>
+    <property name="page_increment">2</property>
   </object>
   <object class="GtkAdjustment" id="adjCMax">
     <property name="upper">1</property>
@@ -1177,8 +1177,8 @@ Plot</property>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkLabel" id="labelBarWidth">
-                            <property name="label" translatable="1">|bar|</property>
+                          <object class="GtkLabel" id="labelFontsize">
+                            <property name="label" translatable="1">fontsize</property>
                             <layout>
                               <property name="column">0</property>
                               <property name="row">2</property>
@@ -1186,13 +1186,13 @@ Plot</property>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkSpinButton" id="spinBarWidth">
+                          <object class="GtkSpinButton" id="spinFontsize">
                             <property name="focusable">1</property>
                             <property name="width_chars">5</property>
                             <property name="max_width_chars">5</property>
                             <property name="text" translatable="1">1</property>
-                            <property name="adjustment">adjBarWidth</property>
-                            <property name="value">20</property>
+                            <property name="adjustment">adjFontsize</property>
+                            <property name="value">12</property>
                             <layout>
                               <property name="column">1</property>
                               <property name="row">2</property>
@@ -1228,7 +1228,18 @@ Plot</property>
                             <property name="focusable">1</property>
                             <layout>
                               <property name="column">1</property>
-                              <property name="row">4</property>
+                              <property name="row">5</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="cbShowLegend">
+                            <property name="label" translatable="1">show legend</property>
+                            <property name="focusable">1</property>
+            		    <property name="active">1</property>
+                            <layout>
+                              <property name="column">1</property>
+                              <property name="row">3</property>
                             </layout>
                           </object>
                         </child>
@@ -1237,7 +1248,7 @@ Plot</property>
                             <property name="label" translatable="1">Colorbar</property>
                             <layout>
                               <property name="column">0</property>
-                              <property name="row">3</property>
+                              <property name="row">4</property>
                             </layout>
                           </object>
                         </child>
@@ -1305,7 +1316,7 @@ Plot</property>
                             </child>
                             <layout>
                               <property name="column">1</property>
-                              <property name="row">3</property>
+                              <property name="row">4</property>
                             </layout>
                           </object>
                         </child>
@@ -1315,7 +1326,7 @@ Plot</property>
                             <property name="focusable">1</property>
                             <layout>
                               <property name="column">1</property>
-                              <property name="row">5</property>
+                              <property name="row">6</property>
                             </layout>
                           </object>
                         </child>

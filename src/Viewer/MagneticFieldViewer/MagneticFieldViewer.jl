@@ -138,11 +138,14 @@ function MagneticFieldViewerWidget()
   end 
  
   # update coeffs plot
-  widgets = ["adjL", "adjBarWidth"]
+  widgets = ["adjL", "adjFontsize"]
   for ws in widgets 
     signal_connect(m[ws], "value_changed") do w
       @idle_add_guarded updateCoeffsPlot(m)
     end
+  end
+  signal_connect(m["cbShowLegend"], "toggled") do w
+    @idle_add_guarded updateCoeffsPlot(m)
   end
 
   # update plot (clicked button)
@@ -417,7 +420,7 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
 
   # disable buttons that have no functions at the moment
   set_gtk_property!(m["btnFrames"],:sensitive,false) # disable button with unused popover
-  #set_gtk_property!(m["btnExport"],:sensitive,false) # disable button with unused popover
+  set_gtk_property!(m["btnExportTikz"],:sensitive,false) # tikz export not yet supported
   set_gtk_property!(m["cbShowAxes"],:sensitive,false) # axes are always shown
 
   # update measurement infos
@@ -834,8 +837,6 @@ end
 # plotting the coefficients
 function updateCoeffsPlot(m::MagneticFieldViewerWidget)
 
-  # TODO: x-axis labels/ticks
-
   p = get_gtk_property(m["adjPatches"],:value, Int64) # patch
   L = get_gtk_property(m["adjL"],:value, Int64) # L
   L² = (L+1)^2 # number of coeffs
@@ -843,39 +844,41 @@ function updateCoeffsPlot(m::MagneticFieldViewerWidget)
 
   # normalize coefficients
   c = normalize.(m.coeffsPlot[:,p], 1/R)
+  cs = vcat([c[d].c[1:L²] for d=1:3]...) # stack all coefficients
+  grp = repeat(1:3, inner=L²) # grouping the coefficients
 
   # create plot
-  pl = Winston.FramedPlot(xlabel="[l,m]", ylabel="\\gamma^R_{l,m} / T")
+  fig = CairoMakie.Figure()
+  xticklabel = ["[$l,$m]" for l=0:L for m=-l:l]
+  ax = CairoMakie.Axis(fig[1,1], xticks = (1:L², xticklabel), 
+	    #title="Coefficients",
+	    xlabel = CairoMakie.L"[l,m]", ylabel = CairoMakie.L"\gamma^R_{l,m}~/~\text{T}")
 
   # x values
   y = range(1,L²,length=L²)
-  x = y .- 0.2
-  z = y .+ 0.2
+  y = repeat(y, outer=3) # for each direction
 
-  # create bars for each direction
-  w = get_gtk_property(m["adjBarWidth"],:value, Int64) # width of the bars
-  xx = Winston.Stems(x, c[1].c[1:L²], color=(0.0,0.2862,0.5725), width=w)
-  yy = Winston.Stems(y, c[2].c[1:L²], color=(0.5412,0.7412,0.1412), width=w)
-  zz = Winston.Stems(z, c[3].c[1:L²], color=(1.0,0.8745,0.0), width=w)
-
-  # add bars to plot
-  Winston.add(pl,xx, yy, zz)
+  # create bars
+  colorsCoeffs = [CairoMakie.RGBf(MPIUI.colors[i]...) for i in [1,3,7]] # use blue, green and yellow
+  CairoMakie.barplot!(ax, # axis 
+           	      y, cs, # x- and y-values
+           	      dodge=grp, color=colorsCoeffs[grp])
+  CairoMakie.autolimits!(ax) # auto axis limits
 
   # draw line to mark 0
-  s = Winston.Slope(0, [1,0], kind="solid", color="black")
-  Winston.add(pl,s)
-
-  # xtick labels
-  xticklabel = ["[$l,$m]" for l=0:L for m=-l:l]
-#  setattr(pl.x1, ticklabels=["[$l,$m]" for l=0:L for m=-l:l][1:4:end])
+  CairoMakie.ablines!(0, 0, color=:black, linewidth=1)
 
   # legend
-  Winston.setattr(xx, label="x")
-  Winston.setattr(yy, label="y")
-  Winston.setattr(zz, label="z")
-  l = Winston.Legend(.95, .9, [xx,yy,zz])
-  Winston.add(pl, l)
+  if get_gtk_property(m["cbShowLegend"], :active, Bool)
+    labels = ["x","y","z"]
+    elements = [CairoMakie.PolyElement(polycolor = colorsCoeffs[i]) for i in 1:length(labels)]
+    CairoMakie.axislegend(ax, elements, labels, position=:rt) # pos: right, top
+  end
+ 
+  # set fontsize # TODO: fix
+  fs = get_gtk_property(m["adjFontsize"],:value, Int64) # fontsize
+  CairoMakie.set_theme!(CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
 
   # show coeffs
-  display(m.grid[1,3], pl)
+  drawonto(m.grid[1,3], fig)
 end
