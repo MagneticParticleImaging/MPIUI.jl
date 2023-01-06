@@ -439,8 +439,9 @@ end
 function updateColoring(m::MagneticFieldViewerWidget, importantCMaps::Bool=true)
   if !m.fv.updating
     m.fv.updating = true
-    cmin = get_gtk_property(m["adjCMin"],:value, Float64)
-    cmax = get_gtk_property(m["adjCMax"],:value, Float64)
+    # scale adjCMin/adjCMax with 1000 as values below 1 don't work
+    cmin = get_gtk_property(m["adjCMin"],:value, Float64) / 1000
+    cmax = get_gtk_property(m["adjCMax"],:value, Float64) / 1000
     if importantCMaps # choice happend within the important colormaps
       cmap = important_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
     else # choice happened within all colormaps
@@ -461,8 +462,8 @@ end
 function updateColLims(m::MagneticFieldViewerWidget)
   if !m.fv.updating
     m.fv.updating = true
-    cmin = get_gtk_property(m["adjCMin"],:value, Float64)
-    cmax = get_gtk_property(m["adjCMax"],:value, Float64)
+    cmin = get_gtk_property(m["adjCMin"],:value, Float64) / 1000
+    cmax = get_gtk_property(m["adjCMax"],:value, Float64) / 1000
     m.fv.coloring = ColoringParams(cmin,cmax,m.fv.coloring.cmap) # keep cmap
     m.fv.updating = false
   end
@@ -700,8 +701,8 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
     cmax = m.fv.coloring.cmax
     cmap = m.fv.coloring.cmap
     # set new min/max values
-      set_gtk_property!(m["adjCMin"], :upper, 0.99*cmax) # prevent cmin=cmax
-      set_gtk_property!(m["adjCMax"], :lower, 1.01*cmin) # prevent cmin=cmax
+      set_gtk_property!(m["adjCMin"], :upper, 0.99*cmax * 1000) # prevent cmin=cmax
+      set_gtk_property!(m["adjCMax"], :lower, 1.01*cmin * 1000) # prevent cmin=cmax
   elseif get_gtk_property(m["cbKeepC"], :active, Bool) 
     # don't change min/max if the checkbutton is active
     cmin = m.fv.coloring.cmin
@@ -714,12 +715,12 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
     cmap = m.fv.coloring.cmap
     m.fv.coloring = ColoringParams(cmin, cmax, cmap) # set coloring
     # set cmin and cmax
-      set_gtk_property!(m["adjCMin"], :lower, cmin)
-      set_gtk_property!(m["adjCMin"], :upper, 0.99*cmax) # prevent cmin=cmax
-      set_gtk_property!(m["adjCMax"], :lower, 1.01*cmin) # prevent cmin=cmax
-      set_gtk_property!(m["adjCMax"], :upper, cmax)
-      @idle_add_guarded set_gtk_property!(m["adjCMin"], :value, cmin)
-      @idle_add_guarded set_gtk_property!(m["adjCMax"], :value, cmax)
+      set_gtk_property!(m["adjCMin"], :lower, cmin * 1000)
+      set_gtk_property!(m["adjCMin"], :upper, 0.99*cmax * 1000) # prevent cmin=cmax
+      set_gtk_property!(m["adjCMax"], :lower, 1.01*cmin * 1000) # prevent cmin=cmax
+      set_gtk_property!(m["adjCMax"], :upper, cmax * 1000)
+      @idle_add_guarded set_gtk_property!(m["adjCMin"], :value, cmin * 1000)
+      @idle_add_guarded set_gtk_property!(m["adjCMax"], :value, cmax * 1000)
   end
   Winston.colormap(RGB.(ImageUtils.cmap(cmap))) # set colormap
   # update coloring infos
