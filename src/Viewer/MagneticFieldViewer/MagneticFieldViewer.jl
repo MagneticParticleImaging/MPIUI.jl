@@ -134,11 +134,19 @@ function MagneticFieldViewerWidget()
  
   # change length of arrows
   signal_connect(m["adjArrowLength"], "value_changed") do w
-    @idle_add_guarded updateField(m, true)
+    @idle_add_guarded updateField(m)
   end 
+
+  # change fontsize
+  signal_connect(m["adjFontsize"], "value_changed") do w
+    @idle_add_guarded updateCoeffsPlot(m)
+    if get_gtk_property(m["cbShowAxes"], :active, Bool) # update field plots only if axes shown
+      @idle_add_guarded updateField(m)
+    end
+  end
  
   # update coeffs plot
-  widgets = ["adjL", "adjFontsize"]
+  widgets = ["adjL"]
   for ws in widgets 
     signal_connect(m[ws], "value_changed") do w
       @idle_add_guarded updateCoeffsPlot(m)
@@ -212,7 +220,7 @@ function MagneticFieldViewerWidget()
   end
 
   # checkbuttons changed
-  for cb in ["cbShowSphere", "cbShowSlices"]
+  for cb in ["cbShowSphere", "cbShowSlices", "cbShowAxes"]
     signal_connect(m[cb], "toggled") do w
       updateField(m)
     end
@@ -388,7 +396,7 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
   set_gtk_property!(m["adjPatches"], :upper, size(m.coeffs.coeffs,2) )
   set_gtk_property!(m["adjPatches"], :value, m.patch )
   set_gtk_property!(m["adjL"], :upper, m.coeffs.coeffs[1].L )
-  set_gtk_property!(m["adjL"], :value, m.coeffs.coeffs[1].L )
+  set_gtk_property!(m["adjL"], :value, min(m.coeffs.coeffs[1].L,3) ) # use L=3 as maximum
   set_gtk_property!(m["entRadius"], :text, "$(round(R*1000,digits=1))") # show radius of measurement 
   centerText = round.(center .* 1000, digits=1)
   set_gtk_property!(m["entCenterMeas"], :text, "$(centerText[1]) x $(centerText[2]) x $(centerText[3])") # show center of measurement
@@ -421,7 +429,9 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
   # disable buttons that have no functions at the moment
   set_gtk_property!(m["btnFrames"],:sensitive,false) # disable button with unused popover
   set_gtk_property!(m["btnExportTikz"],:sensitive,false) # tikz export not yet supported
-  set_gtk_property!(m["cbShowAxes"],:sensitive,false) # axes are always shown
+
+  # start with invisible axes for field plots
+  #set_gtk_property!(m["cbShowAxes"], :active, 1) # axes are always shown
 
   # update measurement infos
   if m.coeffs.ffp == nothing
@@ -446,7 +456,12 @@ function updateColoring(m::MagneticFieldViewerWidget, importantCMaps::Bool=true)
     cmin = get_gtk_property(m["adjCMin"],:value, Float64) / 1000
     cmax = get_gtk_property(m["adjCMax"],:value, Float64) / 1000
     if importantCMaps # choice happend within the important colormaps
-      cmap = important_cmaps()[get_gtk_property(m["cbCMaps"],:active, Int64)+1]
+      idx = get_gtk_property(m["cbCMaps"],:active, Int64)+1
+      if idx <= 4 # first 4 colormaps not available
+        idx = 6
+        set_gtk_property!(m["cbCMaps"], :active, 5)
+      end
+      cmap = important_cmaps()[idx]
     else # choice happened within all colormaps
       selection = G_.get_selection( Gtk4.next_sibling(Gtk4.first_child(m["boxCMaps"])) ) ### G_.get_selection(m["boxCMaps"][2])
       if hasselection(selection)
@@ -725,76 +740,86 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
       @idle_add_guarded set_gtk_property!(m["adjCMin"], :value, cmin * 1000)
       @idle_add_guarded set_gtk_property!(m["adjCMax"], :value, cmax * 1000)
   end
-  Winston.colormap(RGB.(ImageUtils.cmap(cmap))) # set colormap
   # update coloring infos
   set_gtk_property!(m["entCMin"], :text, "$(round(m.fv.coloring.cmin * 1000, digits=1))")
   set_gtk_property!(m["entCMax"], :text, "$(round(m.fv.coloring.cmax * 1000, digits=1))")
  
-  # plots
-  plYZ = Winston.imagesc((N[2][1],N[2][end]),(N[3][end],N[3][1]),fieldNorm[:,:,1]',(cmin,cmax))
-  xlabel("y / m"), ylabel("z / m")
-  plXZ = Winston.imagesc((N[1][end],N[1][1]),(N[3][end],N[3][1]),fieldNorm[:,:,2]',(cmin,cmax))
-  xlabel("x / m"), ylabel("z / m")
-  plXY = Winston.imagesc((N[1][1],N[1][end]),(N[2][1],N[2][end]),fieldNorm[:,:,3],(cmin,cmax))
-  xlabel("y / m"), ylabel("x / m")
+  # heatmap plots
+  # YZ
+  figYZ = CairoMakie.Figure();
+  axYZ = CairoMakie.Axis(figYZ[1,1], xlabel="y / m", ylabel="z / m")
+  CairoMakie.heatmap!(axYZ, N[2], N[3], fieldNorm[:,:,1], colorrange=(cmin,cmax), colormap=cmap)
+  # XZ
+  figXZ = CairoMakie.Figure();
+  axXZ = CairoMakie.Axis(figXZ[1,1], xlabel="x / m", ylabel="z / m") 
+  axXZ.xreversed = true # reverse x
+  CairoMakie.heatmap!(axXZ, N[1], N[3], fieldNorm[:,:,2], colorrange=(cmin,cmax), colormap=cmap)
+  # XY
+  figXY = CairoMakie.Figure();
+  axXY = CairoMakie.Axis(figXY[1,1], xlabel="y / m", ylabel="x / m")
+  CairoMakie.heatmap!(axXY, N[2], N[1], fieldNorm[:,:,3]', colorrange=(cmin,cmax), colormap=cmap)
+  axXY.yreversed = true # reverse x
+  
+
+  # disable ticks and labels
+  if !(get_gtk_property(m["cbShowAxes"], :active, Bool))
+    for ax in [axYZ, axXZ, axXY]
+      ax.xlabelvisible = false; ax.ylabelvisible = false; 
+      ax.xticklabelsvisible = false; ax.yticklabelsvisible = false; 
+      ax.xticksvisible = false; ax.yticksvisible = false;
+    end
+  end
 
   ## arrows ##
   discr = floor(Int,0.1*discretization) # reduce number of arrows
   ## positioning
   NN = [N[i][1:discr:end] for i=1:3]
-  x = repeat(reverse(NN[1]),1,length(NN[1])) #repeat(range(1,15,length=15),1,15);
-  y1 = repeat(transpose(NN[2]),length(NN[2]),1) #repeat(transpose(range(1,15,length=15)),15,1);
-  y2 = repeat(NN[2],1,length(NN[2])) #repeat(transpose(range(1,15,length=15)),15,1);
-  z = repeat(transpose(NN[3]),length(NN[3]),1) #repeat(transpose(range(1,15,length=15)),15,1);
-  ## direction (angle to x-axis with atan2(y,x))
   # vectors (arrows) (adapted to chosen coordinate orientations)
   arYZ = [[fieldxyz[2,i,j,1],fieldxyz[3,i,j,1]] for i=1:discr:discretization, j=1:discr:discretization]
-  arXZ = [[-fieldxyz[1,i,j,2],fieldxyz[3,i,j,2]] for i=discretization:-discr:1, j=1:discr:discretization]
-  arXY = [[fieldxyz[2,i,j,3],-fieldxyz[1,i,j,3]] for i=discretization:-discr:1, j=1:discr:discretization]
-  #arXY = [[fieldxyz[1,i,j,3],-fieldxyz[2,i,j,3]] for i=1:discr:discretization, j=1:discr:discretization]
-  # angle
-  dirYZ = [atan(ar[2],ar[1]) for ar in arYZ]  
-  dirXZ = [atan(ar[2],ar[1]) for ar in arXZ]  
-  dirXY = [atan(ar[2],ar[1]) for ar in arXY]
-  # length
-  lenYZ = norm.(arYZ)  
-  lenXZ = norm.(arXZ)  
-  lenXY = norm.(arXY)
+  arXZ = [[fieldxyz[1,i,j,2],fieldxyz[3,i,j,2]] for i=1:discr:discretization, j=1:discr:discretization]
+  arXY = [[fieldxyz[2,i,j,3],fieldxyz[1,i,j,3]] for i=1:discr:discretization, j=1:discr:discretization]
   # adapt length so that the maximum is equal to the chosen al:
-  al = get_gtk_property(m["adjArrowLength"],:value, Float64) # adapt length of the arrows
-  maxlen = maximum(vcat(lenYZ, lenXZ, lenXY))
-  lenYZ .*= al/maxlen
-  lenXZ .*= al/maxlen
-  lenXY .*= al/maxlen
+  al = get_gtk_property(m["adjArrowLength"],:value, Float64)/2 # adapt length of the arrows
+  #maxlen = maximum(vcat(lenYZ, lenXZ, lenXY))
+  #lenYZ .*= al/maxlen
+  #lenXZ .*= al/maxlen
+  #lenXY .*= al/maxlen
   
   # add arrows to plots
-  Winston.add( plYZ, Winston.Arrows(y2, z , dirYZ, lenYZ*al, 
-              linewidth=3.0, color="white") )
-  Winston.add( plXZ, Winston.Arrows(x, z, dirXZ, lenXZ*al, 
-              linewidth=3.0, color="white") )
-  Winston.add( plXY, Winston.Arrows(y1, x, dirXY, lenXY*al, 
-              linewidth=3.0, color="white") )
+  # YZ
+  arYZu = [ar[1] for ar in arYZ]
+  arYZv = [ar[2] for ar in arYZ]
+  CairoMakie.arrows!(axYZ, NN[2], NN[3], arYZu, arYZv, 
+		     color=:white, linewidth=1, arrowsize = 6, lengthscale = 0.1*al)
+  # XZ
+  arXZu = [ar[1] for ar in arXZ]
+  arXZv = [ar[2] for ar in arXZ]
+  CairoMakie.arrows!(axXZ, NN[1], NN[3], arXZu, arXZv, 
+		     color=:white, linewidth=1, arrowsize = 6, lengthscale = 0.1*al)
+  # XY
+  arXYu = [ar[1] for ar in arXY]
+  arXYv = [ar[2] for ar in arXY]
+  CairoMakie.arrows!(axXY, NN[2], NN[1], arXYu', arXYv', 
+		     color=:white, linewidth=1, arrowsize = 6, lengthscale = 0.1*al)
 
-  # remove label and ticks
-  #for pl in [plYZ, plXZ, plXY]
-  #  Winston.setattr(pl.x, draw_ticks=false, ticklabels=[])
-  #  Winston.setattr(pl.y, draw_ticks=false, ticklabels=[])
-  #end
+  # set fontsize # TODO: fix
+  fs = get_gtk_property(m["adjFontsize"],:value, Int64) # fontsize
+  CairoMakie.set_theme!(CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
+  #CairoMakie.set_theme!(figXZ, CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
+  #CairoMakie.set_theme!(figXY, CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
 
   # Show slices
   if get_gtk_property(m["cbShowSlices"], :active, Bool)
+    # draw lines to mark 0
     # YZ
-    s1 = MPIUI.Winston.Slope(0, Tuple(intersection[2:3]), kind="dotted", color="white")
-    s2 = MPIUI.Winston.Slope(Inf, Tuple(intersection[2:3]), kind="dotted", color="white")
-    Winston.add(plYZ, s1, s2)
+    CairoMakie.hlines!(axYZ, intersection[3], color=:white, linestyle=:dash, linewidth=0.5)
+    CairoMakie.vlines!(axYZ, intersection[2], color=:white, linestyle=:dash, linewidth=0.5)
     # XZ
-    s1 = MPIUI.Winston.Slope(0, Tuple(intersection[[1,3]]), kind="dotted", color="white")
-    s2 = MPIUI.Winston.Slope(Inf, Tuple(intersection[[1,3]]), kind="dotted", color="white")
-    Winston.add(plXZ, s1, s2)
+    CairoMakie.hlines!(axXZ, intersection[3], color=:white, linestyle=:dash, linewidth=0.5)
+    CairoMakie.vlines!(axXZ, intersection[1], color=:white, linestyle=:dash, linewidth=0.5)
     # XY
-    s1 = MPIUI.Winston.Slope(0, Tuple(intersection[[2,1]]), kind="dotted", color="white")
-    s2 = MPIUI.Winston.Slope(Inf, Tuple(intersection[[2,1]]), kind="dotted", color="white")
-    Winston.add(plXY, s1, s2)
+    CairoMakie.hlines!(axXY, intersection[1], color=:white, linestyle=:dash, linewidth=0.5)
+    CairoMakie.vlines!(axXY, intersection[2], color=:white, linestyle=:dash, linewidth=0.5)
   end
 
   # show sphere
@@ -809,29 +834,24 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
 
     # shift sphere to plotting center
     if m.fv.centerFFP && m.coeffs.ffp != nothing
-      spYZ = MPIUI.Winston.Curve(rr[:,1].-m.coeffs.ffp[2,m.patch], rr[:,2].-m.coeffs.ffp[3,m.patch], 
-				kind="dash", color="white")
-      spXZ = MPIUI.Winston.Curve(rr[:,1].-m.coeffs.ffp[1,m.patch], rr[:,2].-m.coeffs.ffp[3,m.patch], 
-				kind="dash", color="white")
-      spXY = MPIUI.Winston.Curve(rr[:,1].-m.coeffs.ffp[2,m.patch], rr[:,2].-m.coeffs.ffp[1,m.patch], 
-				kind="dash", color="white")
+      CairoMakie.lines!(axYZ, rr[:,1].-m.coeffs.ffp[2,m.patch], rr[:,2].-m.coeffs.ffp[3,m.patch], 
+			color=:white, linestyle=:dash, linewidth=1)
+      CairoMakie.lines!(axXZ, rr[:,1].-m.coeffs.ffp[1,m.patch], rr[:,2].-m.coeffs.ffp[3,m.patch], 
+			color=:white, linestyle=:dash, linewidth=1)
+      CairoMakie.lines!(axXY, rr[:,1].-m.coeffs.ffp[2,m.patch], rr[:,2].-m.coeffs.ffp[1,m.patch], 
+			color=:white, linestyle=:dash, linewidth=1)
     else
-      spYZ = MPIUI.Winston.Curve(rr[:,1], rr[:,2], kind="dash", color="white")
-      spXZ = MPIUI.Winston.Curve(rr[:,1], rr[:,2], kind="dash", color="white")
-      spXY = MPIUI.Winston.Curve(rr[:,1], rr[:,2], kind="dash", color="white")
+      CairoMakie.lines!(axYZ, rr[:,1], rr[:,2], color=:white, linestyle=:dash, linewidth=1)
+      CairoMakie.lines!(axXZ, rr[:,1], rr[:,2], color=:white, linestyle=:dash, linewidth=1)
+      CairoMakie.lines!(axXY, rr[:,1], rr[:,2], color=:white, linestyle=:dash, linewidth=1)
     end
 
-    # add to plots
-    for (pl,sp) in [(plYZ,spYZ), (plXZ,spXZ), (plXY,spXY)]
-      Winston.add(pl, sp)
-    end
   end
 
   # show fields
-  display(m.fv.grid[1,1], plXZ)
-  display(m.fv.grid[2,1], plYZ)
-  display(m.fv.grid[2,2], plXY)
-
+  drawonto(m.fv.grid[1,1], figXZ)
+  drawonto(m.fv.grid[2,1], figYZ)
+  drawonto(m.fv.grid[2,2], figXY)
 end
 
 # plotting the coefficients
@@ -846,6 +866,10 @@ function updateCoeffsPlot(m::MagneticFieldViewerWidget)
   c = normalize.(m.coeffsPlot[:,p], 1/R)
   cs = vcat([c[d].c[1:L²] for d=1:3]...) # stack all coefficients
   grp = repeat(1:3, inner=L²) # grouping the coefficients
+
+  # set fontsize
+  fs = get_gtk_property(m["adjFontsize"],:value, Int64) # fontsize
+  CairoMakie.set_theme!(CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
 
   # create plot
   fig = CairoMakie.Figure()
@@ -875,10 +899,6 @@ function updateCoeffsPlot(m::MagneticFieldViewerWidget)
     CairoMakie.axislegend(ax, elements, labels, position=:rt) # pos: right, top
   end
  
-  # set fontsize # TODO: fix
-  fs = get_gtk_property(m["adjFontsize"],:value, Int64) # fontsize
-  CairoMakie.set_theme!(CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
-
   # show coeffs
   drawonto(m.grid[1,3], fig)
 end
