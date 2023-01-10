@@ -24,7 +24,8 @@ function TemperatureSensorWidget(sensor::TemperatureSensor)
 
   for (i,c) in enumerate(m.canvases)
     push!(m, c)
-  ###  set_gtk_property!(m, :expand, c, true)
+    show(c)
+    c.hexpand = c.vexpand = true
   end
 
   show(m)
@@ -151,9 +152,10 @@ end
       end
       CairoMakie.axislegend()
       CairoMakie.autolimits!(ax)
+      if times[end] > times[1]
+        CairoMakie.xlims!(ax, times[1], times[end])
+      end
       drawonto(c, f)
-      ### c.is_sized = true
-      ### show(c)
     end
   end
 end

@@ -71,9 +71,8 @@ function SurveillanceWidget(su::SurveillanceUnit)
     Gtk4.GLib.gobject_move_ref(m, mainBox)
   
     push!(m, m.canvas)
-    m.canvas.hexpand = true
-    ### set_gtk_property!(m,:expand, m.canvas, true)
-  
+    m.canvas.hexpand = m.canvas.vexpand = true
+    show(m.canvas)
     show(m)
   
     tempInit = getTemperatures(su)
@@ -157,7 +156,7 @@ function startSurveillanceUnit(m::SurveillanceWidget)
     
             for l=1:L
               CairoMakie.lines!(ax, t, T[l,:], 
-                            color = CairoMakie.RGBf(colors[i]...)) 
+                            color = CairoMakie.RGBf(colors[l]...)) 
             end
             CairoMakie.autolimits!(ax)
             drawonto(m.canvas, f)
