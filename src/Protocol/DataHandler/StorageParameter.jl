@@ -25,6 +25,13 @@ function StorageParameter(mdfstore::MDFDatasetStore)
   mainBox = G_.get_object(b, "boxParams")
   storage = StorageParameter(mainBox.handle, b, mdfstore, "", now())
   Gtk4.GLib.gobject_move_ref(storage, mainBox)
+
+  # Allow to change between different units for the concentration
+  for c in ["mmol/L","mg/mL"]
+    push!(storage["cbConc"], c)
+  end
+  set_gtk_property!(storage["cbConc"],:active,1) # default: mg/ml
+
   return storage
 end
 
@@ -41,7 +48,13 @@ function getStorageMDF(sp::StorageParameter)
   tracerBatch(mdf, [get_gtk_property(sp["entTracerBatch"], :text, String)])
   tracerVendor(mdf, [get_gtk_property(sp["entTracerVendor"], :text, String)])
   tracerVolume(mdf, [1e-3*get_gtk_property(sp["adjTracerVolume"], :value, Float64)])
-  tracerConcentration(mdf, [1e-3*get_gtk_property(sp["adjTracerConcentration"], :value, Float64)])
+  # Concentration depends on the chosen unit 
+  if get_gtk_property(sp["cbConc"], :active, Int) == 0 # mmol/L
+    conc = 1e-3*get_gtk_property(sp["adjTracerConcentration"], :value, Float64)
+  else # mg/mL (1 mg/mL = 17.85 mmol/L)
+    conc = 17.85 * 1e-3*get_gtk_property(sp["adjTracerConcentration"], :value, Float64)
+  end
+  tracerConcentration(mdf, [conc])
   tracerSolute(mdf, [get_gtk_property(sp["entTracerSolute"], :text, String)])
   return mdf
 end
