@@ -220,7 +220,7 @@ function sweepAndShow(m::LCRMeterUI)
     CairoMakie.xlims!(ax1, freq[1], freq[end])
   end
   ax1.xlabel = "f / kHz"
-  ax1.xlabel = ylabel1
+  ax1.ylabel = ylabel1
 
   f2, ax2, l2 = CairoMakie.lines(freq, y_list, 
                           figure = (; resolution = (1000, 800), fontsize = 12),
@@ -232,7 +232,7 @@ function sweepAndShow(m::LCRMeterUI)
     CairoMakie.xlims!(ax2, freq[1], freq[end])
   end
   ax2.xlabel = "f / kHz"
-  ax2.xlabel = ylabel2
+  ax2.ylabel = ylabel2
 
 
   # plot(p,freq,angle.(data),"k-x",

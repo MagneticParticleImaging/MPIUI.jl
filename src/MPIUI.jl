@@ -33,7 +33,6 @@ using Cairo
 using Images
 #using HDF5
 
-import Winston
 using Colors
 
 import Base: getindex
@@ -125,7 +124,6 @@ include("Settings.jl")
 include("Devices/ScannerBrowser.jl")
 include("MPILab.jl")
 include("LCRMeter.jl")
-include("ArduinoDataLogger.jl")
 include("OnlineReco/OnlineReco.jl")
 
 function __init__()

@@ -1,4 +1,3 @@
-using Winston
 import MPIMeasurements.currentFrame
 
 export onlineRawViewer, onlineReco, currentFrame, finishReco, currentAcquisition
@@ -156,17 +155,29 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
 
         updateData!(dv[].dvw, ImageMeta(image))
         profile = reverse(vec(maximum(arraydata(image),dims=1:4)))
-        p = Winston.plot(profile, "b-", linewidth=7)
-        Winston.ylabel("c")
-        Winston.xlabel("frame")
 
-        setattr(p.y1, draw_ticks=false)
-        setattr(p.y2, draw_ticks=false)
+        ###
+        f, ax, l = CairoMakie.lines(1:length(profile), profile, 
+                          figure = (; resolution = (1000, 800), fontsize = 12),
+                          # axis = (; title = "What is this"),
+                          color = CairoMakie.RGBf(colors[1]...))
+
+        CairoMakie.autolimits!(ax)
         if length(profile) > 1
-          setattr(p.x1, draw_ticks=false,
-                 ticks=1:(length(profile)-1):length(profile), ticklabels=["1","$(frame)"])
+          CairoMakie.xlims!(ax, 1, length(profile))
         end
-        display(canvasHist, p)
+        ax.xlabel = "frame"
+        ax.ylabel = "c"
+
+        ### this was in the original Winston code:
+        ### setattr(p.y1, draw_ticks=false)
+        ### setattr(p.y2, draw_ticks=false)
+        ### if length(profile) > 1
+        ###  setattr(p.x1, draw_ticks=false,
+        ###         ticks=1:(length(profile)-1):length(profile), ticklabels=["1","$(frame)"])
+        ### end
+
+        @idle_add_guarded drawonto(canvasHist, f)
       else
         @info "Reco contains NaNs. Will not display it"
       end

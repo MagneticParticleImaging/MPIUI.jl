@@ -181,63 +181,8 @@ end
 end
 
 @guarded function showData(m::TemperatureControllerWidget)
-  #colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
-  lines = ["solid", "dashed", "dotted"]
-
-  L = min(m.temperatureLog.numChan,length(colors) * length(lines))
-
-  T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
-  timesDT = copy(m.temperatureLog.times) 
-  timesDT .-= timesDT[1]
-  times = Dates.value.(timesDT) / 1000 # seconds
-
-  if maximum(times) > 2*60*60*24
-    times ./= 60*60*24
-    strTime = "t / d"
-  elseif maximum(times) > 2*60*60
-    times ./= 60*60
-    strTime = "t / h"
-  elseif  maximum(times) > 2*60
-    times ./= 60
-    strTime = "t / min"
-  else
-    strTime = "t / s"
-  end
-
-  for (i,c) in enumerate(m.canvases)
-    idx = findall(d->d==i, getChannelGroups(m.cont))
-    if length(idx) > 0
-      p = FramedPlot()
-      Winston.plot(T[idx[1],:], color=colors[1], linewidth=3)
-
-
-      Winston.setattr(p, "xlabel", strTime)
-      Winston.setattr(p, "ylabel", "T / °C")
-
-      legendEntries = []
-      channelNames = []
-      if hasmethod(getChannelNames, (typeof(m.cont),))
-        channelNames = getChannelNames(m.cont)
-      end
-      for l=1:length(idx)
-        curve = Curve(times, T[idx[l],:], color = colors[mod1(l, length(colors))], linewidth=5) #linekind=lines[div(l-1, length(colors)) + 1]
-        if !isempty(channelNames) 
-          setattr(curve, label = channelNames[idx[l]])
-          push!(legendEntries, curve)
-        end
-        add(p, curve)
-      end
-      # setattr(p, xlim=(-100, size(T, 2))) does not work. Idea was to shift the legend
-
-      legend = Legend(.1, 0.9, legendEntries, halign="right") #size=1
-      add(p, legend)
-      display(c, p)
-      showall(c)
-      c.is_sized = true
-    end
-  end
+  showTemperatureData(m.canvases, m.temperatureLog, m.cont) # implemented in TemperatureSensorWidget.jl
 end
-
 
 function startSensor(m::TemperatureControllerWidget)
   m.timer = Timer(timer -> updateSensor(timer, m), 0.0, interval=4)

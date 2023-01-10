@@ -144,18 +144,24 @@ function startSurveillanceUnit(m::SurveillanceWidget)
   
           L = min(m.temperatureLog.numChan,7)
   
-          colors = ["b", "r", "g", "y", "k", "c", "m"]
-  
           T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
   
           @idle_add_guarded begin
-            p = Winston.plot(T[1,:], colors[1], linewidth=3)
-            for l=2:L
-              Winston.plot(p, T[l,:], colors[l], linewidth=3)
+            f = CairoMakie.Figure()
+            ax = CairoMakie.Axis(f[1, 1],
+                xlabel = "t / s",
+                ylabel = "T / °C"
+            )
+            
+            t = 1:length(T[1,:]) 
+    
+            for l=1:L
+              CairoMakie.lines!(ax, t, T[l,:], 
+                            color = CairoMakie.RGBf(colors[i]...)) 
             end
-            #Winston.xlabel("Time")
-            display(m.canvas ,p)
-            m.canvas.is_sized = true
+            CairoMakie.autolimits!(ax)
+            drawonto(m.canvas, f)
+            ### m.canvas.is_sized = true # old Gtk3
           end
         end
       end

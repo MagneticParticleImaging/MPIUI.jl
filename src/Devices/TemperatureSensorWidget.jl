@@ -102,13 +102,17 @@ end
 end
 
 @guarded function showData(m::TemperatureSensorWidget)
+  showTemperatureData(m.canvases, m.temperatureLog, m.sensor)
+end
+
+@guarded function showTemperatureData(canvases, temperatureLog, sensor)
   #colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
   lines = ["solid", "dashed", "dotted"]
 
-  L = min(m.temperatureLog.numChan,length(colors) * length(lines))
+  L = min(temperatureLog.numChan,length(colors) * length(lines))
 
-  T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
-  timesDT = copy(m.temperatureLog.times) 
+  T = reshape(copy(temperatureLog.temperatures), temperatureLog.numChan,:)
+  timesDT = copy(temperatureLog.times) 
   timesDT .-= timesDT[1]
   times = Dates.value.(timesDT) / 1000 # seconds
 
@@ -125,36 +129,31 @@ end
     strTime = "t / s"
   end
 
-  for (i,c) in enumerate(m.canvases)
-    idx = findall(d->d==i, getChannelGroups(m.sensor))
+  for (i,c) in enumerate(canvases)
+    idx = findall(d->d==i, getChannelGroups(sensor))
     if length(idx) > 0
-      p = FramedPlot()
-      Winston.plot(T[idx[1],:], color=colors[1], linewidth=3)
 
-
-      Winston.setattr(p, "xlabel", strTime)
-      Winston.setattr(p, "ylabel", "T / °C")
-
+      f = CairoMakie.Figure()
+      ax = CairoMakie.Axis(f[1, 1],
+          xlabel = strTime,
+          ylabel = "T / °C"
+      )
+      
       legendEntries = []
       channelNames = []
-      if hasmethod(getChannelNames, (typeof(m.sensor),))
-        channelNames = getChannelNames(m.sensor)
+      if hasmethod(getChannelNames, (typeof(sensor),))
+        channelNames = getChannelNames(sensor)
       end
       for l=1:length(idx)
-        curve = Curve(times, T[idx[l],:], color = colors[mod1(l, length(colors))], linewidth=5) #linekind=lines[div(l-1, length(colors)) + 1]
-        if !isempty(channelNames) 
-          setattr(curve, label = channelNames[idx[l]])
-          push!(legendEntries, curve)
-        end
-        add(p, curve)
+        CairoMakie.lines!(ax, times, T[idx[l],:], 
+                      color = CairoMakie.RGBf(colors[mod1(l, length(colors))]...),
+                      label = channelNames[idx[l]]) 
       end
-      # setattr(p, xlim=(-100, size(T, 2))) does not work. Idea was to shift the legend
-
-      legend = Legend(.1, 0.9, legendEntries, halign="right") #size=1
-      add(p, legend)
-      display(c, p)
-      showall(c)
-      c.is_sized = true
+      CairoMakie.axislegend()
+      CairoMakie.autolimits!(ax)
+      drawonto(c, f)
+      ### c.is_sized = true
+      ### show(c)
     end
   end
 end
