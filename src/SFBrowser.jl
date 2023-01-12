@@ -243,7 +243,7 @@ function SFBrowserWidget(smallWidth=false; gradient = nothing, driveField = noth
 
       sffilename = GtkTreeModel(tmSorted)[currentIt,10]
 
-      SpectrogramViewer(sffilename)
+      @idle_add_guarded SpectrogramViewer(sffilename)
 
     end
   end
