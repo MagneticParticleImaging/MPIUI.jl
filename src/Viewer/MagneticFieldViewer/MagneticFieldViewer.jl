@@ -144,6 +144,14 @@ function MagneticFieldViewerWidget()
       @idle_add_guarded updateField(m)
     end
   end
+  
+  # change unit
+  signal_connect(m["cbUseMilli"], "toggled") do w
+    @idle_add_guarded updateCoeffsPlot(m)
+    if get_gtk_property(m["cbShowAxes"], :active, Bool) # update field plots only if axes shown
+      @idle_add_guarded updateField(m)
+    end
+  end
  
   # update coeffs plot
   widgets = ["adjL"]
@@ -154,6 +162,9 @@ function MagneticFieldViewerWidget()
   end
   signal_connect(m["cbShowLegend"], "toggled") do w
     @idle_add_guarded updateCoeffsPlot(m)
+  end
+  signal_connect(m["cbScaleR"], "toggled") do w
+    @idle_add_guarded normalizeCoeffs(m)
   end
 
   # update plot (clicked button)
@@ -583,6 +594,20 @@ function stayInFFP(m::MagneticFieldViewerWidget)
   end
 end
 
+# normalize coefficients with radius
+function normalizeCoeffs(m::MagneticFieldViewerWidget)
+  # set some default values if the checkbutton is changed
+  if get_gtk_property(m["cbScaleR"], :active, Bool)
+    set_gtk_property!(m["adjL"], :value, min(m.coeffs.coeffs[1].L,3) ) # use L=3 as maximum
+    set_gtk_property!(m["cbUseMilli"], :active, true) # use mT
+  else
+    set_gtk_property!(m["adjL"], :value, 1 ) # use L=1 for coefficients scaled with R
+    set_gtk_property!(m["cbUseMilli"], :active, false) # use T/m^l
+  end
+
+  updateCoeffsPlot(m) # update plot
+end
+
 # update coefficients
 function updateCoeffs(m::MagneticFieldViewerWidget, shift)
 
@@ -698,6 +723,8 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   # Grid
   N = [range(-fov[i]/2,stop=fov[i]/2,length=discretization) for i=1:3];
 
+  useMilli = get_gtk_property(m["cbUseMilli"], :active, Bool) # convert everything to mT or mm
+
   # calculate field for plot 
   fieldNorm = zeros(discretization,discretization,3);
   fieldxyz = zeros(3,discretization,discretization,3);
@@ -743,20 +770,25 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   # update coloring infos
   set_gtk_property!(m["entCMin"], :text, "$(round(m.fv.coloring.cmin * 1000, digits=1))")
   set_gtk_property!(m["entCMax"], :text, "$(round(m.fv.coloring.cmax * 1000, digits=1))")
+
+  # convert N to mT
+  N = useMilli ? N .* 1000 : N
  
   # heatmap plots
+  # label
+  lab = [useMilli ? "$i / mm" : "$i / m" for i in ["x", "y", "z"]]
   # YZ
   figYZ = CairoMakie.Figure(figure_padding=0);
-  axYZ = CairoMakie.Axis(figYZ[1,1], xlabel="y / m", ylabel="z / m")
+  axYZ = CairoMakie.Axis(figYZ[1,1], xlabel=lab[2], ylabel=lab[3])
   CairoMakie.heatmap!(axYZ, N[2], N[3], fieldNorm[:,:,1], colorrange=(cmin,cmax), colormap=cmap)
   # XZ
   figXZ = CairoMakie.Figure(figure_padding=0);
-  axXZ = CairoMakie.Axis(figXZ[1,1], xlabel="x / m", ylabel="z / m") 
+  axXZ = CairoMakie.Axis(figXZ[1,1], xlabel=lab[1], ylabel=lab[3]) 
   axXZ.xreversed = true # reverse x
   CairoMakie.heatmap!(axXZ, N[1], N[3], fieldNorm[:,:,2], colorrange=(cmin,cmax), colormap=cmap)
   # XY
   figXY = CairoMakie.Figure(figure_padding=0);
-  axXY = CairoMakie.Axis(figXY[1,1], xlabel="y / m", ylabel="x / m")
+  axXY = CairoMakie.Axis(figXY[1,1], xlabel=lab[2], ylabel=lab[1])
   CairoMakie.heatmap!(axXY, N[2], N[1], fieldNorm[:,:,3]', colorrange=(cmin,cmax), colormap=cmap)
   axXY.yreversed = true # reverse x
   
@@ -780,10 +812,7 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   arXY = [[fieldxyz[2,i,j,3],fieldxyz[1,i,j,3]] for i=1:discr:discretization, j=1:discr:discretization]
   # adapt length so that the maximum is equal to the chosen al:
   al = get_gtk_property(m["adjArrowLength"],:value, Float64)/2 # adapt length of the arrows
-  #maxlen = maximum(vcat(lenYZ, lenXZ, lenXY))
-  #lenYZ .*= al/maxlen
-  #lenXZ .*= al/maxlen
-  #lenXY .*= al/maxlen
+  al = useMilli ? al*1000 : al # adapt length with chosen units
   
   # add arrows to plots
   # YZ
@@ -802,11 +831,9 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   CairoMakie.arrows!(axXY, NN[2], NN[1], arXYu', arXYv', 
 		     color=:white, linewidth=1, arrowsize = 6, lengthscale = 0.1*al)
 
-  # set fontsize # TODO: fix
+  # set fontsize
   fs = get_gtk_property(m["adjFontsize"],:value, Int64) # fontsize
   CairoMakie.set_theme!(CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
-  #CairoMakie.set_theme!(figXZ, CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
-  #CairoMakie.set_theme!(figXY, CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
 
   # Show slices
   if get_gtk_property(m["cbShowSlices"], :active, Bool)
@@ -861,10 +888,13 @@ function updateCoeffsPlot(m::MagneticFieldViewerWidget)
   L = get_gtk_property(m["adjL"],:value, Int64) # L
   L² = (L+1)^2 # number of coeffs
   R = m.coeffs.radius
+  useMilli = get_gtk_property(m["cbUseMilli"], :active, Bool) # convert everything to mT or mm
+  scaleR = get_gtk_property(m["cbScaleR"], :active, Bool) # normalize coefficients with radius R
 
   # normalize coefficients
-  c = normalize.(m.coeffsPlot[:,p], 1/R)
+  c = scaleR ? normalize.(m.coeffsPlot[:,p], 1/R) : m.coeffsPlot[:,p]
   cs = vcat([c[d].c[1:L²] for d=1:3]...) # stack all coefficients
+  cs = useMilli ? cs .* 1000 : cs # convert to mT
   grp = repeat(1:3, inner=L²) # grouping the coefficients
 
   # set fontsize
@@ -874,9 +904,19 @@ function updateCoeffsPlot(m::MagneticFieldViewerWidget)
   # create plot
   fig = CairoMakie.Figure(figure_padding=2)
   xticklabel = ["[$l,$m]" for l=0:L for m=-l:l]
+  # ylabel
+  if useMilli && scaleR
+    ylabel = CairoMakie.L"\gamma^R_{l,m}~/~\text{mT}" 
+  elseif !useMilli && scaleR
+    ylabel = CairoMakie.L"\gamma^R_{l,m}~/~\text{T}"
+  elseif useMilli && !scaleR
+    ylabel = CairoMakie.L"\gamma_{l,m}~/~\text{mT/m}^l" 
+  else 
+    ylabel = CairoMakie.L"\gamma_{l,m}~/~\text{T/m}^l"
+  end 
   ax = CairoMakie.Axis(fig[1,1], xticks = (1:L², xticklabel), 
 	    #title="Coefficients",
-	    xlabel = CairoMakie.L"[l,m]", ylabel = CairoMakie.L"\gamma^R_{l,m}~/~\text{T}")
+	    xlabel = CairoMakie.L"[l,m]", ylabel = ylabel)
 
   # x values
   y = range(1,L²,length=L²)
@@ -895,8 +935,9 @@ function updateCoeffsPlot(m::MagneticFieldViewerWidget)
   # legend
   if get_gtk_property(m["cbShowLegend"], :active, Bool)
     labels = ["x","y","z"]
-    elements = [CairoMakie.PolyElement(polycolor = colorsCoeffs[i]) for i in 1:length(labels)]
-    CairoMakie.axislegend(ax, elements, labels, position=:rt) # pos: right, top
+    elements = [CairoMakie.PolyElement(polycolor = colorsCoeffs[i],
+				       ) for i in 1:length(labels)]
+    CairoMakie.axislegend(ax, elements, labels, position=:rt, patchsize=(15,0.8*fs)) # pos: right, top
   end
  
   # show coeffs
