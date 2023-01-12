@@ -746,16 +746,16 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
  
   # heatmap plots
   # YZ
-  figYZ = CairoMakie.Figure();
+  figYZ = CairoMakie.Figure(figure_padding=0);
   axYZ = CairoMakie.Axis(figYZ[1,1], xlabel="y / m", ylabel="z / m")
   CairoMakie.heatmap!(axYZ, N[2], N[3], fieldNorm[:,:,1], colorrange=(cmin,cmax), colormap=cmap)
   # XZ
-  figXZ = CairoMakie.Figure();
+  figXZ = CairoMakie.Figure(figure_padding=0);
   axXZ = CairoMakie.Axis(figXZ[1,1], xlabel="x / m", ylabel="z / m") 
   axXZ.xreversed = true # reverse x
   CairoMakie.heatmap!(axXZ, N[1], N[3], fieldNorm[:,:,2], colorrange=(cmin,cmax), colormap=cmap)
   # XY
-  figXY = CairoMakie.Figure();
+  figXY = CairoMakie.Figure(figure_padding=0);
   axXY = CairoMakie.Axis(figXY[1,1], xlabel="y / m", ylabel="x / m")
   CairoMakie.heatmap!(axXY, N[2], N[1], fieldNorm[:,:,3]', colorrange=(cmin,cmax), colormap=cmap)
   axXY.yreversed = true # reverse x
@@ -872,7 +872,7 @@ function updateCoeffsPlot(m::MagneticFieldViewerWidget)
   CairoMakie.set_theme!(CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
 
   # create plot
-  fig = CairoMakie.Figure()
+  fig = CairoMakie.Figure(figure_padding=2)
   xticklabel = ["[$l,$m]" for l=0:L for m=-l:l]
   ax = CairoMakie.Axis(fig[1,1], xticks = (1:L², xticklabel), 
 	    #title="Coefficients",
