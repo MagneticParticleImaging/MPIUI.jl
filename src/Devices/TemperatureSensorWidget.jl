@@ -134,8 +134,8 @@ end
     idx = findall(d->d==i, getChannelGroups(sensor))
     if length(idx) > 0
 
-      f = CairoMakie.Figure()
-      ax = CairoMakie.Axis(f[1, 1],
+      f = CairoMakie.Figure(figure_padding=0)
+      ax = CairoMakie.Axis(f[1, 1], alignmode = CairoMakie.Outside(),
           xlabel = strTime,
           ylabel = "T / °C"
       )

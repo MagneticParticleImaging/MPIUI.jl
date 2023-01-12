@@ -401,7 +401,7 @@ end
     end
 
     fTD, axTD, lTD1 = CairoMakie.lines(timePoints[steps], dataCompressed[:,1], 
-                            figure = (; resolution = (1000, 800), fontsize = 12),
+                            figure = (; figure_padding=4, resolution = (1000, 800), fontsize = 11),
                             axis = (; title = "Time Domain"),
                             color = CairoMakie.RGBf(colors[1]...),
                             label = labels_[1])
@@ -450,7 +450,7 @@ end
       end
 
       fFD, axFD, lFD1 = CairoMakie.lines(freq[stepsFr],freqDataCompressed[:,1], 
-                              figure = (; resolution = (1000, 800), fontsize = 12),
+                              figure = (; figure_padding=4, resolution = (1000, 800), fontsize = 11),
                               axis = (; title = "Frequency Domain", yscale=log10),
                               color = CairoMakie.RGBf(colors[1]...),
                               label=labels_[1])
