@@ -211,7 +211,7 @@ function initCallbacks(m_::SpectrogramWidget)
   end
 
 
-  for cb in ["cbShowAllFrames"] #"cbCorrTF","cbSLCorr","cbAbsFrameAverage"
+  for cb in ["cbShowAllFrames", "cbShowFixDistortions"] #"cbCorrTF","cbSLCorr","cbAbsFrameAverage"
     signal_connect(m[cb], :toggled) do w
       loadData(C_NULL, m)
     end
@@ -297,7 +297,8 @@ end
 
         data = getMeasurements(f, true, frames=frame,
                     bgCorrection=false, spectralLeakageCorrection = get_gtk_property(m["cbSLCorr"], :active, Bool),
-                    tfCorrection=get_gtk_property(m["cbCorrTF"], :active, Bool))
+                    tfCorrection=get_gtk_property(m["cbCorrTF"], :active, Bool),
+                    fixDistortions=m["cbShowFixDistortions"].active)
         push!(dataFGVec, data)
 
         if acqNumBGFrames(f) > 0
@@ -517,7 +518,9 @@ end
                                  range( (minFr-1)/size(sp.power,1) / m.deltaT / 2.0, 
                                     step = (maxFr-1)/size(sp.power,1) / m.deltaT / 2.0 / size(spdata[sliceFr, sliceTime],1),
                                     length = size(spdata[sliceFr, sliceTime],1)), 
-                          log.(10.0^(-(2+10*logVal)) .+ transpose(spdata[sliceFr, sliceTime]) ) )
+                          log.(10.0^(-(2+10*logVal)) .+ transpose(spdata[sliceFr, sliceTime]) );
+                          figure = (; figure_padding=4, fontsize = 10),
+                          )
     
     CairoMakie.lines!(axSp, [patch_,patch_], [0,(maxFr-1)/size(sp.power,1) / m.deltaT / 2.0], 
                                              color=:white, linewidth=2 )
@@ -535,7 +538,7 @@ end
     steps = minTP:sp_:maxTP
 
     fTD, axTD, lTD1 = CairoMakie.lines(timePoints[steps], data_[steps], 
-                            figure = (; resolution = (1000, 800), fontsize = 12),
+                            figure = (; figure_padding=4, resolution = (1000, 800), fontsize = 10),
                             axis = (; title = "Time Domain"),
                             color = CairoMakie.RGBf(colors[1]...))
    
@@ -560,7 +563,7 @@ end
       stepsFr = minFr:spFr:maxFr
 
       fFD, axFD, lFD1 = CairoMakie.lines(freq[stepsFr],freqdata[stepsFr,patch], 
-                              figure = (; resolution = (1000, 800), fontsize = 12),
+                              figure = (; figure_padding=4, resolution = (1000, 800), fontsize = 10),
                               axis = (; title = "Frequency Domain", yscale=log10),
                               color = CairoMakie.RGBf(colors[1]...))
  
