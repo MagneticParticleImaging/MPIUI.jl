@@ -507,7 +507,7 @@ function updateSlices(m::MagneticFieldViewerWidget)
 
   # get voxel size
   fovString = get_gtk_property(m["entFOV"], :text, String) # FOV
-  fov = tryparse.(Float64, split(fovString,"x")) ./ 1000
+  fov = tryparse.(Float64, split(fovString,"x")) ./ 1000 # conversion from mm to m
   discretization = Int(get_gtk_property(m["adjDiscretization"], :value, Int64)*2+1) # odd number of voxel 
   voxel = fov ./ discretization
 
@@ -707,23 +707,23 @@ end
 ##############
 # plotting the magnetic field
 function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
+
+  useMilli = get_gtk_property(m["cbUseMilli"], :active, Bool) # convert everything to mT or mm
   discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel
   R = m.coeffs.radius # radius of measurement data
   # center = m.coeffs.center # center of measurement data (TODO: adapt axis with measurement center)
   # m.patch = get_gtk_property(m["adjPatches"],:value, Int64) # patch
-  # ffp = (m.coeffs.ffp == nothing) ? [0.0,0.0,0.0] : m.coeffs.ffp[:,m.patch] # not necessary
+  ffp = useMilli ? m.coeffs.ffp .* 1000 : m.coeffs.ffp # used for correct positioning of the sphere
   # get current intersection
   intersString = get_gtk_property(m["entInters"], :text, String) # intersection
   intersection = tryparse.(Float64,split(intersString,"x")) ./ 1000 # conversion from mm to m
 
   # get FOV
   fovString = get_gtk_property(m["entFOV"], :text, String) # FOV
-  fov = tryparse.(Float64,split(fovString,"x")) ./ 1000
+  fov = tryparse.(Float64,split(fovString,"x")) ./ 1000 # conversion from mm to m
 
   # Grid
   N = [range(-fov[i]/2,stop=fov[i]/2,length=discretization) for i=1:3];
-
-  useMilli = get_gtk_property(m["cbUseMilli"], :active, Bool) # convert everything to mT or mm
 
   # calculate field for plot 
   fieldNorm = zeros(discretization,discretization,3);
@@ -838,15 +838,16 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   # Show slices
   if get_gtk_property(m["cbShowSlices"], :active, Bool)
     # draw lines to mark 0
+    intersec = useMilli ? intersection .*1000 : intersection # scale intersection to the chosen unit
     # YZ
-    CairoMakie.hlines!(axYZ, intersection[3], color=:white, linestyle=:dash, linewidth=0.5)
-    CairoMakie.vlines!(axYZ, intersection[2], color=:white, linestyle=:dash, linewidth=0.5)
+    CairoMakie.hlines!(axYZ, intersec[3], color=:white, linestyle=:dash, linewidth=0.5)
+    CairoMakie.vlines!(axYZ, intersec[2], color=:white, linestyle=:dash, linewidth=0.5)
     # XZ
-    CairoMakie.hlines!(axXZ, intersection[3], color=:white, linestyle=:dash, linewidth=0.5)
-    CairoMakie.vlines!(axXZ, intersection[1], color=:white, linestyle=:dash, linewidth=0.5)
+    CairoMakie.hlines!(axXZ, intersec[3], color=:white, linestyle=:dash, linewidth=0.5)
+    CairoMakie.vlines!(axXZ, intersec[1], color=:white, linestyle=:dash, linewidth=0.5)
     # XY
-    CairoMakie.hlines!(axXY, intersection[1], color=:white, linestyle=:dash, linewidth=0.5)
-    CairoMakie.vlines!(axXY, intersection[2], color=:white, linestyle=:dash, linewidth=0.5)
+    CairoMakie.hlines!(axXY, intersec[1], color=:white, linestyle=:dash, linewidth=0.5)
+    CairoMakie.vlines!(axXY, intersec[2], color=:white, linestyle=:dash, linewidth=0.5)
   end
 
   # show sphere
@@ -858,14 +859,15 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
       rr[i,1] = R*sin(ϕ[i]);
       rr[i,2] = R*cos(ϕ[i]);
     end
+    rr = useMilli ? rr .* 1000 : rr # convert from m to mm
 
     # shift sphere to plotting center
     if m.fv.centerFFP && m.coeffs.ffp != nothing
-      CairoMakie.lines!(axYZ, rr[:,1].-m.coeffs.ffp[2,m.patch], rr[:,2].-m.coeffs.ffp[3,m.patch], 
+      CairoMakie.lines!(axYZ, rr[:,1].-ffp[2,m.patch], rr[:,2].-ffp[3,m.patch], 
 			color=:white, linestyle=:dash, linewidth=1)
-      CairoMakie.lines!(axXZ, rr[:,1].-m.coeffs.ffp[1,m.patch], rr[:,2].-m.coeffs.ffp[3,m.patch], 
+      CairoMakie.lines!(axXZ, rr[:,1].-ffp[1,m.patch], rr[:,2].-ffp[3,m.patch], 
 			color=:white, linestyle=:dash, linewidth=1)
-      CairoMakie.lines!(axXY, rr[:,1].-m.coeffs.ffp[2,m.patch], rr[:,2].-m.coeffs.ffp[1,m.patch], 
+      CairoMakie.lines!(axXY, rr[:,1].-ffp[2,m.patch], rr[:,2].-ffp[1,m.patch], 
 			color=:white, linestyle=:dash, linewidth=1)
     else
       CairoMakie.lines!(axYZ, rr[:,1], rr[:,2], color=:white, linestyle=:dash, linewidth=1)
