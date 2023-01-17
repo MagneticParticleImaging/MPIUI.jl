@@ -713,7 +713,9 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   R = m.coeffs.radius # radius of measurement data
   # center = m.coeffs.center # center of measurement data (TODO: adapt axis with measurement center)
   # m.patch = get_gtk_property(m["adjPatches"],:value, Int64) # patch
-  ffp = useMilli ? m.coeffs.ffp .* 1000 : m.coeffs.ffp # used for correct positioning of the sphere
+  if m.coeffs.ffp != nothing
+    ffp = useMilli ? m.coeffs.ffp .* 1000 : m.coeffs.ffp # used for correct positioning of the sphere
+  end
   # get current intersection
   intersString = get_gtk_property(m["entInters"], :text, String) # intersection
   intersection = tryparse.(Float64,split(intersString,"x")) ./ 1000 # conversion from mm to m
