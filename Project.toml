@@ -49,7 +49,7 @@ MPIFiles = "0.12.4"
 MPIMeasurements = "0.3"
 MPIReco = "0.3.8"
 Reexport = "0.2,1.0"
-CairoMakie = "0.10"
+CairoMakie = "0.10.2"
 julia = "1.7"
 
 [extras]
