@@ -48,6 +48,30 @@ function MagneticFieldViewer(filename::Union{AbstractString,MagneticFieldCoeffic
   return MagneticFieldViewer(w, mfViewerWidget)
 end
 
+function FieldViewerWidget()
+  uifile = joinpath(@__DIR__,"..","..","builder","magneticFieldViewer.ui")
+
+  b = GtkBuilder(filename=uifile)
+  mainBox = G_.get_object(b, "boxFieldViewer")
+
+  fv = FieldViewerWidget(mainBox.handle, b, ColoringParams(0,0,0),
+                     false, nothing, true,
+                      G_.get_object(b, "gridFieldViewer"),)
+  Gtk4.GLib.gobject_move_ref(fv, mainBox)
+
+  # initialize plots
+  fv.grid[1,1] = GtkCanvas()
+  fv.grid[1,2] = GtkCanvas()
+  fv.grid[2,1] = GtkCanvas()
+  fv.grid[2,2] = GtkCanvas()
+
+  fv.grid.hexpand = fv.grid.vexpand = true
+  # expand plots
+  ### set_gtk_property!(fv, :expand, fv.grid, true)
+
+  return fv
+end
+
 function MagneticFieldViewerWidget()
   uifile = joinpath(@__DIR__,"..","..","builder","magneticFieldViewer.ui")
 
@@ -121,7 +145,17 @@ function MagneticFieldViewerWidget()
 
   # change discretization
   signal_connect(m["adjDiscretization"], "value_changed") do w
-    @idle_add_guarded updateField(m)
+    @idle_add_guarded begin
+      # adapt min/max slice
+      d = get_gtk_property(m["adjDiscretization"],:value, Int64) 
+      for w in ["adjSliceX", "adjSliceY", "adjSliceZ"]
+        set_gtk_property!(m[w], :value, 0)
+        set_gtk_property!(m[w], :lower, -d)
+        set_gtk_property!(m[w], :upper, d)
+      end
+      # update plot
+      updateField(m)
+    end
   end
   
   # change patch
@@ -280,29 +314,6 @@ function MagneticFieldViewerWidget()
   return m
 end
 
-function FieldViewerWidget()
-  uifile = joinpath(@__DIR__,"..","..","builder","magneticFieldViewer.ui")
-
-  b = GtkBuilder(filename=uifile)
-  mainBox = G_.get_object(b, "boxFieldViewer")
-
-  fv = FieldViewerWidget(mainBox.handle, b, ColoringParams(0,0,0),
-                     false, nothing, true,
-                      G_.get_object(b, "gridFieldViewer"),)
-  Gtk4.GLib.gobject_move_ref(fv, mainBox)
-
-  # initialize plots
-  fv.grid[1,1] = GtkCanvas()
-  fv.grid[1,2] = GtkCanvas()
-  fv.grid[2,1] = GtkCanvas()
-  fv.grid[2,2] = GtkCanvas()
-
-  fv.grid.hexpand = fv.grid.vexpand = true
-  # expand plots
-  ### set_gtk_property!(fv, :expand, fv.grid, true)
-
-  return fv
-end
 
 function initCallbacks(m::MagneticFieldViewerWidget)
 
@@ -376,6 +387,50 @@ function initCallbacks(m::MagneticFieldViewerWidget)
   for w in widgets
     signal_connect(newSlice, m[w], "value_changed")
   end
+
+  ## click on image to choose a slice
+  function on_pressed(controller, n_press, x, y)
+    if get_gtk_property(m["cbShowAxes"], :active, Bool)
+      @info "Disable axes to change the intersection with a mouse click." 
+    else
+      # position on the image: (x,y)
+      # calculate actual position in the fields coordinates to update intersection
+      # get image size
+      w = widget(controller) # get current widget
+      ctx = getgc(w) 
+      hh = height(ctx) # height of the plot
+      ww = width(ctx) # width of the plot
+      # calculate pixel size
+      d = get_gtk_property(m["adjDiscretization"],:value, Int64) # number of voxel 
+      hpix = hh / (d*2+1) # height of pixel
+      wpix = ww / (d*2+1) # width of pixel
+      # position (pixel) (counted from the upper left corner)
+      pixel = [floor(Int, x / wpix), floor(Int, y / hpix)]
+
+      # update intersection (depending on the image)
+      @idle_add_guarded begin
+        if w == m.fv.grid[1,1] # XZ
+          set_gtk_property!(m["adjSliceX"], :value, -pixel[1]+d)
+          set_gtk_property!(m["adjSliceZ"], :value, -pixel[2]+d)
+        elseif w == m.fv.grid[2,1] # YZ
+          set_gtk_property!(m["adjSliceY"], :value, pixel[1]-d)
+          set_gtk_property!(m["adjSliceZ"], :value, -pixel[2]+d)
+        else # YX
+          set_gtk_property!(m["adjSliceY"], :value, pixel[1]-d)
+          set_gtk_property!(m["adjSliceX"], :value, pixel[2]-d)
+        end
+      end
+    end
+  end
+
+  for c in [m.fv.grid[1,1], m.fv.grid[2,1], m.fv.grid[2,2]]
+    # add the event controller for mouse clicks to the widget
+    g = GtkGestureClick()
+    push!(c,g)
+    # call function
+    @idle_add_guarded signal_connect(on_pressed, g, "pressed")
+  end
+
 
   # export images/data
   initExportCallbacks(m)
@@ -724,8 +779,11 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   fovString = get_gtk_property(m["entFOV"], :text, String) # FOV
   fov = tryparse.(Float64,split(fovString,"x")) ./ 1000 # conversion from mm to m
 
-  # Grid
-  N = [range(-fov[i]/2,stop=fov[i]/2,length=discretization) for i=1:3];
+  # Grid (fov denotes the size and not the first and last pixel)
+  N = [range(-fov[i]/2,stop=fov[i]/2,length=discretization+1) for i=1:3];
+  for i=1:3
+    N[i] = N[i][1:end-1] .+ Float64(N[i].step)/2
+  end
 
   # calculate field for plot 
   fieldNorm = zeros(discretization,discretization,3);
