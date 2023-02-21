@@ -8,7 +8,8 @@ mutable struct FieldViewerWidget <: Gtk4.GtkBox
   builder::GtkBuilder
   coloring::ColoringParams
   updating::Bool
-  field # data to be plotted
+  fieldNorm::Array{Float64} # data to be plotted (norm)
+  fieldArr::Array{Float64} # data to be plotted (for quiver)
   centerFFP::Bool # center of plot (FFP (true) or center of measured sphere (false))
   grid::Gtk4.GtkGridLeaf
 end
@@ -55,7 +56,7 @@ function FieldViewerWidget()
   mainBox = G_.get_object(b, "boxFieldViewer")
 
   fv = FieldViewerWidget(mainBox.handle, b, ColoringParams(0,0,0),
-                     false, nothing, true,
+                     false, zeros(0,0,0), zeros(0,0,0), true,
                       G_.get_object(b, "gridFieldViewer"),)
   Gtk4.GLib.gobject_move_ref(fv, mainBox)
 
@@ -154,6 +155,7 @@ function MagneticFieldViewerWidget()
         set_gtk_property!(m[w], :upper, d)
       end
       # update plot
+      calcField(m) # calculate new field values
       updateField(m)
     end
   end
@@ -206,6 +208,7 @@ function MagneticFieldViewerWidget()
     @idle_add_guarded begin
       updateIntersection(m)
       updateCoeffsPlot(m)
+      calcField(m) # calculate new field values
       updateField(m)
     end
   end
@@ -232,6 +235,7 @@ function MagneticFieldViewerWidget()
         m.fv.centerFFP = true
         calcCenterCoeffs(m,true)
         updateCoeffsPlot(m)
+        calcField(m) # calculate new field values
         updateField(m)
       end
     end
@@ -353,6 +357,7 @@ function initCallbacks(m::MagneticFieldViewerWidget)
       # update coefficients with new intersection and plot everything
       updateIntersection(m)
       updateCoeffsPlot(m)
+      calcField(m) # calculate new field values
       updateField(m)
 
       m.updating = false
@@ -378,6 +383,7 @@ function initCallbacks(m::MagneticFieldViewerWidget)
   function resetFOV( widget )
     R = m.coeffs.radius # radius  
     set_gtk_property!(m["entFOV"], :text, "$(R*2000) x $(R*2000) x $(R*2000)") # initial FOV
+    calcField(m) # calculate new field values
     updateField(m)
   end
   signal_connect(resetFOV, m["btnResetFOV"], "clicked")
@@ -507,6 +513,7 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
   updateInfos(m)
 
   # plotting
+  calcField(m) # calculate field values
   updateField(m)
   updateCoeffsPlot(m)
   show(m)
@@ -605,6 +612,7 @@ function goToFFP(m::MagneticFieldViewerWidget, goToZero=false)
   calcCenterCoeffs(m) # recalculate coefficients regarding to the center
   updateCoeffs(m, intersection) # shift coefficients into new intersection 
   updateCoeffsPlot(m)
+  calcField(m) # calculate new field values
   updateField(m)
 
   m.updating = false
@@ -644,6 +652,7 @@ function stayInFFP(m::MagneticFieldViewerWidget)
     goToFFP(m)
   else 
     # use intersection and just update both plots 
+    calcField(m) # calculate new field values
     updateField(m)
     updateCoeffsPlot(m)
   end
@@ -760,9 +769,60 @@ end
 ##############
 ## Plotting ##
 ##############
-# profile plot
+## profile plot
 function updateProfile(m::MagneticFieldViewerWidget)
   # TODO
+
+end
+
+# drawing profile plot
+function showProfile(m::MagneticFieldViewerWidget, data, xLabel::String, yLabel::String)
+  fig, ax, l = CairoMakie.lines(1:length(data), data, 
+        figure = (; resolution = (1000, 800), fontsize = 12),
+        axis = (; title = "Profile"),
+        color = CairoMakie.RGBf(colors[1]...))
+  
+  CairoMakie.autolimits!(ax)
+  if length(data) > 1
+    CairoMakie.xlims!(ax, 1, length(data))
+  end
+  ax.xlabel = xLabel
+  ax.ylabel = yLabel
+  drawonto(m.fv.grid[1,2], fig)
+end
+
+## Magnetic field
+function calcField(m::MagneticFieldViewerWidget)
+ 
+   discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel
+
+  # get current intersection
+  intersString = get_gtk_property(m["entInters"], :text, String) # intersection
+  intersection = tryparse.(Float64,split(intersString,"x")) ./ 1000 # conversion from mm to m
+
+  # get FOV
+  fovString = get_gtk_property(m["entFOV"], :text, String) # FOV
+  fov = tryparse.(Float64,split(fovString,"x")) ./ 1000 # conversion from mm to m
+
+  # Grid (fov denotes the size and not the first and last pixel)
+  N = [range(-fov[i]/2,stop=fov[i]/2,length=discretization+1) for i=1:3];
+  for i=1:3
+    N[i] = N[i][1:end-1] .+ Float64(N[i].step)/2
+  end
+
+  # calculate field for plot 
+  m.fv.fieldNorm = zeros(discretization,discretization,3);
+  m.fv.fieldArr = zeros(3,discretization,discretization,3);
+  for i = 1:discretization
+    for j = 1:discretization
+      m.fv.fieldArr[:,i,j,1] = [m.field[d,m.patch]([intersection[1],N[2][i],N[3][j]]) for d=1:3]
+      m.fv.fieldNorm[i,j,1] = norm(m.fv.fieldArr[:,i,j,1])
+      m.fv.fieldArr[:,i,j,2] = [m.field[d,m.patch]([N[1][i],intersection[2],N[3][j]]) for d=1:3]
+      m.fv.fieldNorm[i,j,2] = norm(m.fv.fieldArr[:,i,j,2])
+      m.fv.fieldArr[:,i,j,3] = [m.field[d,m.patch]([N[1][i],N[2][j],intersection[3]]) for d=1:3]
+      m.fv.fieldNorm[i,j,3] = norm(m.fv.fieldArr[:,i,j,3])
+    end
+  end
 
 end
 
@@ -791,20 +851,6 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
     N[i] = N[i][1:end-1] .+ Float64(N[i].step)/2
   end
 
-  # calculate field for plot 
-  fieldNorm = zeros(discretization,discretization,3);
-  fieldxyz = zeros(3,discretization,discretization,3);
-  for i = 1:discretization
-    for j = 1:discretization
-      fieldxyz[:,i,j,1] = [m.field[d,m.patch]([intersection[1],N[2][i],N[3][j]]) for d=1:3]
-      fieldNorm[i,j,1] = norm(fieldxyz[:,i,j,1])
-      fieldxyz[:,i,j,2] = [m.field[d,m.patch]([N[1][i],intersection[2],N[3][j]]) for d=1:3]
-      fieldNorm[i,j,2] = norm(fieldxyz[:,i,j,2])
-      fieldxyz[:,i,j,3] = [m.field[d,m.patch]([N[1][i],N[2][j],intersection[3]]) for d=1:3]
-      fieldNorm[i,j,3] = norm(fieldxyz[:,i,j,3])
-    end
-  end
-
   # coloring params
   if updateColoring
     # use params from GUI
@@ -821,7 +867,7 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
     cmap = m.fv.coloring.cmap
   else
     # set new coloring params
-    cmin, cmax = minimum(fieldNorm), maximum(fieldNorm)
+    cmin, cmax = minimum(m.fv.fieldNorm), maximum(m.fv.fieldNorm)
     cmin = (get_gtk_property(m["cbCMin"], :active, Bool)) ? 0.0 : cmin # set cmin to 0 if checkbutton is active
     cmap = m.fv.coloring.cmap
     m.fv.coloring = ColoringParams(cmin, cmax, cmap) # set coloring
@@ -846,16 +892,16 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   # YZ
   figYZ = CairoMakie.Figure(figure_padding=0);
   axYZ = CairoMakie.Axis(figYZ[1,1], xlabel=lab[2], ylabel=lab[3])
-  CairoMakie.heatmap!(axYZ, N[2], N[3], fieldNorm[:,:,1], colorrange=(cmin,cmax), colormap=cmap)
+  CairoMakie.heatmap!(axYZ, N[2], N[3], m.fv.fieldNorm[:,:,1], colorrange=(cmin,cmax), colormap=cmap)
   # XZ
   figXZ = CairoMakie.Figure(figure_padding=0);
   axXZ = CairoMakie.Axis(figXZ[1,1], xlabel=lab[1], ylabel=lab[3]) 
   axXZ.xreversed = true # reverse x
-  CairoMakie.heatmap!(axXZ, N[1], N[3], fieldNorm[:,:,2], colorrange=(cmin,cmax), colormap=cmap)
+  CairoMakie.heatmap!(axXZ, N[1], N[3], m.fv.fieldNorm[:,:,2], colorrange=(cmin,cmax), colormap=cmap)
   # XY
   figXY = CairoMakie.Figure(figure_padding=0);
   axXY = CairoMakie.Axis(figXY[1,1], xlabel=lab[2], ylabel=lab[1])
-  CairoMakie.heatmap!(axXY, N[2], N[1], fieldNorm[:,:,3]', colorrange=(cmin,cmax), colormap=cmap)
+  CairoMakie.heatmap!(axXY, N[2], N[1], m.fv.fieldNorm[:,:,3]', colorrange=(cmin,cmax), colormap=cmap)
   axXY.yreversed = true # reverse x
   
 
@@ -873,9 +919,9 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   ## positioning
   NN = [N[i][1:discr:end] for i=1:3]
   # vectors (arrows) (adapted to chosen coordinate orientations)
-  arYZ = [[fieldxyz[2,i,j,1],fieldxyz[3,i,j,1]] for i=1:discr:discretization, j=1:discr:discretization]
-  arXZ = [[fieldxyz[1,i,j,2],fieldxyz[3,i,j,2]] for i=1:discr:discretization, j=1:discr:discretization]
-  arXY = [[fieldxyz[2,i,j,3],fieldxyz[1,i,j,3]] for i=1:discr:discretization, j=1:discr:discretization]
+  arYZ = [[m.fv.fieldArr[2,i,j,1],m.fv.fieldArr[3,i,j,1]] for i=1:discr:discretization, j=1:discr:discretization]
+  arXZ = [[m.fv.fieldArr[1,i,j,2],m.fv.fieldArr[3,i,j,2]] for i=1:discr:discretization, j=1:discr:discretization]
+  arXY = [[m.fv.fieldArr[2,i,j,3],m.fv.fieldArr[1,i,j,3]] for i=1:discr:discretization, j=1:discr:discretization]
   # adapt length so that the maximum is equal to the chosen al:
   al = get_gtk_property(m["adjArrowLength"],:value, Float64)/2 # adapt length of the arrows
   al = useMilli ? al*1000 : al # adapt length with chosen units
