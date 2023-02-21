@@ -265,9 +265,9 @@ function MagneticFieldViewerWidget()
   end
 
   # checkbuttons changed
-  for cb in ["cbShowSphere", "cbShowSlices", "cbShowAxes"]
+  for cb in ["cbShowSphere", "cbShowSlices", "cbShowAxes", "cbShowCS"]
     signal_connect(m[cb], "toggled") do w
-      updateField(m)
+      @idle_add_guarded updateField(m)
     end
   end
   signal_connect(m["cbStayFFP"], "toggled") do w
@@ -390,7 +390,7 @@ function initCallbacks(m::MagneticFieldViewerWidget)
 
   ## click on image to choose a slice
   function on_pressed(controller, n_press, x, y)
-    if get_gtk_property(m["cbShowAxes"], :active, Bool)
+    if get_gtk_property(m["cbShowCS"], :active, Bool)
       @info "Disable axes to change the intersection with a mouse click." 
     else
       # position on the image: (x,y)
@@ -760,6 +760,12 @@ end
 ##############
 ## Plotting ##
 ##############
+# profile plot
+function updateProfile(m::MagneticFieldViewerWidget)
+  # TODO
+
+end
+
 # plotting the magnetic field
 function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
 
@@ -854,7 +860,7 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   
 
   # disable ticks and labels
-  if !(get_gtk_property(m["cbShowAxes"], :active, Bool))
+  if !(get_gtk_property(m["cbShowCS"], :active, Bool))
     for ax in [axYZ, axXZ, axXY]
       ax.xlabelvisible = false; ax.ylabelvisible = false; 
       ax.xticklabelsvisible = false; ax.yticklabelsvisible = false; 
@@ -941,6 +947,19 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   drawonto(m.fv.grid[1,1], figXZ)
   drawonto(m.fv.grid[2,1], figYZ)
   drawonto(m.fv.grid[2,2], figXY)
+
+  # draw axes (only arrows)
+  if get_gtk_property(m["cbShowAxes"], :active, Bool)
+    for w in [[m.fv.grid[1,1],"xz"], [m.fv.grid[2,1],"yz"], [m.fv.grid[2,2], "xy"]]
+      @idle_add_guarded Gtk4.draw(w[1]) do widget
+        ctx = getgc(w[1])
+        drawAxes(ctx, w[2])
+        set_line_width(ctx, 3.0)
+        Cairo.stroke(ctx) 
+      end
+    end
+  end
+    
 end
 
 # plotting the coefficients

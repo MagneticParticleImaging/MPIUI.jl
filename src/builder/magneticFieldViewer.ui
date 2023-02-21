@@ -517,12 +517,22 @@
     <property name="child">
       <object class="GtkGrid" id="gridOption">
         <child>
+          <object class="GtkCheckButton" id="cbShowCS">
+            <property name="label" translatable="1"> Show CS </property>
+            <property name="focusable">1</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">0</property>
+            </layout>
+          </object>
+        </child>
+        <child>
           <object class="GtkCheckButton" id="cbShowAxes">
             <property name="label" translatable="1"> Show Axes </property>
             <property name="focusable">1</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">0</property>
+              <property name="row">1</property>
             </layout>
           </object>
         </child>
@@ -532,7 +542,7 @@
             <property name="focusable">1</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">1</property>
+              <property name="row">2</property>
             </layout>
           </object>
         </child>
