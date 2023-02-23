@@ -8,8 +8,9 @@ mutable struct FieldViewerWidget <: Gtk4.GtkBox
   builder::GtkBuilder
   coloring::ColoringParams
   updating::Bool
-  fieldNorm::Array{Float64} # data to be plotted (norm)
-  fieldArr::Array{Float64} # data to be plotted (for quiver)
+  fieldNorm::Array{Float64,3} # data to be plotted (norm)
+  field::Array{Float64,4} # data to be plotted (field values)
+  currentProfile::Array{Float64,3} # data of profile plot
   centerFFP::Bool # center of plot (FFP (true) or center of measured sphere (false))
   grid::Gtk4.GtkGridLeaf
 end
@@ -56,7 +57,7 @@ function FieldViewerWidget()
   mainBox = G_.get_object(b, "boxFieldViewer")
 
   fv = FieldViewerWidget(mainBox.handle, b, ColoringParams(0,0,0),
-                     false, zeros(0,0,0), zeros(0,0,0), true,
+                     false, zeros(0,0,0), zeros(0,0,0,0), zeros(0,0,0), true,
                       G_.get_object(b, "gridFieldViewer"),)
   Gtk4.GLib.gobject_move_ref(fv, mainBox)
 
@@ -143,6 +144,16 @@ function MagneticFieldViewerWidget()
     push!(m["cbGradientOffset"], c)
   end
   set_gtk_property!(m["cbGradientOffset"],:active,0) # default: Gradient
+
+  # change between different profile options
+  for c in ["Norm","xyz","x","y","z"] # field
+    push!(m["cbFrameProj"], c)
+  end
+  set_gtk_property!(m["cbFrameProj"],:active,0) # default: Norm along all axes
+  for c in ["all", "x", "y", "z"] # axes
+    push!(m["cbProfile"], c)
+  end
+  set_gtk_property!(m["cbProfile"],:active,0) # default: Norm along all axes
 
   # change discretization
   signal_connect(m["adjDiscretization"], "value_changed") do w
@@ -311,6 +322,13 @@ function MagneticFieldViewerWidget()
   # update measurement infos
   signal_connect(m["cbGradientOffset"], "changed") do w
     @idle_add_guarded updateInfos(m) 
+  end
+
+  # update profile plot
+  for cb in ["cbFrameProj", "cbProfile"]
+    signal_connect(m[cb], "changed") do w
+      @idle_add_guarded updateProfile(m) 
+    end
   end
 
   initCallbacks(m)
@@ -499,7 +517,6 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
   end
 
   # disable buttons that have no functions at the moment
-  set_gtk_property!(m["btnFrames"],:sensitive,false) # disable button with unused popover
   set_gtk_property!(m["btnExportTikz"],:sensitive,false) # tikz export not yet supported
 
   # start with invisible axes for field plots
@@ -771,23 +788,118 @@ end
 ##############
 ## profile plot
 function updateProfile(m::MagneticFieldViewerWidget)
-  # TODO
+  # ["Norm","xyz","x","y","z"] # cbFrameProj - field
+  # ["all", "x", "y", "z"] # cbProfile - axes
 
+  # get chosen profiles
+  fields = get_gtk_property(m["cbFrameProj"],:active, Int64)
+  axesDir = get_gtk_property(m["cbProfile"],:active, Int64)
+
+  # plotting of all field directions along all axes not possible
+  if fields == 1 && axesDir == 0 
+    return nothing
+  end
+
+  # get FOV and diescretization for correct positioning (x-axis)
+  useMilli = get_gtk_property(m["cbUseMilli"], :active, Bool) # convert everything to mT or mm
+  discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel
+  # get current intersection
+  intersString = get_gtk_property(m["entInters"], :text, String) # intersection
+  intersection = tryparse.(Float64,split(intersString,"x")) ./ 1000 # conversion from mm to m
+  # get FOV
+  fovString = get_gtk_property(m["entFOV"], :text, String) # FOV
+  fov = tryparse.(Float64,split(fovString,"x")) ./ 1000 # conversion from mm to m
+  # Grid (fov denotes the size and not the first and last pixel)
+  N = [range(-fov[i]/2,stop=fov[i]/2,length=discretization+1) for i=1:3];
+  for i=1:3
+    N[i] = N[i][1:end-1] .+ Float64(N[i].step)/2
+  end
+  # convert N to mT
+  N = useMilli ? N .* 1000 : N 
+
+  # colors
+  colorsAll = [CairoMakie.RGBf(MPIUI.colors[i]...) for i in [1,3,7]] # use blue, green and yellow
+
+  # label
+  xlabel = ["xyz", "x", "y", "z"][axesDir+1]
+  xlabel *= useMilli ? " / mm" : " / m"
+  ylabel = (fields == 0) ? "||B||" : "B"*["","x","y","z"][fields]
+  ylabel *= useMilli ? " / mT" : " / T"
+
+  # choose colors and data for the plot
+  if fields == 1 || axesDir == 0 
+
+    # plot all three fields in one direction or one field/norm in all directions
+    colorsPlot = colorsAll # all three colors
+
+    # data
+    x = (fields != 1) ? N : N[axesDir] # x values (all axes or one axis)
+    if fields == 1 # all fields in one direction
+      y = m.fv.currentProfile[1:3,:,axesDir]
+    elseif fields == 0  # norm in all directions
+      y = m.fv.currentProfile[4,:,:]'
+    else # one field in all directions
+      y = m.fv.currentProfile[fields-1,:,:]'
+    end
+  elseif fields != 0 #|| (fields == 0 && axesDir == 1) 
+
+    # plot a field in one direction
+    colorsPlot = [colorsAll[fields-1]] # x-direction (field or axis)
+
+    # data
+    x = N[axesDir] # x values
+    y = m.fv.currentProfile[fields-1,:,axesDir] 
+  else #fields == 0 && axesDir != 0 
+
+    # plot norm in one direction
+    colorsPlot = [colorsAll[axesDir]] # y-direction (field or axis)
+
+    # data
+    x = N[axesDir] # x values
+    y = m.fv.currentProfile[4,:,axesDir] 
+
+  #else #fields == 4 || (fields == 0 && axesDir == 3) 
+
+    # plot norm in z-direction or z-field in one direction
+  #  colorsPlot = [colorsAll[3]] # z-direction (field or axis)
+
+    # data
+   # x = N[axesDir] # x values
+  end
+
+  y *= useMilli ? 1000 : 1
+
+  showProfile(m, x, y, xlabel, ylabel, colorsPlot)
 end
 
 # drawing profile plot
-function showProfile(m::MagneticFieldViewerWidget, data, xLabel::String, yLabel::String)
-  fig, ax, l = CairoMakie.lines(1:length(data), data, 
-        figure = (; resolution = (1000, 800), fontsize = 12),
-        axis = (; title = "Profile"),
-        color = CairoMakie.RGBf(colors[1]...))
-  
-  CairoMakie.autolimits!(ax)
-  if length(data) > 1
-    CairoMakie.xlims!(ax, 1, length(data))
+function showProfile(m::MagneticFieldViewerWidget, dataX, dataY,
+		     xLabel::String, yLabel::String, 
+		     colors::Vector{RGB{Float32}})
+
+  # set fontsize
+  fs = get_gtk_property(m["adjFontsize"],:value, Int64) # fontsize
+  CairoMakie.set_theme!(CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
+
+  # figure
+  fig = CairoMakie.Figure(figure_padding=2)
+
+  # axis
+  ax = CairoMakie.Axis(fig[1,1], 
+	    #title="Profile",
+	    xlabel = xLabel, ylabel = yLabel)
+
+  # Plot
+  for i = 1:length(colors) # number of profiles
+    X = (typeof(dataX) <: Vector) ? dataX[i] : dataX
+    Y = (typeof(dataY) <: Vector) ? dataY : dataY[i,:]
+    CairoMakie.lines!(ax, X, Y, color=colors[i])
   end
-  ax.xlabel = xLabel
-  ax.ylabel = yLabel
+  CairoMakie.autolimits!(ax) # auto axis limits
+
+  # draw line to mark 0
+  CairoMakie.ablines!(0, 0, color=:black, linewidth=1)
+
   drawonto(m.fv.grid[1,2], fig)
 end
 
@@ -811,17 +923,24 @@ function calcField(m::MagneticFieldViewerWidget)
   end
 
   # calculate field for plot 
-  m.fv.fieldNorm = zeros(discretization,discretization,3);
-  m.fv.fieldArr = zeros(3,discretization,discretization,3);
+  m.fv.fieldNorm = zeros(discretization,discretization,3)
+  m.fv.field = zeros(3,discretization,discretization,3)
+  m.fv.currentProfile = zeros(4,discretization,3)
   for i = 1:discretization
     for j = 1:discretization
-      m.fv.fieldArr[:,i,j,1] = [m.field[d,m.patch]([intersection[1],N[2][i],N[3][j]]) for d=1:3]
-      m.fv.fieldNorm[i,j,1] = norm(m.fv.fieldArr[:,i,j,1])
-      m.fv.fieldArr[:,i,j,2] = [m.field[d,m.patch]([N[1][i],intersection[2],N[3][j]]) for d=1:3]
-      m.fv.fieldNorm[i,j,2] = norm(m.fv.fieldArr[:,i,j,2])
-      m.fv.fieldArr[:,i,j,3] = [m.field[d,m.patch]([N[1][i],N[2][j],intersection[3]]) for d=1:3]
-      m.fv.fieldNorm[i,j,3] = norm(m.fv.fieldArr[:,i,j,3])
+      m.fv.field[:,i,j,1] = [m.field[d,m.patch]([intersection[1],N[2][i],N[3][j]]) for d=1:3]
+      m.fv.fieldNorm[i,j,1] = norm(m.fv.field[:,i,j,1])
+      m.fv.field[:,i,j,2] = [m.field[d,m.patch]([N[1][i],intersection[2],N[3][j]]) for d=1:3]
+      m.fv.fieldNorm[i,j,2] = norm(m.fv.field[:,i,j,2])
+      m.fv.field[:,i,j,3] = [m.field[d,m.patch]([N[1][i],N[2][j],intersection[3]]) for d=1:3]
+      m.fv.fieldNorm[i,j,3] = norm(m.fv.field[:,i,j,3])
     end
+
+    # get current profile
+    m.fv.currentProfile[1:3,i,1] = [m.field[d,m.patch]([N[1][i],intersection[2],intersection[3]]) for d=1:3] # along x-axis
+    m.fv.currentProfile[1:3,i,2] = [m.field[d,m.patch]([intersection[1],N[2][i],intersection[3]]) for d=1:3] # along y-axis
+    m.fv.currentProfile[1:3,i,3] = [m.field[d,m.patch]([intersection[1],intersection[2],N[3][i]]) for d=1:3] # along z-axis
+    m.fv.currentProfile[4,i,:] = [norm(m.fv.currentProfile[1:3,i,d]) for d=1:3] # norm along all axes
   end
 
 end
@@ -919,9 +1038,9 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   ## positioning
   NN = [N[i][1:discr:end] for i=1:3]
   # vectors (arrows) (adapted to chosen coordinate orientations)
-  arYZ = [[m.fv.fieldArr[2,i,j,1],m.fv.fieldArr[3,i,j,1]] for i=1:discr:discretization, j=1:discr:discretization]
-  arXZ = [[m.fv.fieldArr[1,i,j,2],m.fv.fieldArr[3,i,j,2]] for i=1:discr:discretization, j=1:discr:discretization]
-  arXY = [[m.fv.fieldArr[2,i,j,3],m.fv.fieldArr[1,i,j,3]] for i=1:discr:discretization, j=1:discr:discretization]
+  arYZ = [[m.fv.field[2,i,j,1],m.fv.field[3,i,j,1]] for i=1:discr:discretization, j=1:discr:discretization]
+  arXZ = [[m.fv.field[1,i,j,2],m.fv.field[3,i,j,2]] for i=1:discr:discretization, j=1:discr:discretization]
+  arXY = [[m.fv.field[2,i,j,3],m.fv.field[1,i,j,3]] for i=1:discr:discretization, j=1:discr:discretization]
   # adapt length so that the maximum is equal to the chosen al:
   al = get_gtk_property(m["adjArrowLength"],:value, Float64)/2 # adapt length of the arrows
   al = useMilli ? al*1000 : al # adapt length with chosen units
@@ -1005,7 +1124,9 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
       end
     end
   end
-    
+  
+  # profile plot
+  updateProfile(m)  
 end
 
 # plotting the coefficients
