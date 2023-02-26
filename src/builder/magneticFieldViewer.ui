@@ -3,7 +3,7 @@
   <requires lib="gtk" version="4.0"/>
   <object class="GtkAdjustment" id="adjArrowLength">
     <property name="upper">10</property>
-    <property name="value">2</property>
+    <property name="value">5</property>
     <property name="step_increment">0.5</property>
     <property name="page_increment">10</property>
   </object>
@@ -1170,7 +1170,7 @@ Plot</property>
                             <property name="text" translatable="1">0</property>
                             <property name="adjustment">adjArrowLength</property>
                             <property name="digits">1</property>
-                            <property name="value">2</property>
+                            <property name="value">5</property>
                             <layout>
                               <property name="column">1</property>
                               <property name="row">1</property>
