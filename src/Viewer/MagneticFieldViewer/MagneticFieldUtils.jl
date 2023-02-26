@@ -15,7 +15,7 @@ mutable struct MagneticFieldCoefficients
     # test sizes of the arrays
     if size(coeffs,1) != 3
       throw(DimensionMismatch("The coefficient matrix needs 3 entries (x,y,z) in the first dimension, not $(size(coeffs,1))"))
-    elseif ffp != nothing
+    elseif ffp !== nothing
       if size(ffp,1) != 3
         throw(DimensionMismatch("The FFP matrix needs 3 entries (x,y,z) in the first dimension, not $(size(coeffs,1))"))
       elseif size(coeffs,2) != size(ffp,2)
@@ -171,9 +171,9 @@ function magneticField(coords::AbstractArray{T,2}, field::Union{AbstractArray{T,
   # rescale coordinates to t-design on unit sphere
   coords = coords .- center
   coords *= 1/R
-  for c = 1:size(field,3)
+  for c in axes(field,3)
     # calculation of the coefficients
-    for j = 1:size(field,1)
+    for j in axes(field,1)
 
         coeffs[j,c] = SphericalHarmonicExpansions.sphericalQuadrature(field[j,:,c],coords',L);
         coeffs[j,c].R = R
@@ -220,7 +220,7 @@ function findFFP(expansion::AbstractArray{T},
 
     # return all FFPs in a matrix or as array with the solver results
     ffp = returnasmatrix ? zeros(size(expansion)) : Array{NLsolve.SolverResults{Float64}}(undef,size(expansion,2))
-    for c=1:size(expansion,2)
+    for c in axes(expansion,2)
 
         px = expansion[1,c]
         py = expansion[2,c]
