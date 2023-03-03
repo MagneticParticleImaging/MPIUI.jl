@@ -1242,7 +1242,7 @@ function infoMessage(m::MPILab, message::String)
 end
 
 function progress(m::MPILab, startStop::Bool)
-  @idle_add_guarded set_gtk_property!(m["spProgress"],:active, startStop)
+  @idle_add_guarded m["spProgress"].spinning =  startStop
 end
 
 function scanner(m::MPILab)
