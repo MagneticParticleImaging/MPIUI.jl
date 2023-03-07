@@ -14,7 +14,7 @@ mutable struct CoordinateParameter <: Gtk4.GtkGrid
     set_gtk_property!(label, :xalign, 0.0)
     addTooltip(label, tooltip)
     grid[1, 1] = label
-    grid[2, 1] = coordGtkEntry
+    grid[2, 1] = coordEntry
     coordParam = new(grid.handle, b, field)
     updateCoordinate(coordParam, coord)
     return Gtk4.GLib.gobject_move_ref(coordParam, grid)
