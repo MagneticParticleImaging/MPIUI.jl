@@ -366,8 +366,8 @@ end
 function SFSelectionDialog(;gradient = nothing, driveField = nothing)
 
   dialog = GtkDialog("Select System Function",
-                        Dict("_Cancel" => Gtk4.ResponseType_CANCEL,
-                             "_OK"=> Gtk4.ResponseType_ACCEPT),
+                        ["_Cancel" => Gtk4.ResponseType_CANCEL,
+                             "_OK"=> Gtk4.ResponseType_ACCEPT],
                              Gtk4.DialogFlags_MODAL, mpilab[]["mainWindow"] )
 
   Gtk4.default_size(dialog, 1024, 1024)
@@ -401,8 +401,8 @@ end
   f = MPIFile(filename)
 
   dialog = GtkDialog("Convert System Function",  
-                    Dict("_Cancel" => Gtk4.ResponseType_CANCEL,
-                    "_Ok"=> Gtk4.ResponseType_ACCEPT),
+                    ["_Cancel" => Gtk4.ResponseType_CANCEL,
+                    "_Ok"=> Gtk4.ResponseType_ACCEPT],
                     Gtk4.DialogFlags_MODAL,
                     mpilab[]["mainWindow"], )
 

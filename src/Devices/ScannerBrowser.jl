@@ -108,8 +108,6 @@ function initCallbacks(m::ScannerBrowser)
   signal_connect(m["btnReloadScanner"], :clicked) do w
     try
       refreshScanner(m)
-      d = info_dialog(()-> nothing, "Scanner has been reloaded successfully!", mpilab[]["mainWindow"])
-      d.modal = true
     catch ex
       showError(ex)
     end
@@ -168,10 +166,14 @@ function refreshScanner(m::ScannerBrowser)
   Please make sure that no protocol or device widget is currently communicating as otherwise undefined states can occur.
   Press \"Ok\" if you if you are sure.
   """
-  if ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"])
-    tempName = name(m.scanner)
-    close(m.scanner)
-    updateScanner!(mpilab[], MPIScanner(tempName, robust = true))
+  ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"]) do answer
+    if answer
+      tempName = name(m.scanner)
+      close(m.scanner)
+      updateScanner!(mpilab[], MPIScanner(tempName, robust = true))
+      d = info_dialog(()-> nothing, "Scanner has been reloaded successfully!", mpilab[]["mainWindow"])
+      d.modal = true
+    end
   end
 end
 
@@ -183,6 +185,6 @@ function updateScanner!(m::ScannerBrowser, scanner::MPIScanner)
       popout!(container, false)
     end
     empty!(m.deviceBox)
-    m.widgetCache = Dict{Device, Gtk4.GtkContainer}()
+    m.widgetCache = Dict{Device, DeviceWidgetContainer}()
   end
 end

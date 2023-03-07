@@ -16,8 +16,8 @@ end
 function ProtocolSelectionDialog(scanner::MPIScanner, params::Dict)
 
   dialog = GtkDialog("Select Protocol", 
-                        Dict("_Cancel" => Gtk4.ResponseType_CANCEL,
-                             "_Ok"=> Gtk4.ResponseType_ACCEPT),
+                        ["_Cancel" => Gtk4.ResponseType_CANCEL,
+                             "_Ok"=> Gtk4.ResponseType_ACCEPT],
                              Gtk4.DialogFlags_MODAL, mpilab[]["mainWindow"] )
 
 

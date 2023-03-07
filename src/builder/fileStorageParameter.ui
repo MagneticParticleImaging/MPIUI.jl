@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="4.0"/>
-  <object class="GtkImage" id="image1">
-    <property name="stock">gtk-save-as</property>
-  </object>
   <object class="GtkBox" id="boxParams">
     <property name="spacing">5</property>
     <child>
@@ -19,10 +16,9 @@
     </child>
     <child>
       <object class="GtkButton" id="btnSaveAs">
-        <property name="focusable">1</property>
-        <property name="receives_default">1</property>
-        <property name="image">image1</property>
-        <property name="always_show_image">True</property>
+        <property name="visible">True</property>
+        <property name="use_underline">True</property>
+        <property name="icon_name">document-new</property>
       </object>
     </child>
   </object>

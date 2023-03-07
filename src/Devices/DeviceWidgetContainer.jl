@@ -47,11 +47,11 @@ function initCallbacks(m::DeviceWidgetContainer)
     end
   end
 
-  signal_connect(m.deviceWindow, "close-request") do w, event
+  signal_connect(m.deviceWindow, "close-request") do w
     @idle_add_guarded begin
       set_gtk_property!(m["btnPopout"], :active, false)
     end
-    return
+    return true
   end
 
 end
