@@ -182,6 +182,21 @@
                     <property name="label" translatable="1">Init</property>
                     <property name="use_underline">1</property>
                     <property name="icon-name">go-jump</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="spacing">6</property>
+                        <child>
+                          <object class="GtkImage">
+                            <property name="icon-name">go-jump</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Init</property>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
                   </object>
                 </child>
                 <child>
@@ -189,9 +204,21 @@
                     <property name="visible">True</property>
                     <property name="sensitive">0</property>
                     <property name="tooltip_text" translatable="1">Starts the current protocol</property>
-                    <property name="label" translatable="1">Execute</property>
-                    <property name="use_underline">1</property>
-                    <property name="icon-name">media-playback-start</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="spacing">6</property>
+                        <child>
+                          <object class="GtkImage">
+                            <property name="icon-name">media-playback-start</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Execute</property>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
                   </object>
                 </child>
                 <child>
@@ -199,9 +226,43 @@
                     <property name="visible">True</property>
                     <property name="sensitive">0</property>
                     <property name="tooltip_text" translatable="1">Attempts to pause the protocol</property>
-                    <property name="label" translatable="1">Pause</property>
-                    <property name="use_underline">1</property>
-                    <property name="icon-name">media-playback-pause</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="spacing">6</property>
+                        <child>
+                          <object class="GtkImage">
+                            <property name="icon-name">media-playback-pause</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Pause</property>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="tbStop">
+                    <property name="visible">True</property>
+                    <property name="sensitive">0</property>
+                    <property name="tooltip_text" translatable="1">Attempts to stop the protocol</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="spacing">6</property>
+                        <child>
+                          <object class="GtkImage">
+                            <property name="icon-name">media-playback-stop</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Stop</property>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
                   </object>
                 </child>
                 <child>
@@ -209,9 +270,21 @@
                     <property name="visible">True</property>
                     <property name="sensitive">0</property>
                     <property name="tooltip_text" translatable="1">Attempts to cancel the protocol</property>
-                    <property name="label" translatable="1">Cancel</property>
-                    <property name="use_underline">1</property>
-                    <property name="icon-name">media-playback-stop</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="spacing">6</property>
+                        <child>
+                          <object class="GtkImage">
+                            <property name="icon-name">window-close</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Cancel</property>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
                   </object>
                 </child>
               </object>
