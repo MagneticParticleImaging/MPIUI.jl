@@ -302,6 +302,7 @@ end
 defaultDataHandler(protocol::Protocol) = [RawDataHandler, SpectrogramHandler]
 defaultDataHandler(protocol::MPIMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 defaultDataHandler(protocol::ContinousMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
+defaultDataHandler(protocol::RobotBasedSystemMatrixProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 defaultDataHandler(protocol::RobotMPIMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 defaultDataHandler(protocol::RobotBasedMagneticFieldStaticProtocol) = [MagneticFieldHandler]
 defaultDataHandler(protocol::RobotBasedTDesignFieldProtocol) = [MagneticFieldHandler]
