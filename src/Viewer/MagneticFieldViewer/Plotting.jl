@@ -88,6 +88,14 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
     cmin = m.fv.coloring.cmin
     cmax = m.fv.coloring.cmax
     cmap = m.fv.coloring.cmap
+  elseif get_gtk_property(m["cbWriteC"], :active, Bool)
+    # get min/max from entCMin/Max
+    cminString = get_gtk_property(m["entCMin"], :text)
+    cmin = tryparse.(Float64,cminString) ./ 1000
+    cmaxString = get_gtk_property(m["entCMax"], :text)
+    cmax = tryparse.(Float64,cmaxString) ./ 1000
+    cmap = m.fv.coloring.cmap
+    m.fv.coloring = ColoringParams(cmin, cmax, cmap) # set coloring
   else
     # set new coloring params
     cmin, cmax = minimum(m.fv.fieldNorm), maximum(m.fv.fieldNorm)

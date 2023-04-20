@@ -315,12 +315,36 @@ function MagneticFieldViewerWidget()
       if get_gtk_property(m["cbKeepC"], :active, Bool) # keep the values
         set_gtk_property!(m["vbCMin"], :sensitive, false) # disable changing cmin
         set_gtk_property!(m["vbCMax"], :sensitive, false) # disable changing cmax
+        # disable writing cmin/cmax
+        set_gtk_property!(m["entCMin"], :editable, false)
+        set_gtk_property!(m["entCMax"], :editable, false)
       else
         set_gtk_property!(m["vbCMin"], :sensitive, true) # enable changing cmin
         set_gtk_property!(m["vbCMax"], :sensitive, true) # enable changing cmax
+        if get_gtk_property(m["cbWriteC"], :active, Bool)
+          # enable writing cmin/cmax
+          set_gtk_property!(m["entCMin"], :editable, true)
+          set_gtk_property!(m["entCMax"], :editable, true)
+        end
       end
     end
   end 
+  # checkbutton write cmin/cmax
+  signal_connect(m["cbWriteC"], "toggled") do w
+    @idle_add_guarded begin
+      if get_gtk_property(m["cbWriteC"], :active, Bool)
+        # enable writing cmin/cmax
+        set_gtk_property!(m["entCMin"], :editable, true)
+        set_gtk_property!(m["entCMax"], :editable, true)
+      else
+        # disable writing cmin/cmax
+        set_gtk_property!(m["entCMin"], :editable, false)
+        set_gtk_property!(m["entCMax"], :editable, false)
+        # update field plot
+        updateField(m)
+      end
+    end
+  end
 
   # update measurement infos
   signal_connect(m["cbGradientOffset"], "changed") do w

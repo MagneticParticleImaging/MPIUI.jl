@@ -1343,6 +1343,16 @@ Plot</property>
                           </object>
                         </child>
                         <child>
+                          <object class="GtkCheckButton" id="cbWriteC">
+                            <property name="label" translatable="1">write cmin/cmax</property>
+                            <property name="focusable">1</property>
+                            <layout>
+                              <property name="column">1</property>
+                              <property name="row">8</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
                           <placeholder/>
                         </child>
                         <child>
