@@ -43,6 +43,7 @@ end
 include("Plotting.jl")
 # export functions
 include("Export.jl")
+include("TikzExport.jl") # tikz stuff
 
 # Viewer can be started with MagneticFieldCoefficients or with a path to a file with some coefficients
 function MagneticFieldViewer(filename::Union{AbstractString,MagneticFieldCoefficients})
@@ -541,9 +542,6 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
     # disable the calcFFP button
     set_gtk_property!(m["btnCalcFFP"],:sensitive,false) # FFP already calculated
   end
-
-  # disable buttons that have no functions at the moment
-  set_gtk_property!(m["btnExportTikz"],:sensitive,false) # tikz export not yet supported
 
   # start with invisible axes for field plots
   #set_gtk_property!(m["cbShowAxes"], :active, 1) # axes are always shown
