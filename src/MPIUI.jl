@@ -16,7 +16,7 @@ using Logging, LoggingExtras
 using ThreadPools
 using Dates
 using REPL: fielddoc
-using SphericalHarmonicExpansions # for MagneticFieldViewer
+using MPISphericalHarmonics, SphericalHarmonicExpansions # for MagneticFieldViewer
 using NLsolve # for MagneticFieldViewer: findFFP()
 using DataFrames, CSV # for MagneticFieldViewer: export as csv
 import CairoMakie

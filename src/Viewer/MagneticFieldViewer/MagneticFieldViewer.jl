@@ -25,7 +25,7 @@ mutable struct MagneticFieldViewerWidget <: Gtk4.GtkBox
   coeffsInit::MagneticFieldCoefficients
   coeffs::MagneticFieldCoefficients 
   coeffsPlot::Array{SphericalHarmonicCoefficients}
-  field # Array containing Functions of the field
+  field # SphericalHarmonicsDefinedField (Functions of the field)
   patch::Int
   grid::Gtk4.GtkGridLeaf
   cmapsTree::Gtk4.GtkTreeModelFilter
@@ -181,6 +181,7 @@ function MagneticFieldViewerWidget()
   signal_connect(m["adjPatches"], "value_changed") do w
     @idle_add_guarded begin
       m.patch = get_gtk_property(m["adjPatches"],:value, Int64) # update patch
+      updateInfos(m) # update patch-dependent infos (like FFP)
       stayInFFP(m)
     end
   end
@@ -498,10 +499,9 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
   m.coeffs = coeffs # load coefficients
   m.coeffsPlot = deepcopy(m.coeffs.coeffs) # load coefficients
 
-  @polyvar x y z
-  expansion = sphericalHarmonicsExpansion.(m.coeffs.coeffs,[x],[y],[z])
-  m.field = fastfunc.(expansion)
+  m.field = SphericalHarmonicsDefinedField(m.coeffs)
   m.patch = 1
+  selectPatch(m.field,m.patch) # set selected patch
   R = m.coeffs.radius # radius
   center = m.coeffs.center # center of the measurement
   m.fv.centerFFP = (m.coeffs.ffp !== nothing) ?  true : false # if FFP is given, it is the plotting center
@@ -748,9 +748,7 @@ function calcCenterCoeffs(m::MagneticFieldViewerWidget,resetIntersection=false)
   end
 
   # update field
-  @polyvar x y z
-  expansion = sphericalHarmonicsExpansion.(m.coeffsPlot,[x],[y],[z])
-  m.field = fastfunc.(expansion)
+  m.field = SphericalHarmonicsDefinedField(m.coeffs)
 
   # update measurement infos
   updateInfos(m)

@@ -44,20 +44,21 @@ function calcField(m::MagneticFieldViewerWidget)
   m.fv.fieldNorm = zeros(discretization,discretization,3)
   m.fv.field = zeros(3,discretization,discretization,3)
   m.fv.currentProfile = zeros(4,discretization,3)
+  selectPatch(m.field,m.patch) # set selected patch
   for i = 1:discretization
     for j = 1:discretization
-      m.fv.field[:,i,j,1] = [m.field[d,m.patch]([m.fv.intersection[1],N[2][i],N[3][j]]) for d=1:3]
+      m.fv.field[:,i,j,1] = m.field[m.fv.intersection[1],N[2][i],N[3][j]]
       m.fv.fieldNorm[i,j,1] = norm(m.fv.field[:,i,j,1])
-      m.fv.field[:,i,j,2] = [m.field[d,m.patch]([N[1][i],m.fv.intersection[2],N[3][j]]) for d=1:3]
+      m.fv.field[:,i,j,2] = m.field[N[1][i],m.fv.intersection[2],N[3][j]]
       m.fv.fieldNorm[i,j,2] = norm(m.fv.field[:,i,j,2])
-      m.fv.field[:,i,j,3] = [m.field[d,m.patch]([N[1][i],N[2][j],m.fv.intersection[3]]) for d=1:3]
+      m.fv.field[:,i,j,3] = m.field[N[1][i],N[2][j],m.fv.intersection[3]]
       m.fv.fieldNorm[i,j,3] = norm(m.fv.field[:,i,j,3])
     end
 
     # get current profile
-    m.fv.currentProfile[1:3,i,1] = [m.field[d,m.patch]([N[1][i],m.fv.intersection[2],m.fv.intersection[3]]) for d=1:3] # along x-axis
-    m.fv.currentProfile[1:3,i,2] = [m.field[d,m.patch]([m.fv.intersection[1],N[2][i],m.fv.intersection[3]]) for d=1:3] # along y-axis
-    m.fv.currentProfile[1:3,i,3] = [m.field[d,m.patch]([m.fv.intersection[1],m.fv.intersection[2],N[3][i]]) for d=1:3] # along z-axis
+    m.fv.currentProfile[1:3,i,1] = m.field[N[1][i],m.fv.intersection[2],m.fv.intersection[3]] # along x-axis
+    m.fv.currentProfile[1:3,i,2] = m.field[m.fv.intersection[1],N[2][i],m.fv.intersection[3]] # along y-axis
+    m.fv.currentProfile[1:3,i,3] = m.field[m.fv.intersection[1],m.fv.intersection[2],N[3][i]] # along z-axis
     m.fv.currentProfile[4,i,:] = [norm(m.fv.currentProfile[1:3,i,d]) for d=1:3] # norm along all axes
   end
 
@@ -171,6 +172,7 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   # scale arrows
   al = get_gtk_property(m["adjArrowLength"],:value, Float64)
   al /= max(maxYZ,maxXZ,maxXY)
+  al /= useMilli ? 1 : 1000 # scale depends on m resp. mm
 
   # add arrows to plots
   # YZ
