@@ -108,9 +108,6 @@ function saveFieldAsCSV(m::MagneticFieldViewerWidget, filename)
   # load all parameters
   discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel
   R = m.coeffs.radius # radius of measurement data
-  # get current intersection
-  intersString = get_gtk_property(m["entInters"], :text, String) # intersection
-  intersection = tryparse.(Float64,split(intersString,"x")) ./ 1000 # conversion from mm to m
 
   # get FOV
   fovString = get_gtk_property(m["entFOV"], :text, String) # FOV
@@ -122,13 +119,14 @@ function saveFieldAsCSV(m::MagneticFieldViewerWidget, filename)
   # calculate field for plot 
   fieldNorm = zeros(discretization,discretization,3);
   fieldxyz = zeros(3,discretization,discretization,3);
+  selectPatch(m.field,m.patch) # set selected patch
   for i = 1:discretization
     for j = 1:discretization
-      fieldxyz[:,i,j,1] = [m.field[d,m.patch]([intersection[1],N[2][i],N[3][j]]) for d=1:3]
+      fieldxyz[:,i,j,1] = m.field[m.fv.intersection[1],N[2][i],N[3][j]]
       fieldNorm[i,j,1] = norm(fieldxyz[:,i,j,1])
-      fieldxyz[:,i,j,2] = [m.field[d,m.patch]([N[1][i],intersection[2],N[3][j]]) for d=1:3]
+      fieldxyz[:,i,j,2] = m.field[N[1][i],m.fv.intersection[2],N[3][j]]
       fieldNorm[i,j,2] = norm(fieldxyz[:,i,j,2])
-      fieldxyz[:,i,j,3] = [m.field[d,m.patch]([N[1][i],N[2][j],intersection[3]]) for d=1:3]
+      fieldxyz[:,i,j,3] = m.field[N[1][i],N[2][j],m.fv.intersection[3]]
       fieldNorm[i,j,3] = norm(fieldxyz[:,i,j,3])
     end 
   end
