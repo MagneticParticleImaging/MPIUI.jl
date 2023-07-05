@@ -65,7 +65,7 @@ mutable struct ComponentParameter <: Gtk.GtkGrid
     grid[1:2, 1] = idLabel
     # Divider
     div = GenericEntry{Int64}(string(divider(comp)))
-    set_gtk_property!(div, :sensitive, false)
+    # set_gtk_property!(div, :sensitive, false)
     grid[1, 2] = GtkLabel("Divider", xalign = 0.0)
     grid[2, 2] = div
     # Amplitude
@@ -213,6 +213,7 @@ function setProtocolParameter(channelParam::PeriodicChannelParameter)
     if get_gtk_property(component.waveform, :sensitive, Bool)
       amplitude!(channel, id, uconvert(u"T", value(component.amplitude)))
       phase!(channel, id, value(component.phase))
+      divider!(channel, id, value(component.divider))
       wave = component.waveforms[get_gtk_property(component.waveform, :active, Int)+1]
       waveform!(channel, id, wave)
     end
