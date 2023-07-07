@@ -279,6 +279,11 @@ function MagneticFieldViewerWidget()
     @idle_add_guarded calcFFP(m)
   end
 
+  # reset FFP
+  signal_connect(m["btnResetFFP"], "clicked") do w
+    @idle_add_guarded resetFFP(m)
+  end
+
   # reset everything -> reload Viewer
   signal_connect(m["btnReset"], "clicked") do w
     @idle_add_guarded updateData!(m, m.coeffsInit)
@@ -496,14 +501,14 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
   m.coeffsInit = deepcopy(coeffs) # save initial coefficients for reloading
 
   # load magnetic fields
-  m.coeffs = coeffs # load coefficients
+  m.coeffs = deepcopy(coeffs) # load coefficients (do not change the given coefficients!)
   m.coeffsPlot = deepcopy(m.coeffs.coeffs) # load coefficients
 
   m.field = SphericalHarmonicsDefinedField(m.coeffs)
   m.patch = 1
   selectPatch(m.field,m.patch) # set selected patch
   R = m.coeffs.radius # radius
-  center = m.coeffs.center # center of the measurement
+  center = m.coeffs.center[:,m.patch] # center of the measurement
   m.fv.centerFFP = (m.coeffs.ffp !== nothing) ?  true : false # if FFP is given, it is the plotting center
   set_gtk_property!(m["btnCenterFFP"],:sensitive,false) # disable button
  
@@ -518,7 +523,7 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
   centerText = round.(center .* 1000, digits=1)
   set_gtk_property!(m["entCenterMeas"], :text, "$(centerText[1]) x $(centerText[2]) x $(centerText[3])") # show center of measurement
   if m.coeffs.ffp !== nothing
-    ffpText = round.((center + m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
+    ffpText = round.((m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
     set_gtk_property!(m["entFFP"], :text, "$(ffpText[1]) x $(ffpText[2]) x $(ffpText[3])") # show FFP of current patch
   else
     set_gtk_property!(m["entFFP"], :text, "no FFP")
@@ -533,21 +538,23 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
   end
 
   # if no FFPs are given, don't show the buttons
-  if m.coeffs.ffp === nothing
+  if isnothing(m.coeffs.ffp)
     set_gtk_property!(m["btnGoToFFP"],:visible,false) # FFP as intersection not available
     set_gtk_property!(m["btnCenterFFP"],:visible,false) # FFP as center not available
     set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # Center of sphere automatically plotting center
     set_gtk_property!(m["btnCalcFFP"],:sensitive,true) # FFP can be calculated
+    set_gtk_property!(m["btnResetFFP"],:sensitive,false) # no FFP to be reset
   else
     # disable the calcFFP button
     set_gtk_property!(m["btnCalcFFP"],:sensitive,false) # FFP already calculated
+    set_gtk_property!(m["btnResetFFP"],:sensitive,true) # FFP can be reseted
   end
 
   # start with invisible axes for field plots
   #set_gtk_property!(m["cbShowAxes"], :active, 1) # axes are always shown
 
   # update measurement infos
-  if m.coeffs.ffp === nothing
+  if isnothing(m.coeffs.ffp)
     # default: show the offset field values if no FFP is given
     set_gtk_property!(m["cbGradientOffset"],:active,1) 
   end
@@ -658,19 +665,12 @@ end
 # calculate the FFP of the given coefficients
 function calcFFP(m::MagneticFieldViewerWidget)
   
-  # calculate the FFP 
-  @polyvar x y z
-  expansion = sphericalHarmonicsExpansion.(m.coeffs.coeffs,[x],[y],[z])
-  m.coeffs.ffp = findFFP(expansion,x,y,z)
+  # calculate the FFP (don't shift the coefficients into the FFP)
+  MPISphericalHarmonics.findFFP!(m.coeffs)
   
   # show FFP
-  ffpText = round.((m.coeffs.center + m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
+  ffpText = round.((m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
   set_gtk_property!(m["entFFP"], :text, "$(ffpText[1]) x $(ffpText[2]) x $(ffpText[3])") # show FFP of current patch
-    
-  # translate coefficients center of measured sphere into the FFP
-  for p = 1:size(m.coeffs.coeffs,2)
-    m.coeffs.coeffs[:,p] = SphericalHarmonicExpansions.translation.(m.coeffs.coeffs[:,p],[m.coeffs.ffp[:,p]])
-  end
 
   # show FFP regarding buttons
   set_gtk_property!(m["btnGoToFFP"],:visible,true) # FFP as intersection
@@ -678,14 +678,39 @@ function calcFFP(m::MagneticFieldViewerWidget)
   set_gtk_property!(m["btnCenterFFP"],:sensitive,true) # FFP as center
   # disable calcFFP button
   set_gtk_property!(m["btnCalcFFP"],:sensitive,false) # FFP already calculated
+  set_gtk_property!(m["btnResetFFP"],:sensitive,true) # allow to reset the FFP
 #  set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # Center of sphere automatically plotting center
+end
+
+# reset the FFP of the given coefficients
+function resetFFP(m::MagneticFieldViewerWidget)
+  
+  # reset the FFP
+  m.coeffs.ffp = nothing
+  
+  # show FFP
+  set_gtk_property!(m["entFFP"], :text, "no FFP") # show FFP of current patch
+
+  # show FFP regarding buttons
+  set_gtk_property!(m["btnGoToFFP"],:visible,false) # FFP as intersection
+  set_gtk_property!(m["btnCenterFFP"],:visible,false) # FFP as center
+  set_gtk_property!(m["btnCenterFFP"],:sensitive,false) # FFP as center
+  # disable calcFFP button
+  set_gtk_property!(m["btnCalcFFP"],:sensitive,true) # FFP can be calculated again
+  set_gtk_property!(m["btnResetFFP"],:sensitive,false) # reset done
+
+  # go to center sphere
+  m.fv.centerFFP = false
+  calcCenterCoeffs(m,true)
+  updatePlots(m)
+  set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # Coefficients are in the sphere center
 end
 
 # if button "Stay in FFP" true, everything is shifted into FFP, else the plots are updated
 function stayInFFP(m::MagneticFieldViewerWidget)
   # update plots
   if get_gtk_property(m["cbStayFFP"], :active, Bool) && m.coeffs.ffp !== nothing
-    # stay in (resp. got to) the FFP with the plot
+    # stay in (resp. go to) the FFP with the plot
     goToFFP(m)
   else 
     # use intersection and just update all plots 
@@ -734,17 +759,14 @@ function calcCenterCoeffs(m::MagneticFieldViewerWidget,resetIntersection=false)
 		"$(intersection[1]*1000) x $(intersection[2]*1000) x $(intersection[3]*1000)") 
   end
 
-  if m.fv.centerFFP || m.coeffs.ffp === nothing
-    # just reset coeffs to initial coeffs
-    # assumption: initial coeffs are given in the FFP
+  if m.fv.centerFFP
+    # shift coefficients into FFP (updates ffp and center)
+    MPISphericalHarmonics.shift!(m.coeffs, m.coeffs.ffp)
     m.coeffsPlot = deepcopy(m.coeffs.coeffs)
-    
   else
     # translate coefficients from FFP to center of measured sphere
-    for p = 1:size(m.coeffs.coeffs,2)
-      m.coeffsPlot[:,p] = SphericalHarmonicExpansions.translation.(m.coeffs.coeffs[:,p],[-m.coeffs.ffp[:,p]])
-    end
-    
+    MPISphericalHarmonics.shift!(m.coeffs, m.coeffs.center)
+    m.coeffsPlot = deepcopy(m.coeffs.coeffs)
   end
 
   # update field
@@ -758,9 +780,13 @@ end
 function updateInfos(m::MagneticFieldViewerWidget)
   # return new FFP
   if m.coeffs.ffp !== nothing
-    ffpText = round.((m.coeffs.center + m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
+    ffpText = round.((m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
     set_gtk_property!(m["entFFP"], :text, "$(ffpText[1]) x $(ffpText[2]) x $(ffpText[3])") # show FFP of current patch
   end
+
+  # return new center
+  centerText = round.((m.coeffs.center[:,m.patch]) .* 1000, digits=1) 
+  set_gtk_property!(m["entCenterMeas"], :text, "$(centerText[1]) x $(centerText[2]) x $(centerText[3])") # show FFP of current patch
 
   # update gradient/offset information
   if get_gtk_property(m["cbGradientOffset"],:active, Int) == 0 # show gradient

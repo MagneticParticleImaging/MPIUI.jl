@@ -73,6 +73,7 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   if m.coeffs.ffp !== nothing
     ffp = useMilli ? m.coeffs.ffp .* 1000 : m.coeffs.ffp # used for correct positioning of the sphere
   end
+  center = useMilli ? m.coeffs.center .* 1000 : m.coeffs.center # center of measured sphere
   N = m.fv.positions
 
   # coloring params
@@ -217,11 +218,11 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
 
     # shift sphere to plotting center
     if m.fv.centerFFP && m.coeffs.ffp !== nothing
-      CairoMakie.lines!(axYZ, rr[:,1].-ffp[2,m.patch], rr[:,2].-ffp[3,m.patch], 
+      CairoMakie.lines!(axYZ, rr[:,1].-center[2,m.patch], rr[:,2].-center[3,m.patch], 
 			color=:white, linestyle=:dash, linewidth=1)
-      CairoMakie.lines!(axXZ, rr[:,1].-ffp[1,m.patch], rr[:,2].-ffp[3,m.patch], 
+      CairoMakie.lines!(axXZ, rr[:,1].-center[1,m.patch], rr[:,2].-center[3,m.patch], 
 			color=:white, linestyle=:dash, linewidth=1)
-      CairoMakie.lines!(axXY, rr[:,1].-ffp[2,m.patch], rr[:,2].-ffp[1,m.patch], 
+      CairoMakie.lines!(axXY, rr[:,1].-center[2,m.patch], rr[:,2].-center[1,m.patch], 
 			color=:white, linestyle=:dash, linewidth=1)
     else
       CairoMakie.lines!(axYZ, rr[:,1], rr[:,2], color=:white, linestyle=:dash, linewidth=1)

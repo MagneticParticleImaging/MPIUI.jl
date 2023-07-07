@@ -1599,13 +1599,37 @@ Sphere</property>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkButton" id="btnCalcFFP">
-                            <property name="label" translatable="1">Calculate FFP</property>
-                            <property name="focusable">1</property>
-                            <property name="receives_default">1</property>
+                          <object class="GtkGrid">
+                            <property name="margin_top">0</property>
+                            <property name="column_spacing">5</property>
+                            <child>
+                              <object class="GtkButton" id="btnCalcFFP">
+                                <property name="label" translatable="1">Calc
+FFP</property>
+                                <property name="focusable">1</property>
+                                <property name="receives_default">1</property>
+                                <layout>
+                                  <property name="column">0</property>
+                                  <property name="row">0</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="btnResetFFP">
+                                <property name="label" translatable="1">Reset 
+FFP</property>
+                                <property name="focusable">1</property>
+                                <property name="receives_default">1</property>
+                                <layout>
+                                  <property name="column">1</property>
+                                  <property name="row">0</property>
+                                </layout>
+                              </object>
+                            </child>
                             <layout>
                               <property name="column">1</property>
                               <property name="row">3</property>
+                              <property name="column-span">2</property>
                             </layout>
                           </object>
                         </child>
