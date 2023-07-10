@@ -40,7 +40,7 @@ function DataViewer(imFG::ImageMeta, imBG=nothing; params=nothing)
 end
 
 function DataViewer()
-  w = Window("Data Viewer",800,600)
+  w = GtkWindow("Data Viewer",800,600)
   dw = DataViewerWidget()
   push!(w,dw)
   show(w)
