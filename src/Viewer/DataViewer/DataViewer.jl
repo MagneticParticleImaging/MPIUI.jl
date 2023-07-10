@@ -45,7 +45,7 @@ function DataViewer()
   push!(w,dw)
   show(w)
 
-  signal_connect(w, "key-press-event") do widget, event
+  #=signal_connect(w, "key-press-event") do widget, event
     if event.keyval ==  Gtk4.GConstants.GDK_KEY_c
       if event.state & 0x04 != 0x00 # Control key is pressed
         @debug "copy visu params to clipboard..."
@@ -54,7 +54,7 @@ function DataViewer()
         clipboard( str_ )
       end
     end
-  end
+  end=#
 
   return DataViewer(w,dw)
 end
