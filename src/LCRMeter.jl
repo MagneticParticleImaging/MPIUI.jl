@@ -15,7 +15,7 @@ function LCRMeterUI(;minFre=20000,maxFre=30000,samples=50,average=1,volt=2.0,ip=
   @info "Starting LCRMeterUI"
   uifile = joinpath(@__DIR__,"builder","lcrMeter.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
 
   m = LCRMeterUI( b, nothing, nothing, nothing, nothing, nothing)
  

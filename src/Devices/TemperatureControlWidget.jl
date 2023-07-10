@@ -13,7 +13,7 @@ getindex(m::TemperatureControllerWidget, w::AbstractString) =  G_.get_object(m.b
 function TemperatureControllerWidget(tempCont::TemperatureController)
   uifile = joinpath(@__DIR__,"..","builder","temperatureControllerWidget.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = G_.get_object(b, "mainBox")
 
   numPlots = length(unique(getChannelGroups(tempCont)))

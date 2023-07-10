@@ -23,7 +23,7 @@ function RawDataWidget(filenameConfig=nothing)
   @info "Starting RawDataWidget"
   uifile = joinpath(@__DIR__,"..","builder","rawDataViewer.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = Gtk4.G_.get_object(b, "boxRawViewer")
 
   m = RawDataWidget( mainBox.handle, b,

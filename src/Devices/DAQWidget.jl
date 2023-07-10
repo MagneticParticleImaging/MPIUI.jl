@@ -14,7 +14,7 @@ getindex(m::DAQWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 function DAQWidget(daq::AbstractDAQ)
     uifile = joinpath(@__DIR__,"..","builder","DAQWidget.ui")
 
-    b = GtkBuilder(filename=uifile)
+    b = GtkBuilder(uifile)
     mainBox = Gtk4.G_.get_object(b, "mainBox")
 
     m = DAQWidget(mainBox.handle, b, false, daq, nothing)

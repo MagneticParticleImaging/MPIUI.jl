@@ -14,7 +14,7 @@ mutable struct ReconstructionParameter <: Gtk4.GtkBox
 
   function ReconstructionParameter(params=defaultRecoParams()) #, value::Sequence, scanner::MPIScanner)
     uifile = joinpath(@__DIR__, "..", "builder", "reconstructionParams.ui")
-    b = GtkBuilder(filename=uifile)
+    b = GtkBuilder(uifile)
 
     exp = G_.get_object(b, "boxRecoParams")
 

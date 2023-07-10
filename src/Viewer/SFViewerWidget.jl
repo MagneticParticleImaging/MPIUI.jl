@@ -42,7 +42,7 @@ end
 function SFViewerWidget()
   uifile = joinpath(@__DIR__,"..","builder","mpiLab.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = GtkPaned(:h) 
 
   m = SFViewerWidget(mainBox.handle, b, DataViewerWidget(),

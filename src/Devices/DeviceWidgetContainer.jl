@@ -14,7 +14,7 @@ getindex(m::DeviceWidgetContainer, w::AbstractString) = Gtk4.G_.get_object(m.bui
 function DeviceWidgetContainer(deviceName::String, deviceWidget)
   uifile = joinpath(@__DIR__, "..", "builder", "deviceWidgetContainer.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = Gtk4.G_.get_object(b, "boxContainer")
 
   window = GtkWindow(deviceName, 800, 600)
