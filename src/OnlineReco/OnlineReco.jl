@@ -88,7 +88,7 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
 			       spectralLeakageCorrection=spectralLeakageCorrection)
   end
 
-  @info "Loading System Matrix ..."
+  @info "Loading System Matrix $(filepath(bSF))..."
 
   S, grid = getSF(bSF, frequencies, sparseTrafo, "kaczmarz", bgCorrection=bgCorrection, redFactor=redFactor)
   
