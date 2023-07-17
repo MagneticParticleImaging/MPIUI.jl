@@ -58,7 +58,7 @@ end
 function FieldViewerWidget()
   uifile = joinpath(@__DIR__,"..","..","builder","magneticFieldViewer.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = G_.get_object(b, "boxFieldViewer")
 
   fv = FieldViewerWidget(mainBox.handle, b, ColoringParams(0,0,0),
@@ -82,7 +82,7 @@ end
 function MagneticFieldViewerWidget()
   uifile = joinpath(@__DIR__,"..","..","builder","magneticFieldViewer.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = G_.get_object(b, "boxMagneticFieldViewer")
 
   m = MagneticFieldViewerWidget(mainBox.handle, b, FieldViewerWidget(),
@@ -108,7 +108,7 @@ function MagneticFieldViewerWidget()
   end
   # create TreeViewColumn
   rTxt = GtkCellRendererText()
-  c = GtkTreeViewColumn("Colormaps", rTxt, Dict([("text",0)]), sort_column_id=0) # column
+  c = GtkTreeViewColumn("Colormaps", rTxt, Dict([("text",0)]))#, sort_column_id=0) # column
   # add column to TreeView
   m.cmapsTree = GtkTreeModelFilter(ls)
   G_.set_visible_column(m.cmapsTree,1)
