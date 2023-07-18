@@ -511,6 +511,7 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
   center = m.coeffs.center[:,m.patch] # center of the measurement
   m.fv.centerFFP = (m.coeffs.ffp !== nothing) ?  true : false # if FFP is given, it is the plotting center
   set_gtk_property!(m["btnCenterFFP"],:sensitive,false) # disable button
+  set_gtk_property!(m["btnCenterSphere"],:sensitive,true) # enable button
  
   m.updating = true
 

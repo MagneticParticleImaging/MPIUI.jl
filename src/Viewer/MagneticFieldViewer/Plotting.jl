@@ -73,7 +73,7 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   if m.coeffs.ffp !== nothing
     ffp = useMilli ? m.coeffs.ffp .* 1000 : m.coeffs.ffp # used for correct positioning of the sphere
   end
-  center = useMilli ? m.coeffs.center .* 1000 : m.coeffs.center # center of measured sphere
+  center = m.coeffs.center[:,m.patch] # center of measured sphere
   N = m.fv.positions
 
   # coloring params
@@ -209,25 +209,29 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   if get_gtk_property(m["cbShowSphere"], :active, Bool)
     # sphere
     ϕ=range(0,stop=2*pi,length=100)
-    rr = zeros(100,2)
+    rr = zeros(100,2,3)
+    # adapt radius depending on the current intersection
+    r = m.fv.centerFFP ? m.fv.intersection-center : m.fv.intersection
+    r = sqrt.(max.(0, R^2 .- r .^ 2))
     for i=1:100
-      rr[i,1] = R*sin(ϕ[i]);
-      rr[i,2] = R*cos(ϕ[i]);
+      rr[i,1,:] = r .* sin(ϕ[i]);
+      rr[i,2,:] = r .* cos(ϕ[i]);
     end
     rr = useMilli ? rr .* 1000 : rr # convert from m to mm
 
-    # shift sphere to plotting center
-    if m.fv.centerFFP && m.coeffs.ffp !== nothing
-      CairoMakie.lines!(axYZ, rr[:,1].-center[2,m.patch], rr[:,2].-center[3,m.patch], 
+    # shift sphere to its center
+    center = useMilli ? center .* 1000 : center
+    if m.fv.centerFFP
+      CairoMakie.lines!(axYZ, rr[:,1,1].+center[2], rr[:,2,1].+center[3], 
 			color=:white, linestyle=:dash, linewidth=1)
-      CairoMakie.lines!(axXZ, rr[:,1].-center[1,m.patch], rr[:,2].-center[3,m.patch], 
+      CairoMakie.lines!(axXZ, rr[:,1,2].+center[1], rr[:,2,2].+center[3], 
 			color=:white, linestyle=:dash, linewidth=1)
-      CairoMakie.lines!(axXY, rr[:,1].-center[2,m.patch], rr[:,2].-center[1,m.patch], 
+      CairoMakie.lines!(axXY, rr[:,1,3].+center[2], rr[:,2,3].+center[1], 
 			color=:white, linestyle=:dash, linewidth=1)
     else
-      CairoMakie.lines!(axYZ, rr[:,1], rr[:,2], color=:white, linestyle=:dash, linewidth=1)
-      CairoMakie.lines!(axXZ, rr[:,1], rr[:,2], color=:white, linestyle=:dash, linewidth=1)
-      CairoMakie.lines!(axXY, rr[:,1], rr[:,2], color=:white, linestyle=:dash, linewidth=1)
+      CairoMakie.lines!(axYZ, rr[:,1,1], rr[:,2,1], color=:white, linestyle=:dash, linewidth=1)
+      CairoMakie.lines!(axXZ, rr[:,1,2], rr[:,2,2], color=:white, linestyle=:dash, linewidth=1)
+      CairoMakie.lines!(axXY, rr[:,1,3], rr[:,2,3], color=:white, linestyle=:dash, linewidth=1)
     end
 
   end
