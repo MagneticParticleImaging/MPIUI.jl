@@ -24,6 +24,7 @@ import CairoMakie
 ENV["MPILIB_UI"] = "Nothing"
 
 @reexport using MPIMeasurements
+@reexport using AbstractImageReconstruction
 @reexport using MPIReco
 
 using ImageUtils: makeAxisArray

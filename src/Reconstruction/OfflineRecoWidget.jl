@@ -1,6 +1,7 @@
 export RecoWindow, OfflineRecoWidget
 
 include("ReconstructionParameter.jl")
+include("RecoPlanParameter.jl")
 
 mutable struct OfflineRecoWidget <: Gtk4.GtkGrid
   handle::Ptr{Gtk4.GObject}
@@ -24,13 +25,13 @@ mutable struct RecoWindow
 end
 
 function RecoWindow(filenameMeas=nothing; params = defaultRecoParams())
-  w = Window("Reconstruction",800,600)
+  w = GtkWindow("Reconstruction",800,600)
   dw = OfflineRecoWidget(filenameMeas, params=params)
   push!(w,dw)
 
-  if isassigned(mpilab)
-    G_.transient_for(w, mpilab[]["mainWindow"])
-  end
+  #if isassigned(mpilab)
+  #  G_.transient_for(w, mpilab[]["mainWindow"])
+  #end
   G_.modal(w,true)
   show(w)
 
