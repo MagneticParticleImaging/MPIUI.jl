@@ -79,3 +79,50 @@ function update!(input::BoolPlanInput, value::Missing)
   end
 end
 callback!(input::BoolPlanInput, value) = input.cb = value
+
+mutable struct UnitRangePlanInput{T} <: RecoPlanParameterInput
+  grid::Gtk4.GtkGrid
+  entry::Gtk4.GtkEntry
+  cb::Union{Nothing,Function}
+  function UnitRangePlanInput(::Type{UnitRange{T}}, value, field::Symbol) where T
+    entry = GtkEntry()
+    str = ismissing(value) ? "" : string(value)
+    set_gtk_property!(entry, :text, str)
+    set_gtk_property!(entry, :hexpand, true)
+    grid = GtkGrid()
+    label = GtkLabel(string(field))
+    grid[1, 1] = label
+    grid[2, 1] = entry
+    input = new{T}(grid, entry, nothing)
+    signal_connect(entry, :activate) do w
+      if !isnothing(input.cb)
+        input.cb()
+      end
+    end
+    return input
+  end
+end
+RecoPlanParameterInput(t::Type{UnitRange{T}}, value, field) where T = UnitRangePlanInput(t, value, field)
+widget(input::UnitRangePlanInput) = input.grid
+function value(input::UnitRangePlanInput{T}) where T
+  value = input.entry.text
+  if isempty(value)
+    return missing
+  else
+    temp = split(value, ":")
+    start = parse(T, temp[1])
+    stop = length(temp) == 1 ? start : parse(T, temp[2])
+    return UnitRange(start, stop)
+  end
+end
+function update!(input::UnitRangePlanInput, value)
+  @idle_add_guarded begin
+    input.entry.text = string(value)
+  end
+end
+function update!(input::UnitRangePlanInput, value::Missing)
+  @idle_add_guarded begin
+    input.entry.text = ""
+  end
+end
+callback!(input::UnitRangePlanInput, value) = input.cb = value
