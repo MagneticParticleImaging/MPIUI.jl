@@ -2,10 +2,12 @@ mutable struct BasicPlanInput{T} <: RecoPlanParameterInput
   grid::Gtk4.GtkGrid
   entry::Gtk4.GtkEntry
   cb::Union{Nothing,Function}
-  function BasicPlanInput(::Type{T}, value, field::Symbol) where T
+  BasicPlanInput(t, value::Missing, field) = BasicPlanInput(t, "", field)
+  BasicPlanInput(t, value, field) = BasicPlanInput(t, string(value), field)
+  BasicPlanInput(t, value::Vector, field) = BasicPlanInput(t, join(value, ", "), field)
+  function BasicPlanInput(::Type{T}, value::String, field::Symbol) where T
     entry = GtkEntry()
-    str = ismissing(value) ? "" : string(value)
-    set_gtk_property!(entry, :text, str)
+    set_gtk_property!(entry, :text, value)
     set_gtk_property!(entry, :hexpand, true)
     grid = GtkGrid()
     label = GtkLabel(string(field))
@@ -26,9 +28,15 @@ function value(input::BasicPlanInput{T}) where T
   value = input.entry.text
   return isempty(value) ? missing : parse(T, value)
 end
-function update!(input::BasicPlanInput, value)
+function value(input::BasicPlanInput{Vector{T}}) where T
+  value = input.entry.text
+  return isempty(value) ? missing : map(x->parse(T, x), split(value, ","))
+end
+update!(input::BasicPlanInput, value) = update!(input, string(value))
+update!(input::BasicPlanInput, value::Vector) = update!(input, join(value, ", "))
+function update!(input::BasicPlanInput, value::String)
   @idle_add_guarded begin
-    input.entry.text = string(value)
+    input.entry.text = value
   end
 end
 function update!(input::BasicPlanInput, value::Missing)
