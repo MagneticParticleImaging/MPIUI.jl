@@ -228,3 +228,43 @@ function update!(input::UnionPlanInput, value::Missing)
   input.userChange = true
 end
 callback!(input::UnionPlanInput, value) = input.cb = value
+
+mutable struct NothingPlanInput <: RecoPlanParameterInput
+  grid::GtkGrid
+  button::GtkCheckButton
+  cb::Union{Nothing,Function}
+  NothingPlanInput(value::Nothing, field::Symbol) = NothingPlanInput(true, field)
+  NothingPlanInput(value::Missing, field::Symbol) = NothingPlanInput(false, field)
+  function NothingPlanInput(value::Bool, field::Symbol)
+    check = GtkCheckButton()
+    set_gtk_property!(check, :label, "nothing")
+    set_gtk_property!(check, :active, value)
+    grid = GtkGrid()
+    label = GtkLabel(string(field))
+    grid[1, 1] = label
+    grid[2, 1] = check
+    input = new(grid, check, nothing)
+    signal_connect(check, :toggled) do w
+      if !isnothing(input.cb)
+        input.cb()
+      end
+    end
+    return input
+  end
+end
+RecoPlanParameterInput(::Type{Nothing}, value, field) = NothingPlanInput(value, field)
+widget(input::NothingPlanInput) = input.grid
+function value(input::NothingPlanInput)
+  return get_gtk_property(input.button, :active, Bool) ? nothing : missing
+end
+function update!(input::NothingPlanInput, value::Nothing)
+  @idle_add_guarded begin
+    set_gtk_property!(input.button, :active, true)
+  end
+end
+function update!(input::NothingPlanInput, value::Missing)
+  @idle_add_guarded begin
+    set_gtk_property!(input.button, :active, false)
+  end
+end
+callback!(input::NothingPlanInput, value) = input.cb = value
