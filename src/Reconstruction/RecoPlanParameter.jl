@@ -3,7 +3,8 @@ widget(input::RecoPlanParameterInput) = error("$(typeof(input)) must implement m
 value(input::RecoPlanParameterInput) = error("$(typeof(input)) must implement method value")
 update!(input::RecoPlanParameterInput, value) = error("$(typeof(input)) must implement method update!")
 callback!(input::RecoPlanParameterInput, value) = error("$(typeof(input)) must implement method callback!")
-RecoPlanParameterInput(plan::RecoPlan, field::Symbol) = RecoPlanParameterInput(type(plan, field), plan[field], field)
+RecoPlanParameterInput(plan::RecoPlan, field::Symbol) = RecoPlanParameterInput(plan, type(plan, field), plan[field], field)
+RecoPlanParameterInput(plan::RecoPlan, type, value, field) = RecoPlanParameterInput(type, value, field)
 
 include("ParameterInputs/ParameterInputs.jl")
 

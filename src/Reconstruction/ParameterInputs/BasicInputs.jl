@@ -175,3 +175,56 @@ function update!(input::SolverPlanInput, value::Missing)
   end
 end
 callback!(input::SolverPlanInput, value) = input.cb = value
+
+mutable struct UnionPlanInput <: RecoPlanParameterInput
+  #grid::Gtk4.GtkGrid
+  nb::GtkNotebook
+  cb::Union{Nothing,Function}
+  choices::Vector{RecoPlanParameterInput}
+  types::Vector{Any}
+  userChange::Bool
+  page::Int64
+  function UnionPlanInput(plan::RecoPlan, union::Union, value, field)
+    nb = GtkNotebook()
+    choices = RecoPlanParameterInput[]
+    types = AbstractImageReconstruction.uniontypes(union)
+    input = new(nb, nothing, choices, types, true, 1)
+    for type in types
+      temp = value isa type ? value : missing
+      tempInput = RecoPlanParameterInput(plan, type, temp, field)
+      callback!(tempInput, () -> begin 
+        if !isnothing(input.cb) && input.userChange
+          input.cb()
+        end
+      end)
+      push!(choices, tempInput)
+      push!(nb, widget(tempInput), string(nameof(type)))
+    end    
+    signal_connect(nb, :switch_page) do nb, page, idx
+      # This happens before page switch, so value(input) would return old value if we access nb.page in value(...)
+      input.page = idx + 1
+      if !isnothing(input.cb) && input.userChange
+        input.cb()
+      end
+    end
+    return input
+  end
+end
+RecoPlanParameterInput(plan::RecoPlan, union::Union, value, field) = UnionPlanInput(plan, union, value, field)
+widget(input::UnionPlanInput) = input.nb
+value(input::UnionPlanInput) = value(input.choices[input.page])
+function update!(input::UnionPlanInput, value)
+  input.userChange = false
+  idx = findfirst(x-> value isa x, input.types)
+  input.nb.page = idx - 1
+  update!(input.choices[idx], value)
+  input.userChange = true
+end
+function update!(input::UnionPlanInput, value::Missing)
+  input.userChange = false
+  for temp in input.choices
+    update!(temp, value)
+  end
+  input.userChange = true
+end
+callback!(input::UnionPlanInput, value) = input.cb = value
