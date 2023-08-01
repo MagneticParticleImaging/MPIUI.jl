@@ -1,5 +1,5 @@
 mutable struct BasicPlanInput{T} <: RecoPlanParameterInput
-  grid::Gtk4.GtkGrid
+  #grid::Gtk4.GtkGrid
   entry::Gtk4.GtkEntry
   cb::Union{Nothing,Function}
   BasicPlanInput(t, value::Missing, field) = BasicPlanInput(t, "", field)
@@ -9,11 +9,11 @@ mutable struct BasicPlanInput{T} <: RecoPlanParameterInput
     entry = GtkEntry()
     set_gtk_property!(entry, :text, value)
     set_gtk_property!(entry, :hexpand, true)
-    grid = GtkGrid()
-    label = GtkLabel(string(field))
-    grid[1, 1] = label
-    grid[2, 1] = entry
-    input = new{T}(grid, entry, nothing)
+    #grid = GtkGrid()
+    #label = GtkLabel(string(field))
+    #grid[1, 1] = label
+    #grid[2, 1] = entry
+    input = new{T}(entry, nothing)
     signal_connect(entry, :activate) do w
       if !isnothing(input.cb)
         input.cb()
@@ -23,7 +23,7 @@ mutable struct BasicPlanInput{T} <: RecoPlanParameterInput
   end
 end
 RecoPlanParameterInput(t::Type{T}, value, field) where T = BasicPlanInput(t, value, field)
-widget(input::BasicPlanInput) = input.grid
+widget(input::BasicPlanInput) = input.entry
 function value(input::BasicPlanInput{T}) where T
   value = input.entry.text
   return isempty(value) ? missing : parse(T, value)
@@ -51,7 +51,7 @@ mutable struct BoolPlanInput <: RecoPlanParameterInput
   cb::Union{Nothing,Function}
   function BoolPlanInput(value::Bool, field::Symbol)
     check = GtkCheckButton()
-    set_gtk_property!(check, :label, field)
+    #set_gtk_property!(check, :label, field)
     set_gtk_property!(check, :active, value)
     input = new(check, nothing)
     signal_connect(check, :toggled) do w
@@ -89,7 +89,7 @@ end
 callback!(input::BoolPlanInput, value) = input.cb = value
 
 mutable struct UnitRangePlanInput{T} <: RecoPlanParameterInput
-  grid::Gtk4.GtkGrid
+  #grid::Gtk4.GtkGrid
   entry::Gtk4.GtkEntry
   cb::Union{Nothing,Function}
   function UnitRangePlanInput(::Type{UnitRange{T}}, value, field::Symbol) where T
@@ -97,11 +97,11 @@ mutable struct UnitRangePlanInput{T} <: RecoPlanParameterInput
     str = ismissing(value) ? "" : string(value)
     set_gtk_property!(entry, :text, str)
     set_gtk_property!(entry, :hexpand, true)
-    grid = GtkGrid()
-    label = GtkLabel(string(field))
-    grid[1, 1] = label
-    grid[2, 1] = entry
-    input = new{T}(grid, entry, nothing)
+    #grid = GtkGrid()
+    #label = GtkLabel(string(field))
+    #grid[1, 1] = label
+    #grid[2, 1] = entry
+    input = new{T}(entry, nothing)
     signal_connect(entry, :activate) do w
       if !isnothing(input.cb)
         input.cb()
@@ -111,7 +111,7 @@ mutable struct UnitRangePlanInput{T} <: RecoPlanParameterInput
   end
 end
 RecoPlanParameterInput(t::Type{UnitRange{T}}, value, field) where T = UnitRangePlanInput(t, value, field)
-widget(input::UnitRangePlanInput) = input.grid
+widget(input::UnitRangePlanInput) = input.entry
 function value(input::UnitRangePlanInput{T}) where T
   value = input.entry.text
   if isempty(value)
@@ -136,7 +136,7 @@ end
 callback!(input::UnitRangePlanInput, value) = input.cb = value
 
 mutable struct SolverPlanInput <: RecoPlanParameterInput
-  grid::Gtk4.GtkGrid
+  #grid::Gtk4.GtkGrid
   dd::GtkDropDown
   cb::Union{Nothing,Function}
   choices::Vector{Any}
@@ -146,11 +146,11 @@ mutable struct SolverPlanInput <: RecoPlanParameterInput
     dd.hexpand = true
     idx = ismissing(value) ? 0 : findfirst(x->!ismissing(x) && x == value, choices) - 1
     dd.selected = idx
-    grid = GtkGrid()
-    label = GtkLabel(string(field))
-    grid[1, 1] = label
-    grid[2, 1] = dd
-    input = new(grid, dd, nothing, choices)
+    #grid = GtkGrid()
+    #label = GtkLabel(string(field))
+    #grid[1, 1] = label
+    #grid[2, 1] = dd
+    input = new(dd, nothing, choices)
     signal_connect(dd, "notify::selected") do w, others...
       if !isnothing(input.cb)
         input.cb()
@@ -160,7 +160,7 @@ mutable struct SolverPlanInput <: RecoPlanParameterInput
   end
 end
 RecoPlanParameterInput(::Type{Type{S} where S<:AbstractLinearSolver}, value, field) = SolverPlanInput(value, field)
-widget(input::SolverPlanInput) = input.grid
+widget(input::SolverPlanInput) = input.dd
 function value(input::SolverPlanInput)
   return input.choices[input.dd.selected + 1]
 end
@@ -230,7 +230,7 @@ end
 callback!(input::UnionPlanInput, value) = input.cb = value
 
 mutable struct NothingPlanInput <: RecoPlanParameterInput
-  grid::GtkGrid
+  #grid::GtkGrid
   button::GtkCheckButton
   cb::Union{Nothing,Function}
   NothingPlanInput(value::Nothing, field::Symbol) = NothingPlanInput(true, field)
@@ -239,11 +239,11 @@ mutable struct NothingPlanInput <: RecoPlanParameterInput
     check = GtkCheckButton()
     set_gtk_property!(check, :label, "nothing")
     set_gtk_property!(check, :active, value)
-    grid = GtkGrid()
-    label = GtkLabel(string(field))
-    grid[1, 1] = label
-    grid[2, 1] = check
-    input = new(grid, check, nothing)
+    #grid = GtkGrid()
+    #label = GtkLabel(string(field))
+    #grid[1, 1] = label
+    #grid[2, 1] = check
+    input = new(check, nothing)
     signal_connect(check, :toggled) do w
       if !isnothing(input.cb)
         input.cb()
@@ -253,7 +253,7 @@ mutable struct NothingPlanInput <: RecoPlanParameterInput
   end
 end
 RecoPlanParameterInput(::Type{Nothing}, value, field) = NothingPlanInput(value, field)
-widget(input::NothingPlanInput) = input.grid
+widget(input::NothingPlanInput) = input.button
 function value(input::NothingPlanInput)
   return get_gtk_property(input.button, :active, Bool) ? nothing : missing
 end
