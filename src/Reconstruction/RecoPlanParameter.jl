@@ -31,6 +31,7 @@ function createParameterWidget(plan, field, input::RecoPlanParameterInput) # sup
   grid = GtkGrid()
   label = GtkLabel("<b>$field:</b>")
   label.use_markup = true
+  label.xalign = 0.0
   grid[1,1] = label
   grid[1:2,2] = widget(input)
   return grid
@@ -67,4 +68,15 @@ function RecoPlanParameters(plan::RecoPlan)
     push!(parameters, temp)
   end
   return RecoPlanParameters(plan, parameters)
+end
+parameters(params::RecoPlanParameters) = parameters!(RecoPlanParameter[], params)
+function parameters!(vector::Vector{RecoPlanParameter}, params::RecoPlanParameters)
+  for parameter in params.parameters
+    if parameter isa RecoPlanParameters
+      parameters!(vector, parameter)
+    else
+      push!(vector, parameter)
+    end
+  end
+  return vector
 end
