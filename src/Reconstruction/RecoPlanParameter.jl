@@ -16,7 +16,8 @@ mutable struct RecoPlanParameter{T, I<:RecoPlanParameterInput}
   widget::GtkWidget
   RecoPlanParameter(plan::RecoPlan, field::Symbol, input::I, widget::GtkWidget) where {I<:RecoPlanParameterInput} = new{type(plan, field), I}(plan, field, input, false, widget)
 end
-widget(parameter::RecoPlanParameter) = parameter.widget 
+widget(parameter::RecoPlanParameter) = parameter.widget
+id(parameter::RecoPlanParameter) = join(string.(push!(AbstractImageReconstruction.parentfields(parameter.plan), parameter.field)), ".")
 
 function RecoPlanParameter(plan::RecoPlan{T}, field::Symbol) where {T<:AbstractReconstructionAlgorithmParameter}
   input = RecoPlanParameterInput(plan, field)
@@ -29,7 +30,7 @@ end
 
 function createParameterWidget(plan, field, input::RecoPlanParameterInput) # support different stylings as an argument
   grid = GtkGrid()
-  label = GtkLabel("<b>$field:</b>")
+  label = GtkLabel("$field:")
   label.use_markup = true
   label.xalign = 0.0
   grid[1,1] = label
@@ -52,31 +53,21 @@ end
 
 mutable struct RecoPlanParameters{T}
   plan::RecoPlan{T}
-  parameters::Vector{Union{RecoPlanParameter, RecoPlanParameters}}
+  parameters::Vector{RecoPlanParameter}
+  nestedParameters::Vector{RecoPlanParameters}
 end
+id(parameters::RecoPlanParameters) = join(string.(AbstractImageReconstruction.parentfields(parameters.plan)), ".")
 
 function RecoPlanParameters(plan::RecoPlan)
-  parameters = Vector{Union{RecoPlanParameter, RecoPlanParameters}}()
-  for property in propertynames(plan)
+  parameters = Vector{RecoPlanParameter}()
+  nested = Vector{RecoPlanParameters}()
+  for property in sort(collect(propertynames(plan)))
     prop = plan[property]
-    temp = nothing
     if prop isa RecoPlan
-      temp = RecoPlanParameters(prop)
+      push!(nested, RecoPlanParameters(prop))
     else
-      temp = RecoPlanParameter(plan, property)
-    end
-    push!(parameters, temp)
-  end
-  return RecoPlanParameters(plan, parameters)
-end
-parameters(params::RecoPlanParameters) = parameters!(RecoPlanParameter[], params)
-function parameters!(vector::Vector{RecoPlanParameter}, params::RecoPlanParameters)
-  for parameter in params.parameters
-    if parameter isa RecoPlanParameters
-      parameters!(vector, parameter)
-    else
-      push!(vector, parameter)
+      push!(parameters, RecoPlanParameter(plan, property))
     end
   end
-  return vector
+  return RecoPlanParameters(plan, parameters, nested)
 end
