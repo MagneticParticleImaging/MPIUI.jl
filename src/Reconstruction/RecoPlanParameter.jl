@@ -48,3 +48,23 @@ function AbstractImageReconstruction.valueupdate(listener::GtkPlanListener, orig
   # Only update if change was not initiated by user
   !listener.parameter.userChange && update!(listener.parameter.input, new)
 end
+
+mutable struct RecoPlanParameters{T}
+  plan::RecoPlan{T}
+  parameters::Vector{Union{RecoPlanParameter, RecoPlanParameters}}
+end
+
+function RecoPlanParameters(plan::RecoPlan)
+  parameters = Vector{Union{RecoPlanParameter, RecoPlanParameters}}()
+  for property in propertynames(plan)
+    prop = plan[property]
+    temp = nothing
+    if prop isa RecoPlan
+      temp = RecoPlanParameters(prop)
+    else
+      temp = RecoPlanParameter(plan, property)
+    end
+    push!(parameters, temp)
+  end
+  return RecoPlanParameters(plan, parameters)
+end
