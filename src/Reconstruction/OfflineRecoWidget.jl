@@ -3,6 +3,7 @@ export RecoWindow, OfflineRecoWidget
 include("ReconstructionParameter.jl")
 include("RecoPlanParameter.jl")
 include("RecoPlanParameterList.jl")
+include("PlanRecoWidget.jl")
 
 mutable struct OfflineRecoWidget <: Gtk4.GtkGrid
   handle::Ptr{Gtk4.GObject}
