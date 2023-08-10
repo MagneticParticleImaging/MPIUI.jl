@@ -36,7 +36,7 @@ using Images
 
 using Colors
 
-import Base: getindex
+import Base: getindex, match
 import MPIFiles: addReco, getVisu, addVisu
 import MPIMeasurements #: measurement
 import Logging: shouldlog, min_enabled_level, handle_message

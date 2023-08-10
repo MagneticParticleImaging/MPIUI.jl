@@ -8,7 +8,7 @@ mutable struct RecoPlanParameterFilter
   missingButton::GtkCheckButton
   # Filter State
   dict::Dict{String, RecoPlanParameters}
-  planFilter::Dict{String, Bool}
+  planFilter::Dict{RecoPlanParameters, Bool}
   # Hacky field to stop GTK segfaulting 
   children::Vector{Vector{String}}
 end
@@ -16,8 +16,8 @@ end
 function RecoPlanParameterFilter(params::RecoPlanParameters)
   dict = Dict{String, RecoPlanParameters}()
   fillTreeDict!(dict, params)
-  planFilter = Dict{String, Bool}()
-  for key in keys(dict)
+  planFilter = Dict{RecoPlanParameters, Bool}()
+  for key in values(dict)
     planFilter[key] = true
   end
   factory = GtkSignalListItemFactory()
@@ -71,7 +71,7 @@ function RecoPlanParameterFilter(params::RecoPlanParameters)
         label.hexpand = true
         label.xalign = 0.0
         check = GtkCheckButton()
-        check.active = filter.planFilter[key]
+        check.active = filter.planFilter[filter.dict[key]]
         #expander.hide_expander = isempty(getChildStrings(filter.dict[key]))
         # TODO set callback
         push!(box, label)
@@ -120,10 +120,25 @@ function getChildStrings(params::RecoPlanParameters)
   return sort(result)
 end
 
-function match(filter::RecoPlanParameterFilter, li, user_data)
-  println(typeof(li))
+function addFilter!(filter::RecoPlanParameterFilter, custom::GtkCustomFilter)
+  signal_connect(filter.missingButton, :toggled) do btn
+    @idle_add begin
+      change = filter.missingButton.active ? Gtk4.FilterChange_MORE_STRICT : Gtk4.FilterChange_LESS_STRICT
+      Gtk4.G_.changed(custom, change)
+    end
+  end
+end
+
+function match(filter::RecoPlanParameterFilter, parameters::RecoPlanParameters)
   result = true
-  return result == true ? Cint(1) : Cint(0)
+  return result ? Cint(1) : Cint(0)
+end
+
+function match(filter::RecoPlanParameterFilter, parameter::RecoPlanParameter)
+  result = true
+
+  result = !filter.missingButton.active || ismissing(paramter.plan[parameter.field])
+  return result ? Cint(1) : Cint(0)
 end
 
 
@@ -133,6 +148,7 @@ mutable struct RecoPlanParameterList
   view::Union{Nothing, GtkListView}
   paramters::RecoPlanParameters
   dict::Dict{String, Union{RecoPlanParameter,RecoPlanParameters}}
+  filter::Union{RecoPlanParameterFilter, Nothing}
 end
 
 function RecoPlanParameterList(params::RecoPlanParameters; filter::Union{RecoPlanParameterFilter, Nothing} = nothing)
@@ -142,7 +158,7 @@ function RecoPlanParameterList(params::RecoPlanParameters; filter::Union{RecoPla
   model = GtkStringList(strings) # Can't creat GListStores with custom GObject types (yet) -> String and map to dict
   factory = GtkSignalListItemFactory()
   
-  list = RecoPlanParameterList(model, factory, nothing, params, dict)
+  list = RecoPlanParameterList(model, factory, nothing, params, dict, filter)
 
   function setup_param(f, li) # (factory, listitem)    
     set_child(li, GtkBox(:v))
@@ -157,11 +173,23 @@ function RecoPlanParameterList(params::RecoPlanParameters; filter::Union{RecoPla
       push!(box, child)
     end
   end
+  function unbind_param(f, li)
+    println("Unbind $(typeof(li))")
+    box = get_child(li)
+    if !isempty(box)
+      key = li[].string
+      entry = list.dict[key]
+      child = getListChild(entry)
+      push!(box, child)
+    end
+  end
   signal_connect(setup_param, factory, "setup")
   signal_connect(bind_param, factory, "bind")
+  #signal_connect(unbind_param, factory, "unbind")
 
   if !isnothing(filter)
-    customFilter = GtkCustomFilter((li, data) -> match(filter, li, data))
+    customFilter = GtkCustomFilter((li, data) -> match(list, li, data))
+    addFilter!(filter, customFilter)
     model = GtkFilterListModel(GLib.GListModel(model), customFilter)
   end
 
@@ -204,4 +232,14 @@ function getListChild(params::RecoPlanParameters{T}) where T
     grid[1:2, 1] = centerLabel
   end
   return grid
+end
+
+function match(list::RecoPlanParameterList, li::Ptr{Gtk4.GLib.GObject}, data)
+  itemLeaf = Gtk4.GLib.find_leaf_type(li)
+  item = convert(itemLeaf, li)
+  return match(list, item)
+end
+
+function match(list::RecoPlanParameterList, item)
+  return match(list.filter, list.dict[item.string])
 end
