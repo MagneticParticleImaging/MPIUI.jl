@@ -149,22 +149,23 @@ mutable struct RecoPlanParameterList
   paramters::RecoPlanParameters
   dict::Dict{String, Union{RecoPlanParameter,RecoPlanParameters}}
   filter::Union{RecoPlanParameterFilter, Nothing}
+  listitems::Vector{String}
 end
 
 function RecoPlanParameterList(params::RecoPlanParameters; filter::Union{RecoPlanParameterFilter, Nothing} = nothing)
   dict = Dict{String, Union{RecoPlanParameter,RecoPlanParameters}}()
-  fillListDict!(dict, params)
-  strings = sort(collect(keys(dict)))
-  model = GtkStringList(strings) # Can't creat GListStores with custom GObject types (yet) -> String and map to dict
+  listkeys = String[]
+  fillListDict!(dict, params, listkeys)
+  model = GtkStringList(listkeys) # Can't creat GListStores with custom GObject types (yet) -> String and map to dict
   factory = GtkSignalListItemFactory()
   
-  list = RecoPlanParameterList(model, factory, nothing, params, dict, filter)
+  list = RecoPlanParameterList(model, factory, nothing, params, dict, filter, listkeys)
 
-  function setup_param(f, li) # (factory, listitem)    
+  function setup_param(f, li) # (factory, listitem)
     set_child(li, GtkBox(:v))
   end
   # In general a view might rebind a widget for different items, should not matter for our short lists
-  function bind_param(f, li) 
+  function bind_param(f, li)
     box = get_child(li)
     if isempty(box)
       key = li[].string
@@ -198,17 +199,21 @@ function RecoPlanParameterList(params::RecoPlanParameters; filter::Union{RecoPla
   return list
 end
 
-function fillListDict!(dict, params::RecoPlanParameters)
+function fillListDict!(dict, params::RecoPlanParameters, listkeys)
   dict[id(params)] = params
+  push!(listkeys, id(params))
   for parameter in params.parameters
-    fillListDict!(dict, parameter)
+    fillListDict!(dict, parameter, listkeys)
   end
   for parameter in params.nestedParameters
-    fillListDict!(dict, parameter)
+    fillListDict!(dict, parameter, listkeys)
   end
   return dict
 end
-fillListDict!(dict, params::RecoPlanParameter) = dict[id(params)] = params
+function fillListDict!(dict, params::RecoPlanParameter, listkeys) 
+  dict[id(params)] = params
+  push!(listkeys, id(params))
+end
 
 getListChild(params::RecoPlanParameter) = widget(params)
 function getListChild(params::RecoPlanParameters{T}) where T
