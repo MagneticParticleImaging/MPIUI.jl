@@ -39,6 +39,7 @@ using Colors
 import Base: getindex, match
 import MPIFiles: addReco, getVisu, addVisu
 import MPIMeasurements #: measurement
+import Gtk4: widget
 import Logging: shouldlog, min_enabled_level, handle_message
 export openFileBrowser
 
