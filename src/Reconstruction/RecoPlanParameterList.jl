@@ -10,7 +10,7 @@ mutable struct RecoPlanParameterFilter
   dict::Dict{String, RecoPlanParameters}
   planFilter::Dict{RecoPlanParameters, Bool}
   # Hacky field to stop GTK segfaulting 
-  children::Vector{Vector{String}}
+  children::Dict{String, Vector{String}}
 end
 
 function RecoPlanParameterFilter(params::RecoPlanParameters)
@@ -27,7 +27,7 @@ function RecoPlanParameterFilter(params::RecoPlanParameters)
   entry.hexpand = true
   missingButton = GtkCheckButton("Only missing")
   missingButton.active = false
-  filter = RecoPlanParameterFilter(params, filterGrid, nothing, entry, missingButton, dict, planFilter, [String[]])
+  filter = RecoPlanParameterFilter(params, filterGrid, nothing, entry, missingButton, dict, planFilter, Dict{String, Vector{String}}())
 
   function create_tree(item, userData)
     if item != C_NULL
@@ -37,7 +37,7 @@ function RecoPlanParameterFilter(params::RecoPlanParameters)
 
       parent = filter.dict[str]
       children = getChildStrings(parent) # Otherwise Strings seem to be GC'ed and segfaulst are caused
-      push!(filter.children, children)
+      filter.children[str] = children
       store = GtkStringList(children)
 
       return Gtk4.GLib.GListModel(store)
@@ -64,23 +64,26 @@ function RecoPlanParameterFilter(params::RecoPlanParameters)
       expander = get_child(li)
       Gtk4.set_list_row(expander, row)
       box = get_child(expander)
-      if isempty(box)
-        key = Gtk4.get_item(row).string
-        labelString = split(key, ".")[end]
-        label = GtkLabel(labelString)
-        label.hexpand = true
-        label.xalign = 0.0
-        check = GtkCheckButton()
-        check.active = filter.planFilter[filter.dict[key]]
-        #expander.hide_expander = isempty(getChildStrings(filter.dict[key]))
-        # TODO set callback
-        push!(box, label)
-        push!(box, check)
-      end
+      key = Gtk4.get_item(row).string
+      labelString = split(key, ".")[end]
+      label = GtkLabel(labelString)
+      label.hexpand = true
+      label.xalign = 0.0
+      check = GtkCheckButton()
+      check.active = filter.planFilter[filter.dict[key]]
+      push!(box, label)
+      push!(box, check)
     end
   end
 
   function unbind_tree(f, li)
+    row = li[]
+    if row != C_NULL
+      expander = get_child(li)
+      Gtk4.set_list_row(expander, row)
+      box = get_child(expander)
+      empty!(box)
+    end
   end
 
   signal_connect(setup_tree, factory, "setup")
@@ -164,29 +167,20 @@ function RecoPlanParameterList(params::RecoPlanParameters; filter::Union{RecoPla
   function setup_param(f, li) # (factory, listitem)
     set_child(li, GtkBox(:v))
   end
-  # In general a view might rebind a widget for different items, should not matter for our short lists
   function bind_param(f, li)
     box = get_child(li)
-    if isempty(box)
-      key = li[].string
-      entry = list.dict[key]
-      child = getListChild(entry)
-      push!(box, child)
-    end
+    key = li[].string
+    entry = list.dict[key]
+    child = getListChild(entry)
+    push!(box, child)
   end
   function unbind_param(f, li)
-    println("Unbind $(typeof(li))")
     box = get_child(li)
-    if !isempty(box)
-      key = li[].string
-      entry = list.dict[key]
-      child = getListChild(entry)
-      push!(box, child)
-    end
+    empty!(box)
   end
   signal_connect(setup_param, factory, "setup")
   signal_connect(bind_param, factory, "bind")
-  #signal_connect(unbind_param, factory, "unbind")
+  signal_connect(unbind_param, factory, "unbind")
 
   if !isnothing(filter)
     customFilter = GtkCustomFilter((li, data) -> match(list, li, data))
