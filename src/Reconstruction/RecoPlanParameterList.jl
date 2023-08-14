@@ -140,15 +140,16 @@ end
 function match(filter::RecoPlanParameterFilter, parameter::RecoPlanParameter)
   result = true
 
-  result = !filter.missingButton.active || ismissing(paramter.plan[parameter.field])
+  result = !filter.missingButton.active || ismissing(parameter.plan[parameter.field])
   return result ? Cint(1) : Cint(0)
 end
 
 
 mutable struct RecoPlanParameterList
-  model::GtkStringList
-  factory::GtkSignalListItemFactory
-  view::Union{Nothing, GtkListView}
+  #model::GtkStringList
+  #factory::GtkSignalListItemFactory
+  #view::Union{Nothing, GtkListView}
+  list::GtkListBox
   paramters::RecoPlanParameters
   dict::Dict{String, Union{RecoPlanParameter,RecoPlanParameters}}
   filter::Union{RecoPlanParameterFilter, Nothing}
@@ -159,37 +160,40 @@ function RecoPlanParameterList(params::RecoPlanParameters; filter::Union{RecoPla
   dict = Dict{String, Union{RecoPlanParameter,RecoPlanParameters}}()
   listkeys = String[]
   fillListDict!(dict, params, listkeys)
-  model = GtkStringList(listkeys) # Can't creat GListStores with custom GObject types (yet) -> String and map to dict
-  factory = GtkSignalListItemFactory()
+  #model = GtkStringList(listkeys) # Can't creat GListStores with custom GObject types (yet) -> String and map to dict
+  #factory = GtkSignalListItemFactory()
   
-  list = RecoPlanParameterList(model, factory, nothing, params, dict, filter, listkeys)
+  list = RecoPlanParameterList(GtkListBox(), params, dict, filter, listkeys)
 
-  function setup_param(f, li) # (factory, listitem)
-    set_child(li, GtkBox(:v))
-  end
-  function bind_param(f, li)
-    box = get_child(li)
-    key = li[].string
-    entry = list.dict[key]
-    child = getListChild(entry)
-    push!(box, child)
-  end
-  function unbind_param(f, li)
-    box = get_child(li)
-    empty!(box)
-  end
-  signal_connect(setup_param, factory, "setup")
-  signal_connect(bind_param, factory, "bind")
-  signal_connect(unbind_param, factory, "unbind")
+  #function setup_param(f, li) # (factory, listitem)
+  #  @idle_add set_child(li, GtkBox(:v))
+  #end
+  #function bind_param(f, li)
+  #  @idle_add begin
+  #    box = get_child(li)
+  #    key = li[].string
+  #    entry = list.dict[key]
+  #    child = getListChild(entry)
+  #    push!(box, child)
+  #  end
+  #end
+  #function unbind_param(f, li)
+  #  @idle_add empty!(get_child(li))
+  #end
+  #signal_connect(setup_param, factory, "setup")
+  #signal_connect(bind_param, factory, "bind")
+  #signal_connect(unbind_param, factory, "unbind")
 
-  if !isnothing(filter)
-    customFilter = GtkCustomFilter((li, data) -> match(list, li, data))
-    addFilter!(filter, customFilter)
-    model = GtkFilterListModel(GLib.GListModel(model), customFilter)
+  #if !isnothing(filter)
+  #  customFilter = GtkCustomFilter((li, data) -> match(list, li, data))
+  #  addFilter!(filter, customFilter)
+  #  model = GtkFilterListModel(GLib.GListModel(model), customFilter)
+  #end
+
+  for key in listkeys
+    Gtk4.G_.append(list.list, getListChild(list.dict[key]))
   end
 
-  view = GtkListView(GtkSelectionModel(GtkSingleSelection(GLib.GListModel(model))), factory)
-  list.view = view
   return list
 end
 

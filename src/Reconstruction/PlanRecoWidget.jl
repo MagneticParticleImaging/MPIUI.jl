@@ -45,7 +45,7 @@ function PlanRecoWidget(plan::RecoPlan)
   recoPanel = GtkPaned(:h)
   recoPanel[1] = filter.filterGrid
   sw = GtkScrolledWindow()
-  sw[] = list.view
+  sw[] = list.list
   recoPanel[2] = sw
   @info "3"
   push!(boxParams, recoPanel)
