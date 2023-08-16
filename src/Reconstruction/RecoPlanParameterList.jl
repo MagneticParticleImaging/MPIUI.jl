@@ -12,6 +12,7 @@ mutable struct RecoPlanParameterFilter
   # Hacky field to stop GTK segfaulting 
   children::Dict{String, Vector{String}}
 end
+widget(filter::RecoPlanParameterFilter) = filter.filterGrid
 
 function RecoPlanParameterFilter(params::RecoPlanParameters)
   dict = Dict{String, RecoPlanParameters}()
@@ -123,12 +124,9 @@ function getChildStrings(params::RecoPlanParameters)
   return sort(result)
 end
 
-function addFilter!(filter::RecoPlanParameterFilter, custom::GtkCustomFilter)
+function addFilter!(filter::RecoPlanParameterFilter, list::GtkListBox)
   signal_connect(filter.missingButton, :toggled) do btn
-    @idle_add begin
-      change = filter.missingButton.active ? Gtk4.FilterChange_MORE_STRICT : Gtk4.FilterChange_LESS_STRICT
-      Gtk4.G_.changed(custom, change)
-    end
+    @idle_add Gtk4.G_.invalidate_filter(list) 
   end
 end
 
@@ -146,71 +144,46 @@ end
 
 
 mutable struct RecoPlanParameterList
-  #model::GtkStringList
-  #factory::GtkSignalListItemFactory
-  #view::Union{Nothing, GtkListView}
-  list::GtkListBox
+  listBox::GtkListBox
   paramters::RecoPlanParameters
-  dict::Dict{String, Union{RecoPlanParameter,RecoPlanParameters}}
   filter::Union{RecoPlanParameterFilter, Nothing}
-  listitems::Vector{String}
+  listInputs::Vector{Union{RecoPlanParameter, RecoPlanParameters}}
+  listWidgets::Vector{GtkWidget}
 end
 
 function RecoPlanParameterList(params::RecoPlanParameters; filter::Union{RecoPlanParameterFilter, Nothing} = nothing)
-  dict = Dict{String, Union{RecoPlanParameter,RecoPlanParameters}}()
-  listkeys = String[]
-  fillListDict!(dict, params, listkeys)
-  #model = GtkStringList(listkeys) # Can't creat GListStores with custom GObject types (yet) -> String and map to dict
-  #factory = GtkSignalListItemFactory()
+  listInputs = Vector{Union{RecoPlanParameter, RecoPlanParameters}}()
+  listWidgets = Vector{GtkWidget}()
+  fillListVectors!(params, listInputs, listWidgets)
   
-  list = RecoPlanParameterList(GtkListBox(), params, dict, filter, listkeys)
+  list = RecoPlanParameterList(GtkListBox(), params, filter, listInputs, listWidgets)
 
-  #function setup_param(f, li) # (factory, listitem)
-  #  @idle_add set_child(li, GtkBox(:v))
-  #end
-  #function bind_param(f, li)
-  #  @idle_add begin
-  #    box = get_child(li)
-  #    key = li[].string
-  #    entry = list.dict[key]
-  #    child = getListChild(entry)
-  #    push!(box, child)
-  #  end
-  #end
-  #function unbind_param(f, li)
-  #  @idle_add empty!(get_child(li))
-  #end
-  #signal_connect(setup_param, factory, "setup")
-  #signal_connect(bind_param, factory, "bind")
-  #signal_connect(unbind_param, factory, "unbind")
+  if !isnothing(filter)
+    addFilter!(filter, list.listBox)
+    Gtk4.set_filter_func(list.listBox, (row, data) -> match(list, row, data))
+  end
 
-  #if !isnothing(filter)
-  #  customFilter = GtkCustomFilter((li, data) -> match(list, li, data))
-  #  addFilter!(filter, customFilter)
-  #  model = GtkFilterListModel(GLib.GListModel(model), customFilter)
-  #end
-
-  for key in listkeys
-    Gtk4.G_.append(list.list, getListChild(list.dict[key]))
+  for widget in listWidgets
+    push!(list.listBox, widget)
   end
 
   return list
 end
+widget(planList::RecoPlanParameterList) = planList.listBox
 
-function fillListDict!(dict, params::RecoPlanParameters, listkeys)
-  dict[id(params)] = params
-  push!(listkeys, id(params))
+function fillListVectors!(params::RecoPlanParameters, inputs, widgets)
+  push!(inputs, params)
+  push!(widgets, getListChild(params))
   for parameter in params.parameters
-    fillListDict!(dict, parameter, listkeys)
+    fillListVectors!(parameter, inputs, widgets)
   end
   for parameter in params.nestedParameters
-    fillListDict!(dict, parameter, listkeys)
+    fillListVectors!(parameter, inputs, widgets)
   end
-  return dict
 end
-function fillListDict!(dict, params::RecoPlanParameter, listkeys) 
-  dict[id(params)] = params
-  push!(listkeys, id(params))
+function fillListVectors!(params::RecoPlanParameter, inputs, widgets) 
+  push!(inputs, params)
+  push!(widgets, getListChild(params))
 end
 
 getListChild(params::RecoPlanParameter) = widget(params)
@@ -244,5 +217,7 @@ function match(list::RecoPlanParameterList, li::Ptr{Gtk4.GLib.GObject}, data)
 end
 
 function match(list::RecoPlanParameterList, item)
-  return match(list.filter, list.dict[item.string])
+  widget = item.child
+  idx = findfirst(x-> x == widget, list.listWidgets)
+  return match(list.filter, list.listInputs[idx])
 end
