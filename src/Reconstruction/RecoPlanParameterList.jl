@@ -186,7 +186,12 @@ function fillListVectors!(params::RecoPlanParameter, inputs, widgets)
   push!(widgets, getListChild(params))
 end
 
-getListChild(params::RecoPlanParameter) = widget(params)
+function getListChild(params::RecoPlanParameter) 
+  result = widget(params)
+  result.margin_top = 10
+  result.margin_bottom = 10
+  return result
+end
 function getListChild(params::RecoPlanParameters{T}) where T
   grid = GtkGrid()
   parents = AbstractImageReconstruction.parentfields(params.plan)
@@ -207,6 +212,7 @@ function getListChild(params::RecoPlanParameters{T}) where T
     centerLabel.justify = 2
     grid[1:2, 1] = centerLabel
   end
+  grid.margin_top = 25
   return grid
 end
 
