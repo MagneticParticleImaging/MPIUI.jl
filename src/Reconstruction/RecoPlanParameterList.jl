@@ -145,7 +145,7 @@ end
 
 mutable struct RecoPlanParameterList
   listBox::GtkListBox
-  paramters::RecoPlanParameters
+  parameters::RecoPlanParameters
   filter::Union{RecoPlanParameterFilter, Nothing}
   listInputs::Vector{Union{RecoPlanParameter, RecoPlanParameters}}
   listWidgets::Vector{GtkWidget}
