@@ -134,6 +134,39 @@ function update!(input::RegularizationTermPlanInput, value::Missing)
 end
 callback!(input::RegularizationTermPlanInput, value) = input.cb = value
 
+mutable struct AutoScaledRegularizationTermPlanInput <: AbstractRegularizationTermPlanInput
+  grid::GtkGrid
+  cb::Union{Nothing, Function}
+  regInput::Union{Nothing, AbstractRegularizationTermPlanInput}
+  function AutoScaledRegularizationTermPlanInput(value::AutoScaledRegularization, field::Union{Symbol, Nothing})
+    grid = GtkGrid()
+    label = GtkLabel(string(nameof(typeof(value)), ":"))
+    label.hexpand = true
+    label.xalign = 0.0
+    grid[1, 1] = label
+    input = new(grid, nothing, nothing)
+    update!(input, value)
+    return input
+  end
+end
+RecoPlanParameterInput(t::Type{T}, value::T, field) where T<:AutoScaledRegularization = AutoScaledRegularizationTermPlanInput(value, field)
+widget(input::AutoScaledRegularizationTermPlanInput) = input.grid
+function value(input::AutoScaledRegularizationTermPlanInput)
+  return AutoScaledRegularization(value(input.regInput))
+end
+function update!(input::AutoScaledRegularizationTermPlanInput, value::AutoScaledRegularization)
+  regInput = RecoPlanParameterInput(typeof(value.reg), value.reg, nothing)
+  input.grid[1:2, 2] = widget(regInput)
+  callback!(regInput, () -> begin
+    if !isnothing(input.cb)
+      input.cb()
+    end 
+  end)
+  input.regInput = regInput
+end
+callback!(input::AutoScaledRegularizationTermPlanInput, value) = input.cb = value
+
+
 
 mutable struct RegularizationPlanInput <: RecoPlanParameterInput
   list::GtkListBox
@@ -169,7 +202,7 @@ function update!(input::RegularizationPlanInput, value)
   end
   empty!(input.regInputs)
   for reg in value
-    regInput = RegularizationTermPlanInput(reg, nothing)
+    regInput = RecoPlanParameterInput(typeof(reg), reg, nothing)
     callback!(regInput, () -> begin
       if !isnothing(input.cb)
         input.cb()
