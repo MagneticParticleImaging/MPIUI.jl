@@ -14,7 +14,7 @@ function ParamExpander(handler::AbstractDataHandler)
     widget = GtkBox(:v)
   end
   uifile = joinpath(@__DIR__,"..","..","builder","dataHandlerParams.ui")
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   expander = G_.get_object(b, "expander")
   # TODO Make title bold
   set_gtk_property!(expander, :label, title)

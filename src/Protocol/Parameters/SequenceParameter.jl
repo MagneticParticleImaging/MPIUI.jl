@@ -7,7 +7,7 @@ mutable struct SequenceParameter <: Gtk4.GtkExpander
 
   function SequenceParameter(field::Symbol, value::Sequence, scanner::MPIScanner)
     uifile = joinpath(@__DIR__, "..", "..", "builder", "sequenceWidget.ui")
-    b = GtkBuilder(filename=uifile)
+    b = GtkBuilder(uifile)
     exp = Gtk4.G_.get_object(b, "expSequence")
     #addTooltip(object_(pw.builder, "lblSequence", GtkLabel), tooltip)
     seq = new(exp.handle, b, field, value, scanner)

@@ -41,7 +41,7 @@ function OfflineRecoWidget(filenameMeas=nothing; params = defaultRecoParams())
 
   uifile = joinpath(@__DIR__, "..", "builder", "reconstructionWidget.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainGrid = G_.get_object(b, "gridReco")
   boxParams = G_.get_object(b, "boxParams")
 

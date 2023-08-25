@@ -33,7 +33,7 @@ function ProtocolWidget(scanner=nothing)
     protocol = nothing
   end
     
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = G_.get_object(b, "boxProtocol")
 
   paramBuilder = Dict(:sequence => "expSequence", :positions => "expPositions")

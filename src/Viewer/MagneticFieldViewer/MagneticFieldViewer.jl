@@ -51,7 +51,7 @@ end
 function FieldViewerWidget()
   uifile = joinpath(@__DIR__,"..","..","builder","magneticFieldViewer.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = G_.get_object(b, "boxFieldViewer")
 
   fv = FieldViewerWidget(mainBox.handle, b, ColoringParams(0,0,0),
@@ -75,7 +75,7 @@ end
 function MagneticFieldViewerWidget()
   uifile = joinpath(@__DIR__,"..","..","builder","magneticFieldViewer.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = G_.get_object(b, "boxMagneticFieldViewer")
 
   m = MagneticFieldViewerWidget(mainBox.handle, b, FieldViewerWidget(),

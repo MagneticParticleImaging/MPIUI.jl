@@ -67,7 +67,7 @@ function LogMessageListWidget()
 
   uifile = joinpath(@__DIR__,"builder","logMessagesWidget.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = Gtk4.G_.get_object(b, "boxLogMessages")
 
   # LogLevel, Time, Group, Message, visible, tooltip, "number" log level

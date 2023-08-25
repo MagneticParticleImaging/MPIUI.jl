@@ -34,6 +34,7 @@ function init(handler::OnlineRecoHandler, protocol::Protocol)
   handler.oldUnit = ""
   handler.deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
   handler.bgMeas = zeros(Float32,0,0,0,0)
+  # TODO Load system matrix if dispaly is enabled
 end 
 
 function isready(handler::OnlineRecoHandler)
@@ -78,6 +79,15 @@ function handleProgress(handler::OnlineRecoHandler, protocol::ContinousMeasureme
   return query
 end
 
+function handleProgress(handler::OnlineRecoHandler, protocol::RobotBasedSystemMatrixProtocol, event::ProgressEvent)
+  query = nothing
+  if isempty(handler.bgMeas)
+    query = DataQueryEvent("BG")
+  else
+    query = DataQueryEvent("CURR")
+  end
+  return query
+end
 
 
 ############
@@ -137,7 +147,14 @@ end
   @info "$(rxNumSamplingPoints(m.params.bSF[1]))   $(size(data,1))"
 
   if rxNumSamplingPoints(m.params.bSF[1]) > size(data,1)
-    data = reshape(data, rxNumSamplingPoints(m.params.bSF[1]), size(data,2), :, size(data,3))
+    tmp = permutedims(data, (1,3,2,4))
+  
+    numPeriodGrouping = rxNumSamplingPoints(m.params.bSF[1]) ÷ size(data,1)
+    
+    tmp2 = reshape(tmp, size(tmp,1)*numPeriodGrouping, div(size(tmp,2),numPeriodGrouping),
+                          size(tmp,3), size(tmp,4) )
+    data = permutedims(tmp2, (1,3,2,4))  
+    #data = reshape(data, rxNumSamplingPoints(m.params.bSF[1]), size(data,2), :, size(data,4))
   end
 
   @info "Size SM = $(size(m.systemMatrix)),   Size data = $(size(data))"

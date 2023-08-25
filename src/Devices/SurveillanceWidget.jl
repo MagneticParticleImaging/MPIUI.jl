@@ -64,7 +64,7 @@ getindex(m::SurveillanceWidget, w::AbstractString) = G_.get_object(m.builder, w)
 function SurveillanceWidget(su::SurveillanceUnit)
     uifile = joinpath(@__DIR__,"..","builder","surveillanceWidget.ui")
 
-    b = GtkBuilder(filename=uifile)
+    b = GtkBuilder(uifile)
     mainBox = G_.get_object(b, "mainBox")
 
     m = SurveillanceWidget(mainBox.handle, b, false, su, TemperatureLog(), GtkCanvas(), nothing)

@@ -13,7 +13,7 @@ getindex(m::TemperatureSensorWidget, w::AbstractString) = Gtk4.G_.get_object(m.b
 function TemperatureSensorWidget(sensor::TemperatureSensor)
   uifile = joinpath(@__DIR__,"..","builder","temperatureSensorWidget.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = Gtk4.G_.get_object(b, "mainBox")
 
   numPlots = length(unique(getChannelGroups(sensor)))

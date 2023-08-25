@@ -40,12 +40,12 @@ function DataViewer(imFG::ImageMeta, imBG=nothing; params=nothing)
 end
 
 function DataViewer()
-  w = Window("Data Viewer",800,600)
+  w = GtkWindow("Data Viewer",800,600)
   dw = DataViewerWidget()
   push!(w,dw)
   show(w)
 
-  signal_connect(w, "key-press-event") do widget, event
+  #=signal_connect(w, "key-press-event") do widget, event
     if event.keyval ==  Gtk4.GConstants.GDK_KEY_c
       if event.state & 0x04 != 0x00 # Control key is pressed
         @debug "copy visu params to clipboard..."
@@ -54,7 +54,7 @@ function DataViewer()
         clipboard( str_ )
       end
     end
-  end
+  end=#
 
   return DataViewer(w,dw)
 end
@@ -66,7 +66,7 @@ function DataViewerWidget()
 
   uifile = joinpath(@__DIR__,"..","..","builder","dataviewer.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = Gtk4.G_.get_object(b, "boxDataViewer")
   m = DataViewerWidget( mainBox.handle, b,
                          Gtk4.G_.get_object(b, "gridDataViewer2D"),

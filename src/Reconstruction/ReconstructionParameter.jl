@@ -14,7 +14,7 @@ mutable struct ReconstructionParameter <: Gtk4.GtkBox
 
   function ReconstructionParameter(params=defaultRecoParams()) #, value::Sequence, scanner::MPIScanner)
     uifile = joinpath(@__DIR__, "..", "builder", "reconstructionParams.ui")
-    b = GtkBuilder(filename=uifile)
+    b = GtkBuilder(uifile)
 
     exp = G_.get_object(b, "boxRecoParams")
 
@@ -353,7 +353,7 @@ end
           sffilename =  getSelectedSF(dlg)
     
           @info "" sffilename
-          setSF(m, sffilename )
+          setSF(m, sffilename, resetGrid=true)
         end
       end
       destroy(dlg)
@@ -388,7 +388,7 @@ function initBGSubtractionWidgets(m::ReconstructionParameter, study=nothing, exp
 
 end
 
-function setSF(m::ReconstructionParameter, filename)
+function setSF(m::ReconstructionParameter, filename; resetGrid::Bool = false)
 
   m.bSF[m.selectedSF] = MPIFile( filename )
 
@@ -398,7 +398,10 @@ function setSF(m::ReconstructionParameter, filename)
       set_gtk_property!(m["adjMinFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
       set_gtk_property!(m["adjMaxFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
 
-      set_gtk_property!(m["entGridShape"], :text, @sprintf("%d x %d x %d", calibSize(m.bSF[m.selectedSF])...))
+      if resetGrid 
+        # use calibration grid from SM
+        set_gtk_property!(m["entGridShape"], :text, @sprintf("%d x %d x %d", calibSize(m.bSF[m.selectedSF])...))
+      end
     end
     m.sfParamsChanged = true
   end
