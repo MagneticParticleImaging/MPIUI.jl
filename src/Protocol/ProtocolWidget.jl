@@ -362,6 +362,10 @@ function addProtocolParameter(pw::ProtocolWidget, ::SequenceParameterType, field
   push!(pw["boxProtocolParameter", BoxLeaf], seq)
 end
 
+function addProtocolParameter(pw::ProtocolWidget, ::SequencesParameterType, field, value, tooltip)
+  # NOP
+end
+
 function addProtocolParameter(pw::ProtocolWidget, ::ReconstructionParameterType, field, value, tooltip)
   reco = OnlineRecoWidget(field)
   push!(pw["boxProtocolParameter", BoxLeaf], reco)

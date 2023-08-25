@@ -25,6 +25,13 @@ function init(handler::RawDataHandler, protocol::Protocol)
   handler.bgMeas = zeros(Float32,0,0,0,0)
 end 
 
+function init(handler::RawDataHandler, protocol::MultiSequenceSystemMatrixProtocol)
+  seq = protocol.params.sequences[1]
+  handler.oldUnit = ""
+  handler.deltaT = ustrip(u"s", dfCycle(seq) / rxNumSamplesPerPeriod(seq))
+  handler.bgMeas = zeros(Float32,0,0,0,0)
+end 
+
 isMeasurementStore(handler::RawDataHandler, d::DatasetStore) = handler.params.mdfstore.path == d.path
 
 function updateStudy(handler::RawDataHandler, name::String, date::DateTime)

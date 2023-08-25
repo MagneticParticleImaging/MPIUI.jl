@@ -11,7 +11,7 @@ function initProtocol(pw::ProtocolWidget)
     end
     return true
   catch e
-    @error e
+    @error e exception=(e, catch_backtrace())
     showError(e)
     return false
   end
@@ -303,6 +303,7 @@ defaultDataHandler(protocol::Protocol) = [RawDataHandler, SpectrogramHandler]
 defaultDataHandler(protocol::MPIMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 defaultDataHandler(protocol::ContinousMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 defaultDataHandler(protocol::RobotBasedSystemMatrixProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
+defaultDataHandler(protocol::MultiSequenceSystemMatrixProtocol) = [RawDataHandler]
 defaultDataHandler(protocol::RobotMPIMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 defaultDataHandler(protocol::RobotBasedMagneticFieldStaticProtocol) = [MagneticFieldHandler]
 defaultDataHandler(protocol::RobotBasedTDesignFieldProtocol) = [MagneticFieldHandler]

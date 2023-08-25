@@ -3,6 +3,7 @@ abstract type SpecialParameterType <: ParameterType end
 abstract type RegularParameterType <: ParameterType end
 struct GenericParameterType <: RegularParameterType end
 struct SequenceParameterType <: SpecialParameterType end
+struct SequencesParameterType <: SpecialParameterType end
 struct PositionParameterType <: SpecialParameterType end
 struct BoolParameterType <: RegularParameterType end
 struct CoordinateParameterType <: SpecialParameterType end
@@ -10,6 +11,8 @@ struct ReconstructionParameterType <: SpecialParameterType end
 function parameterType(field::Symbol, value)
   if field == :sequence
     return SequenceParameterType()
+  elseif field == :sequences
+    return SequencesParameterType()
   elseif field == :positions
     return PositionParameterType()
   elseif field == :fgPos || field == :center

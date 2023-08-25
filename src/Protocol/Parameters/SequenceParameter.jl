@@ -44,9 +44,6 @@ mutable struct PeriodicChannelParameter <: Gtk.GtkExpander
   end
 end
 
-struct ArbitraryElectricalComponent
-end
-
 mutable struct ComponentParameter <: Gtk.GtkGrid
   handle::Ptr{Gtk.GObject}
   idLabel::GtkLabel
@@ -213,7 +210,7 @@ function setProtocolParameter(channelParam::PeriodicChannelParameter)
     if get_gtk_property(component.waveform, :sensitive, Bool)
       amplitude!(channel, id, uconvert(u"T", value(component.amplitude)))
       phase!(channel, id, value(component.phase))
-      divider!(channel, id, value(component.divider))
+      #divider!(channel, id, value(component.divider))
       wave = component.waveforms[get_gtk_property(component.waveform, :active, Int)+1]
       waveform!(channel, id, wave)
     end
