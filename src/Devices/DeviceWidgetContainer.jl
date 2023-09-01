@@ -1,21 +1,21 @@
-mutable struct DeviceWidgetContainer <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct DeviceWidgetContainer <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   updating::Bool
   embedded::Bool
-  deviceWindow::Gtk.GtkWindow
-  deviceWidget::Gtk.GtkContainer
+  deviceWindow::Gtk4.GtkWindowLeaf
+  deviceWidget# TODO ::Gtk4.GtkContainer
 end
 
 
-getindex(m::DeviceWidgetContainer, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::DeviceWidgetContainer, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 
 function DeviceWidgetContainer(deviceName::String, deviceWidget)
   uifile = joinpath(@__DIR__, "..", "builder", "deviceWidgetContainer.ui")
 
-  b = Builder(filename=uifile)
-  mainBox = G_.object(b, "boxContainer")
+  b = GtkBuilder(uifile)
+  mainBox = Gtk4.G_.get_object(b, "boxContainer")
 
   window = GtkWindow(deviceName, 800, 600)
   visible(window, false)
@@ -24,8 +24,7 @@ function DeviceWidgetContainer(deviceName::String, deviceWidget)
   
   set_gtk_property!(m["lblDeviceName"], :label, deviceName)
   push!(m["boxDeviceWidget"], deviceWidget)
-  set_gtk_property!(m["boxDeviceWidget"], :expand, deviceWidget, true)
-  showall(m)
+  show(m)
 
   initCallbacks(m)
   
@@ -48,7 +47,7 @@ function initCallbacks(m::DeviceWidgetContainer)
     end
   end
 
-  signal_connect(m.deviceWindow, "delete-event") do w, event
+  signal_connect(m.deviceWindow, "close-request") do w
     @idle_add_guarded begin
       set_gtk_property!(m["btnPopout"], :active, false)
     end
@@ -58,16 +57,16 @@ function initCallbacks(m::DeviceWidgetContainer)
 end
 
 function popout!(m::DeviceWidgetContainer, popout::Bool)
-  empty!(m.deviceWindow)
+  G_.set_child(m.deviceWindow, nothing)
   empty!(m["boxDeviceWidget"])
   if popout
-    push!(m.deviceWindow, m.deviceWidget)
+    G_.set_child(m.deviceWindow, m.deviceWidget)
     push!(m["boxDeviceWidget"], GtkLabel("Device Widget is opened in Pop-out Window"))
     visible(m.deviceWindow, true)
-    showall(m.deviceWindow)
+    show(m.deviceWindow)
   else
     push!(m["boxDeviceWidget"], m.deviceWidget)
     visible(m.deviceWindow, false)
   end
-  showall(m)
+  show(m)
 end

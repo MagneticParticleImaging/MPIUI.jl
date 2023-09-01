@@ -3,8 +3,8 @@ export SFViewer
 import Base: getindex
 
 
-mutable struct SFViewerWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct SFViewerWidget <: Gtk4.GtkPaned
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   dv::DataViewerWidget
   bSF::MPIFile
@@ -12,29 +12,29 @@ mutable struct SFViewerWidget <: Gtk.GtkBox
   maxFreq::Int
   maxChan::Int
   SNR::Array{Float64,3}
-  SNRSortedIndices::Array{Float64,1}
-  SNRSortedIndicesInverse::Array{Float64,1}
-  SNRSortedIndicesRecChan::Array{Array{Float64,1},1}
-  SNRSortedIndicesRecChanInverse::Array{Array{Float64,1},1}
-  mixFac::Array{Float64,2}
-  mxyz::Array{Float64,1}
+  SNRSortedIndices::Array{Int64,1}
+  SNRSortedIndicesInverse::Array{Int64,1}
+  SNRSortedIndicesRecChan::Array{Array{Int64,1},1}
+  SNRSortedIndicesRecChanInverse::Array{Array{Int64,1},1}
+  mixFac::Array{Int64,2}
+  mxyz::Array{Int64,1}
   frequencies::Array{Float64,1}
   frequencySelection::Array{Int,1}
-  grid::GtkGridLeaf
+  grid::Gtk4.GtkGridLeaf
 end
 
-getindex(m::SFViewerWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::SFViewerWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 mutable struct SFViewer
-  w::Window
+  w::Gtk4.GtkWindowLeaf
   sf::SFViewerWidget
 end
 
 function SFViewer(filename::AbstractString)
   sfViewerWidget = SFViewerWidget()
-  w = Window("SF Viewer: $(filename)",800,600)
+  w = GtkWindow("SF Viewer: $(filename)",800,600)
   push!(w,sfViewerWidget)
-  showall(w)
+  show(w)
   updateData!(sfViewerWidget, filename)
   return SFViewer(w, sfViewerWidget)
 end
@@ -42,22 +42,28 @@ end
 function SFViewerWidget()
   uifile = joinpath(@__DIR__,"..","builder","mpiLab.ui")
 
-  b = Builder(filename=uifile)
-  mainBox = Box(:h) #G_.object(b, "boxSFViewer")
+  b = GtkBuilder(uifile)
+  mainBox = GtkPaned(:h) 
 
   m = SFViewerWidget(mainBox.handle, b, DataViewerWidget(),
                   BrukerFile(), false, 0, 0, zeros(0,0,0),
-                  zeros(0), zeros(0), zeros(0), zeros(0), zeros(0,0), zeros(0), zeros(0), zeros(Int,0), Grid())
-  Gtk.gobject_move_ref(m, mainBox)
+                  zeros(0), zeros(0), zeros(0), zeros(0), zeros(0,0), zeros(0), zeros(0), zeros(Int,0), GtkGrid())
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   m.grid[1,1:2] = m.dv
-  m.grid[1,3] = Canvas()
+  m.grid[1,3] = GtkCanvas()
   set_gtk_property!(m.grid, :row_homogeneous, true)
-  #set_gtk_property!(m.grid, :column_homogeneous, true)
-  push!(m, m.grid)
-  set_gtk_property!(m, :fill, m.grid, true)
-  set_gtk_property!(m, :expand, m.grid, true)
-  push!(m, m["swSFViewer"])
+  set_gtk_property!(m.grid[1,2], :height_request, 200)
+
+  m[1] = m.grid
+  m[2] = m["swSFViewer"]
+
+  Gtk4.resize_start_child(m, true)
+  Gtk4.shrink_start_child(m, true)
+  Gtk4.resize_end_child(m, false)
+  Gtk4.shrink_end_child(m, false)
+
+  G_.set_size_request(m["swSFViewer"], 250, -1)
 
   function updateSFMixO( widget )
     if !m.updating
@@ -236,12 +242,22 @@ function updateSF(m::SFViewerWidget)
     snrCompressed = vec(m.SNR[stepsFr,recChan,period])
   end
 
-  p = Winston.semilogy(m.frequencies[stepsFr], snrCompressed,"b-",linewidth=5)
-  Winston.plot(p,[m.frequencies[freq]],[m.SNR[freq,recChan,period]],"rx",linewidth=5,ylog=true)
-  Winston.xlabel("f / kHz")
-  Winston.title("SNR")
-  display(m.grid[1,3] ,p)
-  showall(m)
+  fFD, axFD, lFD1 = CairoMakie.lines(m.frequencies[stepsFr], snrCompressed, 
+                          figure = (; resolution = (1000, 800), fontsize = 12),
+                          axis = (; title = "SNR", yscale=log10),
+                          color = CairoMakie.RGBf(colors[1]...))
+  CairoMakie.scatter!(axFD, [m.frequencies[freq]], [m.SNR[freq,recChan,period]],
+                      markersize=9, color=:red, marker=:xcross)
+
+  CairoMakie.autolimits!(axFD)
+  if m.frequencies[stepsFr[end]] > m.frequencies[stepsFr[1]]
+    CairoMakie.xlims!(axFD, m.frequencies[stepsFr[1]], m.frequencies[stepsFr[end]])
+  end
+  axFD.xlabel = "f / kHz"
+
+  drawonto(m.grid[1,3], fFD)
+
+  show(m)
 
   c = reshape(sfData, 1, size(sfData,1), size(sfData,2), size(sfData,3), 1)
   c_ = cat(abs.(c),angle.(c), dims=1)

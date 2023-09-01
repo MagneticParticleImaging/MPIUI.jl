@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.22.1 -->
 <interface>
-  <requires lib="gtk+" version="3.20"/>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="gtk" version="4.0"/>
   <object class="GtkAdjustment" id="adjMaxFreq">
     <property name="upper">100000000</property>
     <property name="step_increment">1</property>
@@ -29,228 +29,133 @@
     <property name="page_increment">0.1</property>
   </object>
   <object class="GtkWindow" id="mainWindow">
-    <property name="can_focus">False</property>
     <property name="default_height">536</property>
     <child>
       <placeholder/>
     </child>
-    <child>
+    <property name="child">
       <object class="GtkBox" id="boxMain">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="visible">0</property>
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkBox">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="margin_left">5</property>
-            <property name="margin_right">5</property>
+            <property name="visible">0</property>
+            <property name="margin-start">5</property>
+            <property name="margin-end">5</property>
             <property name="margin_top">5</property>
             <property name="margin_bottom">5</property>
             <property name="spacing">4</property>
             <child>
               <object class="GtkButton" id="btnSweep">
-                <property name="label" translatable="yes">Sweep</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
+                <property name="visible">0</property>
+                <property name="label" translatable="1">Sweep</property>
+                <property name="focusable">1</property>
+                <property name="receives_default">1</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
             </child>
             <child>
               <object class="GtkToggleButton" id="tbContinuous">
-                <property name="label" translatable="yes" context="Continuous">Cont.</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="tooltip_text" translatable="yes">Continuous</property>
+                <property name="visible">0</property>
+                <property name="label" translatable="1" context="Continuous">Cont.</property>
+                <property name="focusable">1</property>
+                <property name="receives_default">1</property>
+                <property name="tooltip_text" translatable="1">Continuous</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
             </child>
             <child>
               <object class="GtkButton" id="btnSave">
-                <property name="label" translatable="yes">Save</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
+                <property name="visible">0</property>
+                <property name="label" translatable="1">Save</property>
+                <property name="focusable">1</property>
+                <property name="receives_default">1</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Min Freq</property>
+                <property name="visible">0</property>
+                <property name="label" translatable="1">Min Freq</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">3</property>
-              </packing>
             </child>
             <child>
               <object class="GtkSpinButton">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
+                <property name="visible">0</property>
+                <property name="focusable">1</property>
                 <property name="adjustment">adjMinFreq</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">4</property>
-              </packing>
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Max Freq</property>
+                <property name="visible">0</property>
+                <property name="label" translatable="1">Max Freq</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">5</property>
-              </packing>
             </child>
             <child>
               <object class="GtkSpinButton">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
+                <property name="visible">0</property>
+                <property name="focusable">1</property>
                 <property name="adjustment">adjMaxFreq</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">6</property>
-              </packing>
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes"># Samples</property>
+                <property name="visible">0</property>
+                <property name="label" translatable="1"># Samples</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">7</property>
-              </packing>
             </child>
             <child>
               <object class="GtkSpinButton">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
+                <property name="visible">0</property>
+                <property name="focusable">1</property>
                 <property name="adjustment">adjNumSamples</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">8</property>
-              </packing>
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes"># Averages</property>
+                <property name="visible">0</property>
+                <property name="label" translatable="1"># Averages</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">9</property>
-              </packing>
             </child>
             <child>
               <object class="GtkSpinButton">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
+                <property name="visible">0</property>
+                <property name="focusable">1</property>
                 <property name="adjustment">adjNumAverages</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">10</property>
-              </packing>
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Voltage</property>
+                <property name="visible">0</property>
+                <property name="label" translatable="1">Voltage</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">11</property>
-              </packing>
             </child>
             <child>
               <object class="GtkSpinButton">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
+                <property name="visible">0</property>
+                <property name="focusable">1</property>
                 <property name="adjustment">adjVoltage</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">12</property>
-              </packing>
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">IP</property>
+                <property name="visible">0</property>
+                <property name="label" translatable="1">IP</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">13</property>
-              </packing>
             </child>
             <child>
               <object class="GtkEntry" id="entIP">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
+                <property name="visible">0</property>
+                <property name="focusable">1</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">14</property>
-              </packing>
             </child>
             <child>
               <object class="GtkComboBoxText" id="cbFunction">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="hexpand">False</property>
+                <property name="visible">0</property>
+                <property name="hexpand">0</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">15</property>
-              </packing>
             </child>
           </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">14</property>
-          </packing>
         </child>
       </object>
-    </child>
+    </property>
   </object>
 </interface>

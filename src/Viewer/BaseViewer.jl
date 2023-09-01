@@ -1,4 +1,4 @@
-using Gtk, Gtk.ShortNames, Cairo
+using Gtk4, Cairo
 
 export baseViewer, baseViewerStandAlone, updateView, drawMIP
 
@@ -16,23 +16,23 @@ function baseViewerStandAlone()
   set_gtk_property!(w,:vexpand,true)
   m, bv = baseViewer()
   push!(w, bv)
-  showall(w)
+  show(w)
   return w,m,bv
 end
 
-getindex(m::BaseViewerWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::BaseViewerWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 function baseViewer()
   uifile = joinpath(@__DIR__,"..","builder","baseViewer.ui")
-  b = Builder(filename=uifile)
+  b = GtkBuilder(uifile)
   m = BaseViewerWidget(b, nothing,nothing,nothing)
   w = m["parentGrid"]
   m.zxSliceGrid = m["zxSlice"]
   m.zySliceGrid = m["zySlice"]
   m.yxSliceGrid = m["yxSlice"]
-  m.zxSliceGrid[1,1] = Canvas()
-  m.zySliceGrid[1,1] = Canvas()
-  m.yxSliceGrid[1,1] = Canvas()
+  m.zxSliceGrid[1,1] = GtkCanvas()
+  m.zySliceGrid[1,1] = GtkCanvas()
+  m.yxSliceGrid[1,1] = GtkCanvas()
 
 
 
@@ -50,7 +50,7 @@ function drawMIP(controlzx,controlzy,controlyx,zx,zy,yx)
 end
 
 function drawSlice(control, slice)
-  @guarded Gtk.draw(control) do widget
+  @guarded Gtk4.draw(control) do widget
       ctx = getgc(control)
       copy!(ctx, slice)
   end

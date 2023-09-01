@@ -1,15 +1,15 @@
 export CoordinateParameter
 
-mutable struct CoordinateParameter <: Gtk.GtkGrid
-  handle::Ptr{Gtk.GObject}
+mutable struct CoordinateParameter <: Gtk4.GtkGrid
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   field::Symbol
 
   function CoordinateParameter(field::Symbol, coord::Union{ScannerCoords, Nothing}, tooltip::Union{Nothing, AbstractString} = nothing)
     grid = GtkGrid()
     uifile = joinpath(@__DIR__, "..", "..", "builder", "positionsWidget.ui")
-    b = Builder(filename=uifile)
-    coordEntry = G_.object(b, "gridCoord")
+    b = GtkBuilder(uifile)
+    coordEntry = Gtk4.G_.get_object(b, "gridCoord")
     label = GtkLabel(string(field))
     set_gtk_property!(label, :xalign, 0.0)
     addTooltip(label, tooltip)
@@ -17,11 +17,11 @@ mutable struct CoordinateParameter <: Gtk.GtkGrid
     grid[2, 1] = coordEntry
     coordParam = new(grid.handle, b, field)
     updateCoordinate(coordParam, coord)
-    return Gtk.gobject_move_ref(coordParam, grid)
+    return Gtk4.GLib.gobject_move_ref(coordParam, grid)
   end
 end
 
-getindex(m::CoordinateParameter, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::CoordinateParameter, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 function updateCoordinate(param::CoordinateParameter, coord::ScannerCoords)
   @idle_add_guarded begin

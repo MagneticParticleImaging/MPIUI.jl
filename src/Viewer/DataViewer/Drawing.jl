@@ -1,9 +1,9 @@
 
 
 function getMetaDataSlices(m::DataViewerWidget)
-  ctxZY = Gtk.getgc(m.grid3D[2,1])
-  ctxZX = Gtk.getgc(m.grid3D[1,1])
-  ctxXY = Gtk.getgc(m.grid3D[2,2])
+  ctxZY = Gtk4.getgc(m.grid3D[2,1])
+  ctxZX = Gtk4.getgc(m.grid3D[1,1])
+  ctxXY = Gtk4.getgc(m.grid3D[2,2])
   hZY = height(ctxZY)
   wZY = width(ctxZY)
   hZX = height(ctxZX)
@@ -104,13 +104,16 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
    
   drawSlice(m,slices,isDrawSectionalLines,isDrawRectangle,isDrawAxes, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
 
-  m.grid3D[1,1].mouse.button3press = @guarded (widget, event) -> begin
-    @guarded Gtk.draw(widget) do widget
+
+  g1 = GtkGestureClick(m.grid3D[1,1],3)
+  signal_connect(g1, "pressed") do controller, n_press, x, y
+    w = widget(controller)
+    @guarded Gtk4.draw(w) do widget
       if isDrawRectangle
         @debug "mouse event ZX"
         ctxZY,ctxZX,ctxXY,hZY,wZY,hZX,wZX,hXY,wXY = getMetaDataSlices(m)
         reveal(widget)
-        pZX = [event.x, event.y]
+        pZX = [x, y]
         ZXtoXYforX = (wZX-pZX[1])/wZX *hXY # X coord in ZX width direction and in XY in height direction
         cacheSelectedFovXYZPos(m, [ZXtoXYforX,m.cacheSelectedFovXYZ[2], pZX[2]], pixelSpacingBG, sizeBG, hXY,wZY,hZY)
         @debug "cacheSelectedFovXYZ" m.cacheSelectedFovXYZ
@@ -125,13 +128,15 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
       end
     end
   end
-  m.grid3D[2,1].mouse.button3press = @guarded (widget, event) -> begin
-   @guarded Gtk.draw(widget) do widget
+  g2 = GtkGestureClick(m.grid3D[2,1],3)
+  signal_connect(g2, "pressed") do controller, n_press, x, y
+    w = widget(controller)
+   @guarded Gtk4.draw(w) do widget
      if isDrawRectangle
        @debug "mouse event ZY"
        ctxZY,ctxZX,ctxXY,hZY,wZY,hZX,wZX,hXY,wXY = getMetaDataSlices(m)
        reveal(widget)
-       pZY = [event.x, event.y]
+       pZY = [x, y]
        cacheSelectedFovXYZPos(m, [m.cacheSelectedFovXYZ[1],pZY[1], pZY[2]], pixelSpacingBG, sizeBG, hXY,wZY,hZY)
        @debug "" m.cacheSelectedFovXYZ
        XYtoZXforX = wZX-(m.cacheSelectedFovXYZ[1]/hXY *wZX) # X coord in ZX width direction and in XY in height direction
@@ -146,13 +151,15 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
      end
    end
  end
- m.grid3D[2,2].mouse.button3press = @guarded (widget, event) -> begin
-   @guarded Gtk.draw(widget) do widget
+ g3 = GtkGestureClick(m.grid3D[2,2],3)
+ signal_connect(g3, "pressed") do controller, n_press, x, y
+  w = widget(controller)
+   @guarded Gtk4.draw(w) do widget
      if isDrawRectangle
        @debug "mouse event XY"
        ctxZY,ctxZX,ctxXY,hZY,wZY,hZX,wZX,hXY,wXY = getMetaDataSlices(m)
        reveal(widget)
-       pXY = [event.x, event.y]
+       pXY = [x, y]
        XYtoZXforX = wZX-(pXY[2]/hXY *wZX) # X coord in ZX width direction and in XY in height direction
        cacheSelectedFovXYZPos(m, [pXY[2],pXY[1],m.cacheSelectedFovXYZ[3]], pixelSpacingBG, sizeBG, hXY,wZY,hZY)
        @debug "" m.cacheSelectedFovXYZ
@@ -167,6 +174,7 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
      end
     end
   end
+  
   return nothing
 end
 
@@ -181,7 +189,7 @@ end
 
 function drawImageCairo(c, image, isDrawSectionalLines, isDrawAxes, xsec, ysec,
                         flipX, flipY, adjX, adjY, isDrawRectangle, xy, xyOffset, slide)
- @guarded Gtk.draw(c) do widget
+ @guarded Gtk4.draw(c) do widget
   #c = reshape(c,size(c,1), size(c,2))
   ctx = getgc(c)
   h = height(ctx)
@@ -219,20 +227,21 @@ function drawImageCairo(c, image, isDrawSectionalLines, isDrawAxes, xsec, ysec,
   end
  end
 
- c.mouse.button1press = @guarded (widget, event) -> begin
-  #if isDrawSectionalLines
-   ctx = getgc(widget)
-   reveal(widget)
-   h = height(ctx)
-   w = width(ctx)
-   xx = event.x / w*size(image,2) + 0.5
-   yy = event.y / h*size(image,1) + 0.5
-   xx = !flipX ? xx : (size(image,2)-xx+1)
-   yy = !flipY ? yy : (size(image,1)-yy+1)
-   @idle_add_guarded set_gtk_property!(adjX, :value, round(Int64,xx))
-   @idle_add_guarded set_gtk_property!(adjY, :value, round(Int64,yy))
-  #end
- end
+  g = GtkGestureClick(c,1)
+  signal_connect(g, "pressed") do controller, n_press, x, y
+    w = widget(controller)
+    ctx = getgc(w)
+    reveal(w)
+    h = height(ctx)
+    w = width(ctx)
+    xx = x / w*size(image,2) + 0.5
+    yy = y / h*size(image,1) + 0.5
+    xx = !flipX ? xx : (size(image,2)-xx+1)
+    yy = !flipY ? yy : (size(image,1)-yy+1)
+    @idle_add_guarded set_gtk_property!(adjX, :value, round(Int64,xx))
+    @idle_add_guarded set_gtk_property!(adjY, :value, round(Int64,yy))
+  end
+
 end
 
 ## Draw coordinate system
@@ -300,22 +309,31 @@ function showProfile(m::DataViewerWidget, params, slicesInRawData)
   prof = get_gtk_property(m["cbProfile"],:active, Int64) + 1
   if prof == 1
     m.currentProfile = vec(m.data[chan,:,slicesInRawData[2],slicesInRawData[3],params[:frame]])
-    showWinstonPlot(m, m.currentProfile, "x", "c")
+    showProfile(m, m.currentProfile, "x", "c")
   elseif prof == 2
     m.currentProfile = vec(m.data[chan,slicesInRawData[1],:,slicesInRawData[3],params[:frame]])
-    showWinstonPlot(m, m.currentProfile, "y", "c")
+    showProfile(m, m.currentProfile, "y", "c")
   elseif prof == 3
     m.currentProfile = vec(m.data[chan,slicesInRawData[1],slicesInRawData[2],:,params[:frame]])
-    showWinstonPlot(m, m.currentProfile, "z", "c")
+    showProfile(m, m.currentProfile, "z", "c")
   else
     m.currentProfile = vec(m.data[chan,slicesInRawData[1],slicesInRawData[2],slicesInRawData[3],:])
-    showWinstonPlot(m, m.currentProfile, "t", "c")
+    showProfile(m, m.currentProfile, "t", "c")
   end
 end
 
-function showWinstonPlot(m::DataViewerWidget, data, xLabel::String, yLabel::String)
-  p = Winston.FramedPlot(xlabel=xLabel, ylabel=yLabel)
-  Winston.add(p, Winston.Curve(1:length(data), data, color="blue", linewidth=4))
-  display(m.grid3D[1,2], p)
+function showProfile(m::DataViewerWidget, data, xLabel::String, yLabel::String)
+  f, ax, l = CairoMakie.lines(1:length(data), data, 
+        figure = (; resolution = (1000, 800), figure_padding=4, fontsize = 12),
+        axis = (; title = "Profile"),
+        color = CairoMakie.RGBf(colors[1]...))
+  
+  CairoMakie.autolimits!(ax)
+  if length(data) > 1
+    CairoMakie.xlims!(ax, 1, length(data))
+  end
+  ax.xlabel = xLabel
+  ax.ylabel = yLabel
+  drawonto(m.grid3D[1,2], f)
 end
 

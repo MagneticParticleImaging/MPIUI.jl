@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.20.0 -->
 <interface>
-  <requires lib="gtk+" version="3.12"/>
+  <requires lib="gtk" version="4.0"/>
   <object class="GtkAdjustment" id="adjFrame">
     <property name="lower">1</property>
     <property name="upper">1000000</property>
@@ -37,108 +36,6 @@
     <property name="upper">100</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
-  </object>
-  <object class="GtkWindow" id="winHarmonicViewer">
-    <property name="can_focus">False</property>
-    <property name="title" translatable="yes">Harmonic Viewer</property>
-    <property name="default_width">800</property>
-    <property name="default_height">600</property>
-    <property name="urgency_hint">True</property>
-    <property name="deletable">False</property>
-    <child>
-      <object class="GtkBox" id="boxHarmView">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="orientation">vertical</property>
-        <child>
-          <object class="GtkBox" id="boxHarmViewSelectors">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="spacing">2</property>
-            <child>
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Harmonics</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSpinButton">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="adjustment">adjHarm1</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSpinButton">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="adjustment">adjHarm2</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSpinButton">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="adjustment">adjHarm3</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">3</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSpinButton">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="adjustment">adjHarm4</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">4</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSpinButton">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="adjustment">adjHarm5</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">5</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-      </object>
-    </child>
   </object>
   <object class="GtkAdjustment" id="adjMaxFre">
     <property name="lower">1</property>
@@ -178,158 +75,125 @@
     <property name="page_increment">10</property>
   </object>
   <object class="GtkPopover" id="popOptions">
-    <property name="can_focus">False</property>
-    <child>
+    <property name="child">
       <object class="GtkGrid">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
         <child>
           <object class="GtkCheckButton" id="cbShowBG">
-            <property name="label" translatable="yes">Show BG</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="draw_indicator">True</property>
+            <property name="label" translatable="1">Show BG</property>
+            <property name="focusable">1</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">0</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">0</property>
-          </packing>
         </child>
         <child>
           <object class="GtkCheckButton" id="cbSLCorr">
-            <property name="label" translatable="yes">Leak Corr</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="draw_indicator">True</property>
+            <property name="label" translatable="1">Leak Corr</property>
+            <property name="focusable">1</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">1</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">1</property>
-          </packing>
         </child>
         <child>
           <object class="GtkCheckButton" id="cbSubtractBG">
-            <property name="label" translatable="yes">Subtr. BG</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="active">True</property>
-            <property name="draw_indicator">True</property>
+            <property name="label" translatable="1">Subtr. BG</property>
+            <property name="focusable">1</property>
+            <property name="active">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">0</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">0</property>
-          </packing>
         </child>
         <child>
           <object class="GtkCheckButton" id="cbCorrTF">
-            <property name="label" translatable="yes">Corr. TF</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="draw_indicator">True</property>
+            <property name="label" translatable="1">Corr. TF</property>
+            <property name="focusable">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">1</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">1</property>
-          </packing>
         </child>
         <child>
           <object class="GtkCheckButton" id="cbShowAllPatches">
-            <property name="label" translatable="yes">All Patches</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="draw_indicator">True</property>
+            <property name="label" translatable="1">All Patches</property>
+            <property name="focusable">1</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">2</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">2</property>
-          </packing>
         </child>
         <child>
           <object class="GtkCheckButton" id="cbHarmonicViewer">
-            <property name="label" translatable="yes">Harm. View</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="draw_indicator">True</property>
+            <property name="label" translatable="1">Harm. View</property>
+            <property name="focusable">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">2</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">2</property>
-          </packing>
         </child>
         <child>
           <object class="GtkCheckButton" id="cbAbsFrameAverage">
-            <property name="label" translatable="yes">AbsAv</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="tooltip_text" translatable="yes">THIS IS EXPERIMENTAL!!!!!!</property>
-            <property name="draw_indicator">True</property>
+            <property name="label" translatable="1">AbsAv</property>
+            <property name="focusable">1</property>
+            <property name="tooltip_text" translatable="1">THIS IS EXPERIMENTAL!!!!!!</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">3</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">3</property>
-          </packing>
         </child>
         <child>
           <object class="GtkCheckButton" id="cbShowFreq">
-            <property name="label" translatable="yes">Show Freq</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="active">True</property>
-            <property name="draw_indicator">True</property>
+            <property name="label" translatable="1">Show Freq</property>
+            <property name="focusable">1</property>
+            <property name="active">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">3</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">3</property>
-          </packing>
         </child>
         <child>
           <object class="GtkSpinButton">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
+            <property name="focusable">1</property>
             <property name="adjustment">adjPatchAv</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">5</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">5</property>
-          </packing>
         </child>
         <child>
           <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Patch Av</property>
+            <property name="label" translatable="1">Patch Av</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">5</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">5</property>
-          </packing>
         </child>
         <child>
           <object class="GtkCheckButton" id="cbReversePlots">
-            <property name="label" translatable="yes">Reverse Graphs</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="draw_indicator">True</property>
+            <property name="label" translatable="1">Reverse Graphs</property>
+            <property name="focusable">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">4</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">4</property>
-          </packing>
         </child>
         <child>
           <placeholder/>
         </child>
       </object>
-    </child>
+    </property>
   </object>
   <object class="GtkAdjustment" id="adjRxChan">
     <property name="lower">1</property>
@@ -338,375 +202,235 @@
     <property name="page_increment">10</property>
   </object>
   <object class="GtkBox" id="boxRawViewer">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
     <property name="orientation">vertical</property>
     <child>
       <object class="GtkGrid">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="margin_left">2</property>
-        <property name="margin_right">2</property>
+        <property name="margin-start">2</property>
+        <property name="margin-end">2</property>
         <property name="margin_top">1</property>
         <property name="margin_bottom">2</property>
         <property name="column_spacing">2</property>
         <child>
           <object class="GtkSpinButton">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
+            <property name="focusable">1</property>
             <property name="valign">center</property>
             <property name="width_chars">3</property>
-            <property name="text" translatable="yes">1</property>
+            <property name="text" translatable="1">1</property>
             <property name="adjustment">adjFrame</property>
             <property name="value">1</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">1</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">1</property>
-          </packing>
         </child>
         <child>
           <object class="GtkSpinButton">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
+            <property name="focusable">1</property>
             <property name="valign">center</property>
             <property name="width_chars">3</property>
-            <property name="text" translatable="yes">1</property>
+            <property name="text" translatable="1">1</property>
             <property name="adjustment">adjRxChan</property>
             <property name="value">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">1</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">1</property>
-          </packing>
         </child>
         <child>
           <object class="GtkSpinButton">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
+            <property name="focusable">1</property>
             <property name="halign">start</property>
             <property name="valign">center</property>
-            <property name="hexpand">False</property>
-            <property name="vexpand">False</property>
+            <property name="hexpand">0</property>
+            <property name="vexpand">0</property>
             <property name="width_chars">3</property>
-            <property name="text" translatable="yes">1</property>
+            <property name="text" translatable="1">1</property>
             <property name="adjustment">adjPatch</property>
             <property name="value">1</property>
+            <layout>
+              <property name="column">2</property>
+              <property name="row">1</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">2</property>
-            <property name="top_attach">1</property>
-          </packing>
         </child>
         <child>
           <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Chan</property>
+            <property name="label" translatable="1">Chan</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">0</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">0</property>
-          </packing>
         </child>
         <child>
           <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Patch</property>
+            <property name="label" translatable="1">Patch</property>
+            <layout>
+              <property name="column">2</property>
+              <property name="row">0</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">2</property>
-            <property name="top_attach">0</property>
-          </packing>
         </child>
         <child>
           <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Frame</property>
+            <property name="label" translatable="1">Frame</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">0</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">0</property>
-          </packing>
         </child>
         <child>
           <object class="GtkMenuButton" id="mbOptions">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
+            <property name="focusable">1</property>
+            <property name="receives_default">1</property>
             <property name="popover">popOptions</property>
-            <child>
-              <object class="GtkImage">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="stock">gtk-properties</property>
-              </object>
-            </child>
+            <property name="icon-name">preferences-desktop</property>
+            <layout>
+              <property name="column">3</property>
+              <property name="row">1</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">3</property>
-            <property name="top_attach">1</property>
-          </packing>
         </child>
         <child>
           <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Options</property>
+            <property name="label" translatable="1">Options</property>
+            <layout>
+              <property name="column">3</property>
+              <property name="row">0</property>
+            </layout>
           </object>
-          <packing>
-            <property name="left_attach">3</property>
-            <property name="top_attach">0</property>
-          </packing>
         </child>
       </object>
-      <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">0</property>
-      </packing>
     </child>
     <child>
       <object class="GtkBox">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="vexpand">1</property>
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkBox" id="boxTD">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
+            <property name="vexpand">1</property>
             <property name="orientation">vertical</property>
             <child>
               <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="spacing">3</property>
+                <property name="spacing">1</property>
                 <child>
                   <object class="GtkScale" id="scMinTP">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
+                    <property name="hexpand">1</property>
+                    <property name="draw-value">1</property>
+                    <property name="value-pos">right</property>
+                    <property name="focusable">1</property>
                     <property name="adjustment">adjMinTP</property>
                     <property name="round_digits">0</property>
                     <property name="digits">0</property>
                   </object>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
                 </child>
                 <child>
                   <object class="GtkScale" id="scMaxTP">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
+                    <property name="hexpand">1</property>
+                    <property name="draw-value">1</property>
+                    <property name="value-pos">right</property>
+                    <property name="focusable">1</property>
                     <property name="adjustment">adjMaxTP</property>
                     <property name="round_digits">0</property>
                     <property name="digits">0</property>
                   </object>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
                 </child>
                 <child>
                   <object class="GtkEntry" id="entTDMinVal">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="width_chars">5</property>
+                    <property name="focusable">1</property>
+                    <property name="max_width_chars">12</property>
                   </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">2</property>
-                  </packing>
                 </child>
                 <child>
                   <object class="GtkEntry" id="entTDMaxVal">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="width_chars">5</property>
+                    <property name="focusable">1</property>
+                    <property name="max_width_chars">12</property>
                   </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">3</property>
-                  </packing>
                 </child>
                 <child>
                   <object class="GtkButton" id="btnTDApply">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <child>
-                      <object class="GtkImage" id="btnApply">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="stock">gtk-apply</property>
-                      </object>
-                    </child>
+                    <property name="focusable">1</property>
+                    <property name="receives_default">1</property>
+                    <property name="icon-name">list-add</property>
                   </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">4</property>
-                  </packing>
                 </child>
                 <child>
                   <object class="GtkButton" id="btnTDClear">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <child>
-                      <object class="GtkImage">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="stock">gtk-delete</property>
-                      </object>
-                    </child>
+                    <property name="focusable">1</property>
+                    <property name="receives_default">1</property>
+                    <property name="icon-name">edit-clear</property>
                   </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">5</property>
-                  </packing>
                 </child>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
             </child>
           </object>
-          <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
         </child>
         <child>
           <object class="GtkBox" id="boxFD">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
+            <property name="vexpand">1</property>
             <property name="orientation">vertical</property>
             <child>
               <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="spacing">3</property>
+                <property name="vexpand">0</property>
+                <property name="spacing">1</property>
                 <child>
                   <object class="GtkScale" id="scMinFre">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
+                    <property name="hexpand">1</property>
+                    <property name="draw-value">1</property>
+                    <property name="value-pos">right</property>
+                    <property name="focusable">1</property>
                     <property name="adjustment">adjMinFre</property>
                     <property name="round_digits">0</property>
                     <property name="digits">0</property>
                   </object>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
                 </child>
                 <child>
                   <object class="GtkScale" id="scMaxFre">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
+                    <property name="hexpand">1</property>
+                    <property name="draw-value">1</property>
+                    <property name="value-pos">right</property>
+                    <property name="focusable">1</property>
                     <property name="adjustment">adjMaxFre</property>
                     <property name="round_digits">0</property>
                     <property name="digits">0</property>
                   </object>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
                 </child>
                 <child>
                   <object class="GtkEntry" id="entFDMinVal">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="width_chars">5</property>
+                    <property name="vexpand">0</property>
+                    <property name="focusable">1</property>
+                    <property name="max_width_chars">12</property>
                   </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">2</property>
-                  </packing>
                 </child>
                 <child>
                   <object class="GtkEntry" id="entFDMaxVal">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="width_chars">5</property>
+                    <property name="vexpand">0</property>
+                    <property name="focusable">1</property>
+                    <property name="max_width_chars">12</property>
                   </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">3</property>
-                  </packing>
                 </child>
                 <child>
                   <object class="GtkButton" id="btnFDApply">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <child>
-                      <object class="GtkImage">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="stock">gtk-apply</property>
-                      </object>
-                    </child>
+                    <property name="focusable">1</property>
+                    <property name="receives_default">1</property>
+                    <property name="icon-name">list-add</property>
                   </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">4</property>
-                  </packing>
                 </child>
                 <child>
                   <object class="GtkButton" id="btnFDClear">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <child>
-                      <object class="GtkImage">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="stock">gtk-delete</property>
-                      </object>
-                    </child>
+                    <property name="focusable">1</property>
+                    <property name="receives_default">1</property>
+                    <property name="icon-name">edit-clear</property>
                   </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">5</property>
-                  </packing>
                 </child>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
             </child>
           </object>
-          <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
         </child>
       </object>
-      <packing>
-        <property name="expand">True</property>
-        <property name="fill">True</property>
-        <property name="position">1</property>
-      </packing>
     </child>
   </object>
 </interface>

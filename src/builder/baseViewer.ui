@@ -1,130 +1,109 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.18.3 -->
 <interface>
-  <requires lib="gtk+" version="3.12"/>
+  <requires lib="gtk" version="4.0"/>
   <object class="GtkGrid" id="parentGrid">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="hexpand">True</property>
-    <property name="vexpand">True</property>
+    <property name="hexpand">1</property>
+    <property name="vexpand">1</property>
     <child>
       <object class="GtkGrid" id="zxSlice">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="hexpand">True</property>
-        <property name="vexpand">True</property>
-        <property name="row_homogeneous">True</property>
-        <property name="column_homogeneous">True</property>
+        <property name="hexpand">1</property>
+        <property name="vexpand">1</property>
+        <property name="row_homogeneous">1</property>
+        <property name="column_homogeneous">1</property>
         <child>
           <placeholder/>
         </child>
+        <layout>
+          <property name="column">1</property>
+          <property name="row">0</property>
+        </layout>
       </object>
-      <packing>
-        <property name="left_attach">1</property>
-        <property name="top_attach">0</property>
-      </packing>
     </child>
     <child>
       <object class="GtkLabel" id="label1">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">z-Axis</property>
+        <property name="label" translatable="1">z-Axis</property>
+        <layout>
+          <property name="column">0</property>
+          <property name="row">0</property>
+        </layout>
       </object>
-      <packing>
-        <property name="left_attach">0</property>
-        <property name="top_attach">0</property>
-      </packing>
     </child>
     <child>
       <object class="GtkLabel" id="label2">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">- x-Axis +</property>
+        <property name="label" translatable="1">- x-Axis +</property>
+        <layout>
+          <property name="column">1</property>
+          <property name="row">1</property>
+        </layout>
       </object>
-      <packing>
-        <property name="left_attach">1</property>
-        <property name="top_attach">1</property>
-      </packing>
     </child>
     <child>
       <object class="GtkGrid" id="zySlice">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="hexpand">True</property>
-        <property name="vexpand">True</property>
-        <property name="row_homogeneous">True</property>
-        <property name="column_homogeneous">True</property>
+        <property name="hexpand">1</property>
+        <property name="vexpand">1</property>
+        <property name="row_homogeneous">1</property>
+        <property name="column_homogeneous">1</property>
         <child>
           <placeholder/>
         </child>
+        <layout>
+          <property name="column">3</property>
+          <property name="row">0</property>
+        </layout>
       </object>
-      <packing>
-        <property name="left_attach">3</property>
-        <property name="top_attach">0</property>
-      </packing>
     </child>
     <child>
       <object class="GtkLabel" id="label3">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">   +
+        <property name="label" translatable="1">   +
 z-Axis
     -</property>
+        <layout>
+          <property name="column">2</property>
+          <property name="row">0</property>
+        </layout>
       </object>
-      <packing>
-        <property name="left_attach">2</property>
-        <property name="top_attach">0</property>
-      </packing>
     </child>
     <child>
       <object class="GtkLabel" id="label4">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">- y-Axis +</property>
+        <property name="label" translatable="1">- y-Axis +</property>
+        <layout>
+          <property name="column">3</property>
+          <property name="row">1</property>
+        </layout>
       </object>
-      <packing>
-        <property name="left_attach">3</property>
-        <property name="top_attach">1</property>
-      </packing>
     </child>
     <child>
       <object class="GtkGrid" id="yxSlice">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="hexpand">True</property>
-        <property name="vexpand">True</property>
-        <property name="row_homogeneous">True</property>
-        <property name="column_homogeneous">True</property>
+        <property name="hexpand">1</property>
+        <property name="vexpand">1</property>
+        <property name="row_homogeneous">1</property>
+        <property name="column_homogeneous">1</property>
         <child>
           <placeholder/>
         </child>
+        <layout>
+          <property name="column">3</property>
+          <property name="row">2</property>
+        </layout>
       </object>
-      <packing>
-        <property name="left_attach">3</property>
-        <property name="top_attach">2</property>
-      </packing>
     </child>
     <child>
       <object class="GtkLabel" id="label5">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">x Axis</property>
+        <property name="label" translatable="1">x Axis</property>
+        <layout>
+          <property name="column">2</property>
+          <property name="row">2</property>
+        </layout>
       </object>
-      <packing>
-        <property name="left_attach">2</property>
-        <property name="top_attach">2</property>
-      </packing>
     </child>
     <child>
       <object class="GtkLabel" id="label6">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">y-Axis</property>
+        <property name="label" translatable="1">y-Axis</property>
+        <layout>
+          <property name="column">3</property>
+          <property name="row">3</property>
+        </layout>
       </object>
-      <packing>
-        <property name="left_attach">3</property>
-        <property name="top_attach">3</property>
-      </packing>
     </child>
     <child>
       <placeholder/>

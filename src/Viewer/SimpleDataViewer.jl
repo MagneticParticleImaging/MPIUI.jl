@@ -1,4 +1,4 @@
-using Gtk, Gtk.ShortNames, Cairo
+using Gtk4, Cairo
 
 export SimpleDataViewer, SimpleDataViewerWidget, simpleDrawImageCairo
 
@@ -6,38 +6,38 @@ function SimpleDataViewer()
   w = Window("Data Viewer",1024,768)
   dw = SimpleDataViewerWidget()
   push!(w,dw)
-  showall(w)
+  show(w)
   return dw, w
 end
 
 ########### SimpleDataViewerWidget #################
 
 
-mutable struct SimpleDataViewerWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct SimpleDataViewerWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder
   grid3D
   grid2D
 end
 
-getindex(m::SimpleDataViewerWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::SimpleDataViewerWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 
 function SimpleDataViewerWidget()
   uifile = joinpath(@__DIR__,"..","builder","simpleDataViewer.ui")
-  b = Builder(filename=uifile)
-  mainBox = G_.object(b, "boxSimpleDataViewer")
+  b = GtkBuilder(uifile)
+  mainBox = Gtk4.G_.get_object(b, "boxSimpleDataViewer")
   m = SimpleDataViewerWidget( mainBox.handle, b, nothing, nothing)
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   m.grid3D = m["gridDataViewer3D"]
   m.grid2D = m["gridDataViewer2D"]
 
-  m.grid3D[2,1] = Canvas()
-  m.grid3D[1,1] = Canvas()
-  m.grid3D[2,2] = Canvas()
-  m.grid3D[1,2] = Canvas()
-  m.grid2D[1,1] = Canvas()
+  m.grid3D[2,1] = GtkCanvas()
+  m.grid3D[1,1] = GtkCanvas()
+  m.grid3D[2,2] = GtkCanvas()
+  m.grid3D[1,2] = GtkCanvas()
+  m.grid2D[1,1] = GtkCanvas()
 
   return m
 end
@@ -51,15 +51,7 @@ function showData(m::SimpleDataViewerWidget, cdata_zy, cdata_zx, cdata_xy, drawS
     simpleDrawImageCairo(m.grid3D[2,2], cdata_xy, drawSectionalLines,
                    slices[2], slices[1], false, false)
 
-    # p = Winston.FramedPlot(
-    #                #title="title!",
-    #                xlabel="c",
-    #                ylabel="xyzt")
-    #
-    # Winston.add(p, Winston.Curve(1:length(m.currentProfile), m.currentProfile, color="blue", linewidth=4))
-    #
-    # display(m.grid3D[1,2], p)
-    G_.current_page(m["nb2D3D"], 0)
+    Gtk4.G_.set_current_page(m["nb2D3D"], 0)
   catch ex
     @warn "Exception" ex stacktrace(catch_backtrace())
   end
@@ -69,7 +61,7 @@ function showData(m::SimpleDataViewerWidget, cdata)
   try
     pZ = drawImage( convert(Array,cdata.data) )
     display(m.grid2D[1,1],pZ)
-    G_.current_page(m["nb2D3D"], 1)
+    Gtk4.G_.set_current_page(m["nb2D3D"], 1)
   catch ex
     @warn "Exception" ex stacktrace(catch_backtrace())
   end
@@ -77,7 +69,7 @@ end
 
 function simpleDrawImageCairo(c, image, drawSectionalLines, xsec, ysec,
                         flipX, flipY)
- @guarded Gtk.draw(c) do widget
+ @guarded Gtk4.draw(c) do widget
   ctx = getgc(c)
   h = height(ctx)
   w = width(ctx)

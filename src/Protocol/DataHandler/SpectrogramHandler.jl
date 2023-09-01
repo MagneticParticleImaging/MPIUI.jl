@@ -8,17 +8,17 @@ mutable struct SpectrogramHandler <: AbstractDataHandler
   bgMeas::Array{Float32, 4}
   fgMeas::Array{Float32, 4}
   oldUnit::String
-  paramsBox::BoxLeaf
-  cbRolling::CheckButtonLeaf
+  paramsBox::Gtk4.GtkBoxLeaf
+  cbRolling::Gtk4.GtkCheckButtonLeaf
 end
 
 function SpectrogramHandler(scanner=nothing)
   data = SpectrogramWidget()
   # Init Display Widget
-  updateData(data, ones(Float32,10,1,1,1), 1.0)
+  updateData(data, randn(Float32,10,1,1,1), 1.0)
 
-  paramsBox = Box(:v)
-  cbRolling = CheckButton("Rolling")
+  paramsBox = GtkBox(:v)
+  cbRolling = GtkCheckButton("Rolling")
   push!(paramsBox, cbRolling)
   set_gtk_property!(cbRolling, :active, false)
 

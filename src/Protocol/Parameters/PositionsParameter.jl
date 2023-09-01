@@ -1,24 +1,24 @@
-mutable struct PositionParameter <: Gtk.GtkExpander
-  handle::Ptr{Gtk.GObject}
+mutable struct PositionParameter <: Gtk4.GtkExpander
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   field::Symbol
 
   function PositionParameter(field::Symbol, posValue::Union{Positions, Nothing})
     uifile = joinpath(@__DIR__, "..", "..", "builder", "positionsWidget.ui")
-    b = Builder(filename=uifile)
-    posObj = G_.object(b, "expPositions")
+    b = GtkBuilder(uifile)
+    posObj = Gtk4.G_.get_object(b, "expPositions")
     #addTooltip(object_(pw.builder, "lblPositions", GtkLabel), tooltip)
     posParam = new(posObj.handle, b, field)
     updatePositions(posParam, posValue)
     initCallbacks(posParam)
-    return Gtk.gobject_move_ref(posParam, posObj)
+    return Gtk4.GLib.gobject_move_ref(posParam, posObj)
   end
 end
 
-getindex(m::PositionParameter, w::AbstractString, T::Type) = object_(m.builder, w, T)
+getindex(m::PositionParameter, w::AbstractString) = G_.get_object(m.builder, w)
 
 function initCallbacks(posParam::PositionParameter)
-  signal_connect(posParam["btnLoadFilePos", ButtonLeaf], :clicked) do w
+  signal_connect(posParam["btnLoadFilePos"], :clicked) do w
     loadFilePos(posParam)
   end
 end
@@ -32,11 +32,11 @@ function updatePositions(posParam::PositionParameter, pos::Union{Positions, Noth
     ctr = Float64.(ustrip.(uconvert.(Unitful.mm,MPIFiles.fieldOfViewCenter(pos)))) # convert to mm
     ctrStr = @sprintf("%.2f x %.2f x %.2f", ctr[1],ctr[2],ctr[3])
     @idle_add_guarded begin 
-      set_gtk_property!(posParam["entGridShape",EntryLeaf], :text, shpStr)
-      set_gtk_property!(posParam["entFOV",EntryLeaf], :text, fovStr)
-      set_gtk_property!(posParam["entCenter",EntryLeaf], :text, ctrStr)
-      set_gtk_property!(posParam["cbUseArbitraryPos", CheckButtonLeaf], :sensitive, false)
-      set_gtk_property!(posParam["entArbitraryPos",EntryLeaf],:text, "")
+      set_gtk_property!(posParam["entGridShape"], :text, shpStr)
+      set_gtk_property!(posParam["entFOV"], :text, fovStr)
+      set_gtk_property!(posParam["entCenter"], :text, ctrStr)
+      set_gtk_property!(posParam["cbUseArbitraryPos"], :sensitive, false)
+      set_gtk_property!(posParam["entArbitraryPos"],:text, "")
     end
   end
 end
@@ -45,15 +45,15 @@ function setProtocolParameter(posParam::PositionParameter, params::ProtocolParam
   # Construct pos
   @info "Trying to set pos"
   cartGrid = nothing
-  if get_gtk_property(posParam["cbUseArbitraryPos",CheckButtonLeaf], :active, Bool) == false
+  if get_gtk_property(posParam["cbUseArbitraryPos"], :active, Bool) == false
     
-    shpString = get_gtk_property(posParam["entGridShape",EntryLeaf], :text, String)
+    shpString = get_gtk_property(posParam["entGridShape"], :text, String)
     shp_ = tryparse.(Int64,split(shpString,"x"))
-    fovString = get_gtk_property(posParam["entFOV",EntryLeaf], :text, String)
+    fovString = get_gtk_property(posParam["entFOV"], :text, String)
     fov_ = tryparse.(Float64,split(fovString,"x"))
-    centerString = get_gtk_property(posParam["entCenter",EntryLeaf], :text, String)
+    centerString = get_gtk_property(posParam["entCenter"], :text, String)
     center_ = tryparse.(Float64,split(centerString,"x"))
-    meandering = get_gtk_property(posParam["cbMeandering",CheckButtonLeaf], :active, Bool)
+    meandering = get_gtk_property(posParam["cbMeandering"], :active, Bool)
 
     if any(shp_ .== nothing) || any(fov_ .== nothing) || any(center_ .== nothing)  ||
      length(shp_) != 3 || length(fov_) != 3 || length(center_) != 3
@@ -71,7 +71,7 @@ function setProtocolParameter(posParam::PositionParameter, params::ProtocolParam
   
   else
     
-    filename = get_gtk_property(posParam["entArbitraryPos",EntryLeaf],:text,String)
+    filename = get_gtk_property(posParam["entArbitraryPos"],:text,String)
     if filename != ""
         cartGrid = h5open(filename, "r") do file
             positions = Positions(file)
@@ -86,13 +86,16 @@ function setProtocolParameter(posParam::PositionParameter, params::ProtocolParam
 end
 
 function loadFilePos(posParam::PositionParameter)
-  filter = Gtk.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
-  filename = open_dialog("Select Position File", GtkNullContainer(), (filter, ))
-  @idle_add_guarded begin 
-    set_gtk_property!(posParam["entArbitraryPos",EntryLeaf],:text,filename)
-    if filename != ""
-      set_gtk_property!(posParam["cbUseArbitraryPos", CheckButtonLeaf], :sensitive, true)
+  filter = Gtk4.GtkFileFilter(pattern=String("*.h5"), mimetype=String("HDF5 File"))
+  diag = open_dialog("Select Position File", mpilab[]["mainWindow"], (filter, )) do filename
+    @idle_add_guarded begin 
+      set_gtk_property!(posParam["entArbitraryPos"],:text,filename)
+      if filename != ""
+        set_gtk_property!(posParam["cbUseArbitraryPos"], :sensitive, true)
+      end
     end
   end
+  diag.modal = true
+  return 
 end
 

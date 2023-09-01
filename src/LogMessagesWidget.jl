@@ -1,6 +1,6 @@
 export LogMessageListWidget, LogMessageWidget, WidgetLogger, min_enabled_level, shoudlog, handle_message  
 
-abstract type LogMessageWidget <: Gtk.GtkBox end
+abstract type LogMessageWidget <: Gtk4.GtkBox end
 
 mutable struct LogMessageFilter
   messageFilter::Union{Regex, Nothing}
@@ -42,7 +42,7 @@ hasGroup(filter::LogMessageFilter, group::String) = haskey(filter.groups, group)
 @enum AutoScrollState DETACHED ATTACHED_TOP ATTACHED_BOTTOM
 
 mutable struct LogMessageListWidget <: LogMessageWidget
-  handle::Ptr{Gtk.GObject}
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   store
   tmSorted
@@ -55,62 +55,62 @@ mutable struct LogMessageListWidget <: LogMessageWidget
 end
 
 const LOG_LEVEL_TO_PIX = Dict(
-  -1000 => "gtk-execute",
-  0 => "gtk-info",
-  1000 => "gtk-dialog-warning",
-  2000 => "gtk-dialog-error"
+  -1000 => "applications-system",
+  0 => "dialog-information",
+  1000 => "dialog-warning",
+  2000 => "dialog-error"
 )
 
-getindex(m::LogMessageListWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::LogMessageListWidget, w::AbstractString) = G_.get_object(m.builder, w)
 
 function LogMessageListWidget()
 
   uifile = joinpath(@__DIR__,"builder","logMessagesWidget.ui")
 
-  b = Builder(filename=uifile)
-  mainBox = G_.object(b, "boxLogMessages")
+  b = GtkBuilder(uifile)
+  mainBox = Gtk4.G_.get_object(b, "boxLogMessages")
 
   # LogLevel, Time, Group, Message, visible, tooltip, "number" log level
-  store = ListStore(String, String, String, String, Bool, String, Int)
+  store = GtkListStore(String, String, String, String, Bool, String, Int)
 
-  tv = TreeView(TreeModel(store))
-  r0 = CellRendererPixbuf()
-  r1 = CellRendererText()
+  tv = GtkTreeView(GtkTreeModel(store))
+  r0 = GtkCellRendererPixbuf()
+  r1 = GtkCellRendererText()
 
-  c0 = TreeViewColumn("Level", r0, Dict("stock-id" => 0))
-  c1 = TreeViewColumn("Time", r1, Dict("text" => 1))
-  c2 = TreeViewColumn("Group", r1, Dict("text" => 2))
-  c3 = TreeViewColumn("Message", r1, Dict("text" => 3))
+  c0 = GtkTreeViewColumn("Level", r0, Dict("icon-name" => 0))
+  c1 = GtkTreeViewColumn("Time", r1, Dict("text" => 1))
+  c2 = GtkTreeViewColumn("Group", r1, Dict("text" => 2))
+  c3 = GtkTreeViewColumn("Message", r1, Dict("text" => 3))
 
   for (i,c) in enumerate((c0,c1,c2,c3))
-    G_.sort_column_id(c,i-1)
-    G_.resizable(c,true)
-    G_.max_width(c,80)
+    G_.set_sort_column_id(c,i-1)
+    G_.set_resizable(c,true)
+    G_.set_max_width(c,80)
     push!(tv,c)
   end
 
-  G_.max_width(c0,80)
-  G_.max_width(c1,200)
-  G_.max_width(c2,200)
-  G_.max_width(c3,500)
+  G_.set_max_width(c0,80)
+  G_.set_max_width(c1,200)
+  G_.set_max_width(c2,200)
+  G_.set_max_width(c3,500)
 
-  tmFiltered = TreeModelFilter(store)
-  G_.visible_column(tmFiltered,4)
-  tmSorted = TreeModelSort(tmFiltered)
-  G_.model(tv, tmSorted)
+  tmFiltered = GtkTreeModelFilter(GtkTreeModel(store))
+  G_.set_visible_column(tmFiltered,4)
+  tmSorted = GtkTreeModelSort(tmFiltered)
+  G_.set_model(tv, GtkTreeModel(tmSorted))
 
-  selection = G_.selection(tv)
+  selection = G_.get_selection(tv)
 
   logFilter = LogMessageFilter(nothing, 0, Dict{String, Bool}(), nothing, nothing)
   m = LogMessageListWidget(mainBox.handle, b, store, tmSorted, tv, selection, logFilter, DETACHED, false, ReentrantLock())
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
-  push!(m["wndMessages"], tv)
+  G_.set_child(m["wndMessages"], tv)
 
   # Set calendar and time to now!
   initCallbacks(m::LogMessageListWidget)
 
-  showall(tv)
+  show(tv)
   return m
 end
 
@@ -174,7 +174,7 @@ function initCallbacks(m::LogMessageListWidget)
 
   signal_connect(m["cbLogLevel"], :changed) do w
     @idle_add_guarded begin
-      str = Gtk.bytestring(GAccessor.active_text(m["cbLogLevel"]))
+      str = Gtk4.bytestring(Gtk4.active_text(m["cbLogLevel"]))
       level = 0
       if str == "Debug"
         level = -1000
@@ -207,15 +207,17 @@ function initCallbacks(m::LogMessageListWidget)
 
   signal_connect(m["btnLoad"], :clicked) do w
     @idle_add_guarded begin
-      m.updating = true
       filter = Gtk.GtkFileFilter(pattern=String("*.log"))
-      filename = open_dialog("Select log file", GtkNullContainer(), (filter, ))
-      if filename != ""
-        unselectall!(m.selection)
-        empty!(m.store)
-        updateMessages!(m, filename)
+      diag = open_dialog("Select log file", mpilab[]["mainWindow"], (filter, )) do filename
+        m.updating = true
+        if filename != ""
+          unselectall!(m.selection)
+          empty!(m.store)
+          updateMessages!(m, filename)
+        end
+        m.updating = false
       end
-      m.updating = false
+      diag.modal = true
     end
   end
 
@@ -223,7 +225,7 @@ function initCallbacks(m::LogMessageListWidget)
     if hasselection(m.selection) && !m.updating
       @idle_add_guarded begin
         current = selected(m.selection)
-        tooltip = TreeModel(m.tmSorted)[current, 6]
+        tooltip = GtkTreeModel(m.tmSorted)[current, 6]
         set_gtk_property!(m.tv, :tooltip_text, tooltip)
       end
     end
@@ -246,7 +248,7 @@ function initCallbacks(m::LogMessageListWidget)
     end
   end
 
-  signal_connect(m.tv, :size_allocate) do w, a
+  #= signal_connect(m.tv, :size_allocate) do w, a TODO
     @idle_add_guarded begin
       m.updating = true
       if m.scrollState == ATTACHED_BOTTOM
@@ -256,7 +258,7 @@ function initCallbacks(m::LogMessageListWidget)
       end
       m.updating = false
     end
-  end
+  end=#
 end
 
 function getToDateTime(widget::LogMessageListWidget)
@@ -289,8 +291,8 @@ function addGroupCheckBox(widget::LogMessageListWidget, group::String)
         applyFilter!(widget)
       end
     end
-    push!(widget["boxGroups"], check)
-    showall(widget["boxGroups"])
+###    push!(widget["boxGroups"], check)
+###    show(widget["boxGroups"])
   end
 end
 
@@ -339,7 +341,7 @@ function updateMessage!(widget::LogMessageListWidget, level::Base.LogLevel, date
     tooltip = tooltip[1:min(end, 1024)]
 
     @idle_add_guarded begin
-      push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "gtk-missing-image"), dateTimeString, groupString, messageString, visible, tooltip, level.level))
+      push!(widget.store, (get(LOG_LEVEL_TO_PIX, level.level, "missing-image"), dateTimeString, groupString, messageString, visible, tooltip, level.level))
     end
   catch ex
     # Avoid endless loop

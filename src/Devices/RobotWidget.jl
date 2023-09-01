@@ -1,6 +1,6 @@
 
-mutable struct RobotWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct RobotWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   updating::Bool
   robot::Robot
@@ -10,18 +10,18 @@ mutable struct RobotWidget <: Gtk.GtkBox
   namedPos::Union{String, Nothing}
 end
 
-getindex(m::RobotWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::RobotWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 
 #TODO make usable for different dof
 function RobotWidget(robot::Robot)
   uifile = joinpath(@__DIR__,"..","builder","robotWidget.ui")
 
-  b = Builder(filename=uifile)
-  mainBox = G_.object(b, "mainBox")
+  b = GtkBuilder(uifile)
+  mainBox = Gtk4.G_.get_object(b, "mainBox")
 
   m = RobotWidget(mainBox.handle, b, false, robot, nothing, toScannerCoords, ScannerCoords, nothing)
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   if :namedPositions in fieldnames(typeof(params(robot)))
     @idle_add_guarded begin
@@ -174,11 +174,15 @@ function displayNamedPosition(m::RobotWidget, pos)
   end
 end
 function displayNamedPosition(m::RobotWidget)
-  m.namedPos = Gtk.bytestring(GAccessor.active_text(m["cmbNamedPos"]))
-  pos = m.coordTransferfunction(m.robot, MPIMeasurements.namedPosition(m.robot, m.namedPos))
-  @show pos
-  if length(pos) == 3
-    displayNamedPosition(m, pos)
+  #m.namedPos = Gtk4.bytestring(Gtk4.active_text(m["cmbNamedPos"]))
+  m.namedPos = Gtk4.active_text(m["cmbNamedPos"])
+
+  if m.namedPos != nothing
+    pos = m.coordTransferfunction(m.robot, MPIMeasurements.namedPosition(m.robot, m.namedPos))
+    @show pos
+    if length(pos) == 3
+      displayNamedPosition(m, pos)
+    end
   end
 end
 
@@ -243,8 +247,9 @@ end
   
 function robotMove(m::RobotWidget)
   if !isReferenced(m.robot)
-      info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
-  return
+    d = info_dialog(()->nothing, "Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
+    d.modal = true
+    return
   end
 
   pos = movePosition(m)
@@ -261,7 +266,8 @@ end
 
 function moveNamedPosition(m::RobotWidget, posName::String)
   if !isReferenced(m.robot)
-    info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
+    d = info_dialog(()-> nothing, "Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
+    d.modal = true
     return
   end
   @info "enabeling robot"
@@ -275,7 +281,8 @@ end
 
 function moveScannerOrigin(m::RobotWidget)
   if !isReferenced(m.robot)
-    info_dialog("Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
+    d = info_dialog(()-> nothing, "Robot not referenced! Cannot proceed!", mpilab[]["mainWindow"])
+    d.modal = true
     return
   end
   @info "enabeling robot"
@@ -291,21 +298,29 @@ function referenceDrive(m::RobotWidget)
   robot = m.robot
   message = """ Remove all attached devices from the robot before the robot will be referenced and move around!\n
           Press \"Ok\" if you have done so """
-  if ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"])
-    message = """Are you sure you have removed everything and the robot can move
-          freely without damaging anything? Press \"Ok\" if you want to continue"""
-    if ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"])
-      enable(robot)
-      doReferenceDrive(robot)
-      if in("park", keys(namedPositions(m.robot)))
-        moveNamedPosition(m, "park")
+  ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"]) do answer1
+    if answer1
+      message = """Are you sure you have removed everything and the robot can move
+            freely without damaging anything? Press \"Ok\" if you want to continue"""
+      ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"]) do answer2
+        if answer2
+          @info "Enable Robot"
+          enable(robot)
+          @info "Do reference drive"
+          doReferenceDrive(robot)
+          if in("park", keys(namedPositions(m.robot)))
+            moveNamedPosition(m, "park")
+          end
+          @info "Disable Robot"
+          disable(robot)
+          message = """The robot is now referenced.
+              You can mount your sample. Press \"Close\" to proceed. """
+          info_dialog(message, mpilab[]["mainWindow"]) do 
+            displayCurrentPosition(m)
+            enableRobotMoveButtons(m, true)            
+          end
+        end
       end
-      disable(robot)
-      displayCurrentPosition(m)
-      message = """The robot is now referenced.
-          You can mount your sample. Press \"Close\" to proceed. """
-      info_dialog(message, mpilab[]["mainWindow"])
-      enableRobotMoveButtons(m,true)
     end
   end
 end

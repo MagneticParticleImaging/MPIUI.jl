@@ -1,86 +1,62 @@
 import Base: getindex
 
-mutable struct RawDataWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
-  builder::Builder
+mutable struct RawDataWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
+  builder::GtkBuilder
   data::Array{Float32,5}
   dataBG::Array{Float32,5}
   labels::Vector{String}
-  cTD::Canvas
-  cFD::Canvas
+  cTD::GtkCanvas
+  cFD::GtkCanvas
   deltaT::Float64
   filenamesData::Vector{String}
   loadingData::Bool
   updatingData::Bool
   fileModus::Bool
-  winHarmView::WindowLeaf
-  harmViewAdj::Vector{AdjustmentLeaf}
-  harmViewCanvas::Vector{Canvas}
-  harmBuff::Vector{Vector{Float32}}
-  rangeTD::NTuple{2,Float64}
-  rangeFD::NTuple{2,Float64}
+  rangeTD::NTuple{2,Float32}
+  rangeFD::NTuple{2,Float32}
 end
 
-getindex(m::RawDataWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::RawDataWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 function RawDataWidget(filenameConfig=nothing)
   @info "Starting RawDataWidget"
   uifile = joinpath(@__DIR__,"..","builder","rawDataViewer.ui")
 
-  b = Builder(filename=uifile)
-  mainBox = G_.object(b, "boxRawViewer")
+  b = GtkBuilder(uifile)
+  mainBox = Gtk4.G_.get_object(b, "boxRawViewer")
 
   m = RawDataWidget( mainBox.handle, b,
                   zeros(Float32,0,0,0,0,0), zeros(Float32,0,0,0,0,0),
-                  [""], Canvas(), Canvas(),
+                  [""], GtkCanvas(), GtkCanvas(),
                   1.0, [""], false, false, false,
-                  G_.object(b,"winHarmonicViewer"),
-                  AdjustmentLeaf[], Canvas[], Vector{Vector{Float32}}(),
                   (0.0,1.0), (0.0,1.0))
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
 
   push!(m["boxTD"],m.cTD)
-  set_gtk_property!(m["boxTD"],:expand,m.cTD,true)
+
+  show(m.cTD)
+  show(m["boxTD"])
+
+  draw(m.cTD)
+
+  m.cTD.hexpand = true
+  m.cTD.vexpand = true
 
   push!(m["boxFD"],m.cFD)
-  set_gtk_property!(m["boxFD"],:expand,m.cFD,true)
+
+  m.cFD.hexpand = true
+  m.cFD.vexpand = true
 
   @debug "InitCallbacks"
-
-  initHarmView(m)
 
   initCallbacks(m)
 
   @info "Finished starting RawDataWidget"
 
   return m
-end
-
-function initHarmView(m::RawDataWidget)
-
-  m.harmViewAdj = AdjustmentLeaf[]
-  m.harmViewCanvas = Canvas[]
-  m.harmBuff = Vector{Vector{Float32}}()
-
-  for l=1:5
-    push!(m.harmViewAdj, m["adjHarm$l"] )
-    @idle_add_guarded set_gtk_property!(m["adjHarm$l"],:value,l+1)
-    c = Canvas()
-
-    push!(m["boxHarmView"],c)
-    set_gtk_property!(m["boxHarmView"],:expand,c,true)
-    push!(m.harmViewCanvas, c)
-    push!(m.harmBuff, zeros(Float32,0))
-  end
-
-end
-
-function clearHarmBuff(m::RawDataWidget)
-  for l=1:5
-    m.harmBuff[l] = zeros(Float32,0)
-  end
 end
 
 function initCallbacks(m_::RawDataWidget)
@@ -216,19 +192,6 @@ function initCallbacks(m_::RawDataWidget)
     end
   end
 
-  signal_connect(m["cbHarmonicViewer"], :toggled) do w
-      harmViewOn = get_gtk_property(m["cbHarmonicViewer"], :active, Bool)
-      @idle_add_guarded begin
-        if harmViewOn
-          clearHarmBuff(m)
-          set_gtk_property!(m.winHarmView,:visible, true)
-          showall(m.winHarmView)
-        else
-          set_gtk_property!(m.winHarmView,:visible, false)
-        end
-      end
-  end
-
   for sl in ["entTDMinVal","entTDMaxVal","entFDMinVal","entFDMaxVal"]
     signal_connect(m[sl], "changed") do w
       showData(C_NULL, m)
@@ -261,12 +224,6 @@ function initCallbacks(m_::RawDataWidget)
         end
       end
     end
-  end
-  
-  signal_connect(m.winHarmView, "delete-event") do widget, event
-    #typeof(event)
-    #@show event
-    @idle_add_guarded set_gtk_property!(m["cbHarmonicViewer"], :active, false)
   end
 
   #signal_connect(loadData, m["cbCorrTF"], "toggled", Nothing, (), false, m)
@@ -359,8 +316,6 @@ end
     minValFD_ = tryparse(Float64,get_gtk_property( m["entFDMinVal"] ,:text,String))
     maxValFD_ = tryparse(Float64,get_gtk_property( m["entFDMaxVal"] ,:text,String))
 
-    @info minValTD_
-
     if minValTD_ != nothing && maxValTD_ != nothing
       minValTD = minValTD_
       maxValTD = maxValTD_
@@ -411,6 +366,9 @@ end
     data = reshape(data, :, numSignals)
     if reversePlots
       reverse!(data, dims=2)
+      labels_ = m.labels
+    else
+      labels_ = reverse(m.labels)
     end
     if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
       dataBG = reshape(dataBG, :, numSignals)
@@ -442,20 +400,33 @@ end
       dataCompressed = data[steps,:]
     end
 
-    p1 = Winston.plot(timePoints[steps],dataCompressed[:,1],color=colors[1],linewidth=3)
+    fTD, axTD, lTD1 = CairoMakie.lines(timePoints[steps], dataCompressed[:,1], 
+                            figure = (; figure_padding=4, resolution = (1000, 800), fontsize = 11),
+                            axis = (; title = "Time Domain"),
+                            color = CairoMakie.RGBf(colors[1]...),
+                            label = labels_[1])
     for j=2:size(data,2)
-      Winston.plot(p1, timePoints[steps],dataCompressed[:,j],color=colors[j],linewidth=3)
+      CairoMakie.lines!(axTD, timePoints[steps],dataCompressed[:,j], 
+                        color = CairoMakie.RGBf(colors[j]...),  #linewidth=3)
+                        label = labels_[j])
     end
-    Winston.ylabel("u / V")
-    Winston.xlabel("t / ms")
-    if !autoRangingTD
-      Winston.ylim(minValTD, maxValTD)
+    if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
+      CairoMakie.lines!(axTD, timePoints[minTP:sp:maxTP],dataBG[minTP:sp:maxTP,1], color=:black,
+             label="BG", linestyle = :dash)
+    end    
+    CairoMakie.autolimits!(axTD)
+    if timePoints[steps[end]] > timePoints[steps[1]]
+      CairoMakie.xlims!(axTD, timePoints[steps[1]], timePoints[steps[end]])
     end
+    if !autoRangingTD && maxValTD > minValTD 
+      CairoMakie.ylims!(axTD, minValTD, maxValTD)
+    end
+    axTD.xlabel = "t / ms"
+    axTD.ylabel = "u / V"
 
-    if size(data,2) > 1 && length(m.labels) == size(data,2)
-      #legend = Legend(.1, 0.9, legendEntries, halign="right") 
-      #add(p1, legend)
-      legend(reversePlots ? reverse(m.labels) : m.labels)
+    if (size(data,2) > 1 && length(m.labels) == size(data,2)) ||
+       (length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool))
+      CairoMakie.axislegend()
     end
 
     if showFD
@@ -478,17 +449,36 @@ end
         freqDataCompressed = freqdata[stepsFr,:]
       end
 
-      p2 = Winston.semilogy(freq[stepsFr],freqDataCompressed[:,1],color=colors[1],linewidth=3)
+      fFD, axFD, lFD1 = CairoMakie.lines(freq[stepsFr],freqDataCompressed[:,1], 
+                              figure = (; figure_padding=4, resolution = (1000, 800), fontsize = 11),
+                              axis = (; title = "Frequency Domain", yscale=log10),
+                              color = CairoMakie.RGBf(colors[1]...),
+                              label=labels_[1])
       for j=2:size(data,2)
-        Winston.plot(p2, freq[stepsFr], freqDataCompressed[:,j],color=colors[j],linewidth=3)
+        CairoMakie.lines!(axFD, freq[stepsFr], freqDataCompressed[:,j], 
+                     color = CairoMakie.RGBf(colors[j]...), label=labels_[j])
       end
-      #Winston.ylabel("u / V")
-      Winston.xlabel("f / kHz")
-      if !autoRangingFD
-          Winston.ylim(minValFD, maxValFD)
+      if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
+        CairoMakie.lines!(axTD, timePoints[minTP:sp:maxTP],dataBG[minTP:sp:maxTP,1], color=:black,
+              label="BG", linestyle = :dash)
+        if showFD
+          CairoMakie.lines!(axFD, freq[minFr:spFr:maxFr],abs.(rfft(dataBG,1)[minFr:spFr:maxFr,1]) / size(dataBG,1),
+                 color=:black, label="BG", linestyle = :dash)
+        end
+      end    
+      CairoMakie.autolimits!(axFD)
+      if freq[stepsFr[end]] > freq[stepsFr[1]]
+        CairoMakie.xlims!(axFD, freq[stepsFr[1]], freq[stepsFr[end]])
       end
+      if !autoRangingFD && maxValFD > minValFD 
+        CairoMakie.ylims!(axFD, minValFD, maxValFD)
+      end
+      axFD.xlabel = "f / kHz"
+      axFD.ylabel = "u / V"
+
+
     else
-      @guarded Gtk.draw(m.cFD) do widget
+      @guarded Gtk4.draw(m.cFD) do widget
         
         ctx = getgc(m.cFD)
         h = height(ctx)
@@ -500,31 +490,11 @@ end
       end
     end
 
-    if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
-      Winston.plot(p1,timePoints[minTP:sp:maxTP],dataBG[minTP:sp:maxTP,1],"k--",linewidth=3)
-
-      if showFD
-        Winston.plot(p2,freq[minFr:spFr:maxFr],abs.(rfft(dataBG,1)[minFr:spFr:maxFr,1]) / size(dataBG,1),
-                     "k--", linewidth=3, ylog=true)
-      end
-    end
-    @idle_add_guarded display(m.cTD, p1)
+    @idle_add_guarded drawonto(m.cTD, fTD)
     if showFD
-      @idle_add_guarded display(m.cFD, p2)
+      @idle_add_guarded drawonto(m.cFD, fFD)
     end
 
-    ### Harmonic Viewer ###
-    if  get_gtk_property(m["cbHarmonicViewer"], :active, Bool) && showFD
-      for l=1:5
-        f = get_gtk_property(m.harmViewAdj[l], :value, Int64)
-        push!(m.harmBuff[l], freqdata[f,1])
-
-        p = Winston.semilogy(m.harmBuff[l], "b-o", linewidth=3)
-        Winston.ylabel("Harmonic $f")
-        Winston.xlabel("Time")
-        display(m.harmViewCanvas[l] ,p)
-      end
-    end
   end
   return nothing
 end
@@ -595,10 +565,6 @@ end
     set_gtk_property!(m["adjMaxFre"],:upper, maxValFre)
     if !(1 <= get_gtk_property(m["adjMaxFre"],:value,Int64) <= maxValFre) || maxValFre != maxValFreOld
       set_gtk_property!(m["adjMaxFre"],:value, maxValFre)
-    end
-
-    for l=1:5
-      set_gtk_property!(m.harmViewAdj[l],:upper,div(size(data,1),2)+1)
     end
 
     m.updatingData = false
