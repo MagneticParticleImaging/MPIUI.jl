@@ -42,7 +42,7 @@ end
 function SFViewerWidget()
   uifile = joinpath(@__DIR__,"..","builder","mpiLab.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = GtkPaned(:h) 
 
   m = SFViewerWidget(mainBox.handle, b, DataViewerWidget(),
@@ -110,7 +110,13 @@ function SFViewerWidget()
     end
   end
 
+  # BG correction
   signal_connect(m["cbSFBGCorr"], :toggled) do w
+    @idle_add_guarded updateSF(m)
+  end
+
+  # TF correction
+  signal_connect(m["cbSFTFCorr"], :toggled) do w
     @idle_add_guarded updateSF(m)
   end
   
@@ -201,6 +207,7 @@ function updateSF(m::SFViewerWidget)
   minFr = get_gtk_property(m["adjSNRMinFreq"],:value, Int64)+1
   maxFr = get_gtk_property(m["adjSNRMaxFreq"],:value, Int64)+1
 
+  # BG correction
   bgcorrection = get_gtk_property(m["cbSFBGCorr"],:active, Bool)
   # disable BG correction if no BG frames are available
   if maximum(Int.(measIsBGFrame(m.bSF))) == 0
@@ -208,11 +215,14 @@ function updateSF(m::SFViewerWidget)
     set_gtk_property!(m["cbSFBGCorr"],:active,false)
   end
 
+  # TF correction
+  tfcorrection = get_gtk_property(m["cbSFTFCorr"],:active, Bool)
+
   k = freq + m.maxFreq*((recChan-1))
   #  + m.maxChan*(period-1)
 
   if !measIsFrequencySelection(m.bSF) || k in m.frequencySelection
-    sfData_ = getSF(m.bSF, Int64[k], returnasmatrix = true, bgcorrection=bgcorrection)[1][:,period]
+    sfData_ = getSF(m.bSF, Int64[k], returnasmatrix = true, bgcorrection=bgcorrection, tfCorrection=tfcorrection)[1][:,period]
     sfData_[:] ./= rxNumSamplingPoints(m.bSF)
   else
     # set sfData to one for frequencies ∉ frequencySelection
@@ -325,6 +335,11 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   updateFreq(m, freq)
   updateRecChan(m, recChan)
 
+  # disable TF correction button if no TF available
+  if !rxHasTransferFunction(m.bSF)
+    set_gtk_property!(m["cbSFTFCorr"], :sensitive, false)
+    set_gtk_property!(m["cbSFTFCorr"], :active, false)
+  end
 
   updateMix(m)
   updateSigOrd(m)

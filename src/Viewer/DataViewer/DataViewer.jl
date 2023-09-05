@@ -66,7 +66,7 @@ function DataViewerWidget()
 
   uifile = joinpath(@__DIR__,"..","..","builder","dataviewer.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = Gtk4.G_.get_object(b, "boxDataViewer")
   m = DataViewerWidget( mainBox.handle, b,
                          Gtk4.G_.get_object(b, "gridDataViewer2D"),
