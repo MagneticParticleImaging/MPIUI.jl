@@ -51,7 +51,7 @@ mutable struct ComponentParameter <: Gtk4.GtkGrid
   divider::GenericEntry
   amplitude::UnitfulGtkEntry
   phase::UnitfulGtkEntry
-  waveform::Gtk4.GtkComboBoxTextLeaf
+  waveform::GtkDropDown
   waveforms::Vector{Waveform}
 
   function ComponentParameter(comp::PeriodicElectricalComponent, waveforms::Vector{Waveform})
@@ -80,14 +80,11 @@ mutable struct ComponentParameter <: Gtk4.GtkGrid
     grid[2, 4] = pha
 
     # Waveform
-    wav = Gtk4.GtkComboBoxTextLeaf()
     waveformsStr = fromWaveform.(waveforms)
-    for w in waveformsStr
-      push!(wav, w)
-    end
+    wav = GtkDropDown(waveformsStr)
     activeIdx = findfirst(w->w == waveform(comp), waveforms)
-    set_gtk_property!(wav, :active, activeIdx-1) 
-    set_gtk_property!(wav, :sensitive, true) 
+    wav.active = activeIdx-1 
+    wav.sensitive = true
     grid[1, 5] = GtkLabel("Waveform", xalign = 0.0)
     grid[2, 5] = wav
     gridResult = new(grid.handle, idLabel, div, amp, pha, wav, waveforms)
@@ -120,14 +117,11 @@ mutable struct ComponentParameter <: Gtk4.GtkGrid
     grid[2, 4] = pha
 
     # Waveform
-    wav = ComboBoxTextLeaf()
     waveformsStr = fromWaveform.(waveforms)
-    for w in waveformsStr
-      push!(wav, w)
-    end
+    wav = GtkDropDown(waveformsStr)
     activeIdx = findfirst(w->w == waveform(comp), waveforms)
-    set_gtk_property!(wav, :active, activeIdx-1) 
-    set_gtk_property!(wav, :sensitive, false) 
+    wav.active = activeIdx-1 
+    wav.sensitive = true
     grid[1, 5] = GtkLabel("Waveform", xalign = 0.0)
     grid[2, 5] = wav
     gridResult = new(grid.handle, idLabel, div, amp, pha, wav, waveforms)
