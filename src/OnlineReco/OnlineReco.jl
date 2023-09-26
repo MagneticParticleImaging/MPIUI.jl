@@ -90,7 +90,7 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
 
   @info "Loading System Matrix $(filepath(bSF))..."
 
-  S, grid = getSF(bSF, frequencies, sparseTrafo, "kaczmarz", bgCorrection=bgCorrection, redFactor=redFactor)
+  S, grid = getSF(bSF, frequencies, sparseTrafo, "Kaczmarz", bgCorrection=bgCorrection, redFactor=redFactor)
   
   D = shape(grid)
   images = Array{Float32,5}(undef, length(bSF), D[1], D[2], D[3], 0)

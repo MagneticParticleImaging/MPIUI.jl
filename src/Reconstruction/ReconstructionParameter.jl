@@ -1,5 +1,5 @@
 function linearSolverList()
-  Any["kaczmarz", "cgnr", "fusedlasso"]
+  Any["Kaczmarz", "cgnr", "fusedlasso"]
 end
 
 mutable struct ReconstructionParameter <: Gtk4.GtkBox
@@ -179,7 +179,7 @@ function getParams(m::ReconstructionParameter)
     params[:regName] = ["L1", "TV"]
   end
 
-  if params[:solver] == "kaczmarz"
+  if params[:solver] == "Kaczmarz"
     #params[:loadasreal] = true
     params[:lambd] = [params[:lambd], params[:lambdaL1] ] #params[:lambdaTV], params[:lambdaL1]]
     params[:regName] = ["L2", "L1"] #"TV", "L1"]

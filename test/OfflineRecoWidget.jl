@@ -41,7 +41,7 @@
         params[:numPeriodAverages] = 1
         params[:numPeriodGrouping] = 1
         # Solver Parameter
-        params[:solver] = "kaczmarz"
+        params[:solver] = "Kaczmarz"
         params[:lambd] = 0.05 # default: 0.01 -> tested in testsubset
         params[:lambdaL1] = 0.0
         params[:lambdaTV] = 0.0
@@ -87,14 +87,14 @@
         @testset "Solver" begin
             # Different lambda for different solver
             # Kaczmarz
-            params[:solver] = "kaczmarz"
+            params[:solver] = "Kaczmarz"
             params[:lambd] = 0.05 # default: 0.01
             params[:lambdaL1] = 0.1 # default: 0.0
             MPIUI.setParams(rw,params)
             sleep(1)
             paramsTest = MPIUI.getParams(rw)
             @test paramsTest[:lambd] ≈ [0.05, 0.1]
-            @test paramsTest[:solver] == "kaczmarz"
+            @test paramsTest[:solver] == "Kaczmarz"
 
             # FusedLasso
             params[:solver] = "fusedlasso"
