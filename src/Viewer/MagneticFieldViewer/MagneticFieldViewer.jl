@@ -1,8 +1,5 @@
 export MagneticFieldViewer
 
-# load new type MagneticFieldCoefficients with additional informations
-include("MagneticFieldUtils.jl")
-
 mutable struct FieldViewerWidget <: Gtk4.GtkBox
   handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
@@ -143,6 +140,11 @@ function MagneticFieldViewerWidget()
     end
   end
 
+  # setup volume choices for FFP search
+  for v in instances(MPISphericalHarmonics.Volume)
+    push!(m["cbVolumeFFP"], "$v")
+  end
+  set_gtk_property!(m["cbVolumeFFP"],:active,0) # default: xyz
 
   # Allow to change between gradient and offset output
   for c in ["Offset:", "Gradient:", "Eigenvalues:", "Singular values:"]
@@ -276,7 +278,8 @@ function MagneticFieldViewerWidget()
   
   # calculate FFP
   signal_connect(m["btnCalcFFP"], "clicked") do w
-    @idle_add_guarded calcFFP(m)
+    @idle_add_guarded calcFFP(m) # calculate FFP
+    @idle_add_guarded goToFFP(m) # go to FFP
   end
 
   # reset FFP
@@ -667,7 +670,10 @@ end
 function calcFFP(m::MagneticFieldViewerWidget)
   
   # calculate the FFP (don't shift the coefficients into the FFP)
-  MPISphericalHarmonics.findFFP!(m.coeffs)
+  vol = get_gtk_property(m["cbVolumeFFP"], :active, Int64) # volume where to search
+  findFFP!(m.coeffs, 
+           start = [m.fv.intersection], # use intersection as start value
+           vol = MPISphericalHarmonics.Volume(vol))
   
   # show FFP
   ffpText = round.((m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
@@ -680,6 +686,7 @@ function calcFFP(m::MagneticFieldViewerWidget)
   # disable calcFFP button
   set_gtk_property!(m["btnCalcFFP"],:sensitive,false) # FFP already calculated
   set_gtk_property!(m["btnResetFFP"],:sensitive,true) # allow to reset the FFP
+  set_gtk_property!(m["cbVolumeFFP"],:sensitive,false) # FFP already calculated in this volume
 #  set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # Center of sphere automatically plotting center
 end
 
@@ -699,6 +706,7 @@ function resetFFP(m::MagneticFieldViewerWidget)
   # disable calcFFP button
   set_gtk_property!(m["btnCalcFFP"],:sensitive,true) # FFP can be calculated again
   set_gtk_property!(m["btnResetFFP"],:sensitive,false) # reset done
+  set_gtk_property!(m["cbVolumeFFP"],:sensitive,true) # allow to choose new volume
 
   # go to center sphere
   m.fv.centerFFP = false
