@@ -19,6 +19,7 @@ using REPL: fielddoc
 using SphericalHarmonicExpansions # for MagneticFieldViewer
 using NLsolve # for MagneticFieldViewer: findFFP()
 using DataFrames, CSV # for MagneticFieldViewer: export as csv
+using Unitful
 import CairoMakie
 
 ENV["MPILIB_UI"] = "Nothing"
