@@ -45,7 +45,8 @@ function ProtocolWidget(scanner=nothing)
   @idle_add_guarded begin
     set_gtk_property!(pw["tbRun"],:sensitive,false)
     set_gtk_property!(pw["tbPause"],:sensitive,false)
-    set_gtk_property!(pw["tbCancel"],:sensitive,false)      
+    set_gtk_property!(pw["tbCancel"],:sensitive,false)
+    set_gtk_property!(pw["tbStop"],:sensitive,false)            
   end
   if !isnothing(pw.scanner)
     # Load default protocol and set params
@@ -119,6 +120,7 @@ function initCallbacks(pw::ProtocolWidget)
             set_gtk_property!(pw["tbRun"], :sensitive, false)
             set_gtk_property!(pw["tbPause"], :sensitive, true)
             set_gtk_property!(pw["tbCancel"], :sensitive, true)
+            set_gtk_property!(pw["tbStop"], :sensitive, true)
             set_gtk_property!(pw["btnPickProtocol"], :sensitive, false)
             pw.updating = false
           end
@@ -143,6 +145,10 @@ function initCallbacks(pw::ProtocolWidget)
       end
       @idle_add_guarded set_gtk_property!(pw["tbPause"], :sensitive, false)
     end
+  end
+
+  signal_connect(pw["tbPause"], :toggled) do w
+    tryStopProtocol(pw)
   end
 
   signal_connect(pw["tbCancel"], :clicked) do w

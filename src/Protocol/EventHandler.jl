@@ -285,6 +285,27 @@ function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, eve
   return false
 end
 
+### Stop Default ###
+function tryCancelProtocol(pw::ProtocolWidget)
+  put!(pw.biChannel, StopEvent())
+end
+
+function handleSuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::StopEvent)
+  @info "Protocol cancelled"
+  pw.protocolState = PS_FAILED
+  return true
+end
+
+function handleUnsupportedOperation(pw::ProtocolWidget, protocol::Protocol, event::StopEvent)
+  @warn "Protocol can not be cancelled"
+  return false
+end
+
+function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::StopEvent)
+  @warn "Protocol failed to be cancelled"
+  return false
+end
+
 ### Finish Default ###
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::FinishedNotificationEvent)
   pw.protocolState = PS_FINISHED

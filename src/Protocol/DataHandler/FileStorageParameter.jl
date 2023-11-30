@@ -15,10 +15,10 @@ function FileStorageParameter(filename::String, fileFilter::Union{String, Nothin
   b = GtkBuilder(uifile)
   mainBox = G_.get_object(b, "boxParams")
   storage = FileStorageParameter(mainBox.handle, b, fileFilter)
-  Gtk4.gobject_move_ref(storage, mainBox)
+  Gtk4.GLib.gobject_move_ref(storage, mainBox)
   set_gtk_property!(storage["entFilename"], :text, filename)
 
-  signal_connect(storage["btnSaveAs", GtkButton], :clicked) do w
+  signal_connect(storage["btnSaveAs"], :clicked) do w
     name = save_dialog("Choose a file name", mpilab[]["mainWindow"], (storage.fileFilter,))
     if !isnothing(name)
       @idle_add_guarded set_gtk_property!(storage["entFilename"], :text, name)
