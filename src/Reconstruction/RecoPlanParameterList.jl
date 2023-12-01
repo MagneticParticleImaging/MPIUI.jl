@@ -9,6 +9,7 @@ mutable struct RecoPlanParameterFilter
   # Filter State
   dict::Dict{String, RecoPlanParameters}
   planFilter::Dict{RecoPlanParameters, Bool}
+  paramFilter::Dict{RecoPlanParameter, Bool} # TODO iterate down tree
   # Hacky field to stop GTK segfaulting 
   children::Dict{String, Vector{String}}
 end
@@ -30,10 +31,8 @@ function RecoPlanParameterFilter(params::RecoPlanParameters)
   missingButton.active = false
   filter = RecoPlanParameterFilter(params, filterGrid, nothing, entry, missingButton, dict, planFilter, Dict{String, Vector{String}}())
 
-  function create_tree(item, userData)
+  function create_tree(item)
     if item != C_NULL
-      itemLeaf = Gtk4.GLib.find_leaf_type(item)
-      item = convert(itemLeaf, item)
       str = item.string
 
       parent = filter.dict[str]
@@ -47,8 +46,8 @@ function RecoPlanParameterFilter(params::RecoPlanParameters)
     end
   end
 
-  function create_tree_raw(item, userData)
-    result = create_tree(item, userData)
+  function create_tree_raw(item)
+    result = create_tree(item)
     return result.handle
   end
 
@@ -72,6 +71,9 @@ function RecoPlanParameterFilter(params::RecoPlanParameters)
       label.xalign = 0.0
       check = GtkCheckButton()
       check.active = filter.planFilter[filter.dict[key]]
+      signal_connect(check, :toggled) do w
+        filter.planFilter[filter.dict[key]] = check.active
+      end
       push!(box, label)
       push!(box, check)
     end
@@ -128,17 +130,25 @@ function addFilter!(filter::RecoPlanParameterFilter, list::GtkListBox)
   signal_connect(filter.missingButton, :toggled) do btn
     @idle_add Gtk4.G_.invalidate_filter(list) 
   end
+
+  signal_connect(filter.entry, :search_changed) do w
+    @idle_add Gtk4.G_.invalidate_filter(list)
+  end
 end
 
 function match(filter::RecoPlanParameterFilter, parameters::RecoPlanParameters)
   result = true
+  result &= filter.planFilter[parameters]
   return result ? Cint(1) : Cint(0)
 end
 
 function match(filter::RecoPlanParameterFilter, parameter::RecoPlanParameter)
   result = true
 
-  result = !filter.missingButton.active || ismissing(parameter.plan[parameter.field])
+  result &= !filter.missingButton.active || ismissing(parameter.plan[parameter.field])
+
+  result &= isempty(filter.entry.text) || contains(lowercase(string(parameter.field)), lowercase(filter.entry.text))
+
   return result ? Cint(1) : Cint(0)
 end
 
@@ -160,7 +170,7 @@ function RecoPlanParameterList(params::RecoPlanParameters; filter::Union{RecoPla
 
   if !isnothing(filter)
     addFilter!(filter, list.listBox)
-    Gtk4.set_filter_func(list.listBox, (row, data) -> match(list, row, data))
+    Gtk4.set_filter_func(list.listBox, row -> match(list, row))
   end
 
   for widget in listWidgets
@@ -216,11 +226,6 @@ function getListChild(params::RecoPlanParameters{T}) where T
   return grid
 end
 
-function match(list::RecoPlanParameterList, li::Ptr{Gtk4.GLib.GObject}, data)
-  itemLeaf = Gtk4.GLib.find_leaf_type(li)
-  item = convert(itemLeaf, li)
-  return match(list, item)
-end
 
 function match(list::RecoPlanParameterList, item)
   widget = item.child

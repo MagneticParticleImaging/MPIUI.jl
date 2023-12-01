@@ -19,7 +19,7 @@ end
 widget(parameter::RecoPlanParameter) = parameter.widget
 id(parameter::RecoPlanParameter) = join(string.(push!(AbstractImageReconstruction.parentfields(parameter.plan), parameter.field)), ".")
 
-function RecoPlanParameter(plan::RecoPlan{T}, field::Symbol) where {T<:AbstractImageReconstructionParameter}
+function RecoPlanParameter(plan::RecoPlan{T}, field::Symbol) where {T<:AbstractImageReconstructionParameters}
   input = RecoPlanParameterInput(plan, field)
   widget = createParameterWidget(plan, field, input)
   parameter = RecoPlanParameter(plan, field, input, widget)
