@@ -51,11 +51,11 @@ ImageMetadata = "0.9"
 LoggingExtras = ">= 0.4.2"
 MPIFiles = "0.14"
 MPIMeasurements = "0.4"
-MPIReco = "0.4"
+MPIReco = "0.5"
 Reexport = "0.2,1.0"
 CairoMakie = "0.10.2"
 julia = "1.7"
-Gtk4 = "0.5"
+Gtk4 = "0.6"
 
 [extras]
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
