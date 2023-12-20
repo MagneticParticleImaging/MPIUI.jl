@@ -306,8 +306,8 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
 
   m.SNR = calibSNR(m.bSF)[:,:,:]
   if measIsFrequencySelection(m.bSF)
-    # set SNR to one for frequencies ∉ frequencySelection
-    snr = ones(Float64, m.maxFreq*size(m.SNR,2), size(m.SNR,3))
+    # set SNR to zero for frequencies ∉ frequencySelection
+    snr = zeros(Float64, m.maxFreq*size(m.SNR,2), size(m.SNR,3))
     snr[m.frequencySelection,:] = reshape(calibSNR(m.bSF), size(m.SNR,1)*size(m.SNR,2), :)
     m.SNR = reshape(snr, m.maxFreq, size(m.SNR,2), size(m.SNR,3))
   end
