@@ -31,11 +31,11 @@ mutable struct ReconstructionParameter <: Gtk4.GtkBox
     end
     set_gtk_property!(m["cbSolver"],:active,0)
   
-    choices = linearOperatorList()
-    for c in choices
-      push!(m["cbSparsityTrafo"], c)
-    end
-    set_gtk_property!(m["cbSparsityTrafo"], :active, 0)
+    #choices = linearOperatorList()
+    #for c in choices
+    #  push!(m["cbSparsityTrafo"], c)
+    #end
+    #set_gtk_property!(m["cbSparsityTrafo"], :active, 0)
   
     set_gtk_property!(m["entSF"],:editable,false)
     set_gtk_property!(m["entNumFreq"],:editable,false)
