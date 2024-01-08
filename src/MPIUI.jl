@@ -27,6 +27,7 @@ ENV["MPILIB_UI"] = "Nothing"
 @reexport using MPIMeasurements
 @reexport using AbstractImageReconstruction
 @reexport using MPIReco
+using MPIReco.RegularizedLeastSquares
 
 using ImageUtils: makeAxisArray
 

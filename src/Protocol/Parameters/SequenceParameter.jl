@@ -45,9 +45,6 @@ mutable struct PeriodicChannelParameter <: Gtk4.GtkExpander
   end
 end
 
-struct ArbitraryElectricalComponent
-end
-
 mutable struct ComponentParameter <: Gtk4.GtkGrid
   handle::Ptr{Gtk4.GObject}
   idLabel::GtkLabel
@@ -83,7 +80,7 @@ mutable struct ComponentParameter <: Gtk4.GtkGrid
     grid[2, 4] = pha
 
     # Waveform
-    wav = Gtk4.GtkComboBoxTextLeaf()
+    wav = GtkComboBoxText()
     waveformsStr = fromWaveform.(waveforms)
     for w in waveformsStr
       push!(wav, w)
@@ -123,7 +120,7 @@ mutable struct ComponentParameter <: Gtk4.GtkGrid
     grid[2, 4] = pha
 
     # Waveform
-    wav = ComboBoxTextLeaf()
+    wav = GtkComboBoxText()
     waveformsStr = fromWaveform.(waveforms)
     for w in waveformsStr
       push!(wav, w)
