@@ -10,8 +10,6 @@ mutable struct RecoPlanParameterFilter
   dict::Dict{String, RecoPlanParameters}
   planFilter::Dict{RecoPlanParameters, Bool}
   paramFilter::Dict{RecoPlanParameter, Bool} # TODO iterate down tree
-  # Hacky field to stop GTK segfaulting 
-  children::Dict{String, Vector{String}}
 end
 widget(filter::RecoPlanParameterFilter) = filter.filterGrid
 
@@ -29,15 +27,14 @@ function RecoPlanParameterFilter(params::RecoPlanParameters)
   entry.hexpand = true
   missingButton = GtkCheckButton("Only missing")
   missingButton.active = false
-  filter = RecoPlanParameterFilter(params, filterGrid, nothing, entry, missingButton, dict, planFilter, Dict{String, Vector{String}}())
+  filter = RecoPlanParameterFilter(params, filterGrid, nothing, entry, missingButton, dict, planFilter, Dict{RecoPlanParameter, Bool}())
 
   function create_tree(item)
     if item != C_NULL
       str = item.string
 
       parent = filter.dict[str]
-      children = getChildStrings(parent) # Otherwise Strings seem to be GC'ed and segfaulst are caused
-      filter.children[str] = children
+      children = getChildStrings(parent)
       store = GtkStringList(children)
 
       return Gtk4.GLib.GListModel(store)
