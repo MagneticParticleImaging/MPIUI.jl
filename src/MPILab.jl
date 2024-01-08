@@ -926,6 +926,8 @@ function initReconstructionStore(m::MPILab)
 
   signal_connect(m["tbRedoReco"], "clicked") do widget
     if hasselection(m.selectionReco)
+      # TODO load plan from file and redo reco
+      error("Not yet implemented with new reco interface")
       params = m.currentReco.params
 
       # get absolute path of system matrices
