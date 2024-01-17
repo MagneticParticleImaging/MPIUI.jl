@@ -1,7 +1,3 @@
-function linearSolverList()
-  Any["Kaczmarz", "cgnr", "fusedlasso"]
-end
-
 mutable struct ReconstructionParameter <: Gtk4.GtkBox
   handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder

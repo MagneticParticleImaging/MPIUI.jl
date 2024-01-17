@@ -4,7 +4,7 @@ mutable struct SolverPlanInput <: RecoPlanParameterInput
   cb::Union{Nothing,Function}
   choices::Vector{Any}
   function SolverPlanInput(value, field::Symbol)
-    choices = pushfirst!(subtypes(AbstractLinearSolver), missing)
+    choices = pushfirst!(RegularizedLeastSquares.linearSolverList(), missing)
     dd = GtkDropDown(choices)
     dd.hexpand = true
     idx = ismissing(value) ? 0 : findfirst(x->!ismissing(x) && x == value, choices) - 1
