@@ -202,13 +202,14 @@ end
 function getListChild(params::RecoPlanParameters{T}) where T
   grid = GtkGrid()
   parents = AbstractImageReconstruction.parentfields(params.plan)
+  type = planTypeLabel(params.plan)
   if !isempty(parents)
     parent = parents[end]
     parentLabel = GtkLabel("<span size = \"large\"><b>$parent</b></span>")
     parentLabel.use_markup = true
     parentLabel.hexpand = true
     parentLabel.xalign = 0.0
-    typeLabel = GtkLabel("($T)")
+    typeLabel = GtkLabel("($type)")
     typeLabel.justify = 1
     grid[1,1] = parentLabel
     grid[2,1] = typeLabel
@@ -222,6 +223,8 @@ function getListChild(params::RecoPlanParameters{T}) where T
   grid.margin_top = 25
   return grid
 end
+planTypeLabel(plan::RecoPlan{T}) where T = string(T)
+planTypeLabel(plan::RecoPlan{<:ProcessResultCache}) = planTypeLabel(plan.param)
 
 
 function match(list::RecoPlanParameterList, item)

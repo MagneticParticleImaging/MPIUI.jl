@@ -71,3 +71,7 @@ function RecoPlanParameters(plan::RecoPlan)
   end
   return RecoPlanParameters(plan, parameters, nested)
 end
+function RecoPlanParameters(plan::RecoPlan{<:ProcessResultCache})
+  inner = RecoPlanParameters(plan.param)
+  return RecoPlanParameters(plan, inner.parameters, inner.nestedParameters)
+end
