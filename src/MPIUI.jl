@@ -38,7 +38,7 @@ using Images
 
 using Colors
 
-import Base: getindex, match
+import Base: getindex, match, insert!, deleteat!, isempty, empty!, push!, size
 import MPIFiles: addReco, getVisu, addVisu
 import MPIMeasurements #: measurement
 import Gtk4: widget
@@ -119,7 +119,7 @@ const colors = [(0/255,73/255,146/255), # UKE blau
 
 
 include("LogMessagesWidget.jl")
-include("GtkUtils.jl")
+include("Utils/Utils.jl")
 include("Viewer/Viewer.jl")
 include("Reconstruction/OfflineRecoWidget.jl")
 include("Protocol/ProtocolWidget.jl")

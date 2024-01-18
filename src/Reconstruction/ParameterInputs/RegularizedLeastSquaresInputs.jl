@@ -166,25 +166,25 @@ function update!(input::AutoScaledRegularizationTermPlanInput, value::AutoScaled
 end
 callback!(input::AutoScaledRegularizationTermPlanInput, value) = input.cb = value
 
-
-
 mutable struct RegularizationPlanInput <: RecoPlanParameterInput
-  list::GtkListBox
+  list::Union{Nothing, GrowableGtkList}
   cb::Union{Nothing,Function}
   regInputs::Vector{AbstractRegularizationTermPlanInput}
   RegularizationPlanInput(value::Missing, field::Symbol) = RegularizationPlanInput(AbstractRegularization[], field)
   function RegularizationPlanInput(value::Vector{<:AbstractRegularization}, field::Symbol)
-    list = GtkListBox()
+    input = new(nothing, nothing, AbstractRegularizationTermPlanInput[])
+    grow = GrowableGtkList(input, input)
+    input.list = grow
+    list = widget(grow)
     list.vexpand = true
     list.hexpand = true
     list.show_separators = true
-    input = new(list, nothing, AbstractRegularizationTermPlanInput[])
     update!(input, value)
     return input
   end
 end
 RecoPlanParameterInput(::Type{Vector{R} where R<:AbstractRegularization}, value, field) = RegularizationPlanInput(value, field)
-widget(input::RegularizationPlanInput) = input.list
+widget(input::RegularizationPlanInput) = widget(input.list)
 function value(input::RegularizationPlanInput)
   result = AbstractRegularization[]
   for input in input.regInputs
@@ -192,15 +192,9 @@ function value(input::RegularizationPlanInput)
   end
   return isempty(result) ? missing : result
 end
+# Add value from updating plan with new array
 function update!(input::RegularizationPlanInput, value)
-  widgets = Any[]
-  for widget in input.list
-    push!(widgets, widget)
-  end
-  for widget in widgets
-    delete!(input.list, widget)
-  end
-  empty!(input.regInputs)
+  empty!(input.list)
   for reg in value
     regInput = RecoPlanParameterInput(typeof(reg), reg, nothing)
     callback!(regInput, () -> begin
@@ -209,16 +203,21 @@ function update!(input::RegularizationPlanInput, value)
       end 
     end)
     push!(input.regInputs, regInput)
-    push!(input.list, widget(regInput))
+    push!(input.list, regInput)
   end
 end
-function update!(input::RegularizationPlanInput, value::Missing)
-  for widget in input.list
-    push!(widgets, widget)
-  end
-  for widget in widgets
-    delete!(input.list, widget)
-  end
-  empty!(input.regInputs)
+# Add value via user request in list
+function (input::RegularizationPlanInput)()
+  reg = L2Regularization(0.0)
+  regInput = RecoPlanParameterInput(typeof(reg), reg, nothing)
+  callback!(regInput, () -> begin
+    if !isnothing(input.cb)
+      input.cb()
+    end 
+  end)
+  push!(input.regInputs, regInput)
+  return regInput
 end
+update!(input::RegularizationPlanInput, value::Missing) = empty!(input.list)
+(input::RegularizationPlanInput)(regInput::AbstractRegularizationTermPlanInput) = deleteat!(input.regInputs, findfirst(x-> x == regInput, input.regInputs))
 callback!(input::RegularizationPlanInput, value) = input.cb = value
