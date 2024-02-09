@@ -136,6 +136,40 @@ mutable struct ComponentParameter <: Gtk4.GtkGrid
 
 end
 
+mutable struct ProtocolOffsetChannelParameter <: Gtk4.GtkExpander
+  handle::Ptr{Gtk4.GObject}
+  channel::MPIMeasurements.ProtocolOffsetElectricalChannel
+  box::GtkBox
+  start::UnitfulGtkEntry
+  stop::UnitfulGtkEntry
+  offsets::GenericEntry
+  function ProtocolOffsetChannelParameter(idx::Int64, ch::MPIMeasurements.ProtocolOffsetElectricalChannel)
+    expander = GtkExpander(id(ch), expanded=true)
+    box = GtkBox(:v)
+###    push!(expander, box)
+    G_.set_child(expander, box)
+    grid = GtkGrid()
+    grid[1:2, 1] = GtkLabel("Tx Channel Index", xalign = 0.0)
+    grid[2, 1] = GtkLabel(string(idx))
+
+    start = UnitfulGtkEntry(uconvert(u"mT", ch.offsetStart))
+    grid[1, 2] = GtkLabel("Start")
+    grid[2, 2] = start
+    stop = UnitfulGtkEntry(uconvert(u"mT", ch.offsetStop))
+    grid[1, 3] = GtkLabel("Stop")
+    grid[2, 3] = stop
+    numOffsets = GenericEntry{Int64}(string(ch.numOffsets))
+    grid[1, 4] = GtkLabel("Offsets")
+    grid[2, 4] = numOffsets
+
+    push!(box, grid)
+
+    result = new(expander.handle, ch, box, start, stop, numOffsets)
+    return Gtk4.GLib.gobject_move_ref(result, expander)
+  end
+end
+
+
 function initCallbacks(seqParam::SequenceParameter)
   signal_connect(seqParam["btnSelectSequence"], :clicked) do w
     dlg = SequenceSelectionDialog(seqParam.scanner, Dict())
@@ -172,6 +206,19 @@ function updateSequence(seqParam::SequenceParameter, seq::Sequence)
         push!(seqParam["boxPeriodicChannel"], channelParam)
       end
       show(seqParam["boxPeriodicChannel"])
+
+      #offsetChannel = []
+      for channel in vcat(MPIMeasurements.channels.(MPIMeasurements.fields(seq), MPIMeasurements.ProtocolOffsetElectricalChannel)...)
+        daq = getDAQ(seqParam.scanner)
+        idx = MPIMeasurements.channelIdx(daq, id(channel))
+        push!(seqParam["boxPeriodicChannel"], ProtocolOffsetChannelParameter(idx, channel))
+        #push!(offsetChannel, ProtocolOffsetChannelParameter(idx, channel))
+      end
+      #for channel in offsetChannel
+        #box = GtkBox(:v)
+        #foreach(x -> push!(box, x), offsetChannel)
+        #push!(seqParam["nbChannels"], box, "Offset Channel")
+      #end
       @info "Finished adding channels"
 
       set_gtk_property!(seqParam["entSequenceName"], :text, MPIMeasurements.name(seq)) 
@@ -220,4 +267,11 @@ function setProtocolParameter(channelParam::PeriodicChannelParameter)
     end
     component = G_.get_next_sibling(component)
   end
+end
+
+function setProtocolParameter(channelParam::ProtocolOffsetChannelParameter)
+  channel = channelParam.channel
+  channel.numOffsets = value(channelParam.offsets)
+  channel.offsetStart = uconvert(u"T", value(channelParam.start))
+  channel.offsetStop = uconvert(u"T", value(channelParam.stop))
 end
