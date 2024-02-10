@@ -171,18 +171,23 @@ function getParams(m::ReconstructionParameter)
   params[:nAverages] = get_gtk_property(m["adjAverages"], :value, Int64)
   params[:spectralCleaning] = get_gtk_property(m["cbSpectralCleaning"], :active, Bool)
   params[:loadasreal] = get_gtk_property(m["cbLoadAsReal"], :active, Bool)
-  params[:solver] = linearSolverList()[max(get_gtk_property(m["cbSolver"],:active, Int64) + 1,1)]
+  solver = linearSolverList()[max(get_gtk_property(m["cbSolver"],:active, Int64) + 1,1)]
   # Small hack
-  if params[:solver] == "fusedlasso"
+  #=if params[:solver] == "fusedlasso"
     params[:loadasreal] = true
     params[:lambd] = [params[:lambdaL1], params[:lambdaTV]]
     params[:regName] = ["L1", "TV"]
-  end
+  end=#
 
-  if params[:solver] == "kaczmarz"
-    #params[:loadasreal] = true
-    params[:lambd] = [params[:lambd], params[:lambdaL1] ] #params[:lambdaTV], params[:lambdaL1]]
-    params[:regName] = ["L2", "L1"] #"TV", "L1"]
+  params[:solver] = Kaczmarz
+
+  if params[:solver] == Kaczmarz
+    if params[:lambdaL1] == 0.0
+      params[:reg] = AbstractRegularization[L2Regularization(Float32(params[:lambd]))]
+    else
+      params[:reg] = AbstractRegularization[L2Regularization(Float32(params[:lambd])), L1Regularization(Float32(params[:lambdaL1]))]
+    end
+    append!(params[:reg], [PositiveRegularization(), RealRegularization()])
   end
 
   firstFrame = get_gtk_property(m["adjFrame"], :value, Int64)
