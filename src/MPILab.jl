@@ -92,6 +92,10 @@ function MPILab(offlineMode=false)::MPILab
   initLogging(m)
   @debug "## Init Settings ..."
   initSettings(m)
+
+  if m.settings["scanner"] == ""
+    offlineMode=true
+  end
   @debug "## Init Scanner ..."
   initScanner(m, offlineMode)
   @debug "## Init Scanner Tab ..."
