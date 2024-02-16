@@ -63,7 +63,7 @@ end
 function MPILab(offlineMode=false)::MPILab
    
   @info "Starting MPILab"
-
+  
   if Threads.nthreads() < 4 && !offlineMode
     error("Too few threads to run MPIUI with an active scanner")
   end
@@ -230,14 +230,22 @@ end
 
 function initStoreSwitch(m::MPILab)
   empty!(m["cbDatasetStores"])
+  brukerReadOnly = getindex(m.settings, "brukerStoreReadOnly", true)
   for store_ in m.settings["datasetStores"]
     if store_ == "/opt/mpidata"
-      store = BrukerDatasetStore( store_ )
+      store = BrukerDatasetStore( store_ , brukerReadOnly)
     else
       store = MDFDatasetStore( store_ )
     end
     push!(m.datasetStores, store)
     push!(m["cbDatasetStores"], store_)
+  end
+
+  brukerDataStore_ = getindex(m.settings, "brukerDataStore", nothing)
+  if !isnothing(brukerDataStore_)
+    store = BrukerDatasetStore(brukerDataStore_, brukerReadOnly)
+    push!(m.datasetStores, store)
+    push!(m["cbDatasetStores"], brukerDataStore_)
   end
   m.activeStore = 1
   #set_gtk_property!(m["cbDatasetStores"],:active,0)
