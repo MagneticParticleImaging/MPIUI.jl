@@ -1,11 +1,11 @@
 include("Parameters/Parameters.jl")
 include("DataHandler/DataHandler.jl")
 
-mutable struct ProtocolWidget{T} <: Gtk.GtkBox
+mutable struct ProtocolWidget{T} <: Gtk4.GtkBox
   # Gtk 
-  handle::Ptr{Gtk.GObject}
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
-  paramBuilder::Dict
+  paramGtkBuilder::Dict
   updating::Bool
   # Protocol Interaction
   scanner::T
@@ -19,7 +19,7 @@ mutable struct ProtocolWidget{T} <: Gtk.GtkBox
   eventQueue::Vector{AbstractDataHandler}
 end
 
-getindex(m::ProtocolWidget, w::AbstractString, T::Type) = object_(m.builder, w, T)
+getindex(m::ProtocolWidget, w::AbstractString) = G_.get_object(m.builder, w)
 
 function ProtocolWidget(scanner=nothing)
   @info "Starting ProtocolWidget"
@@ -33,19 +33,20 @@ function ProtocolWidget(scanner=nothing)
     protocol = nothing
   end
     
-  b = Builder(filename=uifile)
-  mainBox = object_(b, "boxProtocol",BoxLeaf)
+  b = GtkBuilder(uifile)
+  mainBox = G_.get_object(b, "boxProtocol")
 
   paramBuilder = Dict(:sequence => "expSequence", :positions => "expPositions")
 
   pw = ProtocolWidget(mainBox.handle, b, paramBuilder, false, scanner, protocol, nothing, nothing, PS_UNDEFINED,
         nothing, nothing, AbstractDataHandler[])
-  Gtk.gobject_move_ref(pw, mainBox)
+  Gtk4.GLib.gobject_move_ref(pw, mainBox)
 
   @idle_add_guarded begin
-    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf],:sensitive,false)
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf],:sensitive,false)
-    set_gtk_property!(pw["tbCancel",ToolButtonLeaf],:sensitive,false)      
+    set_gtk_property!(pw["tbRun"],:sensitive,false)
+    set_gtk_property!(pw["tbPause"],:sensitive,false)
+    set_gtk_property!(pw["tbCancel"],:sensitive,false)
+    set_gtk_property!(pw["tbStop"],:sensitive,false)            
   end
   if !isnothing(pw.scanner)
     # Load default protocol and set params
@@ -71,14 +72,14 @@ function displayProgress(pw::ProtocolWidget)
   end
   if pw.progress.total == 0 || isnan(fraction) || isinf(fraction)
     @idle_add_guarded begin
-      set_gtk_property!(pw["pbProtocol", ProgressBar], :text, progress)
-      set_gtk_property!(pw["pbProtocol", ProgressBar], "pulse_step", 0.3)
-      pulse(pw["pbProtocol", ProgressBar])
+      set_gtk_property!(pw["pbProtocol"], :text, progress)
+      set_gtk_property!(pw["pbProtocol"], "pulse_step", 0.3)
+      pulse(pw["pbProtocol"])
     end
   else
     @idle_add_guarded begin
-      set_gtk_property!(pw["pbProtocol", ProgressBar], :text, progress)
-      set_gtk_property!(pw["pbProtocol", ProgressBar], :fraction, fraction)
+      set_gtk_property!(pw["pbProtocol"], :text, progress)
+      set_gtk_property!(pw["pbProtocol"], :fraction, fraction)
     end
   end  
 end
@@ -89,19 +90,20 @@ include("SequenceBrowser.jl")
 include("ProtocolBrowser.jl")
 
 function initCallbacks(pw::ProtocolWidget)
-  signal_connect(pw["tbInit", ToolButtonLeaf], :clicked) do w
+  signal_connect(pw["tbInit"], :clicked) do w
     if !pw.updating
       if !isnothing(pw.eventHandler) && isopen(pw.eventHandler)
         message = "Event handler is still running. Cannot initialize new protocol"
         @warn message
-        info_dialog(message, mpilab[]["mainWindow"])
+        d = info_dialog(()-> nothing, message, mpilab[]["mainWindow"])
+        d.modal = true
       else
         if initProtocol(pw)
           @idle_add_guarded begin
             pw.updating = true
             est = timeEstimate(pw.protocol)
-            set_gtk_property!(pw["lblRuntime", LabelLeaf], :label, est)
-            set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, true)
+            set_gtk_property!(pw["lblRuntime"], :label, est)
+            set_gtk_property!(pw["tbRun"], :sensitive, true)
             pw.updating = false
           end        
         end
@@ -109,22 +111,23 @@ function initCallbacks(pw::ProtocolWidget)
     end
   end
 
-  signal_connect(pw["tbRun", ToggleToolButtonLeaf], :toggled) do w
+  signal_connect(pw["tbRun"], :toggled) do w
     if !pw.updating
       if get_gtk_property(w, :active, Bool)
         if startProtocol(pw)
           @idle_add_guarded begin 
             pw.updating = true
-            set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :sensitive, false)
-            set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, true)
-            set_gtk_property!(pw["tbCancel",ToolButtonLeaf], :sensitive, true)
-            set_gtk_property!(pw["btnPickProtocol", ButtonLeaf], :sensitive, false)
+            set_gtk_property!(pw["tbRun"], :sensitive, false)
+            set_gtk_property!(pw["tbPause"], :sensitive, true)
+            set_gtk_property!(pw["tbCancel"], :sensitive, true)
+            set_gtk_property!(pw["tbStop"], :sensitive, true)
+            set_gtk_property!(pw["btnPickProtocol"], :sensitive, false)
             pw.updating = false
           end
         else
           @idle_add_guarded begin
             # Something went wrong during start, we dont count button press
-            set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf], :active, false)
+            set_gtk_property!(pw["tbRun"], :active, false)
           end
         end
       else
@@ -133,58 +136,67 @@ function initCallbacks(pw::ProtocolWidget)
     end
   end
 
-  signal_connect(pw["tbPause", ToggleToolButtonLeaf], :toggled) do w
+  signal_connect(pw["tbPause"], :toggled) do w
     if !pw.updating
       if get_gtk_property(w, :active, Bool)
         tryPauseProtocol(pw)
       else 
         tryResumeProtocol(pw)
       end
-      @idle_add_guarded set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf], :sensitive, false)
+      @idle_add_guarded set_gtk_property!(pw["tbPause"], :sensitive, false)
     end
   end
 
-  signal_connect(pw["tbCancel", ToolButtonLeaf], :clicked) do w
+  signal_connect(pw["tbPause"], :toggled) do w
+    tryStopProtocol(pw)
+  end
+
+  signal_connect(pw["tbCancel"], :clicked) do w
     tryCancelProtocol(pw)
   end
 
-  signal_connect(pw["btnPickProtocol", GtkButton], "clicked") do w
+  signal_connect(pw["btnPickProtocol"], "clicked") do w
     @info "clicked picked protocol button"
     dlg = ProtocolSelectionDialog(pw.scanner, Dict())
-    ret = run(dlg)
-    if ret == GtkResponseType.ACCEPT
-      if hasselection(dlg.selection)
-        protocol = getSelectedProtocol(dlg)
-        updateProtocol(pw, protocol)
-        end
+    function on_response(dlg, response_id)
+      if response_id == Integer(Gtk4.ResponseType_ACCEPT)   
+        if hasselection(dlg.selection)
+          protocol = getSelectedProtocol(dlg)
+          updateProtocol(pw, protocol)
+          end
+      end
+      destroy(dlg)
     end
-    destroy(dlg)
+    signal_connect(on_response, dlg, "response")
+    @idle_add_guarded show(dlg) 
   end
 
-  signal_connect(pw["btnSaveProtocol", GtkButton], "clicked") do w
+  signal_connect(pw["btnSaveProtocol"], "clicked") do w
     try 
       # TODO try to pick protocol folder of current scanner?
-      filter = Gtk.GtkFileFilter(pattern=String("*.toml"))
-      fileName = save_dialog("Save Protocol", GtkNullContainer(), (filter, ))
-      if fileName != ""
-        saveProtocol(pw::ProtocolWidget, fileName)
+      filter = Gtk4.GtkFileFilter(pattern=String("*.toml"))
+      diag = save_dialog("Save Protocol", mpilab[]["mainWindow"], (filter, )) do fileName
+        if fileName != ""
+          saveProtocol(pw::ProtocolWidget, fileName)
+        end
       end
+      diag.modal = true
     catch e
       @info e
       showError(e)
     end
   end
 
-  signal_connect(pw["txtBuffProtocolDescription", GtkTextBufferLeaf], :changed) do w
+  signal_connect(pw["txtBuffProtocolDescription"], :changed) do w
     if !pw.updating
-      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol"], :sensitive, true)
     end
   end
 
   #for adj in ["adjNumFrames", "adjNumAverages", "adjNumFrameAverages", "adjNumBGFrames"]
-  #  signal_connect(pw[adj, AdjustmentLeaf], "value_changed") do w
+  #  signal_connect(pw[adj], "value_changed") do w
   #    if !pw.updating
-  #      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+  #      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol"], :sensitive, true)
   #    end
   #  end
   #end
@@ -217,11 +229,11 @@ function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
 end
 
 function updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
-  nb = pw["nbDataWidgets", Notebook]
-  paramBox = pw["boxGUIParams", GtkBox]
-  storageBox = pw["boxStorageParams", GtkBox]
+  nb = pw["nbDataWidgets"]
+  paramBox = pw["boxGUIParams"]
+  storageBox = pw["boxStorageParams"]
   #empty!(nb) # segfaults sometimes
-  numPages = G_.n_pages(nb)
+  numPages = G_.get_n_pages(nb)
   for i = 1:numPages
     splice!(nb, numPages-i+1)
   end
@@ -239,32 +251,32 @@ function updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
     push!(nb, display, getDisplayTitle(handler))
     storage = getStorageWidget(handler)
     if !isnothing(storage)
-      storageExpander = Gtk.GtkExpander(getStorageTitle(handler))
-      set_gtk_property!(storageExpander, :expand, true)
-      push!(storageExpander, storage)
+      storageExpander = GtkExpander(getStorageTitle(handler))
+      set_gtk_property!(storageExpander, :expanded, true)
+      G_.set_child(storageExpander, storage)
       push!(storageBox, storageExpander)
     end
     paramExpander = ParamExpander(handler)
     push!(paramBox, paramExpander)
-    showall(paramExpander)
-    showall(display)
-    set_gtk_property!(paramExpander, :expand, i == 1) # This does not expand
+    show(paramExpander)
+    show(display)
+    set_gtk_property!(paramExpander, :expanded, i == 1) # This does not expand
     enable!(paramExpander, i == 1)
   end
   pw.dataHandler = handlers
-  showall(paramBox)
-  showall(storageBox)
-  showall(nb)
+  show(paramBox)
+  show(storageBox)
+  show(nb)
 end
 
 function updateProtocolParameter(pw::ProtocolWidget, protocol::Protocol)
   params = protocol.params
-  set_gtk_property!(pw["lblScannerName", GtkLabelLeaf], :label, name(pw.scanner))
-  set_gtk_property!(pw["lblProtocolType", GtkLabelLeaf], :label, string(typeof(protocol)))
-  set_gtk_property!(pw["txtBuffProtocolDescription", GtkTextBufferLeaf], :text, MPIMeasurements.description(protocol))
-  set_gtk_property!(pw["lblProtocolName", GtkLabelLeaf], :label, name(protocol))
+  set_gtk_property!(pw["lblScannerName"], :label, name(pw.scanner))
+  set_gtk_property!(pw["lblProtocolType"], :label, string(typeof(protocol)))
+  set_gtk_property!(pw["txtBuffProtocolDescription"], :text, MPIMeasurements.description(protocol))
+  set_gtk_property!(pw["lblProtocolName"], :label, name(protocol))
   # Clear old parameters
-  empty!(pw["boxProtocolParameter", BoxLeaf])
+  empty!(pw["boxProtocolParameter"])
 
   regular = [field for field in fieldnames(typeof(params)) if parameterType(field, nothing) isa RegularParameterType]
   special = setdiff(fieldnames(typeof(params)), regular)
@@ -283,8 +295,8 @@ function updateProtocolParameter(pw::ProtocolWidget, protocol::Protocol)
       @error ex
     end
   end
-  set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, false)
-  showall(pw["boxProtocolParameter", BoxLeaf])
+  set_gtk_property!(pw["btnSaveProtocol"], :sensitive, false)
+  show(pw["boxProtocolParameter"])
 end
 
 function addRegularProtocolParameter(pw::ProtocolWidget, params::ProtocolParams, fields::Vector{Symbol})
@@ -298,7 +310,7 @@ function addRegularProtocolParameter(pw::ProtocolWidget, params::ProtocolParams,
       end
       addProtocolParameter(pw, parameterType(field, value), paramGrid, field, value, tooltip)
     end
-    push!(pw["boxProtocolParameter", BoxLeaf], paramGrid)
+    push!(pw["boxProtocolParameter"], paramGrid)
   catch ex 
     @error ex
   end
@@ -307,19 +319,19 @@ end
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value, tooltip)
   generic = GenericParameter{typeof(value)}(field, string(field), string(value), tooltip)
   addGenericCallback(pw, generic.entry)
-  push!(pw["boxProtocolParameter", BoxLeaf], generic)
+  push!(pw["boxProtocolParameter"], generic)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, field, value::T, tooltip) where {T<:Quantity}
   generic = UnitfulParameter(field, string(field), value, tooltip)
   addGenericCallback(pw, generic.entry)
-  push!(pw["boxProtocolParameter", BoxLeaf], generic)
+  push!(pw["boxProtocolParameter"], generic)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::BoolParameterType, field, value, tooltip)
   cb = BoolParameter(field, string(field), value, tooltip)
   addGenericCallback(pw, cb)
-  push!(pw["boxProtocolParameter", BoxLeaf], cb)
+  push!(pw["boxProtocolParameter"], cb)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, regParams::RegularParameters, field::Symbol, value, tooltip)
@@ -331,7 +343,7 @@ end
 
 function addProtocolParameter(pw::ProtocolWidget, ::GenericParameterType, regParams::RegularParameters, field::Symbol, value::T, tooltip) where {T<:Quantity}
   label = ParameterLabel(field, tooltip)
-  generic = UnitfulEntry(value)
+  generic = UnitfulGtkEntry(value)
   addGenericCallback(pw, generic.entry)
   addToRegularParams(regParams, label, generic)
 end
@@ -359,7 +371,7 @@ end
 function addProtocolParameter(pw::ProtocolWidget, ::SequenceParameterType, field, value::Sequence, tooltip)
   seq = SequenceParameter(field, value, pw.scanner)
   updateSequence(seq, value) # Set default sequence values
-  push!(pw["boxProtocolParameter", BoxLeaf], seq)
+  push!(pw["boxProtocolParameter"], seq)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::SequencesParameterType, field, value, tooltip)
@@ -368,19 +380,19 @@ end
 
 function addProtocolParameter(pw::ProtocolWidget, ::ReconstructionParameterType, field, value, tooltip)
   reco = OnlineRecoWidget(field)
-  push!(pw["boxProtocolParameter", BoxLeaf], reco)
+  push!(pw["boxProtocolParameter"], reco)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::CoordinateParameterType, field, value, tooltip)
   coord = CoordinateParameter(field, value, tooltip)
   updateCoordinate(coord, value)
-  push!(pw["boxProtocolParameter", BoxLeaf], coord)
+  push!(pw["boxProtocolParameter"], coord)
 end
 
 function addProtocolParameter(pw::ProtocolWidget, ::PositionParameterType, field, value, tooltip)
   pos = PositionParameter(field, value)
   updatePositions(pos, value)
-  push!(pw["boxProtocolParameter", BoxLeaf], pos)
+  push!(pw["boxProtocolParameter"], pos)
 end
 
 function addTooltip(object, tooltip::AbstractString)
@@ -394,7 +406,7 @@ end
 function addGenericCallback(pw::ProtocolWidget, generic)
   signal_connect(generic, "changed") do w
     if !pw.updating
-      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol"], :sensitive, true)
     end
   end
 end
@@ -402,7 +414,7 @@ end
 function addGenericCallback(pw::ProtocolWidget, cb::BoolParameter)
   signal_connect(cb, "toggled") do w
     if !pw.updating
-      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol", Button], :sensitive, true)
+      @idle_add_guarded set_gtk_property!(pw["btnSaveProtocol"], :sensitive, true)
     end
   end
 end
@@ -437,9 +449,9 @@ end
 function updateScanner!(pw::ProtocolWidget, scanner::MPIScanner)
   pw.scanner = scanner
   @idle_add_guarded begin
-    set_gtk_property!(pw["tbRun",ToggleToolButtonLeaf],:sensitive,false)
-    set_gtk_property!(pw["tbPause",ToggleToolButtonLeaf],:sensitive,false)
-    set_gtk_property!(pw["tbCancel",ToolButtonLeaf],:sensitive,false)
+    set_gtk_property!(pw["tbRun"],:sensitive,false)
+    set_gtk_property!(pw["tbPause"],:sensitive,false)
+    set_gtk_property!(pw["tbCancel"],:sensitive,false)
     initProtocolChoices(pw)
   end
 end

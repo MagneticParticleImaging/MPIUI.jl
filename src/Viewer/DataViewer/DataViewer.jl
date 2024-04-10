@@ -1,14 +1,14 @@
-using Gtk, Gtk.ShortNames, Cairo
+using Gtk4
 
 export DataViewer, DataViewerWidget
 
 ########### DataViewerWidget #################
 
-mutable struct DataViewerWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
-  builder::Builder
-  grid2D::Grid
-  grid3D::Grid
+mutable struct DataViewerWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
+  builder::GtkBuilder
+  grid2D::Gtk4.GtkGridLeaf
+  grid3D::Gtk4.GtkGridLeaf
   coloring::Vector{ColoringParams}
   upgradeColoringWInProgress::Bool
   cacheSelectedFovXYZ::Array{Float64,1}
@@ -23,10 +23,10 @@ mutable struct DataViewerWidget <: Gtk.GtkBox
   currentProfile
 end
 
-getindex(m::DataViewerWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::DataViewerWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 mutable struct DataViewer
-  w::Window
+  w::Gtk4.GtkWindowLeaf
   dvw::DataViewerWidget
 end
 
@@ -40,13 +40,13 @@ function DataViewer(imFG::ImageMeta, imBG=nothing; params=nothing)
 end
 
 function DataViewer()
-  w = Window("Data Viewer",800,600)
+  w = GtkWindow("Data Viewer",800,600)
   dw = DataViewerWidget()
   push!(w,dw)
-  showall(w)
+  show(w)
 
-  signal_connect(w, "key-press-event") do widget, event
-    if event.keyval ==  Gtk.GConstants.GDK_KEY_c
+  #=signal_connect(w, "key-press-event") do widget, event
+    if event.keyval ==  Gtk4.GConstants.GDK_KEY_c
       if event.state & 0x04 != 0x00 # Control key is pressed
         @debug "copy visu params to clipboard..."
         str = string( getParams(dw) )
@@ -54,7 +54,7 @@ function DataViewer()
         clipboard( str_ )
       end
     end
-  end
+  end=#
 
   return DataViewer(w,dw)
 end
@@ -66,23 +66,23 @@ function DataViewerWidget()
 
   uifile = joinpath(@__DIR__,"..","..","builder","dataviewer.ui")
 
-  b = Builder(filename=uifile)
-  mainBox = G_.object(b, "boxDataViewer")
+  b = GtkBuilder(uifile)
+  mainBox = Gtk4.G_.get_object(b, "boxDataViewer")
   m = DataViewerWidget( mainBox.handle, b,
-                         G_.object(b, "gridDataViewer2D"),
-                         G_.object(b, "gridDataViewer3D"),
+                         Gtk4.G_.get_object(b, "gridDataViewer2D"),
+                         Gtk4.G_.get_object(b, "gridDataViewer3D"),
                          Vector{ColoringParams}(), false,
                         [0.0,0.0,0.0], [0.0,0.0,0.0], false, false,
                         nothing, nothing, nothing,nothing, nothing, nothing)
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
-  m.grid3D[2,1] = Canvas()
-  m.grid3D[1,1] = Canvas()
-  m.grid3D[2,2] = Canvas()
-  m.grid3D[1,2] = Canvas()
-  m.grid2D[1,1] = Canvas()
+  m.grid3D[2,1] = GtkCanvas()
+  m.grid3D[1,1] = GtkCanvas()
+  m.grid3D[2,2] = GtkCanvas()
+  m.grid3D[1,2] = GtkCanvas()
+  m.grid2D[1,1] = GtkCanvas()
 
-  showall(m)
+  show(m)
 
   choices = important_cmaps()
   for c in choices
@@ -472,14 +472,24 @@ function showData(m::DataViewerWidget)
         if ndims(m.data) >= 3 && slicesInRawData != (0,0,0)
           showProfile(m, params, slicesInRawData)
         end
-        G_.current_page(m["nb2D3D"], 0)
+        Gtk4.G_.set_current_page(m["nb2D3D"], 0)
         m.currentlyShownImages = [cdata_xy, cdata_zx, cdata_zy]
       else
         dat = vec(data_)
-        p = Winston.FramedPlot(xlabel="x", ylabel="y")
-        Winston.add(p, Winston.Curve(1:length(dat), dat, color="blue", linewidth=4))
-        display(m.grid2D[1,1],p)
-        G_.current_page(m["nb2D3D"], 1)
+
+        fig, ax, l_ = CairoMakie.lines(1:length(dat), dat, 
+              figure = (; resolution = (1000, 800), fontsize = 12),
+              color = CairoMakie.RGBf(colors[1]...))
+  
+        CairoMakie.autolimits!(ax)
+        if length(dat) > 1
+          CairoMakie.xlims!(ax, 1, length(dat))
+        end
+        ax.xlabel = "x"
+        ax.ylabel = "y"
+        drawonto(m.grid2D[1,1], fig)
+
+        Gtk4.G_.set_current_page(m["nb2D3D"], 1)
 
         #m.currentlyShownImages = cdata
       end

@@ -18,20 +18,23 @@ using Dates
 using REPL: fielddoc
 using SphericalHarmonicExpansions # for MagneticFieldViewer
 using NLsolve # for MagneticFieldViewer: findFFP()
+using DataFrames, CSV # for MagneticFieldViewer: export as csv
+using Unitful
+import CairoMakie
 
 ENV["MPILIB_UI"] = "Nothing"
 
 @reexport using MPIMeasurements
 @reexport using MPIReco
+using MPIReco.RegularizedLeastSquares
 
 using ImageUtils: makeAxisArray
 
-using Gtk, Gtk.ShortNames, Gtk.GLib
+using Gtk4, Gtk4.G_, Gtk4.GLib
 using Cairo
 using Images
 #using HDF5
 
-import Winston
 using Colors
 
 import Base: getindex
@@ -43,8 +46,8 @@ export openFileBrowser
 
 const dateTimeFormatter = DateFormat("yyyy-mm-dd HH:MM:SS.sss")
 
-function object_(builder::Builder,name::AbstractString, T::Type)::T
-   return convert(T,ccall((:gtk_builder_get_object,Gtk.libgtk),Ptr{Gtk.GObject},(Ptr{Gtk.GObject},Ptr{UInt8}),builder,name))
+function object_(builder::GtkBuilder,name::AbstractString, T::Type)::T
+   return convert(T,ccall((:gtk_builder_get_object,Gtk4.libgtk),Ptr{Gtk4.GObject},(Ptr{Gtk4.GObject},Ptr{UInt8}),builder,name))
 end
 
 function openFileBrowser(dir::String)
@@ -77,10 +80,11 @@ function showError(ex)
   end
   str = string("Something went wrong!\n", exTrunc)
   if isassigned(mpilab)
-    info_dialog(str, mpilab[]["mainWindow"])
+    d = info_dialog(()-> nothing, str, mpilab[]["mainWindow"])
   else
-    info_dialog(str)
+    d = info_dialog(()-> nothing, str)
   end
+  d.modal = true
 end
 
 macro guard(ex)
@@ -122,7 +126,6 @@ include("Settings.jl")
 include("Devices/ScannerBrowser.jl")
 include("MPILab.jl")
 include("LCRMeter.jl")
-include("ArduinoDataLogger.jl")
 include("OnlineReco/OnlineReco.jl")
 
 function __init__()

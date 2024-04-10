@@ -1,30 +1,31 @@
-mutable struct TemperatureControllerWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct TemperatureControllerWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   updating::Bool
   cont::TemperatureController
   temperatureLog::TemperatureLog
-  canvases::Vector{GtkCanvasLeaf}
+  canvases::Vector{Gtk4.GtkCanvasLeaf}
   timer::Union{Timer,Nothing}
 end
 
-getindex(m::TemperatureControllerWidget, w::AbstractString) =  G_.object(m.builder, w)
+getindex(m::TemperatureControllerWidget, w::AbstractString) =  G_.get_object(m.builder, w)
 
 function TemperatureControllerWidget(tempCont::TemperatureController)
   uifile = joinpath(@__DIR__,"..","builder","temperatureControllerWidget.ui")
 
-  b = Builder(filename=uifile)
-  mainBox = G_.object(b, "mainBox")
+  b = GtkBuilder(uifile)
+  mainBox = G_.get_object(b, "mainBox")
 
   numPlots = length(unique(getChannelGroups(tempCont)))
-  canvases = [Canvas() for i=1:numPlots]
+  canvases = [GtkCanvas() for i=1:numPlots]
 
   m = TemperatureControllerWidget(mainBox.handle, b, false, tempCont, TemperatureLog(), canvases, nothing)
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   for (i,c) in enumerate(m.canvases)
     push!(m, c)
-    set_gtk_property!(m, :expand, c, true)
+    show(c)
+    c.hexpand = c.vexpand = true
   end
 
 
@@ -96,26 +97,30 @@ end
   end
 
   signal_connect(m["btnSaveTemp"], :clicked) do w
-    m.updating = true
-    filter = Gtk.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
-    filename = save_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
-    if filename != ""
-        filenamebase, ext = splitext(filename)
-        saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
+    filter = Gtk4.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
+    diag = save_dialog("Select Temperature File", mpilab[]["mainWindow"], (filter, )) do filename
+      m.updating = true
+      if filename != ""
+          filenamebase, ext = splitext(filename)
+          saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
+      end
+      m.updating = false
     end
-    m.updating = false
+    diag.modal = true
   end  
 
   signal_connect(m["btnLoadTemp"], :clicked) do w
-    m.updating = true
-    filter = Gtk.GtkFileFilter(pattern=String("*.toml, *.mdf"), mimetype=String("application/toml"))
-    filename = open_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
-    if filename != ""
-      filenamebase, ext = splitext(filename)
-      m.temperatureLog = TemperatureLog(filename)
-      @idle_add showData(m)
+    filter = Gtk4.GtkFileFilter(pattern=String("*.toml, *.mdf"), mimetype=String("application/toml"))
+    diag = open_dialog("Select Temperature File", mpilab[]["mainWindow"], (filter, )) do filename
+      m.updating = true
+      if filename != ""
+        filenamebase, ext = splitext(filename)
+        m.temperatureLog = TemperatureLog(filename)
+        @idle_add showData(m)
+      end
+      m.updating = false  #
     end
-    m.updating = false  #
+    diag.modal = true
   end  
 
 
@@ -134,7 +139,8 @@ function setTarget(m::TemperatureControllerWidget)
     result = tryparse.(Int64,split(entry,","))
     ack = setTargetTemps(m.cont, result)
     if !ack
-      info_dialog("Could not set new target temps")
+      d = info_dialog(()-> nothing, "Could not set new target temps")
+      d.modal = true
     end
   end
 end
@@ -152,7 +158,8 @@ function setMaximum(m::TemperatureControllerWidget)
     result = tryparse.(Int64,split(entry,","))
     ack = setMaximumTemps(m.cont, result)
     if !ack
-      info_dialog("Could not set new target temps")
+      d = info_dialog(()-> nothing, "Could not set new target temps")
+      d.modal = true
     end
   end
 end
@@ -175,63 +182,8 @@ end
 end
 
 @guarded function showData(m::TemperatureControllerWidget)
-  #colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
-  lines = ["solid", "dashed", "dotted"]
-
-  L = min(m.temperatureLog.numChan,length(colors) * length(lines))
-
-  T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
-  timesDT = copy(m.temperatureLog.times) 
-  timesDT .-= timesDT[1]
-  times = Dates.value.(timesDT) / 1000 # seconds
-
-  if maximum(times) > 2*60*60*24
-    times ./= 60*60*24
-    strTime = "t / d"
-  elseif maximum(times) > 2*60*60
-    times ./= 60*60
-    strTime = "t / h"
-  elseif  maximum(times) > 2*60
-    times ./= 60
-    strTime = "t / min"
-  else
-    strTime = "t / s"
-  end
-
-  for (i,c) in enumerate(m.canvases)
-    idx = findall(d->d==i, getChannelGroups(m.cont))
-    if length(idx) > 0
-      p = FramedPlot()
-      Winston.plot(T[idx[1],:], color=colors[1], linewidth=3)
-
-
-      Winston.setattr(p, "xlabel", strTime)
-      Winston.setattr(p, "ylabel", "T / °C")
-
-      legendEntries = []
-      channelNames = []
-      if hasmethod(getChannelNames, (typeof(m.cont),))
-        channelNames = getChannelNames(m.cont)
-      end
-      for l=1:length(idx)
-        curve = Curve(times, T[idx[l],:], color = colors[mod1(l, length(colors))], linewidth=5) #linekind=lines[div(l-1, length(colors)) + 1]
-        if !isempty(channelNames) 
-          setattr(curve, label = channelNames[idx[l]])
-          push!(legendEntries, curve)
-        end
-        add(p, curve)
-      end
-      # setattr(p, xlim=(-100, size(T, 2))) does not work. Idea was to shift the legend
-
-      legend = Legend(.1, 0.9, legendEntries, halign="right") #size=1
-      add(p, legend)
-      display(c, p)
-      showall(c)
-      c.is_sized = true
-    end
-  end
+  showTemperatureData(m.canvases, m.temperatureLog, m.cont) # implemented in TemperatureSensorWidget.jl
 end
-
 
 function startSensor(m::TemperatureControllerWidget)
   m.timer = Timer(timer -> updateSensor(timer, m), 0.0, interval=4)

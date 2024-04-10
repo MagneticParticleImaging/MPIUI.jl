@@ -1,33 +1,34 @@
-mutable struct TemperatureSensorWidget <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct TemperatureSensorWidget <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   updating::Bool
   sensor::TemperatureSensor
   temperatureLog::TemperatureLog
-  canvases::Vector{GtkCanvasLeaf}
+  canvases::Vector{Gtk4.GtkCanvasLeaf}
   timer::Union{Timer,Nothing}
 end
 
-getindex(m::TemperatureSensorWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::TemperatureSensorWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 function TemperatureSensorWidget(sensor::TemperatureSensor)
   uifile = joinpath(@__DIR__,"..","builder","temperatureSensorWidget.ui")
 
-  b = Builder(filename=uifile)
-  mainBox = G_.object(b, "mainBox")
+  b = GtkBuilder(uifile)
+  mainBox = Gtk4.G_.get_object(b, "mainBox")
 
   numPlots = length(unique(getChannelGroups(sensor)))
-  canvases = [Canvas() for i=1:numPlots]
+  canvases = [GtkCanvas() for i=1:numPlots]
 
   m = TemperatureSensorWidget(mainBox.handle, b, false, sensor, TemperatureLog(), canvases, nothing)
-  Gtk.gobject_move_ref(m, mainBox)
+  Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   for (i,c) in enumerate(m.canvases)
     push!(m, c)
-    set_gtk_property!(m, :expand, c, true)
+    show(c)
+    c.hexpand = c.vexpand = true
   end
 
-  showall(m)
+  show(m)
 
   tempInit = getTemperatures(sensor)
   L = length(tempInit)
@@ -57,26 +58,30 @@ function initCallbacks(m::TemperatureSensorWidget)
     end
   
   signal_connect(m["btnSaveTemp"], :clicked) do w
-      m.updating = true
-      filter = Gtk.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
-      filename = save_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
-      if filename != ""
-          filenamebase, ext = splitext(filename)
-          saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
+      filter = Gtk4.GtkFileFilter(pattern=String("*.toml"), mimetype=String("application/toml"))
+      diag = save_dialog("Select Temperature File", mpilab[]["mainWindow"], (filter, )) do filename
+        m.updating = true
+        if filename != ""
+            filenamebase, ext = splitext(filename)
+            saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
+        end
+        m.updating = false
       end
-      m.updating = false
+      diag.modal = true
   end  
 
   signal_connect(m["btnLoadTemp"], :clicked) do w
-    m.updating = true
     filter = Gtk.GtkFileFilter(pattern=String("*.toml, *.mdf"), mimetype=String("application/toml"))
-    filename = open_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
-    if filename != ""
-        filenamebase, ext = splitext(filename)
-        m.temperatureLog = TemperatureLog(filename)
-        @idle_add showData(m)
+    diag = open_dialog("Select Temperature File", mpilab[]["mainWindow"], (filter, )) do filename
+      m.updating = true
+      if filename != ""
+          filenamebase, ext = splitext(filename)
+          m.temperatureLog = TemperatureLog(filename)
+          @idle_add showData(m)
+      end
+      m.updating = false
     end
-    m.updating = false  #
+    diag.modal = true
   end  
   
 end
@@ -98,13 +103,17 @@ end
 end
 
 @guarded function showData(m::TemperatureSensorWidget)
+  showTemperatureData(m.canvases, m.temperatureLog, m.sensor)
+end
+
+@guarded function showTemperatureData(canvases, temperatureLog, sensor)
   #colors = ["blue", "red", "green", "yellow", "black", "cyan", "magenta"]
   lines = ["solid", "dashed", "dotted"]
 
-  L = min(m.temperatureLog.numChan,length(colors) * length(lines))
+  L = min(temperatureLog.numChan,length(colors) * length(lines))
 
-  T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
-  timesDT = copy(m.temperatureLog.times) 
+  T = reshape(copy(temperatureLog.temperatures), temperatureLog.numChan,:)
+  timesDT = copy(temperatureLog.times) 
   timesDT .-= timesDT[1]
   times = Dates.value.(timesDT) / 1000 # seconds
 
@@ -121,36 +130,32 @@ end
     strTime = "t / s"
   end
 
-  for (i,c) in enumerate(m.canvases)
-    idx = findall(d->d==i, getChannelGroups(m.sensor))
+  for (i,c) in enumerate(canvases)
+    idx = findall(d->d==i, getChannelGroups(sensor))
     if length(idx) > 0
-      p = FramedPlot()
-      Winston.plot(T[idx[1],:], color=colors[1], linewidth=3)
 
-
-      Winston.setattr(p, "xlabel", strTime)
-      Winston.setattr(p, "ylabel", "T / °C")
-
+      f = CairoMakie.Figure(figure_padding=0)
+      ax = CairoMakie.Axis(f[1, 1], alignmode = CairoMakie.Outside(),
+          xlabel = strTime,
+          ylabel = "T / °C"
+      )
+      
       legendEntries = []
       channelNames = []
-      if hasmethod(getChannelNames, (typeof(m.sensor),))
-        channelNames = getChannelNames(m.sensor)
+      if hasmethod(getChannelNames, (typeof(sensor),))
+        channelNames = getChannelNames(sensor)
       end
       for l=1:length(idx)
-        curve = Curve(times, T[idx[l],:], color = colors[mod1(l, length(colors))], linewidth=5) #linekind=lines[div(l-1, length(colors)) + 1]
-        if !isempty(channelNames) 
-          setattr(curve, label = channelNames[idx[l]])
-          push!(legendEntries, curve)
-        end
-        add(p, curve)
+        CairoMakie.lines!(ax, times, T[idx[l],:], 
+                      color = CairoMakie.RGBf(colors[mod1(l, length(colors))]...),
+                      label = channelNames[idx[l]]) 
       end
-      # setattr(p, xlim=(-100, size(T, 2))) does not work. Idea was to shift the legend
-
-      legend = Legend(.1, 0.9, legendEntries, halign="right") #size=1
-      add(p, legend)
-      display(c, p)
-      showall(c)
-      c.is_sized = true
+      CairoMakie.axislegend()
+      CairoMakie.autolimits!(ax)
+      if times[end] > times[1]
+        CairoMakie.xlims!(ax, times[1], times[end])
+      end
+      drawonto(c, f)
     end
   end
 end

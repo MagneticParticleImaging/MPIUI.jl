@@ -1,131 +1,106 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.18.3 -->
 <interface>
-  <requires lib="gtk+" version="3.12"/>
+  <requires lib="gtk" version="4.0"/>
   <object class="GtkBox" id="boxSimpleDataViewer">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
     <property name="orientation">vertical</property>
     <child>
       <object class="GtkBox" id="box11">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="vexpand">1</property>
         <child>
           <object class="GtkNotebook" id="nb2D3D">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="hexpand">True</property>
-            <property name="show_tabs">False</property>
-            <property name="show_border">False</property>
+            <property name="hexpand">1</property>
+            <property name="show_tabs">0</property>
+            <property name="show_border">0</property>
             <child>
-              <object class="GtkGrid" id="gridDataViewer3D">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="row_spacing">4</property>
-                <property name="column_spacing">4</property>
-                <property name="row_homogeneous">True</property>
-                <property name="column_homogeneous">True</property>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
+              <object class="GtkNotebookPage">
+                <property name="child">
+                  <object class="GtkGrid" id="gridDataViewer3D">
+                    <property name="row_spacing">4</property>
+                    <property name="column_spacing">4</property>
+                    <property name="row_homogeneous">1</property>
+                    <property name="column_homogeneous">1</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                </property>
+                <property name="tab">
+                  <object class="GtkLabel" id="label35">
+                    <property name="label" translatable="1">page 1</property>
+                  </object>
+                </property>
               </object>
-            </child>
-            <child type="tab">
-              <object class="GtkLabel" id="label35">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">page 1</property>
-              </object>
-              <packing>
-                <property name="tab_fill">False</property>
-              </packing>
             </child>
             <child>
-              <object class="GtkGrid" id="gridDataViewer2D">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="row_homogeneous">True</property>
-                <property name="column_homogeneous">True</property>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-              </object>
-              <packing>
+              <object class="GtkNotebookPage">
                 <property name="position">1</property>
-              </packing>
-            </child>
-            <child type="tab">
-              <object class="GtkLabel" id="label36">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">page 2</property>
+                <property name="child">
+                  <object class="GtkGrid" id="gridDataViewer2D">
+                    <property name="row_homogeneous">1</property>
+                    <property name="column_homogeneous">1</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                </property>
+                <property name="tab">
+                  <object class="GtkLabel" id="label36">
+                    <property name="label" translatable="1">page 2</property>
+                  </object>
+                </property>
               </object>
-              <packing>
-                <property name="position">1</property>
-                <property name="tab_fill">False</property>
-              </packing>
             </child>
           </object>
-          <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
         </child>
       </object>
-      <packing>
-        <property name="expand">True</property>
-        <property name="fill">True</property>
-        <property name="position">0</property>
-      </packing>
     </child>
   </object>
 </interface>

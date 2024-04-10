@@ -14,7 +14,7 @@ end
 function RawDataHandler(scanner=nothing)
   data = RawDataWidget()
   # Init Display Widget
-  updateData(data, ones(Float32,10,1,1,1), 1.0)
+  updateData(data, randn(Float32,10,1,1,1), 1.0)
   return RawDataHandler(data, StorageParameter(scanner), true, true, 0, zeros(Float32,0,0,0,0), "")
 end
 
@@ -94,7 +94,19 @@ end
 function handleStorage(handler::RawDataHandler, protocol::Protocol, event::StorageSuccessEvent, initiator::RawDataHandler)
   @info "Received storage success event"
   updateData(handler.dataWidget, event.filename)
-  updateExperimentStore(mpilab[], mpilab[].currentStudy)
+  if mpilab[].currentStudy != nothing
+    updateExperimentStore(mpilab[], mpilab[].currentStudy)
+  end
+end
+
+function handleStorage(handler::RawDataHandler, protocol::RobotBasedSystemMatrixProtocol, event::StorageSuccessEvent, initiator::RawDataHandler)
+  @info "Received storage success event"
+  updateData(handler.dataWidget, event.filename)
+  if protocol.params.saveAsSystemMatrix
+    updateData!(mpilab[].sfBrowser, mpilab[].sfBrowser.datasetStore)
+  elseif mpilab[].currentStudy != nothing
+    updateExperimentStore(mpilab[], mpilab[].currentStudy)
+  end
 end
 
 updateData(handler::RawDataHandler, data::Nothing) = nothing

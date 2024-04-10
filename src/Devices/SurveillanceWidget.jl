@@ -49,31 +49,31 @@ function saveTemperatureLog(filename::String, log::TemperatureLog)
     end
 end
   
-mutable struct SurveillanceWidget <: Gtk.GtkBox
-    handle::Ptr{Gtk.GObject}
+mutable struct SurveillanceWidget <: Gtk4.GtkBox
+    handle::Ptr{Gtk4.GObject}
     builder::GtkBuilder
     updating::Bool
     su::SurveillanceUnit
     temperatureLog::TemperatureLog
-    canvas::GtkCanvasLeaf
+    canvas::Gtk4.GtkCanvasLeaf
     timer::Union{Timer,Nothing}
 end
   
-getindex(m::SurveillanceWidget, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::SurveillanceWidget, w::AbstractString) = G_.get_object(m.builder, w)
 
 function SurveillanceWidget(su::SurveillanceUnit)
     uifile = joinpath(@__DIR__,"..","builder","surveillanceWidget.ui")
 
-    b = Builder(filename=uifile)
-    mainBox = G_.object(b, "mainBox")
+    b = GtkBuilder(uifile)
+    mainBox = G_.get_object(b, "mainBox")
 
-    m = SurveillanceWidget(mainBox.handle, b, false, su, TemperatureLog(), Canvas(), nothing)
-    Gtk.gobject_move_ref(m, mainBox)
+    m = SurveillanceWidget(mainBox.handle, b, false, su, TemperatureLog(), GtkCanvas(), nothing)
+    Gtk4.GLib.gobject_move_ref(m, mainBox)
   
     push!(m, m.canvas)
-    set_gtk_property!(m,:expand, m.canvas, true)
-  
-    showall(m)
+    m.canvas.hexpand = m.canvas.vexpand = true
+    show(m.canvas)
+    show(m)
   
     tempInit = getTemperatures(su)
     L = length(tempInit)
@@ -103,14 +103,16 @@ function initCallbacks(m::SurveillanceWidget)
       end
     
     signal_connect(m["btnSaveTemp"], :clicked) do w
-        m.updating = true
-        filter = Gtk.GtkFileFilter(pattern=String("*.toml, *.mdf"), mimetype=String("application/toml"))
-        filename = save_dialog("Select Temperature File", GtkNullContainer(), (filter, ))
-        if filename != ""
-            filenamebase, ext = splitext(filename)
-            saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
+        filter = Gtk4.GtkFileFilter(pattern=String("*.toml, *.mdf"), mimetype=String("application/toml"))
+        diag = save_dialog("Select Temperature File", mpilab[]["mainWindow"], (filter, )) do filename
+          m.updating = true
+          if filename != ""
+              filenamebase, ext = splitext(filename)
+              saveTemperatureLog(filenamebase*".toml", m.temperatureLog)
+          end
+          m.updating = false
         end
-        m.updating = false
+        diag.modal = true
     end
 
     signal_connect(m["btnEnableAC"], :clicked) do w
@@ -141,18 +143,24 @@ function startSurveillanceUnit(m::SurveillanceWidget)
   
           L = min(m.temperatureLog.numChan,7)
   
-          colors = ["b", "r", "g", "y", "k", "c", "m"]
-  
           T = reshape(copy(m.temperatureLog.temperatures),m.temperatureLog.numChan,:)
   
           @idle_add_guarded begin
-            p = Winston.plot(T[1,:], colors[1], linewidth=3)
-            for l=2:L
-              Winston.plot(p, T[l,:], colors[l], linewidth=3)
+            f = CairoMakie.Figure()
+            ax = CairoMakie.Axis(f[1, 1],
+                xlabel = "t / s",
+                ylabel = "T / °C"
+            )
+            
+            t = 1:length(T[1,:]) 
+    
+            for l=1:L
+              CairoMakie.lines!(ax, t, T[l,:], 
+                            color = CairoMakie.RGBf(colors[l]...)) 
             end
-            #Winston.xlabel("Time")
-            display(m.canvas ,p)
-            m.canvas.is_sized = true
+            CairoMakie.autolimits!(ax)
+            drawonto(m.canvas, f)
+            ### m.canvas.is_sized = true # old Gtk3
           end
         end
       end

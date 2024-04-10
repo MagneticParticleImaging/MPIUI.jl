@@ -2,8 +2,8 @@ function linearSolverList()
   Any["kaczmarz", "cgnr", "fusedlasso"]
 end
 
-mutable struct ReconstructionParameter <: Gtk.GtkBox
-  handle::Ptr{Gtk.GObject}
+mutable struct ReconstructionParameter <: Gtk4.GtkBox
+  handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   params::Dict{Symbol,Any}
   sfParamsChanged::Bool
@@ -14,14 +14,14 @@ mutable struct ReconstructionParameter <: Gtk.GtkBox
 
   function ReconstructionParameter(params=defaultRecoParams()) #, value::Sequence, scanner::MPIScanner)
     uifile = joinpath(@__DIR__, "..", "builder", "reconstructionParams.ui")
-    b = Builder(filename=uifile)
+    b = GtkBuilder(uifile)
 
-    exp = G_.object(b, "boxRecoParams")
+    exp = G_.get_object(b, "boxRecoParams")
 
     #addTooltip(object_(pw.builder, "lblSequence", GtkLabel), tooltip)
     m = new(exp.handle, b, params, true, nothing, Dict{Int64,String}(),
             nothing, 1) #, value, scanner)
-    Gtk.gobject_move_ref(m, exp)
+    Gtk4.GLib.gobject_move_ref(m, exp)
     
     setParams(m, params)
 
@@ -31,11 +31,11 @@ mutable struct ReconstructionParameter <: Gtk.GtkBox
     end
     set_gtk_property!(m["cbSolver"],:active,0)
   
-    choices = linearOperatorList()
-    for c in choices
-      push!(m["cbSparsityTrafo"], c)
-    end
-    set_gtk_property!(m["cbSparsityTrafo"], :active, 0)
+    #choices = linearOperatorList()
+    #for c in choices
+    #  push!(m["cbSparsityTrafo"], c)
+    #end
+    #set_gtk_property!(m["cbSparsityTrafo"], :active, 0)
   
     set_gtk_property!(m["entSF"],:editable,false)
     set_gtk_property!(m["entNumFreq"],:editable,false)
@@ -46,7 +46,7 @@ mutable struct ReconstructionParameter <: Gtk.GtkBox
   
       cache = loadcache()
   
-      selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
+      selectedProfileName = Gtk4.bytestring(Gtk4.active_text(m["cbRecoProfiles"]))
       @debug "" selectedProfileName
       if haskey(cache["recoParams"],selectedProfileName)
         @idle_add_guarded setParams(m, cache["recoParams"][selectedProfileName])
@@ -67,7 +67,7 @@ mutable struct ReconstructionParameter <: Gtk.GtkBox
     end
   
     function deleteRecoProfile( widget )
-      selectedProfileName = Gtk.bytestring( G_.active_text(m["cbRecoProfiles"]))
+      selectedProfileName = Gtk4.bytestring(Gtk4.active_text(m["cbRecoProfiles"]))
   
       @idle_add_guarded @info "delete reco profile $selectedProfileName"
   
@@ -104,12 +104,14 @@ mutable struct ReconstructionParameter <: Gtk.GtkBox
   
 end
 
-getindex(m::ReconstructionParameter, w::AbstractString) = G_.object(m.builder, w)
+getindex(m::ReconstructionParameter, w::AbstractString) = G_.get_object(m.builder, w)
 
 
 function initCallbacks(m::ReconstructionParameter)
 
-  signal_connect((w)->selectSF(m), m["btBrowseSF"], "clicked")
+  signal_connect(m["btBrowseSF"], "clicked") do w
+    @idle_add selectSF(m)
+  end
   signal_connect(m["adjSelectedSF"], "value_changed") do widget
     @debug "" m.bSF
 
@@ -169,18 +171,23 @@ function getParams(m::ReconstructionParameter)
   params[:nAverages] = get_gtk_property(m["adjAverages"], :value, Int64)
   params[:spectralCleaning] = get_gtk_property(m["cbSpectralCleaning"], :active, Bool)
   params[:loadasreal] = get_gtk_property(m["cbLoadAsReal"], :active, Bool)
-  params[:solver] = linearSolverList()[max(get_gtk_property(m["cbSolver"],:active, Int64) + 1,1)]
+  solver = linearSolverList()[max(get_gtk_property(m["cbSolver"],:active, Int64) + 1,1)]
   # Small hack
-  if params[:solver] == "fusedlasso"
+  #=if params[:solver] == "fusedlasso"
     params[:loadasreal] = true
     params[:lambd] = [params[:lambdaL1], params[:lambdaTV]]
     params[:regName] = ["L1", "TV"]
-  end
+  end=#
 
-  if params[:solver] == "kaczmarz"
-    #params[:loadasreal] = true
-    params[:lambd] = [params[:lambd], params[:lambdaL1] ] #params[:lambdaTV], params[:lambdaL1]]
-    params[:regName] = ["L2", "L1"] #"TV", "L1"]
+  params[:solver] = Kaczmarz
+
+  if params[:solver] == Kaczmarz
+    if params[:lambdaL1] == 0.0
+      params[:reg] = AbstractRegularization[L2Regularization(Float32(params[:lambd]))]
+    else
+      params[:reg] = AbstractRegularization[L2Regularization(Float32(params[:lambd])), L1Regularization(Float32(params[:lambdaL1]))]
+    end
+    append!(params[:reg], [PositiveRegularization(), RealRegularization()])
   end
 
   firstFrame = get_gtk_property(m["adjFrame"], :value, Int64)
@@ -308,7 +315,7 @@ end
 function updateBGMeas(m::ReconstructionParameter)
   if get_gtk_property(m["cbBGMeasurements"],"active", Int) >= 0
 
-    bgstr =  Gtk.bytestring( G_.active_text(m["cbBGMeasurements"]))
+    bgstr = Gtk4.bytestring(Gtk4.active_text(m["cbBGMeasurements"]))
     if !isempty(bgstr)
       bgnum =  parse(Int64, bgstr)
       filenameBG = m.bgExperiments[bgnum]
@@ -344,17 +351,21 @@ end
   #dlg = SFSelectionDialog( gradient=maximum(acqGradient(m.bMeas)), driveField=dfStrength(m.bMeas)  )
   dlg = SFSelectionDialog()
 
-  ret = run(dlg)
-  if ret == GtkResponseType.ACCEPT
+  function on_response(dlg, response_id)
+      if response_id == Integer(Gtk4.ResponseType_ACCEPT)
 
-    if hasselection(dlg.selection)
-      sffilename =  getSelectedSF(dlg)
-
-      @debug "" sffilename
-      setSF(m, sffilename )
-    end
+        if hasselection(dlg.selection)
+          sffilename =  getSelectedSF(dlg)
+    
+          @info "" sffilename
+          setSF(m, sffilename, resetGrid=true)
+        end
+      end
+      destroy(dlg)
   end
-  destroy(dlg)
+
+  signal_connect(on_response, dlg, "response")
+  show(dlg)
 end
 
 function initBGSubtractionWidgets(m::ReconstructionParameter, study=nothing, experiment=nothing)
@@ -382,7 +393,7 @@ function initBGSubtractionWidgets(m::ReconstructionParameter, study=nothing, exp
 
 end
 
-function setSF(m::ReconstructionParameter, filename)
+function setSF(m::ReconstructionParameter, filename; resetGrid::Bool = false)
 
   m.bSF[m.selectedSF] = MPIFile( filename )
 
@@ -392,7 +403,10 @@ function setSF(m::ReconstructionParameter, filename)
       set_gtk_property!(m["adjMinFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
       set_gtk_property!(m["adjMaxFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
 
-      set_gtk_property!(m["entGridShape"], :text, @sprintf("%d x %d x %d", calibSize(m.bSF[m.selectedSF])...))
+      if resetGrid 
+        # use calibration grid from SM
+        set_gtk_property!(m["entGridShape"], :text, @sprintf("%d x %d x %d", calibSize(m.bSF[m.selectedSF])...))
+      end
     end
     m.sfParamsChanged = true
   end

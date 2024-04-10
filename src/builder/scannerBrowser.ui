@@ -1,114 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.22.2 -->
 <interface>
-  <requires lib="gtk+" version="3.20"/>
-  <object class="GtkImage" id="popoutWindow">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-fullscreen</property>
-  </object>
+  <requires lib="gtk" version="4.0"/>
   <object class="GtkBox" id="boxScannerEmbedded">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
     <property name="orientation">vertical</property>
     <child>
       <object class="GtkBox">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
         <child>
           <object class="GtkLabel" id="idDeviceLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Device Name</property>
+            <property name="hexpand">1</property>
+            <property name="label" translatable="1">Device Name</property>
           </object>
-          <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
         </child>
         <child>
           <object class="GtkToggleButton" id="btnTogglePopout">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="image">popoutWindow</property>
+            <property name="focusable">1</property>
+            <property name="receives_default">1</property>
+            <!-- <property name="image">popoutWindow</property> -->
           </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
         </child>
       </object>
-      <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">0</property>
-      </packing>
     </child>
     <child>
       <placeholder/>
     </child>
   </object>
   <object class="GtkImage" id="refreshScannerImage">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="margin_right">1</property>
-    <property name="stock">gtk-refresh</property>
+    <property name="margin-end">1</property>
+    <!-- <property name="stock">gtk-refresh</property> -->
   </object>
   <object class="GtkBox" id="boxScannerBrowser">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
     <property name="orientation">vertical</property>
     <child>
       <object class="GtkBox">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
         <child>
           <object class="GtkLabel" id="lblScannerName">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">scanner</property>
+            <property name="hexpand">1</property>
+            <property name="label" translatable="1">scanner</property>
           </object>
-          <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
         </child>
         <child>
           <object class="GtkButton" id="btnReloadScanner">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="tooltip_text" translatable="yes">Reloads the scanner using the current Scanner.toml. Should only be used when no device communication is happening.</property>
-            <property name="image">refreshScannerImage</property>
-            <property name="always_show_image">True</property>
+            <property name="focusable">1</property>
+            <property name="receives_default">1</property>
+            <property name="tooltip_text" translatable="1">Reloads the scanner using the current Scanner.toml. Should only be used when no device communication is happening.</property>
+            <property name="icon-name">view-refresh</property>
+            <!-- <property name="image">refreshScannerImage</property> -->
+            <!-- <property name="always_show_image">True</property> -->
           </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
         </child>
       </object>
-      <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">0</property>
-      </packing>
     </child>
     <child>
-      <object class="GtkSeparator">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-      </object>
-      <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">1</property>
-      </packing>
+      <object class="GtkSeparator"/>
     </child>
   </object>
 </interface>
