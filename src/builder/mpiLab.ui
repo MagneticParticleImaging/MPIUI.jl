@@ -729,7 +729,7 @@
         <property name="margin-end">3</property>
         <property name="margin-start">3</property>
         <property name="margin-top">3</property>
-        <property name="position">300</property>
+        <property name="position">400</property>
         <property name="position-set">1</property>
         <property name="resize-start-child">0</property>
         <property name="shrink-end-child">0</property>
@@ -1191,7 +1191,7 @@
       </object>
     </property>
     <property name="default-height">1000</property>
-    <property name="default-width">1300</property>
+    <property name="default-width">1500</property>
     <property name="icon-name">MPILab</property>
     <child type="titlebar">
       <object class="GtkHeaderBar">
@@ -1201,29 +1201,89 @@
         <child>
           <object class="GtkToggleButton" id="tbDataTab">
             <property name="focusable">1</property>
-            <property name="icon-name">go-home</property>
             <property name="receives-default">1</property>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">5</property>
+                <child>
+                  <object class="GtkImage">
+                    <property name="icon-name">go-home</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Data</property>
+                  </object>
+                </child>
+              </object>
+            </child>
           </object>
         </child>
         <child>
           <object class="GtkToggleButton" id="tbCalibrationTab">
             <property name="focusable">1</property>
-            <property name="icon-name">format-justify-fill</property>
             <property name="receives-default">1</property>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">5</property>
+                <child>
+                  <object class="GtkImage">
+                    <property name="icon-name">format-justify-fill</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Calibrations</property>
+                  </object>
+                </child>
+              </object>
+            </child>
           </object>
         </child>
         <child>
           <object class="GtkToggleButton" id="tbProtocolTab">
             <property name="focusable">1</property>
-            <property name="icon-name">system-run</property>
             <property name="receives-default">1</property>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">5</property>
+                <child>
+                  <object class="GtkImage">
+                    <property name="icon-name">system-run</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Measurement</property>
+                  </object>
+                </child>
+              </object>
+            </child>
           </object>
         </child>
         <child>
           <object class="GtkToggleButton" id="tbScannerTab">
             <property name="focusable">1</property>
-            <property name="icon-name">preferences-desktop</property>
             <property name="receives-default">1</property>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">5</property>
+                <child>
+                  <object class="GtkImage">
+                    <property name="icon-name">preferences-desktop</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Scanner</property>
+                  </object>
+                </child>
+              </object>
+            </child>
           </object>
         </child>
         <child>
