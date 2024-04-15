@@ -31,11 +31,19 @@ function exportCanvas(m::MagneticFieldViewerWidget)
       # get only filename
       file, ext = splitext(filename)
       # Field plots
-      write_to_png(getgc(m.fv.grid[1,1]).surface,file*"_xz.png")
-      write_to_png(getgc(m.fv.grid[2,1]).surface,file*"_yz.png")
-      write_to_png(getgc(m.fv.grid[2,2]).surface,file*"_xy.png")
+      if get_gtk_property(m["cbFieldExport"],:active,Bool)
+        write_to_png(getgc(m.fv.grid[1,1]).surface,file*"_xz.png")
+        write_to_png(getgc(m.fv.grid[2,1]).surface,file*"_yz.png")
+        write_to_png(getgc(m.fv.grid[2,2]).surface,file*"_xy.png")
+      end
       # Coefficients
-      write_to_png(getgc(m.grid[1,3]).surface,file*"_coeffs.png")
+      if get_gtk_property(m["cbCoeffsExport"],:active,Bool)
+        write_to_png(getgc(m.grid[1,3]).surface,file*"_coeffs.png")
+      end
+      # Profile
+      if get_gtk_property(m["cbProfileExport"],:active,Bool)
+        write_to_png(getgc(m.fv.grid[1,2]).surface,file*"_profile.png")
+      end
 
       return filename
     end 

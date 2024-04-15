@@ -368,6 +368,45 @@ function MagneticFieldViewerWidget()
     end
   end
 
+  ## Video
+  # update min/max values of the patches
+  signal_connect(m["adjPatchesVideoLower"], "value_changed") do w
+    @idle_add_guarded set_gtk_property!(m["adjPatchesVideoUpper"], :lower, get_gtk_property(m["adjPatchesVideoLower"], :value, Int64))
+  end
+  signal_connect(m["adjPatchesVideoUpper"], "value_changed") do w
+    @idle_add_guarded set_gtk_property!(m["adjPatchesVideoLower"], :upper, get_gtk_property(m["adjPatchesVideoUpper"], :value, Int64))
+  end
+  # continous sweeps
+  playActive = false
+  signal_connect(m["tbPlayVideo"], :toggled) do w
+    if get_gtk_property(m["tbPlayVideo"], :active, Bool)
+      @info "Start Video"
+      # if video should not be repeated toggle play button
+      !(get_gtk_property(m["cbVideoRepeat"], :active, Bool)) && (@idle_add_guarded set_gtk_property!(m["tbPlayVideo"], :active, false))
+      # get lower and upper patch
+      lowerPatch = get_gtk_property(m["adjPatchesVideoLower"], :value, Int64)
+      upperPatch = get_gtk_property(m["adjPatchesVideoUpper"], :value, Int64)
+      # get sleep time
+      sleepTime = tryparse.(Float64,MPIUI.get_gtk_property(m["entSleepVideo"],:text,String)) ./ 1000
+      # timer for video repetitions
+      playActive = true
+      function update_(::Timer) 
+        if playActive
+          # sweep over chosen patches
+          for p = lowerPatch:upperPatch
+            set_gtk_property!(m["adjPatches"], :value, p)
+            sleep(sleepTime)
+          end
+        else
+          close(timer)
+        end
+      end
+      timer = Timer(update_, 0.0, interval=1)
+    else
+      playActive = false
+    end
+  end
+
   initCallbacks(m)
 
   return m
@@ -524,6 +563,7 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
   set_gtk_property!(m["adjL"], :upper, m.coeffs.coeffs[1].L )
   set_gtk_property!(m["adjL"], :value, min(m.coeffs.coeffs[1].L,3) ) # use L=3 as maximum
   set_gtk_property!(m["entRadius"], :text, "$(round(R*1000,digits=1))") # show radius of measurement 
+  # center/FFP in coordinate system of coefficients
   centerText = round.(center .* 1000, digits=1)
   set_gtk_property!(m["entCenterMeas"], :text, "$(centerText[1]) x $(centerText[2]) x $(centerText[3])") # show center of measurement
   if m.coeffs.ffp !== nothing
@@ -540,6 +580,11 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
     set_gtk_property!(m[w], :value, 0)
     set_gtk_property!(m[w], :upper, d)
   end
+  # Video params
+  set_gtk_property!(m["adjPatchesVideoLower"], :upper, size(m.coeffs.coeffs,2) )
+  set_gtk_property!(m["adjPatchesVideoUpper"], :upper, size(m.coeffs.coeffs,2) )
+  set_gtk_property!(m["adjPatchesVideoUpper"], :value, size(m.coeffs.coeffs,2) )
+  set_gtk_property!(m["entSleepVideo"], :text, "50")
 
   # if no FFPs are given, don't show the buttons
   if isnothing(m.coeffs.ffp)
