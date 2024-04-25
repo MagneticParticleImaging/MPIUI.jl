@@ -292,7 +292,8 @@ function updateProtocolParameter(pw::ProtocolWidget, protocol::Protocol)
       addProtocolParameter(pw, parameterType(field, value), field, value, tooltip)
       @info "Added $field"
     catch ex
-      @error ex
+      @error ex 
+      Base.show_backtrace(stdout, Base.catch_backtrace())
     end
   end
   set_gtk_property!(pw["btnSaveProtocol"], :sensitive, false)
