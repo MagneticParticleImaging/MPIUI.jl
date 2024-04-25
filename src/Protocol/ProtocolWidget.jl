@@ -206,8 +206,8 @@ end
 function initProtocolChoices(pw::ProtocolWidget)
   pw.updating = true
   scanner = pw.scanner
-  protocolName = scanner.generalParams.defaultProtocol
-  protocol = Protocol(protocolName, pw.scanner)
+  #protocolName = scanner.generalParams.defaultProtocol
+  protocol = pw.protocol#Protocol(protocolName, pw.scanner)
   updateProtocol(pw, protocol)
   pw.updating = false
 end
