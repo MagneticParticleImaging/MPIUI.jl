@@ -188,6 +188,7 @@ function getParams(m::ReconstructionParameter)
       params[:reg] = AbstractRegularization[L2Regularization(Float32(params[:lambd])), L1Regularization(Float32(params[:lambdaL1]))]
     end
     append!(params[:reg], [PositiveRegularization(), RealRegularization()])
+    params[:lambd] = 0.0
   end
 
   firstFrame = get_gtk_property(m["adjFrame"], :value, Int64)

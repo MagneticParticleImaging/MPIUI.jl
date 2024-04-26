@@ -17,7 +17,7 @@ function currentFrame(b::BrukerFile, simulation = false)
     nbytes = acqNumAverages(b) == 1 ? 2 : 4
     run(`ls -la $(b.path)`, wait=true)
 
-    framenum = max(div(filesize(dataFilename), nbytes*rxNumChannels(b)*rxNumSamplingPoints(b))-1, 0)
+    framenum = max(div(filesize(dataFilename), nbytes*rxNumChannels(b)*rxNumSamplingPoints(b)*MPIFiles.numSubPeriods(b))-1, 0)
   else
     if !_acqSimStarted[]
       _acqSimStarted[] = true
@@ -29,6 +29,7 @@ function currentFrame(b::BrukerFile, simulation = false)
 
     framenum = min.(acqNumFrames(b), floor(Int, sec / 0.0214))
   end
+  return framenum
 end
 
 function currentFrame(b::MDFFile, simulation = false)
@@ -55,7 +56,7 @@ const dv = Ref{Union{DataViewer,Nothing}}(nothing)
 
 # Important parameter is "skipFrames"
 function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
-    SNRThresh=-1, minFreq=0, maxFreq=1.25e6, recChannels=1:numReceivers(b), sortBySNR=false,
+    SNRThresh=-1, minFreq=0, maxFreq=1.25e6, recChannels=1:rxNumChannels(b), sortBySNR=false,
     sparseTrafo=nothing, redFactor=0.01, bEmpty=nothing, skipFrames=0, startFrame=0, outputdir=nothing,
     numAverages=1, bgFrames=1, recoParamsFile=nothing, currentAcquisitionFile=nothing, 
     spectralLeakageCorrection=false,
@@ -79,7 +80,7 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
    show(dv[].dvw)
 
   frequencies = filterFrequencies(bSF, minFreq=minFreq, maxFreq=maxFreq,
-                                  recChannels=recChannels, SNRThresh=SNRThresh, sortBySNR=sortBySNR)
+                                  recChannels=recChannels, SNRThresh=SNRThresh)
 
   bgCorrection = bEmpty != nothing
   if bgCorrection
@@ -90,7 +91,7 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
 
   @info "Loading System Matrix $(filepath(bSF))..."
 
-  S, grid = getSF(bSF, frequencies, sparseTrafo, "kaczmarz", bgCorrection=bgCorrection, redFactor=redFactor)
+  S, grid = getSF(bSF, frequencies, sparseTrafo, "Kaczmarz", bgCorrection=bgCorrection, redFactor=redFactor)
   
   D = shape(grid)
   images = Array{Float32,5}(undef, length(bSF), D[1], D[2], D[3], 0)
@@ -142,7 +143,7 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
         end
         numAverages = r[:nAverages]
         c = reconstruction(S, u; sparseTrafo=sparseTrafo, lambda=r[:lambd],
-                          iterations=r[:iterations], solver=r[:solver] )
+                          iterations=r[:iterations], solver=Kaczmarz )
       end
 
       cB = permutedims(reshape(c, D[1]*D[2]*D[3], length(bSF)),[2,1])
@@ -217,14 +218,14 @@ function onlineReco(simulation::Bool=false)
   while true
     c = currentAcquisition()
     @show c
-    if c != nothing
+    if !isnothing(c)
       try
         recoargs = loadRecoParams("/opt/mpidata/currentRecoParams.txt")
         bE = get(recoargs,:bEmpty,nothing)
-        recoargs[:bEmpty] = bE == nothing ? nothing : MPIFile(bE)
+        recoargs[:bEmpty] = isnothing(bE) ? nothing : MPIFile(string(bE))
         b = MPIFile(c)
 
-        if recoargs[:SFPath]==nothing
+        if isnothing(recoargs[:SFPath])
             bSF = MPIFile(sfPath(b) )
         else
           if length(recoargs[:SFPath]) == 1
@@ -242,8 +243,7 @@ function onlineReco(simulation::Bool=false)
 			recoParamsFile="/opt/mpidata/currentRecoParams.txt", 
 			simulation=simulation, recoargs...)
       catch e
-        showError(e)
-        @warn "Exception" e
+        @warn "Exception" exception=(e, catch_backtrace())
       end
       finishReco()
    end
