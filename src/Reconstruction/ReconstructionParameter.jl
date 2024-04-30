@@ -399,7 +399,7 @@ function setSF(m::ReconstructionParameter, filename; resetGrid::Bool = false)
   m.bSF[m.selectedSF] = MPIFile( filename )
 
   @idle_add_guarded begin
-    if isfile(filepath(m.bSF[m.selectedSF]))
+    if isfile(filepath(m.bSF[m.selectedSF])) || isdir(filepath(m.bSF[m.selectedSF]))
       set_gtk_property!(m["entSF"], :text, filename)
       set_gtk_property!(m["adjMinFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
       set_gtk_property!(m["adjMaxFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
