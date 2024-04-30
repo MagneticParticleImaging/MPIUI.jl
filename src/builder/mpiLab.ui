@@ -834,6 +834,7 @@
                                                 <child>
                                                   <object class="GtkButton" id="tbExportToMDF">
                                                     <property name="can-focus">0</property>
+                                                    <property name="sensitive">0</property>
                                                     <property name="icon-name">system-log-out</property>
                                                     <property name="tooltip-text" translatable="yes">Export to MDF</property>
                                                     <property name="use-underline">1</property>
