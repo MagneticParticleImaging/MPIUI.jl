@@ -127,7 +127,7 @@ function saveFieldAsCSV(m::MagneticFieldViewerWidget, filename)
   # calculate field for plot 
   fieldNorm = zeros(discretization,discretization,3);
   fieldxyz = zeros(3,discretization,discretization,3);
-  selectPatch(m.field,m.patch) # set selected patch
+  setPatch!(m.field,m.patch) # set selected patch
   for i = 1:discretization
     for j = 1:discretization
       fieldxyz[:,i,j,1] = m.field[m.fv.intersection[1],N[2][i],N[3][j]]

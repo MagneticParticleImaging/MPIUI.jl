@@ -548,7 +548,7 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
 
   m.field = SphericalHarmonicsDefinedField(m.coeffs)
   m.patch = 1
-  selectPatch(m.field,m.patch) # set selected patch
+  setPatch!(m.field,m.patch) # set selected patch
   R = m.coeffs.radius # radius
   center = m.coeffs.center[:,m.patch] # center of the measurement
   m.fv.centerFFP = (m.coeffs.ffp !== nothing) ?  true : false # if FFP is given, it is the plotting center
@@ -856,7 +856,7 @@ function updateInfos(m::MagneticFieldViewerWidget)
   elseif get_gtk_property(m["cbGradientOffset"],:active, Int) == 0 # show offset field
     for (i,x) in enumerate(["X","Y","Z"])
       # offset
-      set_gtk_property!(m["entGradient"*x], :text, "$(round(m.coeffsPlot[i,m.patch][0,0]*1000,digits=1))") # show gradient in x
+      set_gtk_property!(m["entGradient"*x], :text, "$(round(m.coeffsPlot[i,m.patch][0,0]*1000,digits=3))") # show gradient in x
       # unit
       set_gtk_property!(m["labelTpm$i"], :label, "mT")
       set_gtk_property!(m["labelGradient$i"], :label, ["x","y","z"][i]) 

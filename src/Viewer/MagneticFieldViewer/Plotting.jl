@@ -44,7 +44,7 @@ function calcField(m::MagneticFieldViewerWidget)
   m.fv.fieldNorm = zeros(discretization,discretization,3)
   m.fv.field = zeros(3,discretization,discretization,3)
   m.fv.currentProfile = zeros(4,discretization,3)
-  selectPatch(m.field,m.patch) # set selected patch
+  setPatch!(m.field,m.patch) # set selected patch
   for i = 1:discretization
     for j = 1:discretization
       m.fv.field[:,i,j,1] = m.field[m.fv.intersection[1],N[2][i],N[3][j]]
@@ -113,8 +113,8 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
       @idle_add_guarded set_gtk_property!(m["adjCMax"], :value, cmax * 1000)
   end
   # update coloring infos
-  set_gtk_property!(m["entCMin"], :text, "$(round(m.fv.coloring.cmin * 1000, digits=1))")
-  set_gtk_property!(m["entCMax"], :text, "$(round(m.fv.coloring.cmax * 1000, digits=1))")
+  set_gtk_property!(m["entCMin"], :text, "$(round(m.fv.coloring.cmin * 1000, digits=3))")
+  set_gtk_property!(m["entCMax"], :text, "$(round(m.fv.coloring.cmax * 1000, digits=3))")
 
   # convert N to mT
   N = useMilli ? N .* 1000 : N

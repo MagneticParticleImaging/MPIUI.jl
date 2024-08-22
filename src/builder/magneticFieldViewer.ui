@@ -1797,7 +1797,7 @@ audio-volume-medium-symbolic</property>
                 <child>
                   <object class="GtkExpander" id="expanderVideo">
                     <property name="focusable">1</property>
-                    <property name="expanded">1</property>
+                    <property name="expanded">0</property>
                     <child>
                       <object class="GtkGrid" id="gridOptionsVideo">
                         <property name="margin-start">4</property>
