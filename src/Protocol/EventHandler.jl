@@ -286,7 +286,7 @@ function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, eve
 end
 
 ### Stop Default ###
-function tryCancelProtocol(pw::ProtocolWidget)
+#=function tryCancelProtocol(pw::ProtocolWidget)
   put!(pw.biChannel, StopEvent())
 end
 
@@ -304,7 +304,7 @@ end
 function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::StopEvent)
   @warn "Protocol failed to be cancelled"
   return false
-end
+end=#
 
 ### Finish Default ###
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::FinishedNotificationEvent)
@@ -338,6 +338,7 @@ end
 defaultDataHandler(protocol::Protocol) = [RawDataHandler, SpectrogramHandler]
 defaultDataHandler(protocol::MPIMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 defaultDataHandler(protocol::ContinousMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
+defaultDataHandler(protocol::RobotBasedSystemMatrixProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 defaultDataHandler(protocol::RobotMPIMeasurementProtocol) = [RawDataHandler, SpectrogramHandler, OnlineRecoHandler]
 defaultDataHandler(protocol::RobotBasedMagneticFieldStaticProtocol) = [MagneticFieldHandler]
 defaultDataHandler(protocol::RobotBasedTDesignFieldProtocol) = [MagneticFieldHandler]

@@ -70,7 +70,7 @@ function MPILab(offlineMode=false)::MPILab
 
   uifile = joinpath(@__DIR__,"builder","mpiLab.ui")
 
-  m_ = MPILab( GtkBuilder(filename=uifile), nothing, 1, DatasetStore[],
+  m_ = MPILab( GtkBuilder(uifile), nothing, 1, DatasetStore[],
               nothing, nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,
               nothing, nothing, nothing, nothing, nothing,

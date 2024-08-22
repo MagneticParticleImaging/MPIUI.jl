@@ -39,7 +39,7 @@ function SpectrogramWidget(filenameConfig=nothing)
   @info "Starting SpectrogramWidget"
   uifile = joinpath(@__DIR__,"..","builder","spectrogramViewer.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = Gtk4.G_.get_object(b, "boxSpectrogramViewer")
 
   m = SpectrogramWidget( mainBox.handle, b,

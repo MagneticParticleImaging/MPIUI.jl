@@ -21,7 +21,7 @@ end
 
 function StorageParameter(mdfstore::MDFDatasetStore)
   uifile = joinpath(@__DIR__,"..","..","builder","storageParams.ui")
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = G_.get_object(b, "boxParams")
   storage = StorageParameter(mainBox.handle, b, mdfstore, "", now())
   Gtk4.GLib.gobject_move_ref(storage, mainBox)

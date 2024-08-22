@@ -12,7 +12,7 @@ end
 
 function FileStorageParameter(filename::String, fileFilter::Union{String, Nothing} = nothing)
   uifile = joinpath(@__DIR__,"..","..","builder","fileStorageParameter.ui")
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = G_.get_object(b, "boxParams")
   storage = FileStorageParameter(mainBox.handle, b, fileFilter)
   Gtk4.GLib.gobject_move_ref(storage, mainBox)

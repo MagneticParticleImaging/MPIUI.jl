@@ -14,7 +14,7 @@ mutable struct ReconstructionParameter <: Gtk4.GtkBox
 
   function ReconstructionParameter(params=defaultRecoParams()) #, value::Sequence, scanner::MPIScanner)
     uifile = joinpath(@__DIR__, "..", "builder", "reconstructionParams.ui")
-    b = GtkBuilder(filename=uifile)
+    b = GtkBuilder(uifile)
 
     exp = G_.get_object(b, "boxRecoParams")
 
@@ -31,11 +31,11 @@ mutable struct ReconstructionParameter <: Gtk4.GtkBox
     end
     set_gtk_property!(m["cbSolver"],:active,0)
   
-    choices = linearOperatorList()
-    for c in choices
-      push!(m["cbSparsityTrafo"], c)
-    end
-    set_gtk_property!(m["cbSparsityTrafo"], :active, 0)
+    #choices = linearOperatorList()
+    #for c in choices
+    #  push!(m["cbSparsityTrafo"], c)
+    #end
+    #set_gtk_property!(m["cbSparsityTrafo"], :active, 0)
   
     set_gtk_property!(m["entSF"],:editable,false)
     set_gtk_property!(m["entNumFreq"],:editable,false)
@@ -171,18 +171,23 @@ function getParams(m::ReconstructionParameter)
   params[:nAverages] = get_gtk_property(m["adjAverages"], :value, Int64)
   params[:spectralCleaning] = get_gtk_property(m["cbSpectralCleaning"], :active, Bool)
   params[:loadasreal] = get_gtk_property(m["cbLoadAsReal"], :active, Bool)
-  params[:solver] = linearSolverList()[max(get_gtk_property(m["cbSolver"],:active, Int64) + 1,1)]
+  solver = linearSolverList()[max(get_gtk_property(m["cbSolver"],:active, Int64) + 1,1)]
   # Small hack
-  if params[:solver] == "fusedlasso"
+  #=if params[:solver] == "fusedlasso"
     params[:loadasreal] = true
     params[:lambd] = [params[:lambdaL1], params[:lambdaTV]]
     params[:regName] = ["L1", "TV"]
-  end
+  end=#
 
-  if params[:solver] == "kaczmarz"
-    #params[:loadasreal] = true
-    params[:lambd] = [params[:lambd], params[:lambdaL1] ] #params[:lambdaTV], params[:lambdaL1]]
-    params[:regName] = ["L2", "L1"] #"TV", "L1"]
+  params[:solver] = Kaczmarz
+
+  if params[:solver] == Kaczmarz
+    if params[:lambdaL1] == 0.0
+      params[:reg] = AbstractRegularization[L2Regularization(Float32(params[:lambd]))]
+    else
+      params[:reg] = AbstractRegularization[L2Regularization(Float32(params[:lambd])), L1Regularization(Float32(params[:lambdaL1]))]
+    end
+    append!(params[:reg], [PositiveRegularization(), RealRegularization()])
   end
 
   firstFrame = get_gtk_property(m["adjFrame"], :value, Int64)
@@ -353,7 +358,7 @@ end
           sffilename =  getSelectedSF(dlg)
     
           @info "" sffilename
-          setSF(m, sffilename )
+          setSF(m, sffilename, resetGrid=true)
         end
       end
       destroy(dlg)
@@ -388,7 +393,7 @@ function initBGSubtractionWidgets(m::ReconstructionParameter, study=nothing, exp
 
 end
 
-function setSF(m::ReconstructionParameter, filename)
+function setSF(m::ReconstructionParameter, filename; resetGrid::Bool = false)
 
   m.bSF[m.selectedSF] = MPIFile( filename )
 
@@ -398,7 +403,10 @@ function setSF(m::ReconstructionParameter, filename)
       set_gtk_property!(m["adjMinFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
       set_gtk_property!(m["adjMaxFreq"],:upper,rxBandwidth(m.bSF[m.selectedSF]) / 1000)
 
-      set_gtk_property!(m["entGridShape"], :text, @sprintf("%d x %d x %d", calibSize(m.bSF[m.selectedSF])...))
+      if resetGrid 
+        # use calibration grid from SM
+        set_gtk_property!(m["entGridShape"], :text, @sprintf("%d x %d x %d", calibSize(m.bSF[m.selectedSF])...))
+      end
     end
     m.sfParamsChanged = true
   end

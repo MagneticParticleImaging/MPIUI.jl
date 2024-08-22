@@ -12,6 +12,7 @@ mutable struct SFViewerWidget <: Gtk4.GtkPaned
   maxFreq::Int
   maxChan::Int
   SNR::Array{Float64,3}
+  freqIndices::Vector{CartesianIndex{2}}
   SNRSortedIndices::Array{Int64,1}
   SNRSortedIndicesInverse::Array{Int64,1}
   SNRSortedIndicesRecChan::Array{Array{Int64,1},1}
@@ -46,7 +47,7 @@ function SFViewerWidget()
   mainBox = GtkPaned(:h) 
 
   m = SFViewerWidget(mainBox.handle, b, DataViewerWidget(),
-                  BrukerFile(), false, 0, 0, zeros(0,0,0),
+                  BrukerFile(), false, 0, 0, zeros(0,0,0), CartesianIndex{2}[],
                   zeros(0), zeros(0), zeros(0), zeros(0), zeros(0,0), zeros(0), zeros(0), zeros(Int,0), GtkGrid())
   Gtk4.GLib.gobject_move_ref(m, mainBox)
 
@@ -92,20 +93,23 @@ function SFViewerWidget()
     if !m.updating
       @idle_add_guarded begin
           m.updating = true
-	  if !(get_gtk_property(m["cbFixRecChan"],:active, Bool))
+	        if !(get_gtk_property(m["cbFixRecChan"],:active, Bool))
             k = m.SNRSortedIndices[get_gtk_property(m["adjSFSignalOrdered"],:value, Int64)]
-            recChan = clamp(div(k,m.maxFreq)+1,1,3)
-	  else
-	    # fix the current receive channel for ordered signal
-	    recChan = get_gtk_property(m["adjSFRecChan"],:value, Int64)
-	    k = m.SNRSortedIndicesRecChan[recChan][get_gtk_property(m["adjSFSignalOrdered"],:value, Int64)]
-	  end
-          freq = clamp(mod1(k-1,m.maxFreq),0,m.maxFreq-1)
+            recChan = m.freqIndices[k][2]
+	        else
+	          # fix the current receive channel for ordered signal
+	          recChan = get_gtk_property(m["adjSFRecChan"],:value, Int64)
+	          k = m.SNRSortedIndicesRecChan[recChan][get_gtk_property(m["adjSFSignalOrdered"],:value, Int64)]
+            recChan = m.freqIndices[k][2]
+	        end
+
+          freq = m.freqIndices[k][1]
           updateFreq(m, freq)
           updateRecChan(m, recChan)
           updateMix(m)
           updateSF(m)
           m.updating = false
+
       end
     end
   end
@@ -218,11 +222,10 @@ function updateSF(m::SFViewerWidget)
   # TF correction
   tfcorrection = get_gtk_property(m["cbSFTFCorr"],:active, Bool)
 
-  k = freq + m.maxFreq*((recChan-1))
-  #  + m.maxChan*(period-1)
+  k = CartesianIndex(freq, recChan)
 
   if !measIsFrequencySelection(m.bSF) || k in m.frequencySelection
-    sfData_ = getSF(m.bSF, Int64[k], returnasmatrix = true, bgcorrection=bgcorrection, tfCorrection=tfcorrection)[1][:,period]
+    sfData_ = getSF(m.bSF, [k], returnasmatrix = true, bgcorrection=bgcorrection, tfCorrection=tfcorrection)[1][:,period]
     sfData_[:] ./= rxNumSamplingPoints(m.bSF)
   else
     # set sfData to one for frequencies ∉ frequencySelection
@@ -301,9 +304,6 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   set_gtk_property!(m["adjSFMixX"],:value, 0 )
   set_gtk_property!(m["adjSFMixY"],:value, 0 )
   set_gtk_property!(m["adjSFMixZ"],:value, 0 )
-  #set_gtk_property!(m["adjSFMixX"],:upper, 16 )
-  #set_gtk_property!(m["adjSFMixY"],:upper, 16 )
-  #set_gtk_property!(m["adjSFMixZ"],:upper, 16 )
   set_gtk_property!(m["adjSFRecChan"],:value, 1 )
   set_gtk_property!(m["adjSFRecChan"],:upper, m.maxChan )
   set_gtk_property!(m["adjSFPatch"],:value, 1 )
@@ -316,11 +316,13 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
 
   m.SNR = calibSNR(m.bSF)[:,:,:]
   if measIsFrequencySelection(m.bSF)
-    # set SNR to one for frequencies ∉ frequencySelection
-    snr = ones(Float64, m.maxFreq*size(m.SNR,2), size(m.SNR,3))
+    # set SNR to zero for frequencies ∉ frequencySelection
+    snr = zeros(Float64, m.maxFreq*size(m.SNR,2), size(m.SNR,3))
     snr[m.frequencySelection,:] = reshape(calibSNR(m.bSF), size(m.SNR,1)*size(m.SNR,2), :)
     m.SNR = reshape(snr, m.maxFreq, size(m.SNR,2), size(m.SNR,3))
   end
+
+  m.freqIndices = collect(vec(CartesianIndices((m.maxFreq, m.maxChan))))
 
   updateDerivedSNRLUTs(m)
 
@@ -328,10 +330,15 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   mxyz, mask, freqNumber = MPIFiles.calcPrefactors(m.bSF)
   m.mxyz = mxyz
 
+  set_gtk_property!(m["adjSFMixX"],:upper, maximum(m.mixFac[:, 1]))
+  set_gtk_property!(m["adjSFMixY"],:upper, maximum(m.mixFac[:, 2]))
+  set_gtk_property!(m["adjSFMixZ"],:upper, maximum(m.mixFac[:, 3]))
+
+
   # show frequency component with highest SNR
-  k = m.SNRSortedIndices[1]
-  recChan = clamp(div(k,m.maxFreq)+1,1,3)
-  freq = clamp(mod1(k-1,m.maxFreq),0,m.maxFreq-1)
+  k = m.freqIndices[m.SNRSortedIndices[1]]
+  recChan = k[2]
+  freq = k[1]
   updateFreq(m, freq)
   updateRecChan(m, recChan)
 

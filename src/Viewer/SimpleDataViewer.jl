@@ -25,7 +25,7 @@ getindex(m::SimpleDataViewerWidget, w::AbstractString) = Gtk4.G_.get_object(m.bu
 
 function SimpleDataViewerWidget()
   uifile = joinpath(@__DIR__,"..","builder","simpleDataViewer.ui")
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = Gtk4.G_.get_object(b, "boxSimpleDataViewer")
   m = SimpleDataViewerWidget( mainBox.handle, b, nothing, nothing)
   Gtk4.GLib.gobject_move_ref(m, mainBox)

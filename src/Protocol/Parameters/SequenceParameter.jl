@@ -7,7 +7,7 @@ mutable struct SequenceParameter <: Gtk4.GtkExpander
 
   function SequenceParameter(field::Symbol, value::Sequence, scanner::MPIScanner)
     uifile = joinpath(@__DIR__, "..", "..", "builder", "sequenceWidget.ui")
-    b = GtkBuilder(filename=uifile)
+    b = GtkBuilder(uifile)
     exp = Gtk4.G_.get_object(b, "expSequence")
     #addTooltip(object_(pw.builder, "lblSequence", GtkLabel), tooltip)
     seq = new(exp.handle, b, field, value, scanner)
@@ -45,9 +45,6 @@ mutable struct PeriodicChannelParameter <: Gtk4.GtkExpander
   end
 end
 
-struct ArbitraryElectricalComponent
-end
-
 mutable struct ComponentParameter <: Gtk4.GtkGrid
   handle::Ptr{Gtk4.GObject}
   idLabel::GtkLabel
@@ -83,7 +80,7 @@ mutable struct ComponentParameter <: Gtk4.GtkGrid
     grid[2, 4] = pha
 
     # Waveform
-    wav = Gtk4.GtkComboBoxTextLeaf()
+    wav = GtkComboBoxText()
     waveformsStr = fromWaveform.(waveforms)
     for w in waveformsStr
       push!(wav, w)
@@ -123,7 +120,7 @@ mutable struct ComponentParameter <: Gtk4.GtkGrid
     grid[2, 4] = pha
 
     # Waveform
-    wav = ComboBoxTextLeaf()
+    wav = GtkComboBoxText()
     waveformsStr = fromWaveform.(waveforms)
     for w in waveformsStr
       push!(wav, w)

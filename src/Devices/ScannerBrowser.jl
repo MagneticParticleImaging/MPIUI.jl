@@ -25,7 +25,7 @@ function ScannerBrowser(scanner, deviceBox)
   @info "Starting ScannerBrowser"
   uifile = joinpath(@__DIR__,"..", "builder","scannerBrowser.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = Gtk4.G_.get_object(b, "boxScannerBrowser")
 
   # IsPresent/Online Icon, Device ID, Device Type, IsPresent value, Visible

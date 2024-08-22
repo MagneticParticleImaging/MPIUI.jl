@@ -23,7 +23,7 @@ function RawDataWidget(filenameConfig=nothing)
   @info "Starting RawDataWidget"
   uifile = joinpath(@__DIR__,"..","builder","rawDataViewer.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = Gtk4.G_.get_object(b, "boxRawViewer")
 
   m = RawDataWidget( mainBox.handle, b,
@@ -366,9 +366,9 @@ end
     data = reshape(data, :, numSignals)
     if reversePlots
       reverse!(data, dims=2)
-      labels_ = m.labels
-    else
       labels_ = reverse(m.labels)
+    else
+      labels_ = m.labels
     end
     if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
       dataBG = reshape(dataBG, :, numSignals)

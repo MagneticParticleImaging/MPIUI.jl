@@ -17,7 +17,7 @@ getindex(m::RobotWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 function RobotWidget(robot::Robot)
   uifile = joinpath(@__DIR__,"..","builder","robotWidget.ui")
 
-  b = GtkBuilder(filename=uifile)
+  b = GtkBuilder(uifile)
   mainBox = Gtk4.G_.get_object(b, "mainBox")
 
   m = RobotWidget(mainBox.handle, b, false, robot, nothing, toScannerCoords, ScannerCoords, nothing)
