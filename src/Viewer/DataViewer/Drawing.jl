@@ -192,8 +192,8 @@ function drawImageCairo(c, image, isDrawSectionalLines, isDrawAxes, xsec, ysec,
  @guarded Gtk4.draw(c) do widget
   #c = reshape(c,size(c,1), size(c,2))
   ctx = getgc(c)
-  h = height(ctx)
-  w = width(ctx)
+  h = Gtk4.height(ctx)
+  w = Gtk4.width(ctx)
 
   im = copy(reverse(arraydata(convert(ImageMeta{RGB{N0f8}},image)),dims=1))
   xsec_ = !flipX ? xsec : (size(im,2)-xsec+1)
@@ -232,8 +232,8 @@ function drawImageCairo(c, image, isDrawSectionalLines, isDrawAxes, xsec, ysec,
     w = widget(controller)
     ctx = getgc(w)
     reveal(w)
-    h = height(ctx)
-    w = width(ctx)
+    h = Gtk4.height(ctx)
+    w = Gtk4.width(ctx)
     xx = x / w*size(image,2) + 0.5
     yy = y / h*size(image,1) + 0.5
     xx = !flipX ? xx : (size(image,2)-xx+1)
@@ -246,8 +246,8 @@ end
 
 ## Draw coordinate system
 function drawAxes(ctx,slide; rgb=[1,1,1])
-    h = height(ctx)
-    w = width(ctx)
+    h = Gtk4.height(ctx)
+    w = Gtk4.width(ctx)
 
     center = h/40
     if slide == "xy"
@@ -324,7 +324,7 @@ end
 
 function showProfile(m::DataViewerWidget, data, xLabel::String, yLabel::String)
   f, ax, l = CairoMakie.lines(1:length(data), data, 
-        figure = (; resolution = (1000, 800), figure_padding=4, fontsize = 12),
+        figure = (; size = (1000, 800), figure_padding=4, fontsize = 12),
         axis = (; title = "Profile"),
         color = CairoMakie.RGBf(colors[1]...))
   

@@ -321,7 +321,7 @@ end
 function updateData!(m::DataViewerWidget, data::ImageMeta{T,5}, dataBG=nothing; params=nothing, ampPhase=false) where T
   #try
     m.updating = true
-    numChan = size(data,Axis{:color})
+    numChan = size(data,ImageUtils.Axis{:color})
 
     visible(m["mbFusion"], dataBG != nothing)
     visible(m["lbFusion"], dataBG != nothing)
@@ -478,7 +478,7 @@ function showData(m::DataViewerWidget)
         dat = vec(data_)
 
         fig, ax, l_ = CairoMakie.lines(1:length(dat), dat, 
-              figure = (; resolution = (1000, 800), fontsize = 12),
+              figure = (; size = (1000, 800), fontsize = 12),
               color = CairoMakie.RGBf(colors[1]...))
   
         CairoMakie.autolimits!(ax)

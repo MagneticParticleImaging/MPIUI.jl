@@ -21,6 +21,7 @@ using NLsolve # for MagneticFieldViewer: findFFP()
 using DataFrames, CSV # for MagneticFieldViewer: export as csv
 using Unitful
 import CairoMakie
+using Gtk4Makie
 
 ENV["MPILIB_UI"] = "Nothing"
 
@@ -28,7 +29,7 @@ ENV["MPILIB_UI"] = "Nothing"
 @reexport using MPIReco
 using MPIReco.RegularizedLeastSquares
 
-using ImageUtils: makeAxisArray
+using ImageUtils: makeAxisArray, Axis
 
 using Gtk4, Gtk4.G_, Gtk4.GLib
 using Cairo

@@ -538,7 +538,7 @@ end
     steps = minTP:sp_:maxTP
 
     fTD, axTD, lTD1 = CairoMakie.lines(timePoints[steps], data_[steps], 
-                            figure = (; figure_padding=4, resolution = (1000, 800), fontsize = 10),
+                            figure = (; figure_padding=4, size = (1000, 800), fontsize = 10),
                             axis = (; title = "Time Domain"),
                             color = CairoMakie.RGBf(colors[1]...))
    
@@ -563,7 +563,7 @@ end
       stepsFr = minFr:spFr:maxFr
 
       fFD, axFD, lFD1 = CairoMakie.lines(freq[stepsFr],freqdata[stepsFr,patch], 
-                              figure = (; figure_padding=4, resolution = (1000, 800), fontsize = 10),
+                              figure = (; figure_padding=4, size = (1000, 800), fontsize = 10),
                               axis = (; title = "Frequency Domain", yscale=log10),
                               color = CairoMakie.RGBf(colors[1]...))
  

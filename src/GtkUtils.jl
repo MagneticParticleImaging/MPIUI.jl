@@ -6,13 +6,13 @@ using Graphics
 function Base.copy!(ctx::CairoContext, img::AbstractArray{C}) where C<:Union{Colorant,Number}
     Cairo.save(ctx)
     Cairo.reset_transform(ctx)
-    image(ctx, image_surface(img), 0, 0, width(ctx), height(ctx))
-    restore(ctx)
+    Cairo.image(ctx, image_surface(img), 0, 0, Gtk4.width(ctx), Gtk4.height(ctx))
+    Cairo.restore(ctx)
 end
 Base.copy!(c::GtkCanvas, img) = copy!(getgc(c), img)
 function Base.fill!(c::GtkCanvas, color::Colorant)
     ctx = getgc(c)
-    w, h = width(c), height(c)
+    w, h = Gtk4.width(c), Gtk4.height(c)
     rectangle(ctx, 0, 0, w, h)
     set_source(ctx, color)
     fill(ctx)
@@ -32,7 +32,7 @@ function drawonto(canvas, figure)
   @guarded draw(canvas) do _
       scene = figure.scene
       CairoMakie.resize!(scene, Gtk4.width(canvas), Gtk4.height(canvas))
-      config = CairoMakie.ScreenConfig(1.0, 1.0, :good, true, false)
+      config = CairoMakie.ScreenConfig(1.0, 1.0, :good, true, false, nothing)
       screen = CairoMakie.Screen(scene, config, Gtk4.cairo_surface(canvas))
       CairoMakie.cairo_draw(screen, scene)
   end
