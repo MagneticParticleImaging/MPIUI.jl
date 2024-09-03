@@ -224,7 +224,7 @@ function updateSF(m::SFViewerWidget)
 
   k = CartesianIndex(freq, recChan)
 
-  if !measIsFrequencySelection(m.bSF) || k in m.frequencySelection
+  if !measIsFrequencySelection(m.bSF) || freq in m.frequencySelection
     sfData_ = getSF(m.bSF, [k], returnasmatrix = true, bgcorrection=bgcorrection, tfCorrection=tfcorrection)[1][:,period]
     sfData_[:] ./= rxNumSamplingPoints(m.bSF)
   else
@@ -316,10 +316,12 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
 
   m.SNR = calibSNR(m.bSF)[:,:,:]
   if measIsFrequencySelection(m.bSF)
-    # set SNR to zero for frequencies ∉ frequencySelection
-    snr = zeros(Float64, m.maxFreq*size(m.SNR,2), size(m.SNR,3))
+    # set SNR to eps(Float64) for frequencies ∉ frequencySelection
+    snr = ones(Float64, m.maxFreq*size(m.SNR,2), size(m.SNR,3)) .* eps(Float64)
     snr[m.frequencySelection,:] = reshape(calibSNR(m.bSF), size(m.SNR,1)*size(m.SNR,2), :)
     m.SNR = reshape(snr, m.maxFreq, size(m.SNR,2), size(m.SNR,3))
+    # disable new SNR calculation (recalcSNR(m) has to be adapted for frequency selected data)
+    set_gtk_property!(m["btnRecalcSNR"], :sensitive, false)
   end
 
   m.freqIndices = collect(vec(CartesianIndices((m.maxFreq, m.maxChan))))
