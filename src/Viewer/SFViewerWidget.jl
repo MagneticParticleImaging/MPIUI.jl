@@ -103,7 +103,7 @@ function SFViewerWidget()
             recChan = m.freqIndices[k][2]
 	        end
 
-          freq = m.freqIndices[k][1]
+          freq = m.freqIndices[k][1]-1
           updateFreq(m, freq)
           updateRecChan(m, recChan)
           updateMix(m)
@@ -338,7 +338,7 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   # show frequency component with highest SNR
   k = m.freqIndices[m.SNRSortedIndices[1]]
   recChan = k[2]
-  freq = k[1]
+  freq = k[1]-1
   updateFreq(m, freq)
   updateRecChan(m, recChan)
 
@@ -364,7 +364,8 @@ function recalcSNR(m)
 end
 
 function updateDerivedSNRLUTs(m)
-  m.SNRSortedIndices = reverse(sortperm(vec(m.SNR)))
+  # sort SNR (third dimension redundant)
+  m.SNRSortedIndices = reverse(sortperm(vec(m.SNR[:,:,1])))
   m.SNRSortedIndicesInverse = sortperm(m.SNRSortedIndices)
   # sort SNR channel-wise
   m.SNRSortedIndicesRecChan = [reverse(sortperm(m.SNR[:,i,1])) for i=1:m.maxChan]
