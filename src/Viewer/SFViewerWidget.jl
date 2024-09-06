@@ -31,9 +31,10 @@ mutable struct SFViewer
   sf::SFViewerWidget
 end
 
-function SFViewer(filename::AbstractString)
+function SFViewer(filename::Union{AbstractString, MPIFile})
   sfViewerWidget = SFViewerWidget()
-  w = GtkWindow("SF Viewer: $(filename)",800,600)
+  description = (typeof(filename) == String) ? filename : "Study: " * studyName(filename) * ", Exp.: " * experimentName(filename) # adapt description if input is an MPIFile
+  w = GtkWindow("SF Viewer: $(description)",800,600)
   push!(w,sfViewerWidget)
   show(w)
   updateData!(sfViewerWidget, filename)
@@ -227,6 +228,11 @@ function updateSF(m::SFViewerWidget)
   if !measIsFrequencySelection(m.bSF) || freq in m.frequencySelection
     sfData_ = getSF(m.bSF, [k], returnasmatrix = true, bgcorrection=bgcorrection, tfCorrection=tfcorrection)[1][:,period]
     sfData_[:] ./= rxNumSamplingPoints(m.bSF)
+
+    # set sfData to one if the values are to small
+    if maximum(abs.(sfData_)) <= eps(Float64)
+      sfData_ = ones(ComplexF32,prod(calibSize(m.bSF)))
+    end
   else
     # set sfData to one for frequencies ∉ frequencySelection
     sfData_ = ones(ComplexF32,prod(calibSize(m.bSF)))
@@ -262,7 +268,10 @@ function updateSF(m::SFViewerWidget)
   CairoMakie.scatter!(axFD, [m.frequencies[freq]], [m.SNR[freq,recChan,period]],
                       markersize=9, color=:red, marker=:xcross)
 
-  CairoMakie.autolimits!(axFD)
+  if !(all(x -> x == snrCompressed[1], snrCompressed))
+    # autolimits only possible for variing SNR values
+    CairoMakie.autolimits!(axFD) 
+  end
   if m.frequencies[stepsFr[end]] > m.frequencies[stepsFr[1]]
     CairoMakie.xlims!(axFD, m.frequencies[stepsFr[1]], m.frequencies[stepsFr[end]])
   end
@@ -283,8 +292,10 @@ function updateSF(m::SFViewerWidget)
   updateData!(m.dv, imMeta, ampPhase=true)
 end
 
-function updateData!(m::SFViewerWidget, filenameSF::String)
-  m.bSF = MPIFile(filenameSF, fastMode=true)
+updateData!(m::SFViewerWidget, filenameSF::String) = updateData!(m, MPIFile(filenameSF, fastMode=true))
+
+function updateData!(m::SFViewerWidget, bSF::MPIFile)
+  m.bSF = bSF
   m.maxChan = rxNumChannels(m.bSF)
   m.frequencies = rxFrequencies(m.bSF)./1000
   m.maxFreq = length(m.frequencies)
@@ -314,10 +325,23 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   set_gtk_property!(m["adjSNRMaxFreq"],:value, m.maxFreq-1 )
 
 
-  m.SNR = calibSNR(m.bSF)[:,:,:]
+  # SNR
+  if isnothing(calibSNR(m.bSF))
+    if isnothing(systemMatrixWithBG(m.bSF)) || acqNumBGFrames(m.bSF) == 0
+      # SNR not available: Set all values to 0
+      m.SNR = zeros(Float64, m.maxFreq, m.maxChan, acqNumPeriodsPerFrame(m.bSF))
+      # disable new SNR calculation
+      set_gtk_property!(m["btnRecalcSNR"], :sensitive, false)
+    else
+      @info "Calculate SNR"
+      m.SNR = calculateSystemMatrixSNR(m.bSF)
+    end
+  else
+    m.SNR = calibSNR(m.bSF)[:,:,:]
+  end
   if measIsFrequencySelection(m.bSF)
-    # set SNR to eps(Float64) for frequencies ∉ frequencySelection
-    snr = ones(Float64, m.maxFreq*size(m.SNR,2), size(m.SNR,3)) .* eps(Float64)
+    # set SNR to 1 for frequencies ∉ frequencySelection
+    snr = ones(Float64, m.maxFreq*size(m.SNR,2), size(m.SNR,3))
     snr[m.frequencySelection,:] = reshape(calibSNR(m.bSF), size(m.SNR,1)*size(m.SNR,2), :)
     m.SNR = reshape(snr, m.maxFreq, size(m.SNR,2), size(m.SNR,3))
     # disable new SNR calculation (recalcSNR(m) has to be adapted for frequency selected data)
@@ -337,8 +361,16 @@ function updateData!(m::SFViewerWidget, filenameSF::String)
   set_gtk_property!(m["adjSFMixZ"],:upper, maximum(m.mixFac[:, 3]))
 
 
-  # show frequency component with highest SNR
-  k = m.freqIndices[m.SNRSortedIndices[1]]
+  # show frequency component with highest SNR (if available)
+  if !(all(x -> x == m.SNR[1], m.SNR))
+    k = m.freqIndices[m.SNRSortedIndices[1]]
+  else
+    k = m.freqIndices[2]
+    # no SNR sorting possible: disable buttons
+    set_gtk_property!(m["adjSFSignalOrdered"], :upper, 1) 
+    set_gtk_property!(m["adjSFSignalOrdered"], :lower, 1) 
+    set_gtk_property!(m["adjSFSignalOrdered"], :value, 1) 
+  end
   recChan = k[2]
   freq = k[1]-1
   updateFreq(m, freq)
