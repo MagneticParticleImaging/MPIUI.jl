@@ -36,7 +36,7 @@ mutable struct DataViewer3D
   dvw::DataViewer3DWidget
 end
 
-function DataViewer3D(imFG::ImageMeta; kwargs...)
+function DataViewer3D(imFG; kwargs...)
   dv = DataViewer3D(; kwargs...)
   updateData!(dv.dvw,imFG)
   return dv
