@@ -17,7 +17,7 @@ mutable struct DataViewer3DWidget{A, C} <: Gtk4.GtkGrid
   modes::Vector{<:Abstract3DViewerMode}
 end
 
-function DataViewer3DWidget(; modes = [VolumeMode, SectionalMode])
+function DataViewer3DWidget(; modes = [VolumeMode, SectionalMode, IsoSurfaceMode])
   grid = GtkGrid()
   handle = grid.handle
 

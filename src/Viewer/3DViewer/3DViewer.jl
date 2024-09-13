@@ -16,7 +16,7 @@ redrawType(::Abstract3DViewerMode) = ObservableRedraw()
 include("3DViewerWidget.jl")
 include("VolumeMode.jl")
 include("SectionalMode.jl")
-#include("IsoSurfaceMode.jl")
+include("IsoSurfaceMode.jl")
 
 function updateData!(m::Abstract3DViewerMode, arr)
   # NOP
