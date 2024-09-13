@@ -44,13 +44,20 @@ function showData!(re, scene::LScene, mode::VolumeMode, data; kwargs...)
   showData!(re, scene.scene, mode, data; kwargs...)
   return scene
 end
-function showData!(::WidgetRedraw, scene::Scene, mode::VolumeMode, data; kwargs...)
+function showData!(::WidgetRedraw, scene::Scene, mode::VolumeMode, data; cparams = ColoringParams(extrema(data)..., "viridis"), kwargs...)
   algo = mode.algorithms[mode.algBox.active + 1]
-  volume!(scene, data; algorithm=algo)
+  cmap = to_colormap(Symbol(cparams.cmap))
+  cmap[1] = RGBA(0.0, 0.0, 0.0, 0.0)
+  volume!(scene, data; algorithm=algo, colormap=cmap, colorrange = (cparams.cmin, cparams.cmax))
   return scene
 end
-function showData!(::ObservableRedraw, scene::Scene, mode::VolumeMode, data; kwargs...)
+function showData!(::ObservableRedraw, scene::Scene, mode::VolumeMode, data; cparams = ColoringParams(extrema(data)..., "viridis"), kwargs...)
   # TODO robust
-  scene.plots[2][4][] = data
+  plt = scene.plots[2]
+  cmap = to_colormap(Symbol(cparams.cmap))
+  cmap[1] = RGBA(0.0, 0.0, 0.0, 0.0)
+  plt.colormap[] = cmap
+  plt.colorrange[] = (cparams.cmin, cparams.cmax)
+  plt[4][] = data
   return scene
 end

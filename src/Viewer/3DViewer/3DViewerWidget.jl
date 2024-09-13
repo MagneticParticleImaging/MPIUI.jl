@@ -12,6 +12,8 @@ mutable struct DataViewer3DWidget{A, C} <: Gtk4.GtkGrid
   frameAdj::GtkAdjustment
   channelAdj::GtkAdjustment
   cmapCb::GtkComboBoxText
+  cmin::GtkScaleButton
+  cmax::GtkScaleButton
   # Data
   data::AbstractArray
   # Mode
@@ -52,10 +54,19 @@ function DataViewer3DWidget(; modes = [VolumeMode, SectionalMode, IsoSurfaceMode
   
   # Colormap Selection
   colormapBox = GtkComboBoxText()
-  cmaps =  ["foo"]#important_colormaps()
+  cmaps =  important_cmaps()
   foreach(cm -> push!(colormapBox, cm), cmaps)
   controls[7, 1] = GtkLabel("Colormap")
   controls[7, 2] = colormapBox
+  colormapBox.active = 5 # viridis
+  cmin = GtkScaleButton(0, 99, 1, ["audio-volume-low"])
+  cmax = GtkScaleButton(1, 100, 1, ["audio-volume-high"])
+  cmin.value = 0
+  cmax.value = 100
+  controls[8, 1] = GtkLabel("Min")
+  controls[8, 2] = cmin
+  controls[9, 1] = GtkLabel("Max")
+  controls[9, 2] = cmax
 
   grid[1, 1] = controls
 
@@ -70,7 +81,7 @@ function DataViewer3DWidget(; modes = [VolumeMode, SectionalMode, IsoSurfaceMode
 
   grid[1, 2] = gm
 
-  viewer = DataViewer3DWidget(handle, lscene, scene, axis, cam, gm, controls, modeBox, modeOptions, frameAdj, channelAdj, colormapBox, [], Abstract3DViewerMode[])
+  viewer = DataViewer3DWidget(handle, lscene, scene, axis, cam, gm, controls, modeBox, modeOptions, frameAdj, channelAdj, colormapBox, cmin, cmax, [], Abstract3DViewerMode[])
 
   # Initialize the modes
   modes = map(mode -> mode(viewer), modes)
@@ -102,9 +113,16 @@ function initCallbacks(m::DataViewer3DWidget)
     showData!(m)
   end
 
-  #signal_connect(m.cmapCb, "changed") do widget
-  #  showData!(m)
-  #end
+  signal_connect(m.cmapCb, "changed") do widget
+    showData!(m)
+  end
+
+  signal_connect(m.cmin, "value_changed") do widget, val
+    showData!(m)
+  end
+  signal_connect(m.cmax, "value_changed") do widget, val
+    showData!(m)
+  end
 end
 
 
@@ -126,8 +144,26 @@ function updateData!(m::DataViewer3DWidget, array::AbstractArray{T, 5}) where T
   m.data = array
   m.frameAdj.upper = size(m.data, 5)
   m.channelAdj.upper = size(m.data, 1)
+  m.cmin = 0
+  m.cmax = 100
   map(mode -> updateData!(mode, m.data), m.modes)
   showData!(WidgetRedraw(), m)
+end
+
+function prepareData(m::DataViewer3DWidget)
+  frame = round(Int64, m.frameAdj.value)
+  channel = round(Int64, m.channelAdj.value)
+  data = ustrip.(m.data[channel, :, :, :, frame])
+  return data
+end
+
+function prepareDrawKwargs(m::DataViewer3DWidget)
+  dict = Dict{Symbol, Any}()
+  max = maximum(m.data)
+  cmin = (m.cmin.value/100) * max
+  cmax = (m.cmax.value/100) * max
+  dict[:cparams] = ColoringParams(cmin, cmax, Gtk4.active_text(m.cmapCb))
+  return dict
 end
 
 showData!(m::DataViewer3DWidget) = showData!(redrawType(m.modes[m.modeCb.active + 1]), m)
@@ -139,11 +175,9 @@ function showData!(::WidgetRedraw, m::DataViewer3DWidget)
   m[1, 2] = m.gm
   
   mode = m.modes[m.modeCb.active + 1]
-  frame = round(Int64, m.frameAdj.value)
-  channel = round(Int64, m.channelAdj.value)
-  data = ustrip.(m.data[channel, :, :, :, frame])
-  
-  lscene = showData!(m.gm, mode, data)
+  data = prepareData(m)  
+  kwargs = prepareDrawKwargs(m)
+  lscene = showData!(m.gm, mode, data; kwargs...)
 
   m.lscene = lscene
   m.scene = lscene.scene
@@ -161,9 +195,8 @@ end
 function showData!(re::ObservableRedraw, m::DataViewer3DWidget)
   # TODO move these into a function
   mode = m.modes[m.modeCb.active + 1]
-  frame = round(Int64, m.frameAdj.value)
-  channel = round(Int64, m.channelAdj.value)
-  data = ustrip.(m.data[channel, :, :, :, frame])
-  showData!(re, m.lscene, mode, data)
+  data = prepareData(m)
+  kwargs = prepareDrawKwargs(m)
+  showData!(re, m.lscene, mode, data; kwargs...)
   return nothing
 end

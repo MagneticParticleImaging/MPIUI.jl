@@ -93,15 +93,17 @@ function showData!(re, scene::LScene, mode::SectionalMode, data; kwargs...)
   showData!(re, scene.scene, mode, data; kwargs...)
   return scene
 end
-function showData!(::WidgetRedraw, scene::Scene, mode::SectionalMode, data; kwargs...)
-  plt = volumeslices!(scene, map(i -> 1:i, size(data))..., data; bbox_visible = false)
+function showData!(::WidgetRedraw, scene::Scene, mode::SectionalMode, data; cparams = ColoringParams(extrema(data)..., "viridis"), kwargs...)
+  cmap = to_colormap(Symbol(cparams.cmap))
+  plt = volumeslices!(scene, map(i -> 1:i, size(data))..., data; bbox_visible = false, colormap=cmap, colorrange = (cparams.cmin, cparams.cmax))
   plt.heatmap_xy[].visible = Observable{Any}(true)
 	plt.heatmap_xz[].visible = Observable{Any}(true)
 	plt.heatmap_yz[].visible = Observable{Any}(true)
   return scene
 end
-function showData!(::ObservableRedraw, scene::Scene, mode::SectionalMode, data; kwargs...)
+function showData!(::ObservableRedraw, scene::Scene, mode::SectionalMode, data; cparams = ColoringParams(extrema(data)..., "viridis"), kwargs...)
   # TODO robust plot selection
+  cmap = to_colormap(Symbol(cparams.cmap))
   plt = scene.plots[2]
   plt[1] = 1:size(data, 1)
   plt[2] = 1:size(data, 2)
@@ -113,5 +115,7 @@ function showData!(::ObservableRedraw, scene::Scene, mode::SectionalMode, data; 
   plt.heatmap_xy[].visible[] = mode.xyToggler.active
 	plt.heatmap_xz[].visible[] = mode.xzToggler.active
 	plt.heatmap_yz[].visible[] = mode.yzToggler.active
+  plt.colormap[] = cmap
+  plt.colorrange[] = (cparams.cmin, cparams.cmax)
   return scene
 end
