@@ -23,6 +23,8 @@ function DataViewer3DWidget(; modes = [VolumeMode, SectionalMode])
 
   # Setup the controls
   controls = GtkGrid()
+  controls.column_spacing = 5
+  controls.row_spacing = 5
 
   # Mode selection
   # We have to initialize the modeBox and the options later
@@ -32,6 +34,7 @@ function DataViewer3DWidget(; modes = [VolumeMode, SectionalMode])
   controls[1, 1] = GtkLabel("Mode")
   controls[1, 2] = modeBox
   modeOptions = GtkMenuButton()
+  controls[2, 1] = GtkLabel("Options")
   controls[2, 2] = modeOptions
   controls[3, 1:2] = GtkSeparator(:v)
 
@@ -80,8 +83,10 @@ end
 
 function initCallbacks(m::DataViewer3DWidget)
   signal_connect(m.modeCb, "changed") do widget
-    @show m.modeCb.active
-    m.modeOpt.popover = popover(m.modes[m.modeCb.active + 1])
+    foreach(mode -> mode.active = false, m.modes)
+    mode = m.modes[m.modeCb.active + 1]
+    mode.active = true
+    m.modeOpt.popover = popover(mode)
     showData!(WidgetRedraw(), m)
   end
 #

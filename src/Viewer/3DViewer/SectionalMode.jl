@@ -4,14 +4,13 @@ export SectionalMode
 mutable struct SectionalMode{P} <: Abstract3DViewerMode
   pop::GtkPopover
   parent::P
+  active::Bool
   yzAdj::GtkAdjustment
   xzAdj::GtkAdjustment
   xyAdj::GtkAdjustment     
   yzToggler::GtkCheckButton
   xzToggler::GtkCheckButton
   xyToggler::GtkCheckButton   
-  #slicePar::Makie.VolumeSlices
-  #heatMaps::Vector{Heatmap{Tuple{Vector{Float32}, Vector{Float32}, Matrix{Float32}}}} 
 end
 
 function SectionalMode(parent::P) where P
@@ -37,34 +36,47 @@ function SectionalMode(parent::P) where P
   grid[3, 3] = yzToggler
 
   pop.child = grid
-  mode = SectionalMode(pop, parent, yzAdj, xzAdj, xyAdj, yzToggler, xzToggler, xyToggler)
+  mode = SectionalMode(pop, parent, false, yzAdj, xzAdj, xyAdj, yzToggler, xzToggler, xyToggler)
 
   initCallbacks!(mode)
 
   return mode
 end
 
+modeName(m::SectionalMode) = "Volume Slices"
 popover(m::SectionalMode) = m.pop
 
 function initCallbacks!(mode::SectionalMode)
   signal_connect(mode.yzAdj, "value_changed") do widget
-    showData!(ObservableRedraw(), mode.parent)
+    if mode.active
+      showData!(ObservableRedraw(), mode.parent)
+    end
   end           
   signal_connect(mode.xzAdj, "value_changed") do widget
-    showData!(ObservableRedraw(), mode.parent)
+    if mode.active
+      showData!(ObservableRedraw(), mode.parent)
+    end
   end               
   signal_connect(mode.xyAdj, "value_changed") do widget
-    showData!(ObservableRedraw(), mode.parent)
+    if mode.active
+      showData!(ObservableRedraw(), mode.parent)
+    end
   end    
 
   signal_connect(mode.yzToggler, "toggled") do widget
-    showData!(ObservableRedraw(), mode.parent)
+    if mode.active
+      showData!(ObservableRedraw(), mode.parent)
+    end
   end     
   signal_connect(mode.xzToggler, "toggled") do widget
-    showData!(ObservableRedraw(), mode.parent)
+    if mode.active
+      showData!(ObservableRedraw(), mode.parent)
+    end
   end     
   signal_connect(mode.xyToggler, "toggled") do widget
-    showData!(ObservableRedraw(), mode.parent)
+    if mode.active
+      showData!(ObservableRedraw(), mode.parent)
+    end
   end
 end
 
@@ -82,7 +94,7 @@ function showData!(re, scene::LScene, mode::SectionalMode, data; kwargs...)
   return scene
 end
 function showData!(::WidgetRedraw, scene::Scene, mode::SectionalMode, data; kwargs...)
-  plt = volumeslices!(scene, map(i -> 1:i, size(data))..., data)
+  plt = volumeslices!(scene, map(i -> 1:i, size(data))..., data; bbox_visible = false)
   plt.heatmap_xy[].visible = Observable{Any}(true)
 	plt.heatmap_xz[].visible = Observable{Any}(true)
 	plt.heatmap_yz[].visible = Observable{Any}(true)
