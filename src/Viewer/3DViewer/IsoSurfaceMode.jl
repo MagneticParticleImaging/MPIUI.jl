@@ -53,6 +53,8 @@ end
 
 modeName(m::IsoSurfaceMode) = "Iso Surface"
 popover(m::IsoSurfaceMode) = m.pop
+redrawType(::IsoSurfaceMode) = WidgetRedraw()
+
 
 function updateData!(m::IsoSurfaceMode, data)
   min, max = extrema(data)

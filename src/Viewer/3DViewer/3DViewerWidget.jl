@@ -10,6 +10,7 @@ mutable struct DataViewer3DWidget{A, C} <: Gtk4.GtkGrid
   modeCb::GtkComboBoxText
   modeOpt::GtkMenuButton
   frameAdj::GtkAdjustment
+  channelAdj::GtkAdjustment
   cmapCb::GtkComboBoxText
   # Data
   data::AbstractArray
@@ -43,14 +44,18 @@ function DataViewer3DWidget(; modes = [VolumeMode, SectionalMode, IsoSurfaceMode
   frameSlider = GtkSpinButton(frameAdj, 1, 0)
   controls[4, 1] = GtkLabel("Frames")
   controls[4, 2] = frameSlider
-  controls[5, 1:2] = GtkSeparator(:v)
+  channelAdj = GtkAdjustment(1, 1, 1, 1, 1, 1)
+  channelSlider = GtkSpinButton(channelAdj, 1, 0)
+  controls[5, 1] = GtkLabel("Channels")
+  controls[5, 2] = channelSlider
+  controls[6, 1:2] = GtkSeparator(:v)
   
   # Colormap Selection
   colormapBox = GtkComboBoxText()
   cmaps =  ["foo"]#important_colormaps()
   foreach(cm -> push!(colormapBox, cm), cmaps)
-  controls[6, 1] = GtkLabel("Colormap")
-  controls[6, 2] = colormapBox
+  controls[7, 1] = GtkLabel("Colormap")
+  controls[7, 2] = colormapBox
 
   grid[1, 1] = controls
 
@@ -65,7 +70,7 @@ function DataViewer3DWidget(; modes = [VolumeMode, SectionalMode, IsoSurfaceMode
 
   grid[1, 2] = gm
 
-  viewer = DataViewer3DWidget(handle, lscene, scene, axis, cam, gm, controls, modeBox, modeOptions, frameAdj, colormapBox, [], Abstract3DViewerMode[])
+  viewer = DataViewer3DWidget(handle, lscene, scene, axis, cam, gm, controls, modeBox, modeOptions, frameAdj, channelAdj, colormapBox, [], Abstract3DViewerMode[])
 
   # Initialize the modes
   modes = map(mode -> mode(viewer), modes)
@@ -89,11 +94,14 @@ function initCallbacks(m::DataViewer3DWidget)
     m.modeOpt.popover = popover(mode)
     showData!(WidgetRedraw(), m)
   end
-#
-  #signal_connect(m.frameAdj, "value-changed") do widget
-  #  showData!(m)
-  #end
-#
+
+  signal_connect(m.frameAdj, "value_changed") do widget
+    showData!(m)
+  end
+  signal_connect(m.channelAdj, "value_changed") do widget
+    showData!(m)
+  end
+
   #signal_connect(m.cmapCb, "changed") do widget
   #  showData!(m)
   #end
@@ -108,12 +116,16 @@ end
 # TODO handle 3 and 4 dim ImageMeta
 function updateData!(m::DataViewer3DWidget, imMeta::ImageMeta{T, 5}) where T
   m.data = imMeta
+  m.frameAdj.upper = size(m.data, 5)
+  m.channelAdj.upper = size(m.data, 1)
   map(mode -> updateData!(mode, m.data), m.modes)
   showData!(WidgetRedraw(), m)
 end
 
 function updateData!(m::DataViewer3DWidget, array::AbstractArray{T, 5}) where T
   m.data = array
+  m.frameAdj.upper = size(m.data, 5)
+  m.channelAdj.upper = size(m.data, 1)
   map(mode -> updateData!(mode, m.data), m.modes)
   showData!(WidgetRedraw(), m)
 end
@@ -128,7 +140,8 @@ function showData!(::WidgetRedraw, m::DataViewer3DWidget)
   
   mode = m.modes[m.modeCb.active + 1]
   frame = round(Int64, m.frameAdj.value)
-  data = ustrip.(m.data[1, :, :, :, frame])
+  channel = round(Int64, m.channelAdj.value)
+  data = ustrip.(m.data[channel, :, :, :, frame])
   
   lscene = showData!(m.gm, mode, data)
 
@@ -149,7 +162,8 @@ function showData!(re::ObservableRedraw, m::DataViewer3DWidget)
   # TODO move these into a function
   mode = m.modes[m.modeCb.active + 1]
   frame = round(Int64, m.frameAdj.value)
-  data = ustrip.(m.data[1, :, :, :, frame])
+  channel = round(Int64, m.channelAdj.value)
+  data = ustrip.(m.data[channel, :, :, :, frame])
   showData!(re, m.lscene, mode, data)
   return nothing
 end

@@ -51,6 +51,6 @@ function showData!(::WidgetRedraw, scene::Scene, mode::VolumeMode, data; kwargs.
 end
 function showData!(::ObservableRedraw, scene::Scene, mode::VolumeMode, data; kwargs...)
   # TODO robust
-  scene.plots[2][4] = data
+  scene.plots[2][4][] = data
   return scene
 end
