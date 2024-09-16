@@ -193,6 +193,12 @@ function MagneticFieldViewerWidget()
     @idle_add_guarded updateField(m)
   end 
 
+  # change line width
+  signal_connect(m["adjLinewidth"], "value_changed") do w
+    @idle_add_guarded updateField(m)
+    @idle_add_guarded updateProfile(m)
+  end 
+
   # change fontsize
   signal_connect(m["adjFontsize"], "value_changed") do w
     @idle_add_guarded updateCoeffsPlot(m)

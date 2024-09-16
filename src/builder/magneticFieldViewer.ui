@@ -14,6 +14,13 @@
     <property name="step_increment">2</property>
     <property name="page_increment">2</property>
   </object>
+  <object class="GtkAdjustment" id="adjLinewidth">
+    <property name="lower">0.2</property>
+    <property name="upper">5</property>
+    <property name="value">1</property>
+    <property name="step_increment">0.2</property>
+    <property name="page_increment">10</property>
+  </object>
   <object class="GtkAdjustment" id="adjCMax">
     <property name="upper">1</property>
     <property name="value">1</property>
@@ -1384,6 +1391,30 @@ audio-volume-medium-symbolic</property>
                           </object>
                         </child>
                         <child>
+                          <object class="GtkLabel" id="labelLinewidth">
+                            <property name="label" translatable="1">linewidth</property>
+                            <layout>
+                              <property name="column">0</property>
+                              <property name="row">3</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkSpinButton" id="spinLinewidth">
+                            <property name="focusable">1</property>
+                            <property name="width_chars">5</property>
+                            <property name="max_width_chars">5</property>
+                            <property name="text" translatable="1">1</property>
+                            <property name="adjustment">adjLinewidth</property>
+                            <property name="digits">1</property>
+                            <property name="value">1</property>
+                            <layout>
+                              <property name="column">1</property>
+                              <property name="row">3</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
                           <object class="GtkLabel" id="labelDiscr">
                             <property name="label" translatable="1">Discr.</property>
                             <layout>
@@ -1412,7 +1443,7 @@ audio-volume-medium-symbolic</property>
                             <property name="focusable">1</property>
                             <layout>
                               <property name="column">1</property>
-                              <property name="row">6</property>
+                              <property name="row">7</property>
                             </layout>
                           </object>
                         </child>
@@ -1423,7 +1454,7 @@ audio-volume-medium-symbolic</property>
                             <property name="active">1</property>
                             <layout>
                               <property name="column">1</property>
-                              <property name="row">3</property>
+                              <property name="row">4</property>
                             </layout>
                           </object>
                         </child>
@@ -1434,7 +1465,7 @@ audio-volume-medium-symbolic</property>
                             <property name="active">1</property>
                             <layout>
                               <property name="column">1</property>
-                              <property name="row">4</property>
+                              <property name="row">5</property>
                             </layout>
                           </object>
                         </child>
@@ -1443,7 +1474,7 @@ audio-volume-medium-symbolic</property>
                             <property name="label" translatable="1">Colorbar</property>
                             <layout>
                               <property name="column">0</property>
-                              <property name="row">5</property>
+                              <property name="row">6</property>
                             </layout>
                           </object>
                         </child>
@@ -1511,7 +1542,7 @@ audio-volume-medium-symbolic</property>
                             </child>
                             <layout>
                               <property name="column">1</property>
-                              <property name="row">5</property>
+                              <property name="row">6</property>
                             </layout>
                           </object>
                         </child>
@@ -1521,7 +1552,7 @@ audio-volume-medium-symbolic</property>
                             <property name="focusable">1</property>
                             <layout>
                               <property name="column">1</property>
-                              <property name="row">7</property>
+                              <property name="row">8</property>
                             </layout>
                           </object>
                         </child>
@@ -1531,7 +1562,7 @@ audio-volume-medium-symbolic</property>
                             <property name="focusable">1</property>
                             <layout>
                               <property name="column">1</property>
-                              <property name="row">8</property>
+                              <property name="row">9</property>
                             </layout>
                           </object>
                         </child>

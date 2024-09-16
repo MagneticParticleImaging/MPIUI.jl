@@ -148,7 +148,7 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   end
 
   ## arrows ##
-  discr = floor(Int,0.1*discretization) # reduce number of arrows
+  discr = max(1,floor(Int,0.1*discretization)) # reduce number of arrows
   ## positioning
   NN = [N[i][1:discr:end] for i=1:3]
   # vectors (arrows) (adapted to chosen coordinate orientations)
@@ -175,16 +175,20 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   al /= max(maxYZ,maxXZ,maxXY)
   al /= useMilli ? 1 : 1000 # scale depends on m resp. mm
 
+  # arrow line width
+  lw = get_gtk_property(m["adjLinewidth"],:value, Float64) # line width
+  aw = 3*lw + 3 # width of arrow head
+
   # add arrows to plots
   # YZ
   CairoMakie.arrows!(axYZ, NN[2], NN[3], arYZu, arYZv, 
-		     color=:white, linewidth=1, arrowsize = 6, lengthscale = al)
+		     color=:white, linewidth=lw, arrowsize = aw, lengthscale = al)
   # XZ
   CairoMakie.arrows!(axXZ, NN[1], NN[3], arXZu, arXZv, 
-		     color=:white, linewidth=1, arrowsize = 6, lengthscale = al)
+		     color=:white, linewidth=lw, arrowsize = aw, lengthscale = al)
   # XY
   CairoMakie.arrows!(axXY, NN[2], NN[1], arXYu', arXYv', 
-		     color=:white, linewidth=1, arrowsize = 6, lengthscale = al)
+		     color=:white, linewidth=lw, arrowsize = aw, lengthscale = al)
 
   # set fontsize
   fs = get_gtk_property(m["adjFontsize"],:value, Int64) # fontsize
@@ -401,6 +405,9 @@ function updateProfile(m::MagneticFieldViewerWidget)
     fs = get_gtk_property(m["adjFontsize"],:value, Int64) # fontsize
     CairoMakie.set_theme!(CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
   
+    # set line width
+    lw = get_gtk_property(m["adjLinewidth"],:value, Float64) # line width
+
     # figure
     fig = CairoMakie.Figure(figure_padding=2)
   
@@ -413,7 +420,7 @@ function updateProfile(m::MagneticFieldViewerWidget)
     for i = 1:length(colors) # number of profiles
       X = (typeof(dataX) <: Vector) ? dataX[i] : dataX
       Y = (typeof(dataY) <: Vector) ? dataY : dataY[i,:]
-      CairoMakie.lines!(ax, X, Y, color=colors[i])
+      CairoMakie.lines!(ax, X, Y, color=colors[i], linewidth=lw)
     end
     CairoMakie.autolimits!(ax) # auto axis limits
   
