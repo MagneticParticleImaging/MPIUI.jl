@@ -97,14 +97,13 @@ function SFViewerWidget()
 	        if !(get_gtk_property(m["cbFixRecChan"],:active, Bool))
             k = m.SNRSortedIndices[get_gtk_property(m["adjSFSignalOrdered"],:value, Int64)]
             recChan = m.freqIndices[k][2]
+            freq = m.freqIndices[k][1]-1
 	        else
 	          # fix the current receive channel for ordered signal
 	          recChan = get_gtk_property(m["adjSFRecChan"],:value, Int64)
-	          k = m.SNRSortedIndicesRecChan[recChan][get_gtk_property(m["adjSFSignalOrdered"],:value, Int64)]
-            recChan = m.freqIndices[k][2]
+	          freq = m.SNRSortedIndicesRecChan[recChan][get_gtk_property(m["adjSFSignalOrdered"],:value, Int64)]-1
 	        end
 
-          freq = m.freqIndices[k][1]-1
           updateFreq(m, freq)
           updateRecChan(m, recChan)
           updateMix(m)
