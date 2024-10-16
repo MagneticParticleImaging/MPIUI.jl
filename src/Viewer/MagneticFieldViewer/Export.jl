@@ -14,6 +14,10 @@ function initExportCallbacks(m::MagneticFieldViewerWidget)
   @guarded signal_connect(m["btnExportFieldCSV"], "clicked") do widget
     saveFieldAsCSV(m)
   end
+  # Tikz
+  @guarded signal_connect(m["btnExportTikz"], "clicked") do widget
+    saveTikz(m)
+  end
 end
 
 # Export plots as pngs
@@ -27,11 +31,19 @@ function exportCanvas(m::MagneticFieldViewerWidget)
       # get only filename
       file, ext = splitext(filename)
       # Field plots
-      write_to_png(getgc(m.fv.grid[1,1]).surface,file*"_xz.png")
-      write_to_png(getgc(m.fv.grid[2,1]).surface,file*"_yz.png")
-      write_to_png(getgc(m.fv.grid[2,2]).surface,file*"_xy.png")
+      if get_gtk_property(m["cbFieldExport"],:active,Bool)
+        write_to_png(getgc(m.fv.grid[1,1]).surface,file*"_xz.png")
+        write_to_png(getgc(m.fv.grid[2,1]).surface,file*"_yz.png")
+        write_to_png(getgc(m.fv.grid[2,2]).surface,file*"_xy.png")
+      end
       # Coefficients
-      write_to_png(getgc(m.grid[1,3]).surface,file*"_coeffs.png")
+      if get_gtk_property(m["cbCoeffsExport"],:active,Bool)
+        write_to_png(getgc(m.grid[1,3]).surface,file*"_coeffs.png")
+      end
+      # Profile
+      if get_gtk_property(m["cbProfileExport"],:active,Bool)
+        write_to_png(getgc(m.fv.grid[1,2]).surface,file*"_profile.png")
+      end
 
       return filename
     end 
@@ -49,7 +61,7 @@ function saveCoeffsAsCSV(m::MagneticFieldViewerWidget)
   filter = Gtk4.GtkFileFilter(pattern=String("*.csv"), mimetype=String("image/csv"))
   diag = save_dialog("Select Export File", nothing, (filter, )) do filename
     if filename != ""
-      @info "Export Image as" filename
+      @info "Export coefficients as" filename
 
       saveCoeffsAsCSV(m, filename)
 
@@ -74,7 +86,7 @@ function saveCoeffsAsCSV(m::MagneticFieldViewerWidget, filename)
   coeffsSave = vcat(coeffsSave,zeros(L²,4)) # length(coeffs[1,1].c) = (L+1)^2
   coeffsSave[2:end,1] = 1:L²
   for j=1:3
-    coeffsSave[2:end,j+1] = normalize(m.coeffsPlot[j],1/R).c[1:L²]
+    coeffsSave[2:end,j+1] = normalize(m.coeffsPlot[j,p],1/R).c[1:L²]
   end 
 
   # save
@@ -87,7 +99,7 @@ function saveFieldAsCSV(m::MagneticFieldViewerWidget)
   filter = Gtk4.GtkFileFilter(pattern=String("*.csv"), mimetype=String("image/csv"))
   diag = save_dialog("Select Export File", nothing, (filter, )) do filename
     if filename != ""
-      @info "Export Image as" filename
+      @info "Export field as" filename
 
       saveFieldAsCSV(m, filename)
 
@@ -104,9 +116,6 @@ function saveFieldAsCSV(m::MagneticFieldViewerWidget, filename)
   # load all parameters
   discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel
   R = m.coeffs.radius # radius of measurement data
-  # get current intersection
-  intersString = get_gtk_property(m["entInters"], :text, String) # intersection
-  intersection = tryparse.(Float64,split(intersString,"x")) ./ 1000 # conversion from mm to m
 
   # get FOV
   fovString = get_gtk_property(m["entFOV"], :text, String) # FOV
@@ -118,13 +127,14 @@ function saveFieldAsCSV(m::MagneticFieldViewerWidget, filename)
   # calculate field for plot 
   fieldNorm = zeros(discretization,discretization,3);
   fieldxyz = zeros(3,discretization,discretization,3);
+  setPatch!(m.field,m.patch) # set selected patch
   for i = 1:discretization
     for j = 1:discretization
-      fieldxyz[:,i,j,1] = [m.field[d,m.patch]([intersection[1],N[2][i],N[3][j]]) for d=1:3]
+      fieldxyz[:,i,j,1] = m.field[m.fv.intersection[1],N[2][i],N[3][j]]
       fieldNorm[i,j,1] = norm(fieldxyz[:,i,j,1])
-      fieldxyz[:,i,j,2] = [m.field[d,m.patch]([N[1][i],intersection[2],N[3][j]]) for d=1:3]
+      fieldxyz[:,i,j,2] = m.field[N[1][i],m.fv.intersection[2],N[3][j]]
       fieldNorm[i,j,2] = norm(fieldxyz[:,i,j,2])
-      fieldxyz[:,i,j,3] = [m.field[d,m.patch]([N[1][i],N[2][j],intersection[3]]) for d=1:3]
+      fieldxyz[:,i,j,3] = m.field[N[1][i],N[2][j],m.fv.intersection[3]]
       fieldNorm[i,j,3] = norm(fieldxyz[:,i,j,3])
     end 
   end
@@ -177,4 +187,52 @@ function saveFieldAsCSV(m::MagneticFieldViewerWidget, filename)
 
   # save as csv
   CSV.write(file*"_quiver"*".csv",df);
+end
+
+###############
+# Export tikz #
+###############
+# export plots as tex-file
+function saveTikz(m::MagneticFieldViewerWidget)
+  # choose destination
+  filter = Gtk4.GtkFileFilter(pattern=String("*.tex"), mimetype=String("image/tex"))
+  diag = save_dialog("Select Export File", nothing, (filter, )) do filename
+    if filename != ""
+      @info "Export tikz as" filename
+
+      saveTikz(m, filename)
+
+      return filename
+    end 
+  end
+  diag.modal = true
+end
+
+function saveTikz(m::MagneticFieldViewerWidget, filename)
+  # get only filename
+  file, ext = splitext(filename)
+
+  # load parameter
+  cmin = m.fv.coloring.cmin
+  cmax = m.fv.coloring.cmax
+  discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel
+  arrowLength = get_gtk_property(m["adjArrowLength"],:value, Int64)
+  R = m.coeffs.radius
+  L = m.coeffs.coeffs[1].L 
+  # get tex code
+  tex = exportTikz(file,cmin,cmax,discretization,arrowLength,R,L)
+
+  # export data
+  saveCoeffsAsCSV(m, file*"_coeffs")
+  saveFieldAsCSV(m, file*"_field")
+
+  # save tex-file
+  write(file*".tex",tex)
+  
+  # compile tex-file
+  if get_gtk_property(m["cbBuildPdf"], :active, Bool)
+    # get output folder
+    path, = splitdir(file)
+    run(`pdflatex -output-directory=$(path) $(file).tex`)
+  end
 end

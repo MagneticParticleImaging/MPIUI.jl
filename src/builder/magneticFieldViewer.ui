@@ -2,8 +2,8 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <object class="GtkAdjustment" id="adjArrowLength">
-    <property name="upper">10</property>
-    <property name="value">2</property>
+    <property name="upper">20</property>
+    <property name="value">5</property>
     <property name="step_increment">0.5</property>
     <property name="page_increment">10</property>
   </object>
@@ -38,6 +38,20 @@
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjPatches">
+    <property name="lower">1</property>
+    <property name="upper">100</property>
+    <property name="value">1</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
+  </object>
+  <object class="GtkAdjustment" id="adjPatchesVideoLower">
+    <property name="lower">1</property>
+    <property name="upper">100</property>
+    <property name="value">1</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
+  </object>
+  <object class="GtkAdjustment" id="adjPatchesVideoUpper">
     <property name="lower">1</property>
     <property name="upper">100</property>
     <property name="value">1</property>
@@ -241,23 +255,26 @@
       </object>
     </property>
   </object>
-  <object class="GtkAdjustment" id="adjTTPThresh">
-    <property name="upper">1</property>
-    <property name="value">0.40000000000000002</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
-  </object>
   <object class="GtkPopover" id="popFrames">
     <property name="child">
       <object class="GtkGrid" id="grid1">
         <property name="row_spacing">5</property>
         <property name="column_spacing">5</property>
         <child>
-          <object class="GtkLabel" id="label53">
-            <property name="label" translatable="1">Frame Projection</property>
+          <object class="GtkLabel" id="labelProfile">
+            <property name="label" translatable="1">Profile settings</property>
             <layout>
               <property name="column">0</property>
               <property name="row">0</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label53">
+            <property name="label" translatable="1">Field</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">1</property>
             </layout>
           </object>
         </child>
@@ -266,36 +283,13 @@
             <property name="hexpand">0</property>
             <layout>
               <property name="column">1</property>
-              <property name="row">0</property>
-            </layout>
-          </object>
-        </child>
-        <child>
-          <object class="GtkToggleButton" id="btnPlayMovie">
-            <property name="label" translatable="1">Play Movie</property>
-            <property name="focusable">1</property>
-            <property name="receives_default">1</property>
-            <layout>
-              <property name="column">0</property>
-              <property name="row">1</property>
-            </layout>
-          </object>
-        </child>
-        <child>
-          <object class="GtkScale" id="scale1">
-            <property name="draw-value">1</property>
-            <property name="focusable">1</property>
-            <property name="adjustment">adjTTPThresh</property>
-            <property name="round_digits">1</property>
-            <layout>
-              <property name="column">1</property>
               <property name="row">1</property>
             </layout>
           </object>
         </child>
         <child>
           <object class="GtkLabel" id="label1">
-            <property name="label" translatable="1">Profile</property>
+            <property name="label" translatable="1">Axes</property>
             <layout>
               <property name="column">0</property>
               <property name="row">2</property>
@@ -434,6 +428,49 @@
         <property name="row_spacing">5</property>
         <property name="column_spacing">5</property>
         <child>
+        <object class="GtkGrid">
+            <property name="row_spacing">2</property>
+            <child>
+              <object class="GtkCheckButton" id="cbFieldExport">
+                <property name="label" translatable="1">Fields</property>
+                <property name="focusable">1</property>
+                <property name="active">1</property>
+                <layout>
+                  <property name="column">0</property>
+                  <property name="row">0</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="cbCoeffsExport">
+                <property name="label" translatable="1"> Coefficients </property>
+                <property name="focusable">1</property>
+                <property name="active">1</property>
+                <layout>
+                  <property name="column">1</property>
+                  <property name="row">0</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="cbProfileExport">
+                <property name="label" translatable="1"> Profile </property>
+                <property name="focusable">1</property>
+                <property name="active">1</property>
+                <layout>
+                  <property name="column">2</property>
+                  <property name="row">0</property>
+                </layout>
+              </object>
+            </child>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">1</property>
+              <property name="column-span">2</property>
+            </layout>
+          </object>
+        </child>
+        <child>
           <object class="GtkButton" id="btnExportImages">
             <property name="label" translatable="1">Export as PNG</property>
             <property name="focusable">1</property>
@@ -445,8 +482,8 @@
           </object>
         </child>
         <child>
-          <object class="GtkButton" id="btnExportProfile">
-            <property name="label" translatable="1">Export Profile</property>
+          <object class="GtkButton" id="btnExportVideo">
+            <property name="label" translatable="1">Export as Video</property>
             <property name="sensitive">0</property>
             <property name="focusable">1</property>
             <property name="receives_default">1</property>
@@ -457,13 +494,42 @@
           </object>
         </child>
         <child>
+          <object class="GtkSeparator">
+            <layout>
+              <property name="column">0</property>
+              <property name="row">2</property>
+              <property name="column-span">2</property>
+            </layout>
+          </object>
+        </child>
+        <child>
           <object class="GtkButton" id="btnExportTikz">
             <property name="label" translatable="1">Export as Tikz</property>
             <property name="focusable">1</property>
             <property name="receives_default">1</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">1</property>
+              <property name="row">3</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkCheckButton" id="cbBuildPdf">
+            <property name="label" translatable="1">Build pdf</property>
+            <property name="focusable">1</property>
+            <property name="active">1</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">3</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <layout>
+              <property name="column">0</property>
+              <property name="row">4</property>
+              <property name="column-span">2</property>
             </layout>
           </object>
         </child>
@@ -472,7 +538,7 @@
             <property name="label" translatable="1">Export as CSV</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">2</property>
+              <property name="row">5</property>
             </layout>
           </object>
         </child>
@@ -503,7 +569,7 @@
             </child>
             <layout>
               <property name="column">1</property>
-              <property name="row">2</property>
+              <property name="row">5</property>
             </layout>
           </object>
         </child>
@@ -517,12 +583,22 @@
     <property name="child">
       <object class="GtkGrid" id="gridOption">
         <child>
+          <object class="GtkCheckButton" id="cbShowCS">
+            <property name="label" translatable="1"> Show CS </property>
+            <property name="focusable">1</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">0</property>
+            </layout>
+          </object>
+        </child>
+        <child>
           <object class="GtkCheckButton" id="cbShowAxes">
             <property name="label" translatable="1"> Show Axes </property>
             <property name="focusable">1</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">0</property>
+              <property name="row">1</property>
             </layout>
           </object>
         </child>
@@ -532,7 +608,7 @@
             <property name="focusable">1</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">1</property>
+              <property name="row">2</property>
             </layout>
           </object>
         </child>
@@ -990,8 +1066,7 @@ audio-volume-medium-symbolic</property>
                             <property name="column_spacing">2</property>
                             <child>
                               <object class="GtkButton" id="btnCenterSphere">
-                                <property name="label" translatable="1">Center
-Sphere</property>
+                                <property name="label" translatable="1">Center&#xA;Sphere</property>
                                 <property name="focusable">1</property>
                                 <property name="receives_default">1</property>
                                 <layout>
@@ -1019,21 +1094,119 @@ Sphere</property>
                           </object>
                         </child>
                         <child>
+                          <object class="GtkLabel" id="labelCenterSphere">
+                            <property name="label" translatable="1">Center&#xA;Sphere</property>
+                            <layout>
+                              <property name="column">0</property>
+                              <property name="row">5</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="labelmm3">
+                            <property name="label" translatable="1">mm</property>
+                            <layout>
+                              <property name="column">2</property>
+                              <property name="row">5</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkEntry" id="entCenterMeas">
+                            <property name="focusable">1</property>
+                            <property name="editable">0</property>
+                            <property name="width_chars">14</property>
+                            <layout>
+                              <property name="column">1</property>
+                              <property name="row">5</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="labelFFP">
+                            <property name="label" translatable="1">FFP</property>
+                            <layout>
+                              <property name="column">0</property>
+                              <property name="row">6</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkEntry" id="entFFP">
+                            <property name="focusable">1</property>
+                            <property name="editable">0</property>
+                            <property name="width_chars">14</property>
+                            <layout>
+                              <property name="column">1</property>
+                              <property name="row">6</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="labelmm4">
+                            <property name="label" translatable="1">mm</property>
+                            <layout>
+                              <property name="column">2</property>
+                              <property name="row">6</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkGrid">
+                            <property name="margin_top">0</property>
+                            <property name="column_spacing">5</property>
+                            <layout>
+                              <property name="column">0</property>
+                              <property name="row">7</property>
+                              <property name="column-span">3</property>
+                            </layout>
+                            <child>
+                              <object class="GtkComboBoxText" id="cbVolumeFFP">
+                                <layout>
+                                  <property name="column">0</property>
+                                  <property name="row">0</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="btnCalcFFP">
+                                <property name="label" translatable="1">Calc&#xA;FFP</property>
+                                <property name="focusable">1</property>
+                                <property name="receives_default">1</property>
+                                <layout>
+                                  <property name="column">1</property>
+                                  <property name="row">0</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="btnResetFFP">
+                                <property name="label" translatable="1">Reset&#xA;FFP</property>
+                                <property name="focusable">1</property>
+                                <property name="receives_default">1</property>
+                                <layout>
+                                  <property name="column">2</property>
+                                  <property name="row">0</property>
+                                </layout>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
                           <object class="GtkButton" id="btnUpdate">
                             <property name="label" translatable="1">Update Plot</property>
                             <property name="focusable">1</property>
                             <property name="receives_default">1</property>
                             <layout>
                               <property name="column">0</property>
-                              <property name="row">5</property>
+                              <property name="row">8</property>
                               <property name="column-span">3</property>
                             </layout>
                           </object>
                         </child>
                         <child>
                           <object class="GtkLabel" id="labelCenterPlot">
-                            <property name="label" translatable="1">Center
-Plot</property>
+                            <property name="label" translatable="1">Center&#xA;Plot</property>
                             <layout>
                               <property name="column">0</property>
                               <property name="row">4</property>
@@ -1068,7 +1241,7 @@ Plot</property>
                             <property name="receives_default">1</property>
                             <layout>
                               <property name="column">0</property>
-                              <property name="row">6</property>
+                              <property name="row">9</property>
                               <property name="column-span">3</property>
                             </layout>
                           </object>
@@ -1180,7 +1353,7 @@ Plot</property>
                             <property name="text" translatable="1">0</property>
                             <property name="adjustment">adjArrowLength</property>
                             <property name="digits">1</property>
-                            <property name="value">2</property>
+                            <property name="value">5</property>
                             <layout>
                               <property name="column">1</property>
                               <property name="row">1</property>
@@ -1353,6 +1526,16 @@ Plot</property>
                           </object>
                         </child>
                         <child>
+                          <object class="GtkCheckButton" id="cbWriteC">
+                            <property name="label" translatable="1">write cmin/cmax</property>
+                            <property name="focusable">1</property>
+                            <layout>
+                              <property name="column">1</property>
+                              <property name="row">8</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
                           <placeholder/>
                         </child>
                         <child>
@@ -1410,9 +1593,8 @@ Plot</property>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkLabel" id="labelCenterSphere">
-                            <property name="label" translatable="1">Center
-Sphere</property>
+                          <object class="GtkLabel" id="labelCenterSphereRobot">
+                            <property name="label" translatable="1">Center&#xA;Sphere</property>
                             <layout>
                               <property name="column">0</property>
                               <property name="row">1</property>
@@ -1420,7 +1602,7 @@ Sphere</property>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkLabel" id="labelmm3">
+                          <object class="GtkLabel" id="labelCenterSphereRobotmm">
                             <property name="label" translatable="1">mm</property>
                             <layout>
                               <property name="column">2</property>
@@ -1429,7 +1611,7 @@ Sphere</property>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkEntry" id="entCenterMeas">
+                          <object class="GtkEntry" id="entCenterSphereRobot">
                             <property name="focusable">1</property>
                             <property name="editable">0</property>
                             <property name="width_chars">14</property>
@@ -1504,7 +1686,7 @@ Sphere</property>
                             </child>
                             <layout>
                               <property name="column">1</property>
-                              <property name="row">5</property>
+                              <property name="row">4</property>
                             </layout>
                           </object>
                         </child>
@@ -1544,12 +1726,12 @@ Sphere</property>
                             </child>
                             <layout>
                               <property name="column">2</property>
-                              <property name="row">5</property>
+                              <property name="row">4</property>
                             </layout>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkLabel" id="labelFFP">
+                          <object class="GtkLabel" id="labelFFPRobot">
                             <property name="label" translatable="1">FFP</property>
                             <layout>
                               <property name="column">0</property>
@@ -1558,7 +1740,7 @@ Sphere</property>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkLabel" id="labelmm4">
+                          <object class="GtkLabel" id="labelFFPRobotmm">
                             <property name="label" translatable="1">mm</property>
                             <layout>
                               <property name="column">2</property>
@@ -1571,30 +1753,19 @@ Sphere</property>
                             <property name="hexpand">0</property>
                             <layout>
                               <property name="column">0</property>
-                              <property name="row">4</property>
+                              <property name="row">3</property>
                               <property name="column-span">2</property>
                             </layout>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkEntry" id="entFFP">
+                          <object class="GtkEntry" id="entFFPRobot">
                             <property name="focusable">1</property>
                             <property name="editable">0</property>
                             <property name="width_chars">14</property>
                             <layout>
                               <property name="column">1</property>
                               <property name="row">2</property>
-                            </layout>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkButton" id="btnCalcFFP">
-                            <property name="label" translatable="1">Calculate FFP</property>
-                            <property name="focusable">1</property>
-                            <property name="receives_default">1</property>
-                            <layout>
-                              <property name="column">1</property>
-                              <property name="row">3</property>
                             </layout>
                           </object>
                         </child>
@@ -1620,6 +1791,138 @@ Sphere</property>
                     <layout>
                       <property name="column">0</property>
                       <property name="row">2</property>
+                    </layout>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkExpander" id="expanderVideo">
+                    <property name="focusable">1</property>
+                    <property name="expanded">0</property>
+                    <child>
+                      <object class="GtkGrid" id="gridOptionsVideo">
+                        <property name="margin-start">4</property>
+                        <property name="margin-end">4</property>
+                        <property name="margin_top">4</property>
+                        <property name="row_spacing">5</property>
+                        <property name="column_spacing">5</property>
+                        <child>
+                          <object class="GtkLabel" id="labelVideoPatchStart">
+                            <property name="label" translatable="1">patch&#xA;start</property>
+                            <layout>
+                              <property name="column">0</property>
+                              <property name="row">0</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="labelVideoPatchEnd">
+                            <property name="label" translatable="1">patch&#xA;end</property>
+                            <layout>
+                              <property name="column">0</property>
+                              <property name="row">1</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkSpinButton" id="spinLowerPatch">
+                            <property name="focusable">1</property>
+                            <property name="width_chars">4</property>
+                            <property name="max_width_chars">5</property>
+                            <property name="text" translatable="1">51</property>
+                            <property name="adjustment">adjPatchesVideoLower</property>
+                            <layout>
+                              <property name="column">1</property>
+                              <property name="row">0</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkSpinButton" id="spinUpperPatch">
+                            <property name="focusable">1</property>
+                            <property name="width_chars">4</property>
+                            <property name="max_width_chars">5</property>
+                            <property name="text" translatable="1">51</property>
+                            <property name="adjustment">adjPatchesVideoUpper</property>
+                            <layout>
+                              <property name="column">1</property>
+                              <property name="row">1</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="labelSleepVideo">
+                            <property name="label" translatable="1">pause</property>
+                            <layout>
+                              <property name="column">0</property>
+                              <property name="row">2</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkGrid" id="gridSleepVideo">
+                            <property name="column_spacing">4</property>
+                            <child>
+                              <object class="GtkEntry" id="entSleepVideo">
+                                <property name="focusable">1</property>
+                                <property name="editable">1</property>
+                                <property name="width_chars">3</property>
+                                <layout>
+                                  <property name="column">1</property>
+                                  <property name="row">0</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="labelSleepUnitVideo">
+                                <property name="label" translatable="1">ms</property>
+                                <layout>
+                                  <property name="column">2</property>
+                                  <property name="row">0</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <layout>
+                              <property name="column">1</property>
+                              <property name="row">2</property>
+                              <property name="column-span">2</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="cbVideoRepeat">
+                            <property name="label" translatable="1">repeat video</property>
+                            <property name="focusable">1</property>
+                            <property name="active">1</property>
+                            <layout>
+                              <property name="column">1</property>
+                              <property name="row">3</property>
+                            </layout>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkToggleButton" id="tbPlayVideo">
+                            <property name="visible">1</property>
+                            <property name="label" translatable="1" context="Continuous">Play</property>
+                            <property name="focusable">1</property>
+                            <property name="receives_default">1</property>
+                            <property name="tooltip_text" translatable="1">Play Video</property>
+                            <layout>
+                                <property name="column">1</property>
+                                <property name="row">4</property>
+                                <property name="column-span">2</property>
+                            </layout>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel" id="labelVideo">
+                        <property name="label" translatable="1">Video</property>
+                      </object>
+                    </child>
+                    <layout>
+                      <property name="column">0</property>
+                      <property name="row">4</property>
                     </layout>
                   </object>
                 </child>

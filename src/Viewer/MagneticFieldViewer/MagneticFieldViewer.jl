@@ -1,14 +1,15 @@
 export MagneticFieldViewer
 
-# load new type MagneticFieldCoefficients with additional informations
-include("MagneticFieldUtils.jl")
-
 mutable struct FieldViewerWidget <: Gtk4.GtkBox
   handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder
   coloring::ColoringParams
   updating::Bool
-  field # data to be plotted
+  fieldNorm::Array{Float64,3} # data to be plotted (norm)
+  field::Array{Float64,4} # data to be plotted (field values)
+  currentProfile::Array{Float64,3} # data of profile plot
+  positions # Vector containing the spatial positions of the plotted field
+  intersection::Vector{Float64} # intersection of the three plots
   centerFFP::Bool # center of plot (FFP (true) or center of measured sphere (false))
   grid::Gtk4.GtkGridLeaf
 end
@@ -21,7 +22,7 @@ mutable struct MagneticFieldViewerWidget <: Gtk4.GtkBox
   coeffsInit::MagneticFieldCoefficients
   coeffs::MagneticFieldCoefficients 
   coeffsPlot::Array{SphericalHarmonicCoefficients}
-  field # Array containing Functions of the field
+  field # SphericalHarmonicsDefinedField (Functions of the field)
   patch::Int
   grid::Gtk4.GtkGridLeaf
   cmapsTree::Gtk4.GtkTreeModelFilter
@@ -35,8 +36,11 @@ mutable struct MagneticFieldViewer
   mf::MagneticFieldViewerWidget
 end
 
+# plotting functions
+include("Plotting.jl")
 # export functions
 include("Export.jl")
+include("TikzExport.jl") # tikz stuff
 
 # Viewer can be started with MagneticFieldCoefficients or with a path to a file with some coefficients
 function MagneticFieldViewer(filename::Union{AbstractString,MagneticFieldCoefficients})
@@ -55,7 +59,7 @@ function FieldViewerWidget()
   mainBox = G_.get_object(b, "boxFieldViewer")
 
   fv = FieldViewerWidget(mainBox.handle, b, ColoringParams(0,0,0),
-                     false, nothing, true,
+                     false, zeros(0,0,0), zeros(0,0,0,0), zeros(0,0,0), zeros(0), zeros(0), true,
                       G_.get_object(b, "gridFieldViewer"),)
   Gtk4.GLib.gobject_move_ref(fv, mainBox)
 
@@ -101,7 +105,7 @@ function MagneticFieldViewerWidget()
   end
   # create TreeViewColumn
   rTxt = GtkCellRendererText()
-  c = GtkTreeViewColumn("Colormaps", rTxt, Dict([("text",0)]), sort_column_id=0) # column
+  c = GtkTreeViewColumn("Colormaps", rTxt, Dict([("text",0)]))#, sort_column_id=0) # column
   # add column to TreeView
   m.cmapsTree = GtkTreeModelFilter(ls)
   G_.set_visible_column(m.cmapsTree,1)
@@ -136,12 +140,27 @@ function MagneticFieldViewerWidget()
     end
   end
 
+  # setup volume choices for FFP search
+  for v in instances(MPISphericalHarmonics.Volume)
+    push!(m["cbVolumeFFP"], "$v")
+  end
+  set_gtk_property!(m["cbVolumeFFP"],:active,0) # default: xyz
 
   # Allow to change between gradient and offset output
-  for c in ["Gradient:","Offset:", "Singular values:"]
+  for c in ["Offset:", "Gradient:", "Eigenvalues:", "Singular values:"]
     push!(m["cbGradientOffset"], c)
   end
-  set_gtk_property!(m["cbGradientOffset"],:active,0) # default: Gradient
+  set_gtk_property!(m["cbGradientOffset"],:active,1) # default: Gradient
+
+  # change between different profile options
+  for c in ["Norm","xyz","x","y","z"] # field
+    push!(m["cbFrameProj"], c)
+  end
+  set_gtk_property!(m["cbFrameProj"],:active,0) # default: Norm along all axes
+  for c in ["all", "x", "y", "z"] # axes
+    push!(m["cbProfile"], c)
+  end
+  set_gtk_property!(m["cbProfile"],:active,0) # default: Norm along all axes
 
   # change discretization
   signal_connect(m["adjDiscretization"], "value_changed") do w
@@ -154,7 +173,9 @@ function MagneticFieldViewerWidget()
         set_gtk_property!(m[w], :upper, d)
       end
       # update plot
+      calcField(m) # calculate new field values
       updateField(m)
+      updateProfile(m)
     end
   end
   
@@ -162,6 +183,7 @@ function MagneticFieldViewerWidget()
   signal_connect(m["adjPatches"], "value_changed") do w
     @idle_add_guarded begin
       m.patch = get_gtk_property(m["adjPatches"],:value, Int64) # update patch
+      updateInfos(m) # update patch-dependent infos (like FFP)
       stayInFFP(m)
     end
   end
@@ -177,6 +199,7 @@ function MagneticFieldViewerWidget()
     if get_gtk_property(m["cbShowAxes"], :active, Bool) # update field plots only if axes shown
       @idle_add_guarded updateField(m)
     end
+    @idle_add_guarded updateProfile(m)
   end
   
   # change unit
@@ -185,6 +208,7 @@ function MagneticFieldViewerWidget()
     if get_gtk_property(m["cbShowAxes"], :active, Bool) # update field plots only if axes shown
       @idle_add_guarded updateField(m)
     end
+    @idle_add_guarded updateProfile(m)
   end
  
   # update coeffs plot
@@ -205,8 +229,7 @@ function MagneticFieldViewerWidget()
   signal_connect(m["btnUpdate"], "clicked") do w
     @idle_add_guarded begin
       updateIntersection(m)
-      updateCoeffsPlot(m)
-      updateField(m)
+      updatePlots(m)
     end
   end
 
@@ -231,8 +254,7 @@ function MagneticFieldViewerWidget()
         set_gtk_property!(m["btnCenterSphere"],:sensitive,true) # enable button
         m.fv.centerFFP = true
         calcCenterCoeffs(m,true)
-        updateCoeffsPlot(m)
-        updateField(m)
+        updatePlots(m)
       end
     end
   end
@@ -256,7 +278,13 @@ function MagneticFieldViewerWidget()
   
   # calculate FFP
   signal_connect(m["btnCalcFFP"], "clicked") do w
-    @idle_add_guarded calcFFP(m)
+    @idle_add_guarded calcFFP(m) # calculate FFP
+    @idle_add_guarded goToFFP(m) # go to FFP
+  end
+
+  # reset FFP
+  signal_connect(m["btnResetFFP"], "clicked") do w
+    @idle_add_guarded resetFFP(m)
   end
 
   # reset everything -> reload Viewer
@@ -265,9 +293,9 @@ function MagneticFieldViewerWidget()
   end
 
   # checkbuttons changed
-  for cb in ["cbShowSphere", "cbShowSlices", "cbShowAxes"]
+  for cb in ["cbShowSphere", "cbShowSlices", "cbShowAxes", "cbShowCS"]
     signal_connect(m[cb], "toggled") do w
-      updateField(m)
+      @idle_add_guarded updateField(m)
     end
   end
   signal_connect(m["cbStayFFP"], "toggled") do w
@@ -297,16 +325,86 @@ function MagneticFieldViewerWidget()
       if get_gtk_property(m["cbKeepC"], :active, Bool) # keep the values
         set_gtk_property!(m["vbCMin"], :sensitive, false) # disable changing cmin
         set_gtk_property!(m["vbCMax"], :sensitive, false) # disable changing cmax
+        # disable writing cmin/cmax
+        set_gtk_property!(m["entCMin"], :editable, false)
+        set_gtk_property!(m["entCMax"], :editable, false)
       else
         set_gtk_property!(m["vbCMin"], :sensitive, true) # enable changing cmin
         set_gtk_property!(m["vbCMax"], :sensitive, true) # enable changing cmax
+        if get_gtk_property(m["cbWriteC"], :active, Bool)
+          # enable writing cmin/cmax
+          set_gtk_property!(m["entCMin"], :editable, true)
+          set_gtk_property!(m["entCMax"], :editable, true)
+        end
       end
     end
   end 
+  # checkbutton write cmin/cmax
+  signal_connect(m["cbWriteC"], "toggled") do w
+    @idle_add_guarded begin
+      if get_gtk_property(m["cbWriteC"], :active, Bool)
+        # enable writing cmin/cmax
+        set_gtk_property!(m["entCMin"], :editable, true)
+        set_gtk_property!(m["entCMax"], :editable, true)
+      else
+        # disable writing cmin/cmax
+        set_gtk_property!(m["entCMin"], :editable, false)
+        set_gtk_property!(m["entCMax"], :editable, false)
+        # update field plot
+        updateField(m)
+      end
+    end
+  end
 
   # update measurement infos
   signal_connect(m["cbGradientOffset"], "changed") do w
     @idle_add_guarded updateInfos(m) 
+  end
+
+  # update profile plot
+  for cb in ["cbFrameProj", "cbProfile"]
+    signal_connect(m[cb], "changed") do w
+      @idle_add_guarded updateProfile(m) 
+    end
+  end
+
+  ## Video
+  # update min/max values of the patches
+  signal_connect(m["adjPatchesVideoLower"], "value_changed") do w
+    @idle_add_guarded set_gtk_property!(m["adjPatchesVideoUpper"], :lower, get_gtk_property(m["adjPatchesVideoLower"], :value, Int64))
+  end
+  signal_connect(m["adjPatchesVideoUpper"], "value_changed") do w
+    @idle_add_guarded set_gtk_property!(m["adjPatchesVideoLower"], :upper, get_gtk_property(m["adjPatchesVideoUpper"], :value, Int64))
+  end
+  # continous sweeps
+  playActive = false
+  signal_connect(m["tbPlayVideo"], :toggled) do w
+    if get_gtk_property(m["tbPlayVideo"], :active, Bool)
+      @info "Start Video"
+      # if video should not be repeated toggle play button
+      !(get_gtk_property(m["cbVideoRepeat"], :active, Bool)) && (@idle_add_guarded set_gtk_property!(m["tbPlayVideo"], :active, false))
+      # get lower and upper patch
+      lowerPatch = get_gtk_property(m["adjPatchesVideoLower"], :value, Int64)
+      upperPatch = get_gtk_property(m["adjPatchesVideoUpper"], :value, Int64)
+      # get sleep time
+      sleepTime = tryparse.(Float64,MPIUI.get_gtk_property(m["entSleepVideo"],:text,String)) ./ 1000
+      # timer for video repetitions
+      playActive = true
+      function update_(::Timer) 
+        if playActive
+          # sweep over chosen patches
+          for p = lowerPatch:upperPatch
+            set_gtk_property!(m["adjPatches"], :value, p)
+            sleep(sleepTime)
+          end
+        else
+          close(timer)
+        end
+      end
+      timer = Timer(update_, 0.0, interval=1)
+    else
+      playActive = false
+    end
   end
 
   initCallbacks(m)
@@ -352,8 +450,7 @@ function initCallbacks(m::MagneticFieldViewerWidget)
 
       # update coefficients with new intersection and plot everything
       updateIntersection(m)
-      updateCoeffsPlot(m)
-      updateField(m)
+      updatePlots(m)
 
       m.updating = false
     end
@@ -378,7 +475,9 @@ function initCallbacks(m::MagneticFieldViewerWidget)
   function resetFOV( widget )
     R = m.coeffs.radius # radius  
     set_gtk_property!(m["entFOV"], :text, "$(R*2000) x $(R*2000) x $(R*2000)") # initial FOV
+    calcField(m) # calculate new field values
     updateField(m)
+    updateProfile(m)
   end
   signal_connect(resetFOV, m["btnResetFOV"], "clicked")
   
@@ -390,7 +489,7 @@ function initCallbacks(m::MagneticFieldViewerWidget)
 
   ## click on image to choose a slice
   function on_pressed(controller, n_press, x, y)
-    if get_gtk_property(m["cbShowAxes"], :active, Bool)
+    if get_gtk_property(m["cbShowCS"], :active, Bool)
       @info "Disable axes to change the intersection with a mouse click." 
     else
       # position on the image: (x,y)
@@ -444,17 +543,17 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
   m.coeffsInit = deepcopy(coeffs) # save initial coefficients for reloading
 
   # load magnetic fields
-  m.coeffs = coeffs # load coefficients
+  m.coeffs = deepcopy(coeffs) # load coefficients (do not change the given coefficients!)
   m.coeffsPlot = deepcopy(m.coeffs.coeffs) # load coefficients
 
-  @polyvar x y z
-  expansion = sphericalHarmonicsExpansion.(m.coeffs.coeffs,[x],[y],[z])
-  m.field = fastfunc.(expansion)
+  m.field = SphericalHarmonicsDefinedField(m.coeffs)
   m.patch = 1
+  setPatch!(m.field,m.patch) # set selected patch
   R = m.coeffs.radius # radius
-  center = m.coeffs.center # center of the measurement
-  m.fv.centerFFP = (m.coeffs.ffp != nothing) ?  true : false # if FFP is given, it is the plotting center
+  center = m.coeffs.center[:,m.patch] # center of the measurement
+  m.fv.centerFFP = (m.coeffs.ffp !== nothing) ?  true : false # if FFP is given, it is the plotting center
   set_gtk_property!(m["btnCenterFFP"],:sensitive,false) # disable button
+  set_gtk_property!(m["btnCenterSphere"],:sensitive,true) # enable button
  
   m.updating = true
 
@@ -464,10 +563,11 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
   set_gtk_property!(m["adjL"], :upper, m.coeffs.coeffs[1].L )
   set_gtk_property!(m["adjL"], :value, min(m.coeffs.coeffs[1].L,3) ) # use L=3 as maximum
   set_gtk_property!(m["entRadius"], :text, "$(round(R*1000,digits=1))") # show radius of measurement 
+  # center/FFP in coordinate system of coefficients
   centerText = round.(center .* 1000, digits=1)
   set_gtk_property!(m["entCenterMeas"], :text, "$(centerText[1]) x $(centerText[2]) x $(centerText[3])") # show center of measurement
-  if m.coeffs.ffp != nothing
-    ffpText = round.((center + m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
+  if m.coeffs.ffp !== nothing
+    ffpText = round.((m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
     set_gtk_property!(m["entFFP"], :text, "$(ffpText[1]) x $(ffpText[2]) x $(ffpText[3])") # show FFP of current patch
   else
     set_gtk_property!(m["entFFP"], :text, "no FFP")
@@ -480,35 +580,37 @@ function updateData!(m::MagneticFieldViewerWidget, coeffs::MagneticFieldCoeffici
     set_gtk_property!(m[w], :value, 0)
     set_gtk_property!(m[w], :upper, d)
   end
+  # Video params
+  set_gtk_property!(m["adjPatchesVideoLower"], :upper, size(m.coeffs.coeffs,2) )
+  set_gtk_property!(m["adjPatchesVideoUpper"], :upper, size(m.coeffs.coeffs,2) )
+  set_gtk_property!(m["adjPatchesVideoUpper"], :value, size(m.coeffs.coeffs,2) )
+  set_gtk_property!(m["entSleepVideo"], :text, "50")
 
   # if no FFPs are given, don't show the buttons
-  if m.coeffs.ffp == nothing
+  if isnothing(m.coeffs.ffp)
     set_gtk_property!(m["btnGoToFFP"],:visible,false) # FFP as intersection not available
     set_gtk_property!(m["btnCenterFFP"],:visible,false) # FFP as center not available
     set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # Center of sphere automatically plotting center
     set_gtk_property!(m["btnCalcFFP"],:sensitive,true) # FFP can be calculated
+    set_gtk_property!(m["btnResetFFP"],:sensitive,false) # no FFP to be reset
   else
     # disable the calcFFP button
     set_gtk_property!(m["btnCalcFFP"],:sensitive,false) # FFP already calculated
+    set_gtk_property!(m["btnResetFFP"],:sensitive,true) # FFP can be reseted
   end
-
-  # disable buttons that have no functions at the moment
-  set_gtk_property!(m["btnFrames"],:sensitive,false) # disable button with unused popover
-  set_gtk_property!(m["btnExportTikz"],:sensitive,false) # tikz export not yet supported
 
   # start with invisible axes for field plots
   #set_gtk_property!(m["cbShowAxes"], :active, 1) # axes are always shown
 
   # update measurement infos
-  if m.coeffs.ffp == nothing
+  if isnothing(m.coeffs.ffp)
     # default: show the offset field values if no FFP is given
     set_gtk_property!(m["cbGradientOffset"],:active,1) 
   end
   updateInfos(m)
 
   # plotting
-  updateField(m)
-  updateCoeffsPlot(m)
+  updatePlots(m)
   show(m)
   
   m.updating = false
@@ -588,7 +690,7 @@ function updateIntersection(m::MagneticFieldViewerWidget)
 end
 
 function goToFFP(m::MagneticFieldViewerWidget, goToZero=false)
-  if m.coeffs.ffp == nothing && !goToZero
+  if m.coeffs.ffp === nothing && !goToZero
     # no FFP given
     return nothing
   end
@@ -604,8 +706,7 @@ function goToFFP(m::MagneticFieldViewerWidget, goToZero=false)
   updateSlices(m) # update slice numbers
   calcCenterCoeffs(m) # recalculate coefficients regarding to the center
   updateCoeffs(m, intersection) # shift coefficients into new intersection 
-  updateCoeffsPlot(m)
-  updateField(m)
+  updatePlots(m)
 
   m.updating = false
 end
@@ -613,19 +714,15 @@ end
 # calculate the FFP of the given coefficients
 function calcFFP(m::MagneticFieldViewerWidget)
   
-  # calculate the FFP 
-  @polyvar x y z
-  expansion = sphericalHarmonicsExpansion.(m.coeffs.coeffs,[x],[y],[z])
-  m.coeffs.ffp = findFFP(expansion,x,y,z)
+  # calculate the FFP (don't shift the coefficients into the FFP)
+  vol = get_gtk_property(m["cbVolumeFFP"], :active, Int64) # volume where to search
+  findFFP!(m.coeffs, 
+           start = [m.fv.intersection], # use intersection as start value
+           vol = MPISphericalHarmonics.Volume(vol))
   
   # show FFP
-  ffpText = round.((m.coeffs.center + m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
+  ffpText = round.((m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
   set_gtk_property!(m["entFFP"], :text, "$(ffpText[1]) x $(ffpText[2]) x $(ffpText[3])") # show FFP of current patch
-    
-  # translate coefficients center of measured sphere into the FFP
-  for p = 1:size(m.coeffs.coeffs,2)
-    m.coeffs.coeffs[:,p] = SphericalHarmonicExpansions.translation.(m.coeffs.coeffs[:,p],[m.coeffs.ffp[:,p]])
-  end
 
   # show FFP regarding buttons
   set_gtk_property!(m["btnGoToFFP"],:visible,true) # FFP as intersection
@@ -633,19 +730,45 @@ function calcFFP(m::MagneticFieldViewerWidget)
   set_gtk_property!(m["btnCenterFFP"],:sensitive,true) # FFP as center
   # disable calcFFP button
   set_gtk_property!(m["btnCalcFFP"],:sensitive,false) # FFP already calculated
+  set_gtk_property!(m["btnResetFFP"],:sensitive,true) # allow to reset the FFP
+  set_gtk_property!(m["cbVolumeFFP"],:sensitive,false) # FFP already calculated in this volume
 #  set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # Center of sphere automatically plotting center
+end
+
+# reset the FFP of the given coefficients
+function resetFFP(m::MagneticFieldViewerWidget)
+  
+  # reset the FFP
+  m.coeffs.ffp = nothing
+  
+  # show FFP
+  set_gtk_property!(m["entFFP"], :text, "no FFP") # show FFP of current patch
+
+  # show FFP regarding buttons
+  set_gtk_property!(m["btnGoToFFP"],:visible,false) # FFP as intersection
+  set_gtk_property!(m["btnCenterFFP"],:visible,false) # FFP as center
+  set_gtk_property!(m["btnCenterFFP"],:sensitive,false) # FFP as center
+  # disable calcFFP button
+  set_gtk_property!(m["btnCalcFFP"],:sensitive,true) # FFP can be calculated again
+  set_gtk_property!(m["btnResetFFP"],:sensitive,false) # reset done
+  set_gtk_property!(m["cbVolumeFFP"],:sensitive,true) # allow to choose new volume
+
+  # go to center sphere
+  m.fv.centerFFP = false
+  calcCenterCoeffs(m,true)
+  updatePlots(m)
+  set_gtk_property!(m["btnCenterSphere"],:sensitive,false) # Coefficients are in the sphere center
 end
 
 # if button "Stay in FFP" true, everything is shifted into FFP, else the plots are updated
 function stayInFFP(m::MagneticFieldViewerWidget)
   # update plots
-  if get_gtk_property(m["cbStayFFP"], :active, Bool) && m.coeffs.ffp != nothing
-    # stay in (resp. got to) the FFP with the plot
+  if get_gtk_property(m["cbStayFFP"], :active, Bool) && m.coeffs.ffp !== nothing
+    # stay in (resp. go to) the FFP with the plot
     goToFFP(m)
   else 
-    # use intersection and just update both plots 
-    updateField(m)
-    updateCoeffsPlot(m)
+    # use intersection and just update all plots 
+    updatePlots(m)
   end
 end
 
@@ -690,23 +813,18 @@ function calcCenterCoeffs(m::MagneticFieldViewerWidget,resetIntersection=false)
 		"$(intersection[1]*1000) x $(intersection[2]*1000) x $(intersection[3]*1000)") 
   end
 
-  if m.fv.centerFFP || m.coeffs.ffp == nothing
-    # just reset coeffs to initial coeffs
-    # assumption: initial coeffs are given in the FFP
+  if m.fv.centerFFP
+    # shift coefficients into FFP (updates ffp and center)
+    MPISphericalHarmonics.shift!(m.coeffs, m.coeffs.ffp)
     m.coeffsPlot = deepcopy(m.coeffs.coeffs)
-    
   else
     # translate coefficients from FFP to center of measured sphere
-    for p = 1:size(m.coeffs.coeffs,2)
-      m.coeffsPlot[:,p] = SphericalHarmonicExpansions.translation.(m.coeffs.coeffs[:,p],[-m.coeffs.ffp[:,p]])
-    end
-    
+    MPISphericalHarmonics.shift!(m.coeffs, m.coeffs.center)
+    m.coeffsPlot = deepcopy(m.coeffs.coeffs)
   end
 
   # update field
-  @polyvar x y z
-  expansion = sphericalHarmonicsExpansion.(m.coeffsPlot,[x],[y],[z])
-  m.field = fastfunc.(expansion)
+  m.field = SphericalHarmonicsDefinedField(m.coeffs)
 
   # update measurement infos
   updateInfos(m)
@@ -715,13 +833,17 @@ end
 # updating the measurement informations
 function updateInfos(m::MagneticFieldViewerWidget)
   # return new FFP
-  if m.coeffs.ffp != nothing
-    ffpText = round.((m.coeffs.center + m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
+  if m.coeffs.ffp !== nothing
+    ffpText = round.((m.coeffs.ffp[:,m.patch]) .* 1000, digits=1) 
     set_gtk_property!(m["entFFP"], :text, "$(ffpText[1]) x $(ffpText[2]) x $(ffpText[3])") # show FFP of current patch
   end
 
+  # return new center
+  centerText = round.((m.coeffs.center[:,m.patch]) .* 1000, digits=1) 
+  set_gtk_property!(m["entCenterMeas"], :text, "$(centerText[1]) x $(centerText[2]) x $(centerText[3])") # show FFP of current patch
+
   # update gradient/offset information
-  if get_gtk_property(m["cbGradientOffset"],:active, Int) == 0 # show gradient
+  if get_gtk_property(m["cbGradientOffset"],:active, Int) == 1 # show gradient
     # gradient
     set_gtk_property!(m["entGradientX"], :text, "$(round(m.coeffsPlot[1,m.patch][1,1],digits=3))") # show gradient in x
     set_gtk_property!(m["entGradientY"], :text, "$(round(m.coeffsPlot[2,m.patch][1,-1],digits=3))") # show gradient in y
@@ -731,277 +853,33 @@ function updateInfos(m::MagneticFieldViewerWidget)
       set_gtk_property!(m["labelTpm$i"], :label, "T/m")
       set_gtk_property!(m["labelGradient$i"], :label, ["x","y","z"][i]) 
     end
-  elseif get_gtk_property(m["cbGradientOffset"],:active, Int) == 1 # show offset field
+  elseif get_gtk_property(m["cbGradientOffset"],:active, Int) == 0 # show offset field
     for (i,x) in enumerate(["X","Y","Z"])
       # offset
-      set_gtk_property!(m["entGradient"*x], :text, "$(round(m.coeffsPlot[i,m.patch][0,0]*1000,digits=1))") # show gradient in x
+      set_gtk_property!(m["entGradient"*x], :text, "$(round(m.coeffsPlot[i,m.patch][0,0]*1000,digits=3))") # show gradient in x
       # unit
       set_gtk_property!(m["labelTpm$i"], :label, "mT")
       set_gtk_property!(m["labelGradient$i"], :label, ["x","y","z"][i]) 
     end
-  else # show singular values
+  else # show eigenvalues or singular values
     # calculate jacobian matrix
     @polyvar x y z
     expansion = sphericalHarmonicsExpansion.(m.coeffsPlot,[x],[y],[z])
     jexp = differentiate(expansion[:,m.patch],[x,y,z]);
     J = [jexp[i,j]((x,y,z) => [0.0,0.0,0.0]) for i=1:3, j=1:3] # jacobian matrix
-    # get singular values
-    sv = svd(J).S 
+    if get_gtk_property(m["cbGradientOffset"],:active, Int) == 2
+      # get eigenvalues
+      sv = eigvals(J)
+    else
+      # get singular values
+      sv = svd(J).S 
+    end
     # show values
     for (i,x) in enumerate(["X","Y","Z"])
-      set_gtk_property!(m["entGradient"*x], :text, "$(round(sv[i],digits=3))") # singular values
+      set_gtk_property!(m["entGradient"*x], :text, "$(round(sv[i],digits=3))") # eigenvalues/singular values
       set_gtk_property!(m["labelTpm$i"], :label, "T/m") # unit
       set_gtk_property!(m["labelGradient$i"], :label, "$i") 
     end
   end
 
-end
-
-##############
-## Plotting ##
-##############
-# plotting the magnetic field
-function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
-
-  useMilli = get_gtk_property(m["cbUseMilli"], :active, Bool) # convert everything to mT or mm
-  discretization = Int(get_gtk_property(m["adjDiscretization"],:value, Int64)*2+1) # odd number of voxel
-  R = m.coeffs.radius # radius of measurement data
-  # center = m.coeffs.center # center of measurement data (TODO: adapt axis with measurement center)
-  # m.patch = get_gtk_property(m["adjPatches"],:value, Int64) # patch
-  if m.coeffs.ffp != nothing
-    ffp = useMilli ? m.coeffs.ffp .* 1000 : m.coeffs.ffp # used for correct positioning of the sphere
-  end
-  # get current intersection
-  intersString = get_gtk_property(m["entInters"], :text, String) # intersection
-  intersection = tryparse.(Float64,split(intersString,"x")) ./ 1000 # conversion from mm to m
-
-  # get FOV
-  fovString = get_gtk_property(m["entFOV"], :text, String) # FOV
-  fov = tryparse.(Float64,split(fovString,"x")) ./ 1000 # conversion from mm to m
-
-  # Grid (fov denotes the size and not the first and last pixel)
-  N = [range(-fov[i]/2,stop=fov[i]/2,length=discretization+1) for i=1:3];
-  for i=1:3
-    N[i] = N[i][1:end-1] .+ Float64(N[i].step)/2
-  end
-
-  # calculate field for plot 
-  fieldNorm = zeros(discretization,discretization,3);
-  fieldxyz = zeros(3,discretization,discretization,3);
-  for i = 1:discretization
-    for j = 1:discretization
-      fieldxyz[:,i,j,1] = [m.field[d,m.patch]([intersection[1],N[2][i],N[3][j]]) for d=1:3]
-      fieldNorm[i,j,1] = norm(fieldxyz[:,i,j,1])
-      fieldxyz[:,i,j,2] = [m.field[d,m.patch]([N[1][i],intersection[2],N[3][j]]) for d=1:3]
-      fieldNorm[i,j,2] = norm(fieldxyz[:,i,j,2])
-      fieldxyz[:,i,j,3] = [m.field[d,m.patch]([N[1][i],N[2][j],intersection[3]]) for d=1:3]
-      fieldNorm[i,j,3] = norm(fieldxyz[:,i,j,3])
-    end
-  end
-
-  # coloring params
-  if updateColoring
-    # use params from GUI
-    cmin = m.fv.coloring.cmin
-    cmax = m.fv.coloring.cmax
-    cmap = m.fv.coloring.cmap
-    # set new min/max values
-      set_gtk_property!(m["adjCMin"], :upper, 0.99*cmax * 1000) # prevent cmin=cmax
-      set_gtk_property!(m["adjCMax"], :lower, 1.01*cmin * 1000) # prevent cmin=cmax
-  elseif get_gtk_property(m["cbKeepC"], :active, Bool) 
-    # don't change min/max if the checkbutton is active
-    cmin = m.fv.coloring.cmin
-    cmax = m.fv.coloring.cmax
-    cmap = m.fv.coloring.cmap
-  else
-    # set new coloring params
-    cmin, cmax = minimum(fieldNorm), maximum(fieldNorm)
-    cmin = (get_gtk_property(m["cbCMin"], :active, Bool)) ? 0.0 : cmin # set cmin to 0 if checkbutton is active
-    cmap = m.fv.coloring.cmap
-    m.fv.coloring = ColoringParams(cmin, cmax, cmap) # set coloring
-    # set cmin and cmax
-      set_gtk_property!(m["adjCMin"], :lower, cmin * 1000)
-      set_gtk_property!(m["adjCMin"], :upper, 0.99*cmax * 1000) # prevent cmin=cmax
-      set_gtk_property!(m["adjCMax"], :lower, 1.01*cmin * 1000) # prevent cmin=cmax
-      set_gtk_property!(m["adjCMax"], :upper, cmax * 1000)
-      @idle_add_guarded set_gtk_property!(m["adjCMin"], :value, cmin * 1000)
-      @idle_add_guarded set_gtk_property!(m["adjCMax"], :value, cmax * 1000)
-  end
-  # update coloring infos
-  set_gtk_property!(m["entCMin"], :text, "$(round(m.fv.coloring.cmin * 1000, digits=1))")
-  set_gtk_property!(m["entCMax"], :text, "$(round(m.fv.coloring.cmax * 1000, digits=1))")
-
-  # convert N to mT
-  N = useMilli ? N .* 1000 : N
- 
-  # heatmap plots
-  # label
-  lab = [useMilli ? "$i / mm" : "$i / m" for i in ["x", "y", "z"]]
-  # YZ
-  figYZ = CairoMakie.Figure(figure_padding=0);
-  axYZ = CairoMakie.Axis(figYZ[1,1], xlabel=lab[2], ylabel=lab[3])
-  CairoMakie.heatmap!(axYZ, N[2], N[3], fieldNorm[:,:,1], colorrange=(cmin,cmax), colormap=cmap)
-  # XZ
-  figXZ = CairoMakie.Figure(figure_padding=0);
-  axXZ = CairoMakie.Axis(figXZ[1,1], xlabel=lab[1], ylabel=lab[3]) 
-  axXZ.xreversed = true # reverse x
-  CairoMakie.heatmap!(axXZ, N[1], N[3], fieldNorm[:,:,2], colorrange=(cmin,cmax), colormap=cmap)
-  # XY
-  figXY = CairoMakie.Figure(figure_padding=0);
-  axXY = CairoMakie.Axis(figXY[1,1], xlabel=lab[2], ylabel=lab[1])
-  CairoMakie.heatmap!(axXY, N[2], N[1], fieldNorm[:,:,3]', colorrange=(cmin,cmax), colormap=cmap)
-  axXY.yreversed = true # reverse x
-  
-
-  # disable ticks and labels
-  if !(get_gtk_property(m["cbShowAxes"], :active, Bool))
-    for ax in [axYZ, axXZ, axXY]
-      ax.xlabelvisible = false; ax.ylabelvisible = false; 
-      ax.xticklabelsvisible = false; ax.yticklabelsvisible = false; 
-      ax.xticksvisible = false; ax.yticksvisible = false;
-    end
-  end
-
-  ## arrows ##
-  discr = floor(Int,0.1*discretization) # reduce number of arrows
-  ## positioning
-  NN = [N[i][1:discr:end] for i=1:3]
-  # vectors (arrows) (adapted to chosen coordinate orientations)
-  arYZ = [[fieldxyz[2,i,j,1],fieldxyz[3,i,j,1]] for i=1:discr:discretization, j=1:discr:discretization]
-  arXZ = [[fieldxyz[1,i,j,2],fieldxyz[3,i,j,2]] for i=1:discr:discretization, j=1:discr:discretization]
-  arXY = [[fieldxyz[2,i,j,3],fieldxyz[1,i,j,3]] for i=1:discr:discretization, j=1:discr:discretization]
-  # adapt length so that the maximum is equal to the chosen al:
-  al = get_gtk_property(m["adjArrowLength"],:value, Float64)/2 # adapt length of the arrows
-  al = useMilli ? al*1000 : al # adapt length with chosen units
-  
-  # add arrows to plots
-  # YZ
-  arYZu = [ar[1] for ar in arYZ]
-  arYZv = [ar[2] for ar in arYZ]
-  CairoMakie.arrows!(axYZ, NN[2], NN[3], arYZu, arYZv, 
-		     color=:white, linewidth=1, arrowsize = 6, lengthscale = 0.1*al)
-  # XZ
-  arXZu = [ar[1] for ar in arXZ]
-  arXZv = [ar[2] for ar in arXZ]
-  CairoMakie.arrows!(axXZ, NN[1], NN[3], arXZu, arXZv, 
-		     color=:white, linewidth=1, arrowsize = 6, lengthscale = 0.1*al)
-  # XY
-  arXYu = [ar[1] for ar in arXY]
-  arXYv = [ar[2] for ar in arXY]
-  CairoMakie.arrows!(axXY, NN[2], NN[1], arXYu', arXYv', 
-		     color=:white, linewidth=1, arrowsize = 6, lengthscale = 0.1*al)
-
-  # set fontsize
-  fs = get_gtk_property(m["adjFontsize"],:value, Int64) # fontsize
-  CairoMakie.set_theme!(CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
-
-  # Show slices
-  if get_gtk_property(m["cbShowSlices"], :active, Bool)
-    # draw lines to mark 0
-    intersec = useMilli ? intersection .*1000 : intersection # scale intersection to the chosen unit
-    # YZ
-    CairoMakie.hlines!(axYZ, intersec[3], color=:white, linestyle=:dash, linewidth=0.5)
-    CairoMakie.vlines!(axYZ, intersec[2], color=:white, linestyle=:dash, linewidth=0.5)
-    # XZ
-    CairoMakie.hlines!(axXZ, intersec[3], color=:white, linestyle=:dash, linewidth=0.5)
-    CairoMakie.vlines!(axXZ, intersec[1], color=:white, linestyle=:dash, linewidth=0.5)
-    # XY
-    CairoMakie.hlines!(axXY, intersec[1], color=:white, linestyle=:dash, linewidth=0.5)
-    CairoMakie.vlines!(axXY, intersec[2], color=:white, linestyle=:dash, linewidth=0.5)
-  end
-
-  # show sphere
-  if get_gtk_property(m["cbShowSphere"], :active, Bool)
-    # sphere
-    ϕ=range(0,stop=2*pi,length=100)
-    rr = zeros(100,2)
-    for i=1:100
-      rr[i,1] = R*sin(ϕ[i]);
-      rr[i,2] = R*cos(ϕ[i]);
-    end
-    rr = useMilli ? rr .* 1000 : rr # convert from m to mm
-
-    # shift sphere to plotting center
-    if m.fv.centerFFP && m.coeffs.ffp != nothing
-      CairoMakie.lines!(axYZ, rr[:,1].-ffp[2,m.patch], rr[:,2].-ffp[3,m.patch], 
-			color=:white, linestyle=:dash, linewidth=1)
-      CairoMakie.lines!(axXZ, rr[:,1].-ffp[1,m.patch], rr[:,2].-ffp[3,m.patch], 
-			color=:white, linestyle=:dash, linewidth=1)
-      CairoMakie.lines!(axXY, rr[:,1].-ffp[2,m.patch], rr[:,2].-ffp[1,m.patch], 
-			color=:white, linestyle=:dash, linewidth=1)
-    else
-      CairoMakie.lines!(axYZ, rr[:,1], rr[:,2], color=:white, linestyle=:dash, linewidth=1)
-      CairoMakie.lines!(axXZ, rr[:,1], rr[:,2], color=:white, linestyle=:dash, linewidth=1)
-      CairoMakie.lines!(axXY, rr[:,1], rr[:,2], color=:white, linestyle=:dash, linewidth=1)
-    end
-
-  end
-
-  # show fields
-  drawonto(m.fv.grid[1,1], figXZ)
-  drawonto(m.fv.grid[2,1], figYZ)
-  drawonto(m.fv.grid[2,2], figXY)
-end
-
-# plotting the coefficients
-function updateCoeffsPlot(m::MagneticFieldViewerWidget)
-
-  p = get_gtk_property(m["adjPatches"],:value, Int64) # patch
-  L = get_gtk_property(m["adjL"],:value, Int64) # L
-  L² = (L+1)^2 # number of coeffs
-  R = m.coeffs.radius
-  useMilli = get_gtk_property(m["cbUseMilli"], :active, Bool) # convert everything to mT or mm
-  scaleR = get_gtk_property(m["cbScaleR"], :active, Bool) # normalize coefficients with radius R
-
-  # normalize coefficients
-  c = scaleR ? normalize.(m.coeffsPlot[:,p], 1/R) : m.coeffsPlot[:,p]
-  cs = vcat([c[d].c[1:L²] for d=1:3]...) # stack all coefficients
-  cs = useMilli ? cs .* 1000 : cs # convert to mT
-  grp = repeat(1:3, inner=L²) # grouping the coefficients
-
-  # set fontsize
-  fs = get_gtk_property(m["adjFontsize"],:value, Int64) # fontsize
-  CairoMakie.set_theme!(CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
-
-  # create plot
-  fig = CairoMakie.Figure(figure_padding=2)
-  xticklabel = ["[$l,$m]" for l=0:L for m=-l:l]
-  # ylabel
-  if useMilli && scaleR
-    ylabel = CairoMakie.L"\gamma^R_{l,m}~/~\text{mT}" 
-  elseif !useMilli && scaleR
-    ylabel = CairoMakie.L"\gamma^R_{l,m}~/~\text{T}"
-  elseif useMilli && !scaleR
-    ylabel = CairoMakie.L"\gamma_{l,m}~/~\text{mT/m}^l" 
-  else 
-    ylabel = CairoMakie.L"\gamma_{l,m}~/~\text{T/m}^l"
-  end 
-  ax = CairoMakie.Axis(fig[1,1], xticks = (1:L², xticklabel), 
-	    #title="Coefficients",
-	    xlabel = CairoMakie.L"[l,m]", ylabel = ylabel)
-
-  # x values
-  y = range(1,L²,length=L²)
-  y = repeat(y, outer=3) # for each direction
-
-  # create bars
-  colorsCoeffs = [CairoMakie.RGBf(MPIUI.colors[i]...) for i in [1,3,7]] # use blue, green and yellow
-  CairoMakie.barplot!(ax, # axis 
-           	      y, cs, # x- and y-values
-           	      dodge=grp, color=colorsCoeffs[grp])
-  CairoMakie.autolimits!(ax) # auto axis limits
-
-  # draw line to mark 0
-  CairoMakie.ablines!(0, 0, color=:black, linewidth=1)
-
-  # legend
-  if get_gtk_property(m["cbShowLegend"], :active, Bool)
-    labels = ["x","y","z"]
-    elements = [CairoMakie.PolyElement(polycolor = colorsCoeffs[i],
-				       ) for i in 1:length(labels)]
-    CairoMakie.axislegend(ax, elements, labels, position=:rt, patchsize=(15,0.8*fs)) # pos: right, top
-  end
- 
-  # show coeffs
-  drawonto(m.grid[1,3], fig)
 end

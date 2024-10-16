@@ -366,9 +366,9 @@ end
     data = reshape(data, :, numSignals)
     if reversePlots
       reverse!(data, dims=2)
-      labels_ = m.labels
-    else
       labels_ = reverse(m.labels)
+    else
+      labels_ = m.labels
     end
     if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
       dataBG = reshape(dataBG, :, numSignals)
@@ -407,7 +407,7 @@ end
                             label = labels_[1])
     for j=2:size(data,2)
       CairoMakie.lines!(axTD, timePoints[steps],dataCompressed[:,j], 
-                        color = CairoMakie.RGBf(colors[j]...),  #linewidth=3)
+                        color = CairoMakie.RGBf(colors[j%length(colors)+1]...),  #linewidth=3)
                         label = labels_[j])
     end
     if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
