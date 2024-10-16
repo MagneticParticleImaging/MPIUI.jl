@@ -230,12 +230,12 @@
                       <object class="GtkBox">
                         <property name="spacing">6</property>
                         <child>
-                          <object class="GtkImage">
+                          <object class="GtkImage" id="tbPauseIcon">
                             <property name="icon-name">media-playback-pause</property>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkLabel">
+                          <object class="GtkLabel" id="tbPauseLabel">
                             <property name="label">Pause</property>
                           </object>
                         </child>

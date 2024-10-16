@@ -179,24 +179,24 @@ end
 
 ### Pausing/Stopping Default ###
 function tryPauseProtocol(pw::ProtocolWidget)
-  put!(pw.biChannel, StopEvent())
+  put!(pw.biChannel, PauseEvent())
 end
 
-function handleSuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::StopEvent)
-  @info "Protocol stopped"
+function handleSuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::PauseEvent)
+  @info "Protocol paused"
   pw.protocolState = PS_PAUSED
   confirmPauseProtocol(pw)
   return false
 end
 
-function handleUnsupportedOperation(pw::ProtocolWidget, protocol::Protocol, event::StopEvent)
-  @info "Protocol can not be stopped"
+function handleUnsupportedOperation(pw::ProtocolWidget, protocol::Protocol, event::PauseEvent)
+  @info "Protocol can not be paused"
   denyPauseProtocol(pw)
   return false
 end
 
-function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::StopEvent)
-  @info "Protocol failed to be stopped"
+function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::PauseEvent)
+  @info "Protocol failed to be paused"
   denyPauseProtocol(pw)
   return false
 end
@@ -206,7 +206,8 @@ function confirmPauseProtocol(pw::ProtocolWidget)
     pw.updating = true
     set_gtk_property!(pw["tbPause"], :active, true)
     set_gtk_property!(pw["tbPause"], :sensitive, true)
-    ### set_gtk_property!(pw["tbPause"], :label, "Unpause")
+    set_gtk_property!(pw["tbPauseLabel"], :label, "Resume")
+    set_gtk_property!(pw["tbPauseIcon"], "icon-name", "media-playback-start")
     pw.updating = false
   end
 end
@@ -250,7 +251,8 @@ function confirmResumeProtocol(pw::ProtocolWidget)
     pw.updating = true
     set_gtk_property!(pw["tbPause"], :active, false)
     set_gtk_property!(pw["tbPause"], :sensitive, true)
-    ### set_gtk_property!(pw["tbPause"], :label, "Pause")
+    set_gtk_property!(pw["tbPauseLabel"], :label, "Pause")
+    set_gtk_property!(pw["tbPauseIcon"], "icon-name", "media-playback-pause")
     pw.updating = false
   end
 end
@@ -286,25 +288,25 @@ function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, eve
 end
 
 ### Stop Default ###
-#=function tryCancelProtocol(pw::ProtocolWidget)
+function tryStopProtocol(pw::ProtocolWidget)
   put!(pw.biChannel, StopEvent())
 end
 
 function handleSuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::StopEvent)
-  @info "Protocol cancelled"
-  pw.protocolState = PS_FAILED
+  @info "Protocol stopped"
+  pw.protocolState = PS_STOPPED
   return true
 end
 
 function handleUnsupportedOperation(pw::ProtocolWidget, protocol::Protocol, event::StopEvent)
-  @warn "Protocol can not be cancelled"
+  @warn "Protocol can not be stopped"
   return false
 end
 
 function handleUnsuccessfulOperation(pw::ProtocolWidget, protocol::Protocol, event::StopEvent)
-  @warn "Protocol failed to be cancelled"
+  @warn "Protocol failed to be stopped"
   return false
-end=#
+end
 
 ### Finish Default ###
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::FinishedNotificationEvent)
@@ -329,7 +331,8 @@ function confirmFinishedProtocol(pw::ProtocolWidget)
     set_gtk_property!(pw["tbPause"], :active, false)
     # Text
     ### set_gtk_property!(pw["tbRun"], :label, "Execute")
-    ### set_gtk_property!(pw["tbPause"], :label, "Pause")
+    set_gtk_property!(pw["tbPauseLabel"], :label, "Pause")
+    set_gtk_property!(pw["tbPauseIcon"], "icon-name", "media-playback-pause")
     pw.updating = false
   end
 end

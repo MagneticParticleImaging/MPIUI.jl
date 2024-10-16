@@ -120,7 +120,7 @@ function initCallbacks(pw::ProtocolWidget)
             set_gtk_property!(pw["tbRun"], :sensitive, false)
             set_gtk_property!(pw["tbPause"], :sensitive, true)
             set_gtk_property!(pw["tbCancel"], :sensitive, true)
-            set_gtk_property!(pw["tbStop"], :sensitive, true)
+            set_gtk_property!(pw["tbStop"], :sensitive, false)
             set_gtk_property!(pw["btnPickProtocol"], :sensitive, false)
             pw.updating = false
           end
@@ -147,7 +147,7 @@ function initCallbacks(pw::ProtocolWidget)
     end
   end
 
-  signal_connect(pw["tbPause"], :toggled) do w
+  signal_connect(pw["tbStop"], :clicked) do w
     tryStopProtocol(pw)
   end
 
