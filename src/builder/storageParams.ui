@@ -87,6 +87,9 @@
         <child type="label">
           <object class="GtkLabel" id="label56">
             <property name="label" translatable="1">Experiment</property>
+            <attributes>
+              <attribute name="weight" value="bold"></attribute>
+            </attributes>
           </object>
         </child>
       </object>
@@ -241,6 +244,9 @@
         <child type="label">
           <object class="GtkLabel" id="label18">
             <property name="label" translatable="1">Tracer</property>
+            <attributes>
+              <attribute name="weight" value="bold"></attribute>
+            </attributes>
           </object>
         </child>
       </object>

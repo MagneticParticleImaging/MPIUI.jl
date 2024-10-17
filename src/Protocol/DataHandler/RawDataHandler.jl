@@ -47,9 +47,9 @@ end
 enable!(handler::RawDataHandler, val::Bool) = @atomic handler.enabled = val
 getStorageTitle(handler::RawDataHandler) = "Raw Data"
 getStorageWidget(handler::RawDataHandler) = handler.params
-getParameterTitle(handler::RawDataHandler) = "Raw Data"
+getParameterTitle(handler::RawDataHandler) = "Raw Data Viewer"
 getParameterWidget(handler::RawDataHandler) = nothing
-getDisplayTitle(handler::RawDataHandler) = "Raw Data"
+getDisplayTitle(handler::RawDataHandler) = "Raw Data Viewer"
 getDisplayWidget(handler::RawDataHandler) = handler.dataWidget
 
 function handleProgress(handler::RawDataHandler, protocol::Union{MPIMeasurementProtocol, RobotMPIMeasurementProtocol}, event::ProgressEvent)
