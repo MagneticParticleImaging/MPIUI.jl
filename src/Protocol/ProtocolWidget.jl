@@ -224,8 +224,10 @@ function updateProtocol(pw::ProtocolWidget, protocol::Protocol)
     pw.protocol = protocol
     updateProtocolDataHandler(pw, protocol)
     updateProtocolParameter(pw, protocol)
-    # need to update study here, the data handler does not get initialized properly unless the study selection in the main widget changes
-    updateStudy(pw, mpilab[].currentStudy.name, mpilab[].currentStudy.date)
+    # we need to update the study here, the data handler does not get initialized properly unless the study selection in the main widget changes
+    if !isnothing(mpilab[].currentStudy)
+      updateStudy(pw, mpilab[].currentStudy.name, mpilab[].currentStudy.date)
+    end
     pw.updating = false
   end
 end
