@@ -498,19 +498,19 @@ function initStudyStore(m::MPILab)
     name = get_gtk_property(m["entSearchStudies"], :text, String)
     study = Study(activeDatasetStore(m), name)
     addStudy(activeDatasetStore(m), study)
-    @idle_add_guarded scanDatasetDir(m)
+    scanDatasetDir(m)
 
-    iter = Gtk4.mutable(Gtk4.GtkTreeIter)
+    iter = Gtk4.Ref{Gtk4._GtkTreeIter}()
     Gtk4.get_iter_first( GtkTreeModel(m.studyStoreSorted) , iter)
     for l=1:length(m.studyStore)
-      if GtkTreeModel(m.studyStoreSorted)[iter,2] == name
+      if GtkTreeModel(m.studyStoreSorted)[iter][4] == study.foldername
         break
       else
         Gtk4.get_iter_next( GtkTreeModel(m.studyStoreSorted) , iter)
       end
     end
 
-    @idle_add_guarded select!(m.selectionStudy, iter)
+    @idle_add_guarded Gtk4.select!(m.selectionStudy, iter)
   end
 
 end
@@ -527,7 +527,7 @@ function scanDatasetDir(m::MPILab)
   m.clearingStudyStore = false
 
   studies = getStudies( activeDatasetStore(m) )
-
+  @info "Pushing studies"
   for study in studies
     push!(m.studyStore, (split(string(study.date),"T")[1], study.name, study.subject,
 			  study.foldername, split(string(study.date),"T")[2], true))
