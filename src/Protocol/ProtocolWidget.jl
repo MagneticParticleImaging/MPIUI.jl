@@ -55,6 +55,13 @@ function ProtocolWidget(scanner=nothing)
     initCallbacks(pw)
   end
 
+  if mpilab[].settings["invertedMeasurementView", false]
+    w = collect(pw)
+    empty!(pw)
+    push!(pw,w[2])
+    push!(pw,w[1])
+  end
+
   # Dummy plotting for warmstart during protocol execution
   @info "Finished starting ProtocolWidget"
   return pw
