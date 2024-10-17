@@ -50,11 +50,14 @@
         </child>
         <child>
           <object class="GtkSpinButton" id="spinbutton7">
+            <property name="sensitive">0</property>
+            <property name="editable">0</property>
             <property name="focusable">1</property>
             <property name="hexpand">1</property>
             <property name="width_chars">0</property>
             <property name="text" translatable="1">1</property>
             <property name="adjustment">adjNumFrames</property>
+            <property name="tooltip_text" translatable="1">Number of frames in sequence. Use the protocol definition instead!</property>
             <property name="value">1</property>
             <layout>
               <property name="column">1</property>
@@ -78,6 +81,7 @@
             <property name="width_chars">0</property>
             <property name="text" translatable="1">1</property>
             <property name="adjustment">adjNumAverages</property>
+            <property name="tooltip_text" translatable="1">Set averaging on a period basis. Use frame averaging instead if you have multiple periods in one frame.</property>
             <property name="value">1</property>
             <layout>
               <property name="column">1</property>
@@ -107,7 +111,9 @@
         </child>
         <child>
           <object class="GtkSpinButton">
+            <property name="sensitive">0</property>
             <property name="focusable">1</property>
+            <property name="editable">0</property>
             <property name="width_chars">0</property>
             <property name="text" translatable="1">1</property>
             <property name="adjustment">adjNumSubperiods</property>
@@ -134,6 +140,7 @@
             <property name="width_chars">3</property>
             <property name="text" translatable="1">1</property>
             <property name="adjustment">adjNumFrameAverages</property>
+            <property name="tooltip_text" translatable="1">Set averaging on a frame basis. Use this if you have multiple periods in one frame.</property>
             <property name="value">1</property>
             <layout>
               <property name="column">1</property>
