@@ -527,7 +527,6 @@ function scanDatasetDir(m::MPILab)
   m.clearingStudyStore = false
 
   studies = getStudies( activeDatasetStore(m) )
-  @info "Pushing studies"
   for study in studies
     push!(m.studyStore, (split(string(study.date),"T")[1], study.name, study.subject,
 			  study.foldername, split(string(study.date),"T")[2], true))
