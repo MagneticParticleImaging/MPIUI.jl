@@ -44,7 +44,7 @@
             <property name="label" translatable="1"># Frames</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">0</property>
+              <property name="row">2</property>
             </layout>
           </object>
         </child>
@@ -58,7 +58,7 @@
             <property name="value">1</property>
             <layout>
               <property name="column">1</property>
-              <property name="row">0</property>
+              <property name="row">2</property>
             </layout>
           </object>
         </child>
@@ -68,7 +68,7 @@
             <property name="label" translatable="1"># Averages</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">1</property>
+              <property name="row">3</property>
             </layout>
           </object>
         </child>
@@ -81,7 +81,7 @@
             <property name="value">1</property>
             <layout>
               <property name="column">1</property>
-              <property name="row">1</property>
+              <property name="row">3</property>
             </layout>
           </object>
         </child>
@@ -91,7 +91,7 @@
             <property name="label" translatable="1"># Periods</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">3</property>
+              <property name="row">5</property>
             </layout>
           </object>
         </child>
@@ -101,7 +101,7 @@
             <property name="label" translatable="1"># Subperiods</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">5</property>
+              <property name="row">7</property>
             </layout>
           </object>
         </child>
@@ -114,7 +114,7 @@
             <property name="value">1</property>
             <layout>
               <property name="column">1</property>
-              <property name="row">5</property>
+              <property name="row">7</property>
             </layout>
           </object>
         </child>
@@ -124,7 +124,7 @@
             <property name="label" translatable="1">Sequence</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">7</property>
+              <property name="row">0</property>
             </layout>
           </object>
         </child>
@@ -137,7 +137,7 @@
             <property name="value">1</property>
             <layout>
               <property name="column">1</property>
-              <property name="row">2</property>
+              <property name="row">4</property>
             </layout>
           </object>
         </child>
@@ -147,7 +147,7 @@
             <property name="label" translatable="1"># Frame Av.</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">2</property>
+              <property name="row">4</property>
             </layout>
           </object>
         </child>
@@ -157,7 +157,7 @@
             <property name="label" translatable="1"># Patches</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">4</property>
+              <property name="row">6</property>
             </layout>
           </object>
         </child>
@@ -169,7 +169,7 @@
             <property name="width_chars">1</property>
             <layout>
               <property name="column">1</property>
-              <property name="row">4</property>
+              <property name="row">6</property>
             </layout>
           </object>
         </child>
@@ -181,7 +181,7 @@
             <property name="width_chars">1</property>
             <layout>
               <property name="column">1</property>
-              <property name="row">3</property>
+              <property name="row">5</property>
             </layout>
           </object>
         </child>
@@ -192,7 +192,7 @@
             <property name="width_chars">1</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">8</property>
+              <property name="row">1</property>
               <property name="column-span">2</property>
             </layout>
           </object>
@@ -204,7 +204,7 @@
             <property name="receives_default">1</property>
             <layout>
               <property name="column">1</property>
-              <property name="row">7</property>
+              <property name="row">0</property>
             </layout>
           </object>
         </child>
@@ -255,7 +255,7 @@
             </child>
             <layout>
               <property name="column">0</property>
-              <property name="row">6</property>
+              <property name="row">8</property>
               <property name="column-span">2</property>
             </layout>
           </object>
@@ -265,6 +265,9 @@
     <child type="label">
       <object class="GtkLabel" id="lblSequence">
         <property name="label" translatable="1">Sequence</property>
+        <attributes>
+              <attribute name="weight" value="bold"></attribute>
+        </attributes>
       </object>
     </child>
   </object>
