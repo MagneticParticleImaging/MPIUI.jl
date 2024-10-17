@@ -248,7 +248,7 @@ function initCallbacks(m::LogMessageListWidget)
     end
   end
 
-  #= signal_connect(m.tv, :size_allocate) do w, a TODO
+  signal_connect(m.store, :row_inserted) do w, a, c# TODO
     @idle_add_guarded begin
       m.updating = true
       if m.scrollState == ATTACHED_BOTTOM
@@ -258,7 +258,7 @@ function initCallbacks(m::LogMessageListWidget)
       end
       m.updating = false
     end
-  end=#
+  end
 end
 
 function getToDateTime(widget::LogMessageListWidget)
@@ -291,8 +291,8 @@ function addGroupCheckBox(widget::LogMessageListWidget, group::String)
         applyFilter!(widget)
       end
     end
-###    push!(widget["boxGroups"], check)
-###    show(widget["boxGroups"])
+    
+    G_.append(widget["boxGroups"],check)
   end
 end
 
