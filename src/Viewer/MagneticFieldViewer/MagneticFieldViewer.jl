@@ -374,6 +374,12 @@ function MagneticFieldViewerWidget()
     end
   end
 
+  # load new coefficients
+  @guarded signal_connect(m["btnImport1"], "clicked") do widget
+    inNewWindow = get_gtk_property(m["cbImport"], :active, Bool) # load in new or current window
+    loadNewCoefficients(m,inNewWindow) # load new coefficients
+  end
+
   ## Video
   # update min/max values of the patches
   signal_connect(m["adjPatchesVideoLower"], "value_changed") do w
@@ -888,4 +894,23 @@ function updateInfos(m::MagneticFieldViewerWidget)
     end
   end
 
+end
+
+# load new coefficients
+function loadNewCoefficients(m::MagneticFieldViewerWidget, inNewWindow::Bool)
+  # open file dialog
+  filter = Gtk4.GtkFileFilter(pattern=String("*.h5"))
+  diag = open_dialog("Select Coefficients File", nothing, start_folder = ".") do filename
+    if filename !== nothing
+      @info "Load coefficients $filename."
+      if inNewWindow 
+        # open new window
+        @idle_add_guarded MagneticFieldViewer(filename)
+      else
+        # load coefficients in current window
+        @idle_add_guarded updateData!(m, filename)
+      end
+    end
+  end
+  diag.modal = true
 end
