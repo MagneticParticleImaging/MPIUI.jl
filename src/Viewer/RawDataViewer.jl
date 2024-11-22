@@ -407,7 +407,7 @@ end
                             label = labels_[1])
     for j=2:size(data,2)
       CairoMakie.lines!(axTD, timePoints[steps],dataCompressed[:,j], 
-                        color = CairoMakie.RGBf(colors[j%length(colors)+1]...),  #linewidth=3)
+                        color = CairoMakie.RGBf(colors[(j-1)%length(colors)+1]...),  #linewidth=3)
                         label = labels_[j])
     end
     if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
@@ -456,7 +456,7 @@ end
                               label=labels_[1])
       for j=2:size(data,2)
         CairoMakie.lines!(axFD, freq[stepsFr], freqDataCompressed[:,j], 
-                     color = CairoMakie.RGBf(colors[j]...), label=labels_[j])
+                     color = CairoMakie.RGBf(colors[(j-1)%length(colors)+1]...), label=labels_[j])
       end
       if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
         CairoMakie.lines!(axTD, timePoints[minTP:sp:maxTP],dataBG[minTP:sp:maxTP,1], color=:black,
