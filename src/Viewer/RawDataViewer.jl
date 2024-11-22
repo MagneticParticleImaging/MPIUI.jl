@@ -73,7 +73,7 @@ function initCallbacks(m_::RawDataWidget)
     maxTP = get_gtk_property(m["adjMaxTP"],:value, Int)
     maxValTP = get_gtk_property(m["adjMaxTP"],:upper, Int)
     
-    if minTP > maxTP
+    if maxTP != 0 && minTP > maxTP
       @idle_add_guarded set_gtk_property!(m["adjMaxTP"],:value, min(maxValTP,minTP+10))
     else
       showData(C_NULL, m)
@@ -96,7 +96,7 @@ function initCallbacks(m_::RawDataWidget)
     maxFre = get_gtk_property(m["adjMaxFre"],:value, Int)
     maxValFre = get_gtk_property(m["adjMaxFre"],:upper, Int)
     
-    if minFre > maxFre
+    if maxFre != 0 && (minFre > maxFre)
       @idle_add_guarded set_gtk_property!(m["adjMaxFre"],:value, min(maxValFre,minFre+10))
     else
       showData(C_NULL, m)
