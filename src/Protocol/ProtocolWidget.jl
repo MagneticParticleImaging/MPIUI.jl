@@ -251,7 +251,12 @@ function updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
   empty!(paramBox)
   empty!(storageBox)
   handlers = AbstractDataHandler[]
-  for (i, handlerType) in enumerate(defaultDataHandler(protocol))
+  
+  defaultDataHandlers =  defaultDataHandler(protocol)
+  storageWidgets = map(x->getStorageWidget(x(pw.scanner)), defaultDataHandlers)
+  moreThanOneStorageWidget = count(!isnothing, storageWidgets) > 1
+
+  for (i, handlerType) in enumerate(defaultDataHandlers)
     # TODO what common constructor do we need
     handler = handlerType(pw.scanner)
     push!(handlers, handler)
@@ -262,7 +267,14 @@ function updateProtocolDataHandler(pw::ProtocolWidget, protocol::Protocol)
     push!(nb, display, getDisplayTitle(handler))
     storage = getStorageWidget(handler)
     if !isnothing(storage)
-      push!(storageBox, storage)
+      if moreThanOneStorageWidget
+        storageExpander = GtkExpander(getStorageTitle(handler))
+        set_gtk_property!(storageExpander, :expanded, true)
+        G_.set_child(storageExpander, storage)
+        push!(storageBox, storageExpander)
+      else
+        push!(storageBox, storage)
+      end
     end
     paramExpander = ParamExpander(handler)
     push!(paramBox, paramExpander)
