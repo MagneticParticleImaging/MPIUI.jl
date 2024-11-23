@@ -243,7 +243,7 @@ function initCallbacks(m::LogMessageListWidget)
   vadj = get_gtk_property(m["wndMessages"], :vadjustment, GtkAdjustment)
   signal_connect(vadj, :value_changed) do w
     newValue = get_gtk_property(vadj, :value, Float64)
-    if newValue != (get_gtk_property(vadj, :upper, Float64) - get_gtk_property(vadj, :page_size, Float64)) && newValue != get_gtk_property(vadj, :lower, Float64)
+    if newValue < (get_gtk_property(vadj, :upper, Float64) - get_gtk_property(vadj, :page_size, Float64)) - 2
       m.scrollState = DETACHED
     end
   end
