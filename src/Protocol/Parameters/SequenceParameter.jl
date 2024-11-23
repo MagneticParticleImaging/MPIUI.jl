@@ -162,17 +162,20 @@ end
 function updateSequence(seqParam::SequenceParameter, seq::Sequence)  
   @idle_add_guarded begin
     try
-      @info "Try adding channels"
+      @info "Try adding sequence channels"
       empty!(seqParam["boxPeriodicChannel"])
+      daq = getDAQ(seqParam.scanner)
+      if isnothing(daq)
+        error("Cannot add sequence channels because DAQ appears to not have loaded correctly!")
+      end
       for channel in periodicElectricalTxChannels(seq)
-        daq = getDAQ(seqParam.scanner)
         idx = MPIMeasurements.channelIdx(daq, id(channel))
         waveforms = MPIMeasurements.allowedWaveforms(daq, id(channel)) 
         channelParam = PeriodicChannelParameter(idx, channel, waveforms)
         push!(seqParam["boxPeriodicChannel"], channelParam)
       end
       show(seqParam["boxPeriodicChannel"])
-      @info "Finished adding channels"
+      @info "Finished adding seqeunce channels"
 
       set_gtk_property!(seqParam["entSequenceName"], :text, MPIMeasurements.name(seq)) 
       set_gtk_property!(seqParam["entNumPeriods"], :text, "$(MPIMeasurements.acqNumPeriodsPerFrame(seq))")
