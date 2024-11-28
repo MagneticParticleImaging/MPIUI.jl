@@ -27,7 +27,10 @@ ENV["MPILIB_UI"] = "Nothing"
 
 @reexport using MPIMeasurements
 @reexport using MPIReco
+@reexport using MPIViewers
 using MPIReco.RegularizedLeastSquares
+
+import MPIViewers: updateData!, showData!, updateData, showData
 
 using ImageUtils: makeAxisArray, Axis
 
@@ -118,8 +121,6 @@ const colors = [(0/255,73/255,146/255), # UKE blau
 
 
 include("LogMessagesWidget.jl")
-include("GtkUtils.jl")
-include("Viewer/Viewer.jl")
 include("Reconstruction/OfflineRecoWidget.jl")
 include("Protocol/ProtocolWidget.jl")
 include("SFBrowser.jl")
