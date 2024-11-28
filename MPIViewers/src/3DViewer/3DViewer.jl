@@ -43,7 +43,7 @@ function DataViewer3D(imFG; kwargs...)
 end
 
 function DataViewer3D(; kwargs...)
-  w = GtkWindow("Data Viewer",800,600)
+  w = GtkWindow("Data Viewer 3D",800,600)
   dw = DataViewer3DWidget(; kwargs...)
   push!(w,dw)
   show(w)

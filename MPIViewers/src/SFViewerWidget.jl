@@ -1,4 +1,4 @@
-export SFViewer
+export SFViewerWidget, SFViewer
 mutable struct SFViewerWidget <: Gtk4.GtkPaned
   handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder

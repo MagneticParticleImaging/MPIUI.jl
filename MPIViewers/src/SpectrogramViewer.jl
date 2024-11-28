@@ -1,4 +1,4 @@
-export SpectrogramViewer
+export SpectrogramViewer, SpectrogramWidget
 
 mutable struct SpectrogramWidget <: Gtk4.GtkBox
   handle::Ptr{Gtk4.GObject}

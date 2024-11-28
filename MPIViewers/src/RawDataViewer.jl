@@ -1,3 +1,4 @@
+export RawDataWidget
 mutable struct RawDataWidget <: Gtk4.GtkBox
   handle::Ptr{Gtk4.GObject}
   builder::GtkBuilder

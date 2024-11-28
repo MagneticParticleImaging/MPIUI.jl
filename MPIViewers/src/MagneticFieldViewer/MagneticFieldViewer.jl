@@ -1,4 +1,4 @@
-export MagneticFieldViewer
+export MagneticFieldViewer, MagneticFieldViewerWidget, FieldViewerWidget
 
 mutable struct FieldViewerWidget <: Gtk4.GtkBox
   handle::Ptr{Gtk4.GObject}

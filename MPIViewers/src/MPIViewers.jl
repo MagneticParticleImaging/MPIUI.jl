@@ -10,6 +10,7 @@ using SphericalHarmonicExpansions
 using Unitful
 using MPISphericalHarmonics.NLsolve
 using FFTW
+using Statistics
 
 # File Handling
 #using DelimtedFiles
@@ -81,6 +82,8 @@ function showError(ex)
   d = info_dialog(()-> nothing, str)
   d.modal = true
 end
+
+export updateData, updateData!, showData, showData!
 
 include("GtkUtils.jl")
 include("BaseViewer.jl")
