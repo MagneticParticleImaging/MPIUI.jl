@@ -166,6 +166,41 @@ function update!(input::AutoScaledRegularizationTermPlanInput, value::AutoScaled
 end
 callback!(input::AutoScaledRegularizationTermPlanInput, value) = input.cb = value
 
+function regTermDialog()
+  dialog = GtkDialog("Create Regularization Term",  
+              ["_Cancel" => Gtk4.ResponseType_CANCEL,
+              "_Ok"=> Gtk4.ResponseType_ACCEPT],
+              Gtk4.DialogFlags_MODAL,
+              mpilab[]["mainWindow"], )
+
+  box = G_.get_content_area(dialog)
+
+  grid = GtkGrid()
+  push!(box, grid)
+  set_gtk_property!(grid, :row_spacing, 5)
+  set_gtk_property!(grid, :column_spacing, 5)
+
+  choices = subtypes(RegularizedLeastSquares.AbstractParameterizedRegularization)
+  dd = GtkDropDown(choices)
+  grid[1,1] = GtkLabel("Regularization Term")
+  grid[2,1] = dd
+
+  c = Condition()
+  response = nothing
+  function on_response(dialog, response_id)
+    if response_id == Integer(Gtk4.ResponseType_ACCEPT)
+      response = choices[dd.selected + 1]
+    end
+    notify(c)
+    destroy(dialog)
+  end
+
+  signal_connect(on_response, dialog, "response")
+  show(dialog)
+  wait(c)
+  return response(0.0)
+end
+
 mutable struct RegularizationPlanInput <: RecoPlanParameterInput
   list::Union{Nothing, GrowableGtkList}
   cb::Union{Nothing,Function}
@@ -208,7 +243,7 @@ function update!(input::RegularizationPlanInput, value)
 end
 # Add value via user request in list
 function (input::RegularizationPlanInput)()
-  reg = L2Regularization(0.0)
+  reg = regTermDialog()
   regInput = RecoPlanParameterInput(typeof(reg), reg, nothing)
   callback!(regInput, () -> begin
     if !isnothing(input.cb)
