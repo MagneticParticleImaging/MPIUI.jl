@@ -441,9 +441,9 @@ end
         #CairoMakie.lines!(axTD, timePoints[minTP:sp:maxTP],dataBG[minTP:sp:maxTP,1], color=:black,
         #      label="BG", linestyle = :dash) # isn't this duplicate?
         if showFD
-          _, freqDataBGCompressed = prepareTimeDataForPlotting(freqdata, rfft(dataBG,1), indexInterval=(minFr,maxFr),
+          _, freqDataBGCompressed = prepareTimeDataForPlotting(abs.(rfft(dataBG,1)), freq, indexInterval=(minFr,maxFr),
                         maxpoints=maxPoints, reduceOp = vals -> map(maximum, eachslice(vals, dims=2)))
-          CairoMakie.lines!(axFD, freqsCompressed, abs.(freqDataBGCompressed[:, 1]) / size(dataBG,1),
+          CairoMakie.lines!(axFD, freqsCompressed, freqDataBGCompressed[:, 1] / size(dataBG,1),
                  color=:black, label="BG", linestyle = :dash)
         end
       end    
