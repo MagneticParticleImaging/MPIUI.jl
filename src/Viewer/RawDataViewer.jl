@@ -244,8 +244,21 @@ end
       # TODO: Ensure that the measurements fit together (num samples / patches)
       # otherwise -> error
   
-      numFGFrames = minimum(acqNumFGFrames.(fs))
-      numBGFrames = minimum(acqNumBGFrames.(fs))    
+      numFGFrames = unique(acqNumFGFrames.(fs))
+      if length(numFGFrames) > 1
+        numFGFrames = minimum(numFGFrames)
+        @warn "Different number of foreground frames in data, limit frames to $numFGFrames"
+      else 
+        numFGFrames = first(numFGFrames)
+      end
+
+      numBGFrames = unique(acqNumBGFrames.(fs))
+      if length(numBGFrames) > 1
+        numBGFrames = minimum(numBGFrames)
+        @warn "Different number of background frames in data, limit frames to $numBGFrames"
+      else 
+        numBGFrames = first(numBGFrames)
+      end
       
       dataFGVec = Any[]
       dataBGVec = Any[]
@@ -271,7 +284,7 @@ end
                     tfCorrection=get_gtk_property(m["cbCorrTF"], :active, Bool))
         push!(dataFGVec, data)
 
-        if acqNumBGFrames(f) > 0
+        if numBGFrames > 0
           dataBG = getMeasurements(f, false, frames=measBGFrameIdx(f),
                 bgCorrection=false, spectralLeakageCorrection = get_gtk_property(m["cbSLCorr"], :active, Bool),
                 tfCorrection=get_gtk_property(m["cbCorrTF"], :active, Bool))
@@ -381,42 +394,30 @@ end
     numFreq = floor(Int, size(data,1) ./ 2 .+ 1)
 
     maxPoints = 5000
-    sp = length(minTP:maxTP) > maxPoints ? round(Int,length(minTP:maxTP) / maxPoints)  : 1
+    # Reduce each channel to either min or max value if intervals of more than maxpoint points
+    reduceOp = (vals -> map(slice -> rand(Bool) ? maximum(slice) : minimum(slice), eachslice(vals, dims=2)))
+    timeCompressed, dataCompressed = prepareTimeDataForPlotting(data, timePoints, indexInterval=(minTP,maxTP),
+                        maxpoints=maxPoints, reduceOp = reduceOp)
 
-    steps = minTP:sp:maxTP
-    dataCompressed = zeros(length(steps), size(data,2))
-    if sp > 1
-      for j=1:size(data,2)
-        for l=1:length(steps)
-          st = steps[l]
-          en = min(st+sp,steps[end])
-          med_ = median(data[st:en,j])
-          max_ = maximum(data[st:en,j])
-          min_ = minimum(data[st:en,j])
-          dataCompressed[l,j] = rand(Bool) ? max_ : min_ #abs(max_ - med_) > abs(med_ - min_) ? max_ : min_
-        end
-      end
-    else
-      dataCompressed = data[steps,:]
-    end
-
-    fTD, axTD, lTD1 = CairoMakie.lines(timePoints[steps], dataCompressed[:,1], 
+    fTD, axTD, lTD1 = CairoMakie.lines(timeCompressed, dataCompressed[:,1], 
                             figure = (; figure_padding=4, resolution = (1000, 800), fontsize = 11),
                             axis = (; title = "Time Domain"),
                             color = CairoMakie.RGBf(colors[1]...),
                             label = labels_[1])
     for j=2:size(data,2)
-      CairoMakie.lines!(axTD, timePoints[steps],dataCompressed[:,j], 
+      CairoMakie.lines!(axTD, timeCompressed, dataCompressed[:,j], 
                         color = CairoMakie.RGBf(colors[j]...),  #linewidth=3)
                         label = labels_[j])
     end
     if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
-      CairoMakie.lines!(axTD, timePoints[minTP:sp:maxTP],dataBG[minTP:sp:maxTP,1], color=:black,
+      _, dataBGCompressed = prepareTimeDataForPlotting(dataBG, timePoints, indexInterval=(minTP,maxTP),
+                        maxpoints=maxPoints, reduceOp = reduceOp)
+      CairoMakie.lines!(axTD, timeCompressed, dataBGCompressed[:, 1], color=:black,
              label="BG", linestyle = :dash)
     end    
     CairoMakie.autolimits!(axTD)
-    if timePoints[steps[end]] > timePoints[steps[1]]
-      CairoMakie.xlims!(axTD, timePoints[steps[1]], timePoints[steps[end]])
+    if timeCompressed[end] > timeCompressed[1]
+      CairoMakie.xlims!(axTD, timeCompressed[1], timeCompressed[end])
     end
     if !autoRangingTD && maxValTD > minValTD 
       CairoMakie.ylims!(axTD, minValTD, maxValTD)
@@ -436,33 +437,26 @@ end
       spFr = length(minFr:maxFr) > maxPoints ? round(Int,length(minFr:maxFr) / maxPoints)  : 1
 
       stepsFr = minFr:spFr:maxFr
-      freqDataCompressed = zeros(length(stepsFr), size(freqdata,2))
-      if spFr > 1
-        for j=1:size(freqdata,2)
-          for l=1:length(stepsFr)
-            st = stepsFr[l]
-            en = min(st+spFr,stepsFr[end])
-            freqDataCompressed[l,j] = maximum(freqdata[st:en,j])
-          end
-        end
-      else
-        freqDataCompressed = freqdata[stepsFr,:]
-      end
+      freqsCompressed, freqDataCompressed = prepareTimeDataForPlotting(freqdata, freq, indexInterval=(minFr,maxFr),
+                        maxpoints=maxPoints, reduceOp = vals -> map(maximum, eachslice(vals, dims=2)))
 
-      fFD, axFD, lFD1 = CairoMakie.lines(freq[stepsFr],freqDataCompressed[:,1], 
+
+      fFD, axFD, lFD1 = CairoMakie.lines(freqsCompressed,freqDataCompressed[:,1], 
                               figure = (; figure_padding=4, resolution = (1000, 800), fontsize = 11),
                               axis = (; title = "Frequency Domain", yscale=log10),
                               color = CairoMakie.RGBf(colors[1]...),
                               label=labels_[1])
       for j=2:size(data,2)
-        CairoMakie.lines!(axFD, freq[stepsFr], freqDataCompressed[:,j], 
+        CairoMakie.lines!(axFD, freqsCompressed, freqDataCompressed[:,j], 
                      color = CairoMakie.RGBf(colors[j]...), label=labels_[j])
       end
       if length(m.dataBG) > 0 && get_gtk_property(m["cbShowBG"], :active, Bool)
-        CairoMakie.lines!(axTD, timePoints[minTP:sp:maxTP],dataBG[minTP:sp:maxTP,1], color=:black,
-              label="BG", linestyle = :dash)
+        #CairoMakie.lines!(axTD, timePoints[minTP:sp:maxTP],dataBG[minTP:sp:maxTP,1], color=:black,
+        #      label="BG", linestyle = :dash) # isn't this duplicate?
         if showFD
-          CairoMakie.lines!(axFD, freq[minFr:spFr:maxFr],abs.(rfft(dataBG,1)[minFr:spFr:maxFr,1]) / size(dataBG,1),
+          _, freqDataBGCompressed = prepareTimeDataForPlotting(abs.(rfft(dataBG,1)), freq, indexInterval=(minFr,maxFr),
+                        maxpoints=maxPoints, reduceOp = vals -> map(maximum, eachslice(vals, dims=2)))
+          CairoMakie.lines!(axFD, freqsCompressed, freqDataBGCompressed[:, 1] / size(dataBG,1),
                  color=:black, label="BG", linestyle = :dash)
         end
       end    
