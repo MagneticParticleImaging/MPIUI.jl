@@ -13,13 +13,16 @@ function prepareTimeDataForPlotting(data::AbstractMatrix, times = 1:length(data)
     t = times[idx1:idx2]
     d = data[idx1:idx2, :]
   end
+  # return [[Point2f(t[l], d[l, k]) for l in 1:size(d,1)] for k in 1:size(d, 2)]
   return t, d
 end
 # Main variant is defined for matrices, so we reshape into Nx1 matrix
-function prepareTimeDataForPlotting(data::AbstractVector, args...; kwargs...) 
+function prepareTimeDataForPlotting(data::AbstractVector, args...; kwargs...)
+  # return first(prepareTimeDataForPlotting(reshape(data, :, 1), args...; kwargs...)) 
   t, d = prepareTimeDataForPlotting(reshape(data, :, 1), args...; kwargs...)
   return t, vec(d)
 end
+
 
 timeSlice(times, indexInterval, timeInterval) = error("Cannot specify both indexInterval and timeInterval")
 timeSlice(times, indexInterval, ::Nothing) = first(indexInterval), last(indexInterval)
