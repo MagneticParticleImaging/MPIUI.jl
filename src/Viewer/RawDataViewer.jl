@@ -244,8 +244,21 @@ end
       # TODO: Ensure that the measurements fit together (num samples / patches)
       # otherwise -> error
   
-      numFGFrames = minimum(acqNumFGFrames.(fs))
-      numBGFrames = minimum(acqNumBGFrames.(fs))    
+      numFGFrames = unique(acqNumFGFrames.(fs))
+      if length(numFGFrames) > 1
+        numFGFrames = minimum(numFGFrames)
+        @warn "Different number of foreground frames in data, limit frames to $numFGFrames"
+      else 
+        numFGFrames = first(numFGFrames)
+      end
+
+      numBGFrames = unique(acqNumBGFrames.(fs))
+      if length(numBGFrames) > 1
+        numBGFrames = minimum(numBGFrames)
+        @warn "Different number of background frames in data, limit frames to $numBGFrames"
+      else 
+        numBGFrames = first(numBGFrames)
+      end
       
       dataFGVec = Any[]
       dataBGVec = Any[]
@@ -271,7 +284,7 @@ end
                     tfCorrection=get_gtk_property(m["cbCorrTF"], :active, Bool))
         push!(dataFGVec, data)
 
-        if acqNumBGFrames(f) > 0
+        if numBGFrames > 0
           dataBG = getMeasurements(f, false, frames=measBGFrameIdx(f),
                 bgCorrection=false, spectralLeakageCorrection = get_gtk_property(m["cbSLCorr"], :active, Bool),
                 tfCorrection=get_gtk_property(m["cbCorrTF"], :active, Bool))
