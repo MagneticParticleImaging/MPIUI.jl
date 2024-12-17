@@ -158,7 +158,7 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
 
         ###
         f, ax, l = CairoMakie.lines(1:length(profile), profile, 
-                          figure = (; resolution = (1000, 800), fontsize = 12),
+                          figure = (; size = (1000, 800), fontsize = 12),
                           # axis = (; title = "What is this"),
                           color = CairoMakie.RGBf(colors[1]...))
 

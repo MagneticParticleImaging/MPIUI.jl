@@ -478,7 +478,7 @@ function showData(m::DataViewerWidget)
         dat = vec(data_)
 
         fig, ax, l_ = CairoMakie.lines(1:length(dat), dat, 
-              figure = (; resolution = (1000, 800), fontsize = 12),
+              figure = (; size = (1000, 800), fontsize = 12),
               color = CairoMakie.RGBf(colors[1]...))
   
         CairoMakie.autolimits!(ax)

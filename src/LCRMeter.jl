@@ -211,7 +211,7 @@ function sweepAndShow(m::LCRMeterUI)
   @info m.datay
 
   f1, ax1, l1 = CairoMakie.lines(freq, x_list, 
-                          figure = (; resolution = (1000, 800), fontsize = 12),
+                          figure = (; size = (1000, 800), fontsize = 12),
                           axis = (; title = "What is this"),
                           color = CairoMakie.RGBf(colors[1]...))
 
@@ -223,7 +223,7 @@ function sweepAndShow(m::LCRMeterUI)
   ax1.ylabel = ylabel1
 
   f2, ax2, l2 = CairoMakie.lines(freq, y_list, 
-                          figure = (; resolution = (1000, 800), fontsize = 12),
+                          figure = (; size = (1000, 800), fontsize = 12),
                           axis = (; title = "What is this"),
                           color = CairoMakie.RGBf(colors[1]...))
 

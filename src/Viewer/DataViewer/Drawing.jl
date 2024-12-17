@@ -324,7 +324,7 @@ end
 
 function showProfile(m::DataViewerWidget, data, xLabel::String, yLabel::String)
   f, ax, l = CairoMakie.lines(1:length(data), data, 
-        figure = (; resolution = (1000, 800), figure_padding=4, fontsize = 12),
+        figure = (; size = (1000, 800), figure_padding=4, fontsize = 12),
         axis = (; title = "Profile"),
         color = CairoMakie.RGBf(colors[1]...))
   

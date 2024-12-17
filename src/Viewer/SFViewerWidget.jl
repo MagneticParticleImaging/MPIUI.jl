@@ -256,7 +256,7 @@ function updateSF(m::SFViewerWidget)
   end
 
   fFD, axFD, lFD1 = CairoMakie.lines(m.frequencies[stepsFr], snrCompressed, 
-                          figure = (; resolution = (1000, 800), fontsize = 12),
+                          figure = (; size = (1000, 800), fontsize = 12),
                           axis = (; title = "SNR", yscale=log10),
                           color = CairoMakie.RGBf(colors[1]...))
   CairoMakie.scatter!(axFD, [m.frequencies[freq]], [m.SNR[freq,recChan,period]],

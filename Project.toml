@@ -52,9 +52,9 @@ MPIMeasurements = "0.5,0.6"
 MPIReco = "0.5,0.7"
 MPISphericalHarmonics = "0.0.10"
 Reexport = "0.2,1.0"
-CairoMakie = "0.10.2"
+CairoMakie = "0.10.2,0.12"
 julia = "1.7"
-Gtk4 = "0.4.2"
+Gtk4 = "0.7"
 
 [extras]
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
