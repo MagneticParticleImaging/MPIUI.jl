@@ -293,7 +293,8 @@ function updateProtocolParameter(pw::ProtocolWidget, protocol::Protocol)
   params = protocol.params
   set_gtk_property!(pw["lblScannerName"], :label, MPIMeasurements.name(pw.scanner))
   set_gtk_property!(pw["lblProtocolType"], :label, string(typeof(protocol)))
-  set_gtk_property!(pw["txtBuffProtocolDescription"], :text, MPIMeasurements.description(protocol))
+  #set_gtk_property!(pw["txtBuffProtocolDescription"], :text, MPIMeasurements.description(protocol))
+  set_gtk_property!(pw["txtProtocolDescription"], :label, MPIMeasurements.description(protocol))
   set_gtk_property!(pw["lblProtocolName"], :label, MPIMeasurements.name(protocol))
   # Clear old parameters
   empty!(pw["boxProtocolParameter"])
@@ -443,6 +444,7 @@ end
 ### File Interaction ###
 function saveProtocol(pw::ProtocolWidget, fileName::AbstractString)
   @info "Saving protocol to $fileName"
+  error("Protocol saving is not implemented...")
   # TODO Serialize into protocol
   # TODO Update protocol selection
   # TODO Pick new protocol

@@ -420,38 +420,49 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkExpander">
+                      <object class="GtkBox">
                         <property name="visible">True</property>
                         <property name="focusable">1</property>
+                        <property name="hexpand">1</property>
                         <child>
                           <object class="GtkGrid">
                             <property name="visible">True</property>
+                            <property name="hexpand">1</property>
                             <child>
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="label" translatable="1">Type</property>
+                                <property name="halign">start</property>
+                                <attributes>
+                                  <attribute name="weight" value="heavy"></attribute>
+                                </attributes>
                                 <layout>
                                   <property name="column">0</property>
-                                  <property name="row">1</property>
+                                  <property name="row">0</property>
                                 </layout>
                               </object>
                             </child>
                             <child>
                               <object class="GtkLabel" id="lblProtocolType">
                                 <property name="visible">True</property>
+                                <property name="halign">start</property>
                                 <layout>
                                   <property name="column">1</property>
-                                  <property name="row">1</property>
+                                  <property name="row">0</property>
                                 </layout>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkTextView" id="txtProtocolDescription">
+                              <object class="GtkLabel" id="txtProtocolDescription">
                                 <property name="visible">True</property>
-                                <property name="focusable">1</property>
                                 <property name="hexpand">1</property>
-                                <property name="wrap_mode">word</property>
-                                <property name="buffer">txtBuffProtocolDescription</property>
+                                <property name="wrap">true</property>
+                                <attributes>
+                                <attribute name="size" value="10000"></attribute>
+                                <attribute name="style" value="italic"></attribute>
+                                </attributes>
+                                <!--<property name="wrap_mode">word</property>
+                                <property name="buffer">txtBuffProtocolDescription</property>-->
                                 <layout>
                                   <property name="column">0</property>
                                   <property name="row">2</property>
@@ -463,30 +474,26 @@
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="label" translatable="1">Scanner</property>
+                                <property name="halign">start</property>
+                                <attributes>
+                                  <attribute name="weight" value="heavy"></attribute>
+                                </attributes>
                                 <layout>
                                   <property name="column">0</property>
-                                  <property name="row">0</property>
+                                  <property name="row">1</property>
                                 </layout>
                               </object>
                             </child>
                             <child>
                               <object class="GtkLabel" id="lblScannerName">
                                 <property name="visible">True</property>
+                                <property name="halign">start</property>
                                 <layout>
                                   <property name="column">1</property>
-                                  <property name="row">0</property>
+                                  <property name="row">1</property>
                                 </layout>
                               </object>
                             </child>
-                          </object>
-                        </child>
-                        <child type="label">
-                          <object class="GtkLabel">
-                            <property name="visible">True</property>
-                            <property name="label" translatable="1">Description</property>
-                            <attributes>
-                              <attribute name="weight" value="bold"></attribute>
-                            </attributes>
                           </object>
                         </child>
                       </object>
