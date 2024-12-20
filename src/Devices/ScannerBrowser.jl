@@ -69,7 +69,7 @@ function ScannerBrowser(scanner, deviceBox)
   m = ScannerBrowser(mainBox.handle, b, store, tmSorted, tv, selection, false, deviceBox, scanner, Dict{Device, DeviceWidgetContainer}())
   Gtk4.GLib.gobject_move_ref(m, mainBox)
 
-  set_gtk_property!(m["lblScannerName"], :label, name(scanner))
+  set_gtk_property!(m["lblScannerName"], :label, MPIMeasurements.name(scanner))
 
   updateData!(m, scanner)
 
@@ -168,7 +168,7 @@ function refreshScanner(m::ScannerBrowser)
   """
   ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"]) do answer
     if answer
-      tempName = name(m.scanner)
+      tempName = MPIMeasurements.name(m.scanner)
       close(m.scanner)
       updateScanner!(mpilab[], MPIScanner(tempName, robust = true))
       d = info_dialog(()-> nothing, "Scanner has been reloaded successfully!", mpilab[]["mainWindow"])

@@ -162,7 +162,7 @@ end
 function updateSequence(seqParam::SequenceParameter, seq::Sequence)  
   @idle_add_guarded begin
     try
-      @info "Try adding sequence channels"
+      @info "Adding sequence channels"
       empty!(seqParam["boxPeriodicChannel"])
       daq = getDAQ(seqParam.scanner)
       if isnothing(daq)
@@ -175,7 +175,6 @@ function updateSequence(seqParam::SequenceParameter, seq::Sequence)
         push!(seqParam["boxPeriodicChannel"], channelParam)
       end
       show(seqParam["boxPeriodicChannel"])
-      @info "Finished adding seqeunce channels"
 
       set_gtk_property!(seqParam["entSequenceName"], :text, MPIMeasurements.name(seq)) 
       set_gtk_property!(seqParam["entNumPeriods"], :text, "$(MPIMeasurements.acqNumPeriodsPerFrame(seq))")
@@ -184,6 +183,7 @@ function updateSequence(seqParam::SequenceParameter, seq::Sequence)
       set_gtk_property!(seqParam["adjNumFrameAverages"], :value, MPIMeasurements.acqNumFrameAverages(seq))
       set_gtk_property!(seqParam["adjNumAverages"], :value, MPIMeasurements.acqNumAverages(seq))
       seqParam.value = seq
+      @info "Finished adding sequence channels"
     catch e
       rethrow()
       @error e

@@ -291,10 +291,10 @@ end
 
 function updateProtocolParameter(pw::ProtocolWidget, protocol::Protocol)
   params = protocol.params
-  set_gtk_property!(pw["lblScannerName"], :label, name(pw.scanner))
+  set_gtk_property!(pw["lblScannerName"], :label, MPIMeasurements.name(pw.scanner))
   set_gtk_property!(pw["lblProtocolType"], :label, string(typeof(protocol)))
   set_gtk_property!(pw["txtBuffProtocolDescription"], :text, MPIMeasurements.description(protocol))
-  set_gtk_property!(pw["lblProtocolName"], :label, name(protocol))
+  set_gtk_property!(pw["lblProtocolName"], :label, MPIMeasurements.name(protocol))
   # Clear old parameters
   empty!(pw["boxProtocolParameter"])
 
