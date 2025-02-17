@@ -166,7 +166,7 @@ function refreshScanner(m::ScannerBrowser)
   Please make sure that no protocol or device widget is currently communicating as otherwise undefined states can occur.
   Press \"Ok\" if you if you are sure.
   """
-  ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"]) do answer
+  ask_dialog(message, mpilab[]["mainWindow"], no_text="Cancel", yes_text="Ok") do answer
     if answer
       tempName = MPIMeasurements.name(m.scanner)
       close(m.scanner)

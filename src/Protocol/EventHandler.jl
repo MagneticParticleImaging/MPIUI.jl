@@ -134,7 +134,7 @@ function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::ProgressEven
 end
 
 function handleEvent(pw::ProtocolWidget, protocol::Protocol, event::DecisionEvent)
-  reply = ask_dialog(event.message, "No", "Yes", mpilab[]["mainWindow"])
+  reply = ask_dialog(event.message, mpilab[]["mainWindow"], no_text="No", yes_text="Yes")
   answerEvent = AnswerEvent(reply, event)
   put!(pw.biChannel, answerEvent)
   return false

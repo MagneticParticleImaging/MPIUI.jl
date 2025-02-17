@@ -298,11 +298,11 @@ function referenceDrive(m::RobotWidget)
   robot = m.robot
   message = """ Remove all attached devices from the robot before the robot will be referenced and move around!\n
           Press \"Ok\" if you have done so """
-  ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"]) do answer1
+  ask_dialog(message, mpilab[]["mainWindow"], no_text="Cancel", yes_text="Ok") do answer1
     if answer1
       message = """Are you sure you have removed everything and the robot can move
             freely without damaging anything? Press \"Ok\" if you want to continue"""
-      ask_dialog(message, "Cancel", "Ok", mpilab[]["mainWindow"]) do answer2
+      ask_dialog(message, mpilab[]["mainWindow"], no_text="Cancel", yes_text="Ok") do answer2
         if answer2
           @info "Enable Robot"
           enable(robot)

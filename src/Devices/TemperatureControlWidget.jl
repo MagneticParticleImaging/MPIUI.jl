@@ -50,13 +50,13 @@ end
 function initCallbacks(m::TemperatureControllerWidget)
 
   signal_connect(m["btnEnable"], :clicked) do w
-    if ask_dialog("Confirm that you want to enable temperature control", "Cancel", "Confirm", mpilab[]["mainWindow"])
+    if ask_dialog("Confirm that you want to enable temperature control", mpilab[]["mainWindow"], yes_text="Confirm", no_text="Cancel")
       enableControl(m.cont)
     end
   end
 
   signal_connect(m["btnDisable"], :clicked) do w
-    if ask_dialog("Confirm that you want to disable temperature control", "Cancel", "Confirm", mpilab[]["mainWindow"])
+    if ask_dialog("Confirm that you want to disable temperature control", mpilab[]["mainWindow"], yes_text="Confirm", no_text="Cancel")
       disableControl(m.cont)
     end
   end
@@ -66,7 +66,7 @@ function initCallbacks(m::TemperatureControllerWidget)
   end
   
   signal_connect(m["btnSetTarget"], :clicked) do w
-    if ask_dialog("Confirm that you want to set new target temperatures", "Cancel", "Confirm", mpilab[]["mainWindow"])
+    if ask_dialog("Confirm that you want to set new target temperatures", mpilab[]["mainWindow"], yes_text="Confirm", no_text="Cancel")
       setTarget(m)
     end
   end
@@ -76,7 +76,7 @@ function initCallbacks(m::TemperatureControllerWidget)
   end
   
   signal_connect(m["btnSetMaximum"], :clicked) do w
-    if ask_dialog("Confirm that you want to set new maximum temperatures", "Cancel", "Confirm", mpilab[]["mainWindow"])
+    if ask_dialog("Confirm that you want to set new maximum temperatures", mpilab[]["mainWindow"], yes_text="Confirm", no_text="Cancel")
       setMaximum(m)
     end
   end

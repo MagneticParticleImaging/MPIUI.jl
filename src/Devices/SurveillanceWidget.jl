@@ -116,13 +116,13 @@ function initCallbacks(m::SurveillanceWidget)
     end
 
     signal_connect(m["btnEnableAC"], :clicked) do w
-      if ask_dialog("Confirm that you want to enable AC power", "Cancel", "Confirm", mpilab[]["mainWindow"])
+      if ask_dialog("Confirm that you want to enable AC power", mpilab[]["mainWindow"], yes_text="Confirm", no_text="Cancel")
         enableACPower(m.su)
       end
     end
 
     signal_connect(m["btnDisableAC"], :clicked) do w
-      if ask_dialog("Confirm that you want to disable AC power", "Cancel", "Confirm", mpilab[]["mainWindow"])
+      if ask_dialog("Confirm that you want to disable AC power", mpilab[]["mainWindow"], yes_text="Confirm", no_text="Cancel")
         disableACPower(m.su)
       end
     end
