@@ -88,10 +88,14 @@ function MPILab(offlineMode=false)::MPILab
 
   addConfigurationPath(scannerpath)
 
-  @debug "## Init Logging ..."
-  initLogging(m)
   @debug "## Init Settings ..."
   initSettings(m)
+
+  if m.settings["enableLogging", true]
+    @debug "## Init Logging ..."
+    initLogging(m)
+  end
+  
   @debug "## Init Scanner ..."
   initScanner(m, offlineMode)
   @debug "## Init Scanner Tab ..."
