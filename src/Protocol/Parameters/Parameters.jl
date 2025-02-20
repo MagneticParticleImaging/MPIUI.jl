@@ -11,7 +11,7 @@ struct ReconstructionParameterType <: SpecialParameterType end
 function parameterType(field::Symbol, value)
   if field == :sequence
     return SequenceParameterType()
-  elseif field == :sequences
+  elseif field == :sequences || field == :bgSequence
     return SequencesParameterType()
   elseif field == :positions
     return PositionParameterType()
