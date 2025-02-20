@@ -586,6 +586,38 @@
       </object>
     </property>
   </object>
+  <object class="GtkPopover" id="popImport">
+    <property name="child">
+      <object class="GtkGrid" id="grid10">
+        <property name="row_spacing">5</property>
+        <property name="column_spacing">5</property>
+        <child>
+          <object class="GtkButton" id="btnImport1">
+            <property name="label" translatable="1">Load new coeffs</property>
+            <property name="focusable">1</property>
+            <property name="receives_default">1</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">0</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkCheckButton" id="cbImport">
+            <property name="label" translatable="1"> new window </property>
+            <property name="focusable">1</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+      </object>
+    </property>
+  </object>
   <object class="GtkPopover" id="popOptions">
     <property name="child">
       <object class="GtkGrid" id="gridOption">
@@ -823,9 +855,30 @@ audio-volume-medium-symbolic</property>
                 </child>
                 <child>
                   <object class="GtkLabel">
-                    <property name="label" translatable="1">Export</property>
+                    <property name="label" translatable="1">Import</property>
                     <layout>
                       <property name="column">11</property>
+                      <property name="row">0</property>
+                    </layout>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkMenuButton" id="btnImport">
+                    <property name="focusable">1</property>
+                    <property name="receives_default">1</property>
+                    <property name="popover">popImport</property>
+                    <property name="icon-name">document-open</property>
+                    <layout>
+                      <property name="column">11</property>
+                      <property name="row">1</property>
+                    </layout>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="1">Export</property>
+                    <layout>
+                      <property name="column">12</property>
                       <property name="row">0</property>
                     </layout>
                   </object>
@@ -837,7 +890,7 @@ audio-volume-medium-symbolic</property>
                     <property name="popover">popExport</property>
                     <property name="icon-name">document-save</property>
                     <layout>
-                      <property name="column">11</property>
+                      <property name="column">12</property>
                       <property name="row">1</property>
                     </layout>
                   </object>
@@ -845,7 +898,7 @@ audio-volume-medium-symbolic</property>
                 <child>
                   <object class="GtkSeparator" id="sepFusion">
                     <layout>
-                      <property name="column">12</property>
+                      <property name="column">13</property>
                       <property name="row">0</property>
                       <property name="row-span">2</property>
                     </layout>
