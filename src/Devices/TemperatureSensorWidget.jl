@@ -71,7 +71,7 @@ function initCallbacks(m::TemperatureSensorWidget)
   end  
 
   signal_connect(m["btnLoadTemp"], :clicked) do w
-    filter = Gtk.GtkFileFilter(pattern=String("*.toml, *.mdf"), mimetype=String("application/toml"))
+    filter = Gtk4.GtkFileFilter(pattern=String("*.toml, *.mdf"), mimetype=String("application/toml"))
     diag = open_dialog("Select Temperature File", mpilab[]["mainWindow"], (filter, )) do filename
       m.updating = true
       if filename != ""

@@ -32,7 +32,7 @@ function TemperatureControllerWidget(tempCont::TemperatureController)
   #push!(m, m.canvas)
   #set_gtk_property!(m,:expand, m.canvas, true)
 
-  showall(m)
+  show(m)
 
   updateTarget(m)
   updateMaximum(m)
