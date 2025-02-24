@@ -190,7 +190,7 @@ end
 
   if m.freq != nothing
     # here we merge frequencies and channels
-    data = reshape(data, size(data,1)*size(data,2), size(data,3), size(data,4))
+    # data = reshape(data, size(data,1)*size(data,2), size(data,3), size(data,4))
     data = data[m.freq, :, :]
   end
 

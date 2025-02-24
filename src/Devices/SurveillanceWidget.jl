@@ -15,7 +15,7 @@ function TemperatureLog(filename::String)
     p = TOML.parsefile(filename)
     return TemperatureLog(p["temperatures"], p["times"], p["numChan"])
   elseif ext == ".mdf"
-    temps = h5read(filename, "/measurement/_temperatures")
+    temps = h5read(filename, "/measurement/_monitoring/temperature/observed")
     times = [DateTime(0)+Dates.Second(1)*j for j=1:size(temps,2)]
     return TemperatureLog(vec(temps), times, size(temps,1))
   else

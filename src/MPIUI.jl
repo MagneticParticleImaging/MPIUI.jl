@@ -20,6 +20,7 @@ using MPISphericalHarmonics, SphericalHarmonicExpansions # for MagneticFieldView
 using NLsolve # for MagneticFieldViewer: findFFP()
 using DataFrames, CSV # for MagneticFieldViewer: export as csv
 using Unitful
+using MPIFiles.HDF5 #open MDF files
 import CairoMakie
 
 ENV["MPILIB_UI"] = "Nothing"
