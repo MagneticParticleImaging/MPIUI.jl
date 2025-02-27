@@ -216,7 +216,11 @@ function setProtocolParameter(channelParam::PeriodicChannelParameter)
     @info "Setting component $id"
     # AWG is not sensitive atm, hacky distinction
     if get_gtk_property(component.waveform, :sensitive, Bool)
-      amplitude!(channel, id, uconvert(u"T", value(component.amplitude)))
+      amp = value(component.amplitude)
+      if amp isa Unitful.BField
+        amp = uconvert(u"T", amp)
+      end
+      amplitude!(channel, id, amp)
       phase!(channel, id, value(component.phase))
       #divider!(channel, id, value(component.divider))
       wave = component.waveforms[get_gtk_property(component.waveform, :active, Int)+1]
