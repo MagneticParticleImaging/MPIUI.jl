@@ -1,5 +1,8 @@
 # MPIUI
 
+![MPIUI Example Screenshots](assets/mpilab.png)
+
+
 [![CI](https://github.com/tknopp/MPIUI.jl/workflows/CI/badge.svg)](https://github.com/tknopp/MPIUI.jl/actions?query=workflow%3ACI)
 
 
