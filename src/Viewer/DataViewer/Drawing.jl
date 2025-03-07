@@ -179,13 +179,77 @@ function drawImages(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectan
 end
 
 function drawSlice(m::DataViewerWidget,slices,isDrawSectionalLines,isDrawRectangle,isDrawAxes, cdata_zx, cdata_zy, cdata_xy, xy,zx,zy,offsetxy,offsetzx,offsetzy)
-  drawImageCairo(m.grid3D[2,1], cdata_zy, isDrawSectionalLines, isDrawAxes,
+  drawImageMakie(m.grid3DMakie[2,1], cdata_zy, isDrawSectionalLines, isDrawAxes,
                  slices[2], slices[3], false, true, m["adjSliceY"], m["adjSliceZ"], isDrawRectangle,zy, offsetzy, "yz")
-  drawImageCairo(m.grid3D[1,1], cdata_zx, isDrawSectionalLines, isDrawAxes,
+  drawImageMakie(m.grid3DMakie[1,1], cdata_zx, isDrawSectionalLines, isDrawAxes,
                  slices[1], slices[3], true, true, m["adjSliceX"], m["adjSliceZ"], isDrawRectangle,zx, offsetzx, "xz")
-  drawImageCairo(m.grid3D[2,2], cdata_xy, isDrawSectionalLines, isDrawAxes,
+  drawImageMakie(m.grid3DMakie[2,2], cdata_xy, isDrawSectionalLines, isDrawAxes,
                  slices[2], slices[1], false, false, m["adjSliceY"], m["adjSliceX"], isDrawRectangle,xy, offsetxy, "xy")
 end
+
+function drawImageMakie(c, image, isDrawSectionalLines, isDrawAxes, xsec, ysec,
+  flipX, flipY, adjX, adjY, isDrawRectangle, xy, xyOffset, slide)
+  
+  @guarded Gtk4.draw(c) do widget
+    #c = reshape(c,size(c,1), size(c,2))
+    ctx = getgc(c)
+    h = height(ctx)
+    w = width(ctx)
+
+    im = copy(reverse(arraydata(convert(ImageMeta{RGB{N0f8}}, image)), dims=1))
+    xsec_ = !flipX ? xsec : (size(im, 2) - xsec + 1)
+    ysec_ = !flipY ? ysec : (size(im, 1) - ysec + 1)
+    xx = w * (xsec_ - 0.5) / size(im, 2)
+    yy = h * (ysec_ - 0.5) / size(im, 1)
+
+    f, ax, p = CairoMakie.heatmap(im, figure = (figure_padding = 0,))
+    CairoMakie.hidedecorations!(ax)
+    #copy!(ctx, im)
+
+    if isDrawSectionalLines
+      #set_source_rgb(ctx, 0, 1, 0)
+      #move_to(ctx, xx, 0)
+      #line_to(ctx, xx, h)
+      #move_to(ctx, 0, yy)
+      #line_to(ctx, w, yy)
+      #set_line_width(ctx, 3.0)
+      # Cairo.stroke(ctx)
+    end
+    imSize = size(im)
+    if isDrawRectangle
+      #@debug "" imSize
+      #drawRectangle(ctx, h, w, [w / 2, h / 2], imSize, xy, xyOffset)
+    end
+    if isDrawSectionalLines || isDrawRectangle
+      #set_line_width(ctx, 3.0)
+      #Cairo.stroke(ctx)
+    end
+    if isDrawAxes
+      #drawAxes(ctx, slide)
+      #set_line_width(ctx, 3.0)
+      #Cairo.stroke(ctx)
+    end
+
+    drawonto(c, f)
+  end
+
+  #g = GtkGestureClick(c, 1)
+  #signal_connect(g, "pressed") do controller, n_press, x, y
+  #  w = widget(controller)
+  #  ctx = getgc(w)
+  #  reveal(w)
+  #  h = height(ctx)
+  #  w = width(ctx)
+  #  xx = x / w * size(image, 2) + 0.5
+  #  yy = y / h * size(image, 1) + 0.5
+  #  xx = !flipX ? xx : (size(image, 2) - xx + 1)
+  #  yy = !flipY ? yy : (size(image, 1) - yy + 1)
+  #  @idle_add_guarded set_gtk_property!(adjX, :value, round(Int64, xx))
+  #  @idle_add_guarded set_gtk_property!(adjY, :value, round(Int64, yy))
+  #end
+
+end
+
 
 function drawImageCairo(c, image, isDrawSectionalLines, isDrawAxes, xsec, ysec,
                         flipX, flipY, adjX, adjY, isDrawRectangle, xy, xyOffset, slide)
@@ -334,6 +398,6 @@ function showProfile(m::DataViewerWidget, data, xLabel::String, yLabel::String)
   end
   ax.xlabel = xLabel
   ax.ylabel = yLabel
-  drawonto(m.grid3D[1,2], f)
+  drawonto(m.grid3DMakie[1,2], f)
 end
 

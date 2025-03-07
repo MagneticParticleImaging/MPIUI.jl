@@ -22,6 +22,7 @@ mutable struct SFViewerWidget <: Gtk4.GtkPaned
   frequencies::Array{Float64,1}
   frequencySelection::Array{Int,1}
   grid::Gtk4.GtkGridLeaf
+  gridMakie::Array{MakieCanvas}
 end
 
 getindex(m::SFViewerWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
@@ -49,11 +50,11 @@ function SFViewerWidget()
 
   m = SFViewerWidget(mainBox.handle, b, DataViewerWidget(),
                   BrukerFile(), false, 0, 0, zeros(0,0,0), CartesianIndex{2}[],
-                  zeros(0), zeros(0), zeros(0), zeros(0), zeros(0,0), zeros(0), zeros(0), zeros(Int,0), GtkGrid())
+                  zeros(0), zeros(0), zeros(0), zeros(0), zeros(0,0), zeros(0), zeros(0), zeros(Int,0), GtkGrid(), [MakieCanvas()])
   Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   m.grid[1,1:2] = m.dv
-  m.grid[1,3] = GtkCanvas()
+  m.grid[1,3] = first(m.gridMakie)[]
   set_gtk_property!(m.grid, :row_homogeneous, true)
   set_gtk_property!(m.grid[1,2], :height_request, 200)
 
@@ -276,7 +277,7 @@ function updateSF(m::SFViewerWidget)
   end
   axFD.xlabel = "f / kHz"
 
-  drawonto(m.grid[1,3], fFD)
+  drawonto(first(m.gridMakie), fFD)
 
   show(m)
 

@@ -9,6 +9,8 @@ mutable struct DataViewerWidget <: Gtk4.GtkBox
   builder::GtkBuilder
   grid2D::Gtk4.GtkGridLeaf
   grid3D::Gtk4.GtkGridLeaf
+  grid2DMakie::Array{MakieCanvas}
+  grid3DMakie::Array{MakieCanvas}
   coloring::Vector{ColoringParams}
   upgradeColoringWInProgress::Bool
   cacheSelectedFovXYZ::Array{Float64,1}
@@ -71,16 +73,21 @@ function DataViewerWidget()
   m = DataViewerWidget( mainBox.handle, b,
                          Gtk4.G_.get_object(b, "gridDataViewer2D"),
                          Gtk4.G_.get_object(b, "gridDataViewer3D"),
+                         MakieCanvas[], MakieCanvas[],
                          Vector{ColoringParams}(), false,
                         [0.0,0.0,0.0], [0.0,0.0,0.0], false, false,
                         nothing, nothing, nothing,nothing, nothing, nothing)
   Gtk4.GLib.gobject_move_ref(m, mainBox)
 
-  m.grid3D[2,1] = GtkCanvas()
-  m.grid3D[1,1] = GtkCanvas()
-  m.grid3D[2,2] = GtkCanvas()
-  m.grid3D[1,2] = GtkCanvas()
-  m.grid2D[1,1] = GtkCanvas()
+  m.grid3DMakie = [MakieCanvas() for i = 1:2, j = 1:2]
+  for cart in eachindex(IndexCartesian(), m.grid3DMakie)
+    m.grid3D[Tuple(cart)...] = m.grid3DMakie[cart][] # Cartesian Index is apparently not supported
+  end
+
+  m.grid2DMakie = [MakieCanvas() for i = 1:1, j = 1:1]
+  for cart in eachindex(IndexCartesian(), m.grid2DMakie)
+    m.grid2D[Tuple(cart)...] = m.grid2DMakie[cart][]
+  end
 
   show(m)
 
@@ -487,7 +494,7 @@ function showData(m::DataViewerWidget)
         end
         ax.xlabel = "x"
         ax.ylabel = "y"
-        drawonto(m.grid2D[1,1], fig)
+        drawonto(m.grid2DMakie[1,1], fig)
 
         Gtk4.G_.set_current_page(m["nb2D3D"], 1)
 

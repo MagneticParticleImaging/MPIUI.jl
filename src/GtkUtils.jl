@@ -3,6 +3,33 @@ using Cairo, Colors
 using Graphics
 
 
+mutable struct MakieCanvas#  <: Gtk4Widget # Is not recognized as a GtkWidget for some reason
+    handle::Ptr{Gtk4.GObject}
+    canvas::GtkCanvas
+    fig::CairoMakie.Figure
+    function MakieCanvas()
+        canvas = GtkCanvas()
+        figure = CairoMakie.Figure()
+        mc = new(canvas.handle, canvas, figure)
+        #Gtk4.GLib.gobject_move_ref(mc, canvas)
+        return mc
+    end
+end
+
+function MakieCanvas(fig::CairoMakie.Figure)
+    mc = MakieCanvas()
+    drawonto(mc, fig)
+    return mc
+end
+function drawonto(canvas::MakieCanvas, figure::CairoMakie.Figure)
+    canvas.fig = figure
+    drawonto(canvas[], canvas.fig)
+end
+Base.getindex(canvas::MakieCanvas) = canvas.canvas
+Gtk4.draw(f, canvas::MakieCanvas) = draw(f, canvas[])
+Gtk4.draw(canvas::MakieCanvas) = draw(canvas[])
+Gtk4.getgc(canvas::MakieCanvas) = getgc(canvas[])
+
 function Base.copy!(ctx::CairoContext, img::AbstractArray{C}) where C<:Union{Colorant,Number}
     Cairo.save(ctx)
     Cairo.reset_transform(ctx)
