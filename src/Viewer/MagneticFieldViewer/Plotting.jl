@@ -248,13 +248,12 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   # draw axes (only arrows)
   if get_gtk_property(m["cbShowAxes"], :active, Bool)
     for w in [[m.fv.grid[1,1],"xz"], [m.fv.grid[2,1],"yz"], [m.fv.grid[2,2], "xy"]]
-      # TODO
-      #@idle_add_guarded Gtk4.draw(w[1]) do widget
-      #  ctx = getgc(w[1])
-      #  drawAxes(ctx, w[2])
-      #  set_line_width(ctx, 3.0)
-      #  Cairo.stroke(ctx) 
-      #end
+      @idle_add_guarded Gtk4.draw(w[1]) do widget
+        ctx = getgc(w[1])
+        drawAxes(ctx, w[2])
+        set_line_width(ctx, 3.0)
+        Cairo.stroke(ctx) 
+      end
     end
   end
   
