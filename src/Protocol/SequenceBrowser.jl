@@ -64,9 +64,9 @@ function SequenceSelectionDialog(scanner::MPIScanner, params::Dict)
   push!(box, sw)
   sw.vexpand = true
 
-  canvas = GtkCanvas()
-  push!(box,canvas)
-  canvas.vexpand = true
+  canvas = MakieCanvas()
+  push!(box,canvas[])
+  canvas[].vexpand = true
 
   sequences = getSequenceList(scanner)
 

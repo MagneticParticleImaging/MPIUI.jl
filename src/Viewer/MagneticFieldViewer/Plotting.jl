@@ -241,19 +241,20 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   end
 
   # show fields
-  drawonto(m.fv.grid[1,1], figXZ)
-  drawonto(m.fv.grid[2,1], figYZ)
-  drawonto(m.fv.grid[2,2], figXY)
+  drawonto(m.fv.gridMakie[1,1], figXZ)
+  drawonto(m.fv.gridMakie[2,1], figYZ)
+  drawonto(m.fv.gridMakie[2,2], figXY)
 
   # draw axes (only arrows)
   if get_gtk_property(m["cbShowAxes"], :active, Bool)
     for w in [[m.fv.grid[1,1],"xz"], [m.fv.grid[2,1],"yz"], [m.fv.grid[2,2], "xy"]]
-      @idle_add_guarded Gtk4.draw(w[1]) do widget
-        ctx = getgc(w[1])
-        drawAxes(ctx, w[2])
-        set_line_width(ctx, 3.0)
-        Cairo.stroke(ctx) 
-      end
+      # TODO
+      #@idle_add_guarded Gtk4.draw(w[1]) do widget
+      #  ctx = getgc(w[1])
+      #  drawAxes(ctx, w[2])
+      #  set_line_width(ctx, 3.0)
+      #  Cairo.stroke(ctx) 
+      #end
     end
   end
   
@@ -322,7 +323,7 @@ function updateCoeffsPlot(m::MagneticFieldViewerWidget)
   end
  
   # show coeffs
-  drawonto(m.grid[1,3], fig)
+  drawonto(m.coeffsCanvas, fig)
 end
 
 
@@ -427,5 +428,5 @@ function updateProfile(m::MagneticFieldViewerWidget)
     # draw line to mark 0
     CairoMakie.ablines!(0, 0, color=:black, linewidth=1)
   
-    drawonto(m.fv.grid[1,2], fig)
+    drawonto(m.fv.gridMakie[1,2], fig)
   end

@@ -8,9 +8,9 @@ mutable struct SpectrogramWidget <: Gtk4.GtkBox
   data::Array{Float32,5}
   dataBG::Array{Float32,5}
   labels::Vector{String}
-  cTD::GtkCanvas
-  cFD::GtkCanvas
-  cSpect::GtkCanvas
+  cTD::MakieCanvas
+  cFD::MakieCanvas
+  cSpect::MakieCanvas
   deltaT::Float64
   filenamesData::Vector{String}
   updatingData::Bool
@@ -44,27 +44,27 @@ function SpectrogramWidget(filenameConfig=nothing)
 
   m = SpectrogramWidget( mainBox.handle, b,
                   zeros(Float32,0,0,0,0,0), zeros(Float32,0,0,0,0,0),
-                  [""], GtkCanvas(), GtkCanvas(), GtkCanvas(),
+                  [""], MakieCanvas(), MakieCanvas(), MakieCanvas(),
                   1.0, [""], false, false,
                   (0.0,1.0), (0.0,1.0))
   Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
 
-  push!(m["boxTD"],m.cTD)
-  m.cTD.hexpand = true
-  m.cTD.vexpand = true
+  push!(m["boxTD"],m.cTD[])
+  m.cTD[].hexpand = true
+  m.cTD[].vexpand = true
 
   pane = m["paned"]
   set_gtk_property!(pane, :position, 300)
 
-  push!(m["boxSpectro"], m.cSpect)
-  m.cSpect.hexpand = true
-  m.cSpect.vexpand = true
+  push!(m["boxSpectro"], m.cSpect[])
+  m.cSpect[].hexpand = true
+  m.cSpect[].vexpand = true
 
-  push!(m["boxFD"],m.cFD)
-  m.cFD.hexpand = true
-  m.cFD.vexpand = true
+  push!(m["boxFD"],m.cFD[])
+  m.cFD[].hexpand = true
+  m.cFD[].vexpand = true
 
   @debug "InitCallbacks"
 
@@ -577,24 +577,13 @@ end
       axFD.xlabel = "f / kHz"
       axFD.ylabel = "u / V"
 
-    else
-      @guarded Gtk4.draw(m.cFD) do widget
-        
-        ctx = getgc(m.cFD)
-        h = height(ctx)
-        w = width(ctx)
-        Cairo.set_source_rgb(ctx,1.0,1.0,1.0)
-        Cairo.rectangle(ctx, 0,0,w,h)
-        Cairo.paint(ctx)
-        Cairo.stroke(ctx)
-      end
+    else      
+      fFD = CairoMakie.Figure()
     end
-
 
     @idle_add_guarded drawonto(m.cTD, fTD)
-    if showFD
-      @idle_add_guarded drawonto(m.cFD, fFD)
-    end
+    @idle_add_guarded drawonto(m.cFD, fFD)
+
 
   end
   return nothing

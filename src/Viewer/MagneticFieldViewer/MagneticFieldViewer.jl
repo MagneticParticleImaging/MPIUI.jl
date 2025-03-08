@@ -12,6 +12,7 @@ mutable struct FieldViewerWidget <: Gtk4.GtkBox
   intersection::Vector{Float64} # intersection of the three plots
   centerFFP::Bool # center of plot (FFP (true) or center of measured sphere (false))
   grid::Gtk4.GtkGridLeaf
+  gridMakie::Array{MakieCanvas}
 end
 
 mutable struct MagneticFieldViewerWidget <: Gtk4.GtkBox
@@ -22,6 +23,7 @@ mutable struct MagneticFieldViewerWidget <: Gtk4.GtkBox
   coeffsInit::MagneticFieldCoefficients
   coeffs::MagneticFieldCoefficients 
   coeffsPlot::Array{SphericalHarmonicCoefficients}
+  coeffsCanvas::MakieCanvas
   field # SphericalHarmonicsDefinedField (Functions of the field)
   patch::Int
   grid::Gtk4.GtkGridLeaf
@@ -60,14 +62,14 @@ function FieldViewerWidget()
 
   fv = FieldViewerWidget(mainBox.handle, b, ColoringParams(0,0,0),
                      false, zeros(0,0,0), zeros(0,0,0,0), zeros(0,0,0), zeros(0), zeros(0), true,
-                      G_.get_object(b, "gridFieldViewer"),)
+                      G_.get_object(b, "gridFieldViewer"), MakieCanvas[])
   Gtk4.GLib.gobject_move_ref(fv, mainBox)
 
   # initialize plots
-  fv.grid[1,1] = GtkCanvas()
-  fv.grid[1,2] = GtkCanvas()
-  fv.grid[2,1] = GtkCanvas()
-  fv.grid[2,2] = GtkCanvas()
+  fv.gridMakie = [MakieCanvas() for i = 1:2, j = 1:2]
+  for cart in eachindex(IndexCartesian(), fv.gridMakie)
+    fv.grid[Tuple(cart)...] = fv.gridMakie[cart][]
+  end
 
   fv.grid.hexpand = fv.grid.vexpand = true
   # expand plots
@@ -84,14 +86,14 @@ function MagneticFieldViewerWidget()
 
   m = MagneticFieldViewerWidget(mainBox.handle, b, FieldViewerWidget(),
                      false, MagneticFieldCoefficients(0), MagneticFieldCoefficients(0), 
-                     [SphericalHarmonicCoefficients(0)], nothing, 1,
+                     [SphericalHarmonicCoefficients(0)], MakieCanvas(), nothing, 1,
                      GtkGrid(), GtkTreeModelFilter(GtkListStore(Bool)))
   Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   # build up plots
   m.grid = m["gridMagneticFieldViewer"]
   m.grid[1,1:2] = m.fv
-  m.grid[1,3] = GtkCanvas()
+  m.grid[1,3] = m.coeffsCanvas
   # expand plot
   ### set_gtk_property!(m, :expand, m.grid, true)
   

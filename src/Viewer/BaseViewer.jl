@@ -23,6 +23,7 @@ end
 getindex(m::BaseViewerWidget, w::AbstractString) = Gtk4.G_.get_object(m.builder, w)
 
 function baseViewer()
+  @warn "Base Viewer is not stable and can cause crashes"
   uifile = joinpath(@__DIR__,"..","builder","baseViewer.ui")
   b = GtkBuilder(uifile)
   m = BaseViewerWidget(b, nothing,nothing,nothing)

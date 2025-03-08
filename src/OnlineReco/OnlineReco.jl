@@ -69,8 +69,8 @@ function onlineReco(bSF::MPIFile, b::MPIFile; proj="MIP",
      dv[] = DataViewer()
    end
 
-   canvasHist = GtkCanvas()
-   dv[].dvw.grid3D[1:2,3] = canvasHist
+   canvasHist = MakieCanvas()
+   dv[].dvw.grid3D[1:2,3] = canvasHist[]
 
    #pb = ProgressBar()
    #dv[].grid3D[1:2,4] = pb

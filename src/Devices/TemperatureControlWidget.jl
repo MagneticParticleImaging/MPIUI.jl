@@ -4,7 +4,7 @@ mutable struct TemperatureControllerWidget <: Gtk4.GtkBox
   updating::Bool
   cont::TemperatureController
   temperatureLog::TemperatureLog
-  canvases::Vector{Gtk4.GtkCanvasLeaf}
+  canvases::Vector{MakieCanvas}
   timer::Union{Timer,Nothing}
 end
 
@@ -17,15 +17,15 @@ function TemperatureControllerWidget(tempCont::TemperatureController)
   mainBox = G_.get_object(b, "mainBox")
 
   numPlots = length(unique(getChannelGroups(tempCont)))
-  canvases = [GtkCanvas() for i=1:numPlots]
+  canvases = [MakieCanvas() for i=1:numPlots]
 
   m = TemperatureControllerWidget(mainBox.handle, b, false, tempCont, TemperatureLog(), canvases, nothing)
   Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   for (i,c) in enumerate(m.canvases)
-    push!(m, c)
-    show(c)
-    c.hexpand = c.vexpand = true
+    push!(m, c[])
+    show(c[])
+    c[].hexpand = c[].vexpand = true
   end
 
 

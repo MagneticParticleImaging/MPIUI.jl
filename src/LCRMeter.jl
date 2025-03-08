@@ -19,13 +19,13 @@ function LCRMeterUI(;minFre=20000,maxFre=30000,samples=50,average=1,volt=2.0,ip=
 
   m = LCRMeterUI( b, nothing, nothing, nothing, nothing, nothing)
  
-  m.c1 = GtkCanvas()
-  m.c2 = GtkCanvas() 
+  m.c1 = MakieCanvas()
+  m.c2 = MakieCanvas() 
 
-  push!(m["boxMain"],m.c1)
-  m.c1.vexpand = m.c1.hexpand = true
-  push!(m["boxMain"],m.c2)
-  m.c2.vexpand = m.c2.hexpand = true
+  push!(m["boxMain"],m.c1[])
+  m.c1[].vexpand = m.c1[].hexpand = true
+  push!(m["boxMain"],m.c2[])
+  m.c2[].vexpand = m.c2[].hexpand = true
 
   choicesFunction = ["LsRs", "CsRs", "ZTD"]
   for c in choicesFunction

@@ -6,8 +6,8 @@ mutable struct RawDataWidget <: Gtk4.GtkBox
   data::Array{Float32,5}
   dataBG::Array{Float32,5}
   labels::Vector{String}
-  cTD::GtkCanvas
-  cFD::GtkCanvas
+  cTD::MakieCanvas
+  cFD::MakieCanvas
   deltaT::Float64
   filenamesData::Vector{String}
   loadingData::Bool
@@ -28,27 +28,27 @@ function RawDataWidget(filenameConfig=nothing)
 
   m = RawDataWidget( mainBox.handle, b,
                   zeros(Float32,0,0,0,0,0), zeros(Float32,0,0,0,0,0),
-                  [""], GtkCanvas(), GtkCanvas(),
+                  [""], MakieCanvas(), MakieCanvas(),
                   1.0, [""], false, false, false,
                   (0.0,1.0), (0.0,1.0))
   Gtk4.GLib.gobject_move_ref(m, mainBox)
 
   @debug "Type constructed"
 
-  push!(m["boxTD"],m.cTD)
+  push!(m["boxTD"],m.cTD[])
 
-  show(m.cTD)
+  show(m.cTD[])
   show(m["boxTD"])
 
-  draw(m.cTD)
+  draw(m.cTD[])
 
-  m.cTD.hexpand = true
-  m.cTD.vexpand = true
+  m.cTD[].hexpand = true
+  m.cTD[].vexpand = true
 
-  push!(m["boxFD"],m.cFD)
+  push!(m["boxFD"],m.cFD[])
 
-  m.cFD.hexpand = true
-  m.cFD.vexpand = true
+  m.cFD[].hexpand = true
+  m.cFD[].vexpand = true
 
   @debug "InitCallbacks"
 
@@ -472,22 +472,11 @@ end
 
 
     else
-      @guarded Gtk4.draw(m.cFD) do widget
-        
-        ctx = getgc(m.cFD)
-        h = height(ctx)
-        w = width(ctx)
-        Cairo.set_source_rgb(ctx,1.0,1.0,1.0)
-        Cairo.rectangle(ctx, 0,0,w,h)
-        Cairo.paint(ctx)
-        Cairo.stroke(ctx)
-      end
+      fFD = CairoMakie.Figure()
     end
 
     @idle_add_guarded drawonto(m.cTD, fTD)
-    if showFD
-      @idle_add_guarded drawonto(m.cFD, fFD)
-    end
+    @idle_add_guarded drawonto(m.cFD, fFD)
 
   end
   return nothing

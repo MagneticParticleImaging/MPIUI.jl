@@ -55,7 +55,7 @@ mutable struct SurveillanceWidget <: Gtk4.GtkBox
     updating::Bool
     su::SurveillanceUnit
     temperatureLog::TemperatureLog
-    canvas::Gtk4.GtkCanvasLeaf
+    canvas::MakieCanvas
     timer::Union{Timer,Nothing}
 end
   
@@ -67,12 +67,12 @@ function SurveillanceWidget(su::SurveillanceUnit)
     b = GtkBuilder(uifile)
     mainBox = G_.get_object(b, "mainBox")
 
-    m = SurveillanceWidget(mainBox.handle, b, false, su, TemperatureLog(), GtkCanvas(), nothing)
+    m = SurveillanceWidget(mainBox.handle, b, false, su, TemperatureLog(), MakieCanvas(), nothing)
     Gtk4.GLib.gobject_move_ref(m, mainBox)
   
-    push!(m, m.canvas)
-    m.canvas.hexpand = m.canvas.vexpand = true
-    show(m.canvas)
+    push!(m, m.canvas[])
+    m.canvas[].hexpand = m.canvas[].vexpand = true
+    show(m.canvas[])
     show(m)
   
     tempInit = getTemperatures(su)
