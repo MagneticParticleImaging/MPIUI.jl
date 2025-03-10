@@ -196,7 +196,13 @@ function drawImageMakie(c::MakieCanvas, image, isDrawSectionalLines, isDrawAxes,
     h = height(ctx)
     w = width(ctx)
 
-    im = transpose(reverse(arraydata(convert(ImageMeta{RGB{N0f8}}, image)), dims = 1))
+    im = transpose(arraydata(convert(ImageMeta{RGB{N0f8}}, image))) #, dims = 1)
+    if flipX
+      im = reverse(im, dims = 1)
+    end
+    if flipY
+      im = reverse(im, dims = 2)
+    end
     #xx = !flipX ? xsec : (size(image, 2) - xsec + 1)
     #yy = !flipY ? ysec : (size(image, 1) - ysec + 1)
 
