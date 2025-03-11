@@ -5,6 +5,7 @@ include("DAQWidget.jl")
 include("TemperatureSensorWidget.jl")
 include("DeviceWidgetContainer.jl")
 include("TemperatureControlWidget.jl")
+include("FieldCameraWidget.jl")
 
 mutable struct ScannerBrowser <: Gtk4.GtkBox
   handle::Ptr{Gtk4.GObject}
@@ -139,6 +140,8 @@ displayDeviceWidget(m::ScannerBrowser, dev::AbstractDAQ) = showDeviceWidget(m, g
 displayDeviceWidget(m::ScannerBrowser, dev::SurveillanceUnit) = showDeviceWidget(m, getDeviceWidget(m, dev, SurveillanceWidget))
 displayDeviceWidget(m::ScannerBrowser, dev::TemperatureSensor) = showDeviceWidget(m, getDeviceWidget(m, dev, TemperatureSensorWidget))
 displayDeviceWidget(m::ScannerBrowser, dev::TemperatureController) = showDeviceWidget(m, getDeviceWidget(m, dev, TemperatureControllerWidget))
+displayDeviceWidget(m::ScannerBrowser, dev::AbstractFieldCamera) = showDeviceWidget(m, getDeviceWidget(m, dev, FieldCameraWidget.jl))
+
 
 
 
