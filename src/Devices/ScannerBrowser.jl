@@ -140,7 +140,7 @@ displayDeviceWidget(m::ScannerBrowser, dev::AbstractDAQ) = showDeviceWidget(m, g
 displayDeviceWidget(m::ScannerBrowser, dev::SurveillanceUnit) = showDeviceWidget(m, getDeviceWidget(m, dev, SurveillanceWidget))
 displayDeviceWidget(m::ScannerBrowser, dev::TemperatureSensor) = showDeviceWidget(m, getDeviceWidget(m, dev, TemperatureSensorWidget))
 displayDeviceWidget(m::ScannerBrowser, dev::TemperatureController) = showDeviceWidget(m, getDeviceWidget(m, dev, TemperatureControllerWidget))
-displayDeviceWidget(m::ScannerBrowser, dev::AbstractFieldCamera) = showDeviceWidget(m, getDeviceWidget(m, dev, FieldCameraWidget.jl))
+displayDeviceWidget(m::ScannerBrowser, dev::AbstractFieldCamera) = showDeviceWidget(m, getDeviceWidget(m, dev, FieldCameraWidget))
 
 
 

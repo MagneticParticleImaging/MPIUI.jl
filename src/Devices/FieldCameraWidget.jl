@@ -3,7 +3,6 @@ mutable struct FieldCameraWidget{C <: AbstractFieldCamera} <: Gtk4.GtkBox
   camera::C
   button
   tDes
-  vars
   coeffs
   viewer::MagneticFieldViewerWidget
   timer::Union{Timer, Nothing}
@@ -16,38 +15,38 @@ function FieldCameraWidget(camera::AbstractFieldCamera)
 
   t, N, center, radius = MPIMeasurements.tDesignParameter(camera)
   tDes = loadTDesign(Int(t),N,radius*u"m", center.*u"m")
-  vars = @polyvar x y z
   corr = MPIMeasurements.translation(camera)
   field = getXYZValues(camera)
-  coeffs, _, _ = magneticField(tDes, field, vars...)
+  coeffs = MPISphericalHarmonics.magneticField(tDes, field)
   coeffs_MF = MPIUI.MagneticFieldCoefficients(coeffs, radius, center)
 
   viewer = MagneticFieldViewerWidget()
   push!(box, viewer)
   
-  widget = FieldCameraWidget(box.handle, camera, button, tDes, vars, coeffs_MF, viewer, nothing)
+  widget = FieldCameraWidget(box.handle, camera, toggle, tDes, coeffs_MF, viewer, nothing)
 
   Gtk4.GLib.gobject_move_ref(widget, box)
 
-  signal_connect(button, :toggled) do w
-    if get_gtk_property(m["tbStartTemp"], :active, Bool)
-      startCamera(m)
+  signal_connect(toggle, :toggled) do w
+    if get_gtk_property(toggle, :active, Bool)
+      startCamera(widget)
     else
-      stopCamera(m)
+      stopCamera(widget)
     end
   end
 
+  return widget
 end
 
 function startCamera(m::FieldCameraWidget)
   m.timer = Timer(timer -> updateCamera(timer, m), 0.0, interval=0.1)
 end
 
-@guarded function updateSensor(timer::Timer, m::FieldCameraWidget)
-  field = getXYZValues(camera)
-  coeffs, _, _ = magneticField(m.tDes, field, m.vars...)
-  m.coeffs = MPIUI.MagneticFieldCoefficients(coeffs, m.tDes.radius, m.tDes.center)
-  updateData!(m.viewer, m.coeffs)
+@guarded function updateCamera(timer::Timer, m::FieldCameraWidget)
+  field = getXYZValues(m.camera)
+  @info @time coeffs = MPISphericalHarmonics.magneticField(m.tDes, field)
+  @info @time m.coeffs = MPIUI.MagneticFieldCoefficients(coeffs, ustrip(u"m", m.tDes.radius), ustrip.(u"m", m.tDes.center))
+  @info @time updateData!(m.viewer, m.coeffs)
 end
 
 function stopCamera(m::FieldCameraWidget)

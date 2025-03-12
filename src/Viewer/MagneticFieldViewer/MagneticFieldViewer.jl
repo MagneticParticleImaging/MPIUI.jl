@@ -93,7 +93,7 @@ function MagneticFieldViewerWidget()
   # build up plots
   m.grid = m["gridMagneticFieldViewer"]
   m.grid[1,1:2] = m.fv
-  m.grid[1,3] = m.coeffsCanvas
+  m.grid[1,3] = m.coeffsCanvas[]
   # expand plot
   ### set_gtk_property!(m, :expand, m.grid, true)
   
