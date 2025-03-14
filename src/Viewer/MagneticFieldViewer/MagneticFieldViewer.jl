@@ -13,6 +13,12 @@ mutable struct FieldViewerWidget <: Gtk4.GtkBox
   centerFFP::Bool # center of plot (FFP (true) or center of measured sphere (false))
   grid::Gtk4.GtkGridLeaf
   gridMakie::Array{MakieCanvas}
+  figYZ::CairoMakie.Figure
+  axYZ::CairoMakie.Axis
+  figXZ::CairoMakie.Figure
+  axXZ::CairoMakie.Axis
+  figXY::CairoMakie.Figure
+  axXY::CairoMakie.Axis
 end
 
 mutable struct MagneticFieldViewerWidget <: Gtk4.GtkBox
@@ -60,9 +66,38 @@ function FieldViewerWidget()
   b = GtkBuilder(uifile)
   mainBox = G_.get_object(b, "boxFieldViewer")
 
+  # TODO make this a function which takes as input the rand values
+  # -> Allow changing discretization
+  # Prepare Figures
+  # YZ
+  figYZ = CairoMakie.Figure(figure_padding=0);
+  axYZ = CairoMakie.Axis(figYZ[1,1], xlabel="x", ylabel="y")
+  CairoMakie.heatmap!(axYZ, rand(31), rand(31), rand(31, 31))
+  CairoMakie.arrows!(axYZ, rand(31), rand(31), rand(31, 31), rand(31, 31), visible = false)
+  CairoMakie.hlines!(axYZ, rand(1), color=:white, linestyle=:dash, linewidth=0.5)
+  CairoMakie.vlines!(axYZ, rand(1), color=:white, linestyle=:dash, linewidth=0.5)
+  # XZ
+  figXZ = CairoMakie.Figure(figure_padding=0);
+  axXZ = CairoMakie.Axis(figXZ[1,1], xlabel="x", ylabel="y") 
+  axXZ.xreversed = true # reverse x
+  CairoMakie.heatmap!(axXZ, rand(31), rand(31), rand(31, 31))
+  CairoMakie.arrows!(axXZ, rand(31), rand(31), rand(31, 31), rand(31, 31), visible = false)
+  CairoMakie.hlines!(axXZ, rand(1), color=:white, linestyle=:dash, linewidth=0.5)
+  CairoMakie.vlines!(axXZ, rand(1), color=:white, linestyle=:dash, linewidth=0.5)
+  # XY
+  figXY = CairoMakie.Figure(figure_padding=0);
+  axXY = CairoMakie.Axis(figXY[1,1], xlabel="x", ylabel="y")
+  CairoMakie.heatmap!(axXY,  rand(31), rand(31), rand(31, 31))
+  CairoMakie.arrows!(axXY, rand(31, ), rand(31), rand(31, 31), rand(31, 31), visible = false)
+  CairoMakie.hlines!(axXY, rand(1), color=:white, linestyle=:dash, linewidth=0.5)
+  CairoMakie.vlines!(axXY, rand(1), color=:white, linestyle=:dash, linewidth=0.5)
+  axXY.yreversed = true # reverse x
+  
+
+
   fv = FieldViewerWidget(mainBox.handle, b, ColoringParams(0,0,0),
                      false, zeros(0,0,0), zeros(0,0,0,0), zeros(0,0,0), zeros(0), zeros(0), true,
-                      G_.get_object(b, "gridFieldViewer"), MakieCanvas[])
+                      G_.get_object(b, "gridFieldViewer"), MakieCanvas[], figYZ, axYZ, figXZ, axXZ, figXY, axXY)
   Gtk4.GLib.gobject_move_ref(fv, mainBox)
 
   # initialize plots
@@ -70,6 +105,9 @@ function FieldViewerWidget()
   for cart in eachindex(IndexCartesian(), fv.gridMakie)
     fv.grid[Tuple(cart)...] = fv.gridMakie[cart][]
   end
+  drawonto(fv.gridMakie[1,1], figXZ)
+  drawonto(fv.gridMakie[2,1], figYZ)
+  drawonto(fv.gridMakie[2,2], figXY)
 
   fv.grid.hexpand = fv.grid.vexpand = true
   # expand plots

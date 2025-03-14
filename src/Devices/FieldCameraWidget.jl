@@ -44,13 +44,10 @@ end
 
 @guarded function updateCamera(timer::Timer, m::FieldCameraWidget)
   field = getXYZValues(m.camera)
-  #mfTime = @elapsed 
-  coeffs = MPISphericalHarmonics.magneticField(m.tDes, field)
-  #mfcTime = @elapsed 
-  m.coeffs = MPIUI.MagneticFieldCoefficients(coeffs, ustrip(u"m", m.tDes.radius), ustrip.(u"m", m.tDes.center))
-  #plotTime = @elapsed 
-  updateData!(m.viewer, m.coeffs)
-  #@info "MagneticField $mfTime, FieldCoeff $mfcTime, Plot $plotTime"
+  mfTime = @elapsed coeffs = MPISphericalHarmonics.magneticField(m.tDes, field)
+  mfcTime = @elapsed m.coeffs = MPIUI.MagneticFieldCoefficients(coeffs, ustrip(u"m", m.tDes.radius), ustrip.(u"m", m.tDes.center))
+  plotTime = @elapsed updateData!(m.viewer, m.coeffs)
+  @info "MagneticField $mfTime, FieldCoeff $mfcTime, Plot $plotTime"
 end
 
 function stopCamera(m::FieldCameraWidget)

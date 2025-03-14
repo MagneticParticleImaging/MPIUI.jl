@@ -123,28 +123,40 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   # label
   lab = [useMilli ? "$i / mm" : "$i / m" for i in ["x", "y", "z"]]
   # YZ
-  figYZ = CairoMakie.Figure(figure_padding=0);
-  axYZ = CairoMakie.Axis(figYZ[1,1], xlabel=lab[2], ylabel=lab[3])
-  CairoMakie.heatmap!(axYZ, N[2], N[3], m.fv.fieldNorm[:,:,1], colorrange=(cmin,cmax), colormap=cmap)
+  m.fv.axYZ.xlabel[] = lab[2]
+  m.fv.axYZ.ylabel[] = lab[3]
+  heatmapYZ = m.fv.axYZ.scene[1]
+  heatmapYZ[1][] = N[2]
+  heatmapYZ[2][] = N[3]
+  heatmapYZ[3][] = m.fv.fieldNorm[:,:,1]
+  heatmapYZ.colorrange[] = (cmin,cmax)
+  heatmapYZ.colormap = cmap
   # XZ
-  figXZ = CairoMakie.Figure(figure_padding=0);
-  axXZ = CairoMakie.Axis(figXZ[1,1], xlabel=lab[1], ylabel=lab[3]) 
-  axXZ.xreversed = true # reverse x
-  CairoMakie.heatmap!(axXZ, N[1], N[3], m.fv.fieldNorm[:,:,2], colorrange=(cmin,cmax), colormap=cmap)
+  m.fv.axXY.xlabel[] = lab[1]
+  m.fv.axXY.ylabel[] = lab[3]
+  heatmapXZ = m.fv.axXZ.scene[1]
+  heatmapXZ[1][] = N[1]
+  heatmapXZ[2][] = N[3]
+  heatmapXZ[3][] = m.fv.fieldNorm[:,:,2]
+  heatmapXZ.colorrange[] = (cmin,cmax)
+  heatmapXZ.colormap = cmap
   # XY
-  figXY = CairoMakie.Figure(figure_padding=0);
-  axXY = CairoMakie.Axis(figXY[1,1], xlabel=lab[2], ylabel=lab[1])
-  CairoMakie.heatmap!(axXY, N[2], N[1], m.fv.fieldNorm[:,:,3]', colorrange=(cmin,cmax), colormap=cmap)
-  axXY.yreversed = true # reverse x
-  
+  m.fv.axXY.xlabel[] = lab[2]
+  m.fv.axXY.ylabel[] = lab[1]
+  heatmapXY = m.fv.axXZ.scene[1]
+  heatmapXY[1][] = N[1]
+  heatmapXY[2][] = N[3]
+  heatmapXY[3][] = m.fv.fieldNorm[:,:,3]'
+  heatmapXY.colorrange[] = (cmin,cmax)
+  heatmapXY.colormap = cmap
 
   # disable ticks and labels
-  if !(get_gtk_property(m["cbShowCS"], :active, Bool))
-    for ax in [axYZ, axXZ, axXY]
-      ax.xlabelvisible = false; ax.ylabelvisible = false; 
-      ax.xticklabelsvisible = false; ax.yticklabelsvisible = false; 
-      ax.xticksvisible = false; ax.yticksvisible = false;
-    end
+  # TODO toggle as callback on cb -> update figures -> redraw
+  vis = get_gtk_property(m["cbShowCS"], :active, Bool) 
+  for ax in [m.fv.axYZ, m.fv.axXZ, m.fv.axXY]
+    ax.xlabelvisible[] = vis; ax.ylabelvisible[] = vis; 
+    ax.xticklabelsvisible[] = vis; ax.yticklabelsvisible[] = vis; 
+    ax.xticksvisible[] = vis; ax.yticksvisible[] = vis;
   end
 
   ## arrows ##
@@ -181,14 +193,23 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
 
   # add arrows to plots
   # YZ
-  CairoMakie.arrows!(axYZ, NN[2], NN[3], arYZu, arYZv, 
-		     color=:white, linewidth=lw, arrowsize = aw, lengthscale = al)
+  arrowsYZ = m.fv.axYZ.scene[2]
+  arrowsYZ[1][] = CairoMakie.Point2.([[NN[2][i], NN[3][i]] for i in eachindex(NN[1])]) # Points
+  arrowsYZ[2][] = vec(arYZ) # Directions
+  arrowsYZ.linewidth = lw
+  arrowsYZ.arrowsize = aw
   # XZ
-  CairoMakie.arrows!(axXZ, NN[1], NN[3], arXZu, arXZv, 
-		     color=:white, linewidth=lw, arrowsize = aw, lengthscale = al)
+  arrowsXZ = m.fv.axXZ.scene[2]
+  arrowsXZ[1][] = CairoMakie.Point2.([[NN[1][i], NN[3][i]] for i in eachindex(NN[1])]) # Points
+  arrowsXZ[2][] = vec(arXZ) # Directions
+  arrowsXZ.linewidth = lw
+  arrowsXZ.arrowsize = aw
   # XY
-  CairoMakie.arrows!(axXY, NN[2], NN[1], arXYu', arXYv', 
-		     color=:white, linewidth=lw, arrowsize = aw, lengthscale = al)
+  arrowsXY = m.fv.axXY.scene[2]
+  arrowsXY[1][] = CairoMakie.Point2.([[NN[2][i], NN[3][i]] for i in eachindex(NN[1])]) # Points
+  arrowsXY[2][] = vec(arXY') # Directions
+  arrowsXY.linewidth = lw
+  arrowsXY.arrowsize = aw
 
   # set fontsize
   fs = get_gtk_property(m["adjFontsize"],:value, Int64) # fontsize
@@ -199,14 +220,14 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
     # draw lines to mark 0
     intersec = useMilli ? m.fv.intersection .*1000 : m.fv.intersection # scale intersection to the chosen unit
     # YZ
-    CairoMakie.hlines!(axYZ, intersec[3], color=:white, linestyle=:dash, linewidth=0.5)
-    CairoMakie.vlines!(axYZ, intersec[2], color=:white, linestyle=:dash, linewidth=0.5)
+    m.fv.axYZ.scene[3][1][] = [intersec[3]]
+    m.fv.axYZ.scene[4][1][] = [intersec[2]]
     # XZ
-    CairoMakie.hlines!(axXZ, intersec[3], color=:white, linestyle=:dash, linewidth=0.5)
-    CairoMakie.vlines!(axXZ, intersec[1], color=:white, linestyle=:dash, linewidth=0.5)
+    m.fv.axXZ.scene[3][1][] = [intersec[3]]
+    m.fv.axXZ.scene[4][1][] = [intersec[1]]
     # XY
-    CairoMakie.hlines!(axXY, intersec[1], color=:white, linestyle=:dash, linewidth=0.5)
-    CairoMakie.vlines!(axXY, intersec[2], color=:white, linestyle=:dash, linewidth=0.5)
+    m.fv.axXY.scene[3][1][] = [intersec[1]]
+    m.fv.axXY.scene[4][1][] = [intersec[2]]
   end
 
   # show sphere
@@ -241,9 +262,12 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   end
 
   # show fields
-  drawonto(m.fv.gridMakie[1,1], figXZ)
-  drawonto(m.fv.gridMakie[2,1], figYZ)
-  drawonto(m.fv.gridMakie[2,2], figXY)
+  CairoMakie.reset_limits!(m.fv.axYZ)
+  CairoMakie.reset_limits!(m.fv.axXZ)
+  CairoMakie.reset_limits!(m.fv.axXY)
+  drawonto(m.fv.gridMakie[1,1], m.fv.figYZ)
+  drawonto(m.fv.gridMakie[2,1], m.fv.figXZ)
+  drawonto(m.fv.gridMakie[2,2], m.fv.figXY)
 
   # draw axes (only arrows)
   if get_gtk_property(m["cbShowAxes"], :active, Bool)
