@@ -30,6 +30,8 @@ mutable struct MagneticFieldViewerWidget <: Gtk4.GtkBox
   coeffs::MagneticFieldCoefficients 
   coeffsPlot::Array{SphericalHarmonicCoefficients}
   coeffsCanvas::MakieCanvas
+  coeffsFig::CairoMakie.Figure
+  coeffsAxis::CairoMakie.Axis
   field # SphericalHarmonicsDefinedField (Functions of the field)
   patch::Int
   grid::Gtk4.GtkGridLeaf
@@ -73,7 +75,7 @@ function FieldViewerWidget()
   figYZ = CairoMakie.Figure(figure_padding=0);
   axYZ = CairoMakie.Axis(figYZ[1,1], xlabel="x", ylabel="y")
   CairoMakie.heatmap!(axYZ, rand(31), rand(31), rand(31, 31))
-  CairoMakie.arrows!(axYZ, rand(31), rand(31), rand(31, 31), rand(31, 31), visible = false)
+  CairoMakie.arrows!(axYZ, rand(31), rand(31), rand(31, 31), rand(31, 31))
   CairoMakie.hlines!(axYZ, rand(1), color=:white, linestyle=:dash, linewidth=0.5)
   CairoMakie.vlines!(axYZ, rand(1), color=:white, linestyle=:dash, linewidth=0.5)
   # XZ
@@ -81,14 +83,14 @@ function FieldViewerWidget()
   axXZ = CairoMakie.Axis(figXZ[1,1], xlabel="x", ylabel="y") 
   axXZ.xreversed = true # reverse x
   CairoMakie.heatmap!(axXZ, rand(31), rand(31), rand(31, 31))
-  CairoMakie.arrows!(axXZ, rand(31), rand(31), rand(31, 31), rand(31, 31), visible = false)
+  CairoMakie.arrows!(axXZ, rand(31), rand(31), rand(31, 31), rand(31, 31))
   CairoMakie.hlines!(axXZ, rand(1), color=:white, linestyle=:dash, linewidth=0.5)
   CairoMakie.vlines!(axXZ, rand(1), color=:white, linestyle=:dash, linewidth=0.5)
   # XY
   figXY = CairoMakie.Figure(figure_padding=0);
   axXY = CairoMakie.Axis(figXY[1,1], xlabel="x", ylabel="y")
   CairoMakie.heatmap!(axXY,  rand(31), rand(31), rand(31, 31))
-  CairoMakie.arrows!(axXY, rand(31, ), rand(31), rand(31, 31), rand(31, 31), visible = false)
+  CairoMakie.arrows!(axXY, rand(31), rand(31), rand(31, 31), rand(31, 31))
   CairoMakie.hlines!(axXY, rand(1), color=:white, linestyle=:dash, linewidth=0.5)
   CairoMakie.vlines!(axXY, rand(1), color=:white, linestyle=:dash, linewidth=0.5)
   axXY.yreversed = true # reverse x
@@ -122,12 +124,17 @@ function MagneticFieldViewerWidget()
   b = GtkBuilder(uifile)
   mainBox = G_.get_object(b, "boxMagneticFieldViewer")
 
+  figCoeffs = CairoMakie.Figure();
+  axCoeffs = CairoMakie.Axis(figCoeffs[1,1], xlabel="x", ylabel="y")
+  CairoMakie.barplot!(axCoeffs, rand(3), rand(3), color = [:white, :red, :black])
+
   m = MagneticFieldViewerWidget(mainBox.handle, b, FieldViewerWidget(),
                      false, MagneticFieldCoefficients(0), MagneticFieldCoefficients(0), 
-                     [SphericalHarmonicCoefficients(0)], MakieCanvas(), nothing, 1,
+                     [SphericalHarmonicCoefficients(0)], MakieCanvas(), figCoeffs, axCoeffs, nothing, 1,
                      GtkGrid(), GtkTreeModelFilter(GtkListStore(Bool)))
   Gtk4.GLib.gobject_move_ref(m, mainBox)
 
+  drawonto(m.coeffsCanvas[], figCoeffs)
   # build up plots
   m.grid = m["gridMagneticFieldViewer"]
   m.grid[1,1:2] = m.fv

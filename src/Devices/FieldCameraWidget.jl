@@ -13,11 +13,11 @@ function FieldCameraWidget(camera::AbstractFieldCamera)
   toggle = GtkToggleButton("Enable")
   push!(box, toggle)
 
-  t, N, radius, center = MPIMeasurements.tDesignParameter(camera)
+  t, N, center, radius = MPIMeasurements.tDesignParameter(camera)
   tDes = loadTDesign(Int(t),N,radius*u"m")#, center.*u"m")
   corr = MPIMeasurements.translation(camera)
   field = getXYZValues(camera)
-  coeffs = MPISphericalHarmonics.magneticField(tDes, ustrip.(field))
+  coeffs = MPISphericalHarmonics.magneticField(tDes, field)
   coeffs_MF = MPIUI.MagneticFieldCoefficients(coeffs, radius, center)
 
   viewer = MagneticFieldViewerWidget()
@@ -44,13 +44,10 @@ end
 
 @guarded function updateCamera(timer::Timer, m::FieldCameraWidget)
   field = getXYZValues(m.camera)
-  #mfTime = @elapsed 
-  coeffs = MPISphericalHarmonics.magneticField(m.tDes, ustrip.(field))
-  #mfcTime = @elapsed 
-  m.coeffs = MPIUI.MagneticFieldCoefficients(coeffs, ustrip(u"m", m.tDes.radius), ustrip.(u"m", m.tDes.center))
-  #plotTime = @elapsed 
-  updateData!(m.viewer, m.coeffs)
-  #@info "MagneticField $mfTime, FieldCoeff $mfcTime, Plot $plotTime"
+  mfTime = @elapsed coeffs = MPISphericalHarmonics.magneticField(m.tDes, field)
+  mfcTime = @elapsed m.coeffs = MPIUI.MagneticFieldCoefficients(coeffs, ustrip(u"m", m.tDes.radius), ustrip.(u"m", m.tDes.center))
+  plotTime = @elapsed updateData!(m.viewer, m.coeffs)
+  @info "MagneticField $mfTime, FieldCoeff $mfcTime, Plot $plotTime"
 end
 
 function stopCamera(m::FieldCameraWidget)

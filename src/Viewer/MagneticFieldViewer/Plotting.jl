@@ -128,27 +128,30 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   heatmapYZ = m.fv.axYZ.scene[1]
   heatmapYZ[1][] = N[2]
   heatmapYZ[2][] = N[3]
+  #m.fv.axYZ.limits[] = (first(N[2]), last(N[2]), first(N[3]), last(N[3]))
   heatmapYZ[3][] = m.fv.fieldNorm[:,:,1]
   heatmapYZ.colorrange[] = (cmin,cmax)
-  heatmapYZ.colormap = cmap
+  heatmapYZ.colormap[] = cmap
   # XZ
   m.fv.axXY.xlabel[] = lab[1]
   m.fv.axXY.ylabel[] = lab[3]
   heatmapXZ = m.fv.axXZ.scene[1]
   heatmapXZ[1][] = N[1]
   heatmapXZ[2][] = N[3]
+  #m.fv.axYZ.limits[] = (first(N[1]), last(N[1]), first(N[3]), last(N[3]))
   heatmapXZ[3][] = m.fv.fieldNorm[:,:,2]
   heatmapXZ.colorrange[] = (cmin,cmax)
-  heatmapXZ.colormap = cmap
+  heatmapXZ.colormap[] = cmap
   # XY
   m.fv.axXY.xlabel[] = lab[2]
   m.fv.axXY.ylabel[] = lab[1]
-  heatmapXY = m.fv.axXZ.scene[1]
+  heatmapXY = m.fv.axXY.scene[1]
   heatmapXY[1][] = N[1]
   heatmapXY[2][] = N[3]
+  #m.fv.axYZ.limits[] = (first(N[1]), last(N[1]), first(N[3]), last(N[3]))
   heatmapXY[3][] = m.fv.fieldNorm[:,:,3]'
   heatmapXY.colorrange[] = (cmin,cmax)
-  heatmapXY.colormap = cmap
+  heatmapXY.colormap[] = cmap
 
   # disable ticks and labels
   # TODO toggle as callback on cb -> update figures -> redraw
@@ -194,19 +197,19 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   # add arrows to plots
   # YZ
   arrowsYZ = m.fv.axYZ.scene[2]
-  arrowsYZ[1][] = CairoMakie.Point2.([[NN[2][i], NN[3][i]] for i in eachindex(NN[1])]) # Points
+  arrowsYZ[1][] = CairoMakie.Point2.([[NN[2][i], NN[3][j]] for i in eachindex(NN[2]) for j in eachindex(NN[3])]) # Points
   arrowsYZ[2][] = vec(arYZ) # Directions
   arrowsYZ.linewidth = lw
   arrowsYZ.arrowsize = aw
   # XZ
   arrowsXZ = m.fv.axXZ.scene[2]
-  arrowsXZ[1][] = CairoMakie.Point2.([[NN[1][i], NN[3][i]] for i in eachindex(NN[1])]) # Points
+  arrowsXZ[1][] = CairoMakie.Point2.([[NN[1][i], NN[3][j]] for i in eachindex(NN[1]) for j in eachindex(NN[3])]) # Points
   arrowsXZ[2][] = vec(arXZ) # Directions
   arrowsXZ.linewidth = lw
   arrowsXZ.arrowsize = aw
   # XY
   arrowsXY = m.fv.axXY.scene[2]
-  arrowsXY[1][] = CairoMakie.Point2.([[NN[2][i], NN[3][i]] for i in eachindex(NN[1])]) # Points
+  arrowsXY[1][] = CairoMakie.Point2.([[NN[2][i], NN[1][j]] for i in eachindex(NN[2]) for j in eachindex(NN[1])]) # Points
   arrowsXY[2][] = vec(arXY') # Directions
   arrowsXY.linewidth = lw
   arrowsXY.arrowsize = aw
@@ -265,8 +268,8 @@ function updateField(m::MagneticFieldViewerWidget, updateColoring=false)
   CairoMakie.reset_limits!(m.fv.axYZ)
   CairoMakie.reset_limits!(m.fv.axXZ)
   CairoMakie.reset_limits!(m.fv.axXY)
-  drawonto(m.fv.gridMakie[1,1], m.fv.figYZ)
-  drawonto(m.fv.gridMakie[2,1], m.fv.figXZ)
+  drawonto(m.fv.gridMakie[1,1], m.fv.figXZ)
+  drawonto(m.fv.gridMakie[2,1], m.fv.figYZ)
   drawonto(m.fv.gridMakie[2,2], m.fv.figXY)
 
   # draw axes (only arrows)
@@ -307,7 +310,7 @@ function updateCoeffsPlot(m::MagneticFieldViewerWidget)
   CairoMakie.set_theme!(CairoMakie.Theme(fontsize = fs)) # set fontsize for the whole plot
 
   # create plot
-  fig = CairoMakie.Figure(figure_padding=2)
+  fig = m.coeffsFig
   xticklabel = ["[$l,$m]" for l=0:L for m=-l:l]
   # ylabel
   if useMilli && scaleR
@@ -318,34 +321,37 @@ function updateCoeffsPlot(m::MagneticFieldViewerWidget)
     ylabel = CairoMakie.L"\gamma_{l,m}~/~\text{mT/m}^l" 
   else 
     ylabel = CairoMakie.L"\gamma_{l,m}~/~\text{T/m}^l"
-  end 
-  ax = CairoMakie.Axis(fig[1,1], xticks = (1:L², xticklabel), 
-	    #title="Coefficients",
-	    xlabel = CairoMakie.L"[l,m]", ylabel = ylabel)
+  end
+  ax = m.coeffsAxis
+  ax.xticks[] = (1:L², xticklabel)
+  ax.xlabel[] = CairoMakie.L"[l,m]"
+  ax.ylabel[] = ylabel
 
   # x values
   y = range(1,L²,length=L²)
   y = repeat(y, outer=3) # for each direction
 
   # create bars
+  bar = ax.scene[1]
   colorsCoeffs = [CairoMakie.RGBf(MPIUI.colors[i]...) for i in [1,3,7]] # use blue, green and yellow
-  CairoMakie.barplot!(ax, # axis 
-           	      y, cs, # x- and y-values
-           	      dodge=grp, color=colorsCoeffs[grp])
-  CairoMakie.autolimits!(ax) # auto axis limits
+  bar[1][] = CairoMakie.Point2.([[y[i], cs[i]] for i in eachindex(y)])
+  bar.dodge[] = grp
+  bar.color[] = colorsCoeffs[grp]
+  #CairoMakie.autolimits!(ax) # auto axis limits
 
   # draw line to mark 0
-  CairoMakie.ablines!(0, 0, color=:black, linewidth=1)
+  #CairoMakie.ablines!(0, 0, color=:black, linewidth=1)
 
   # legend
-  if get_gtk_property(m["cbShowLegend"], :active, Bool)
-    labels = ["x","y","z"]
-    elements = [CairoMakie.PolyElement(polycolor = colorsCoeffs[i],
-				       ) for i in 1:length(labels)]
-    CairoMakie.axislegend(ax, elements, labels, position=:rt, patchsize=(15,0.8*fs)) # pos: right, top
-  end
+  #if get_gtk_property(m["cbShowLegend"], :active, Bool)
+  #  labels = ["x","y","z"]
+  #  elements = [CairoMakie.PolyElement(polycolor = colorsCoeffs[i],
+	#			       ) for i in 1:length(labels)]
+  #  CairoMakie.axislegend(ax, elements, labels, position=:rt, patchsize=(15,0.8*fs)) # pos: right, top
+  #end
  
   # show coeffs
+  CairoMakie.reset_limits!(ax)
   drawonto(m.coeffsCanvas, fig)
 end
 
